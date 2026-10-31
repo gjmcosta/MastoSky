@@ -1,96 +1,101 @@
+<p align="right">
+  <b>English</b> | <a href="README.pt.md">Português</a>
+</p>
+
 # MastoSky 🌌🐘
 
-> **Cliente unificado, minimalista e *local-first* para Bluesky e Mastodon.**  
-> Uma única interface no teu browser para ler, responder, partilhar e publicar em ambas as redes simultaneamente. Sem dependências externas, sem telemetria, sem intermediários.
+> **A minimalist, unified, local-first client for Bluesky and Mastodon.**  
+> One single browser tab to read, reply, boost/repost, and cross-publish across both networks simultaneously. Zero external dependencies, no telemetry, no intermediaries.
 
 ---
 
-## ✨ Funcionalidades
+## ✨ Features
 
-* **🔄 Timeline Unificada:** Visualiza os posts das pessoas que segues no Bluesky e no Mastodon misturados cronologicamente numa única página.
-* **🔥 Aba "Em Alta":** Descobre o que está a ser mais partilhado e com mais interação em ambas as redes (mesmo de perfis que não segues).
-* **🔔 Notificações Centralizadas:** Vê respostas, gostos, partilhas (*boosts* / *reposts*) e citações com contador de novos alertas em tempo real.
-* **📝 Publicação Cruzada com 1 Clique:** Escreve um post e escolhe se queres publicar apenas no Bluesky, apenas no Mastodon ou em ambos em simultâneo com contagem de caracteres inteligente.
-* **💬 Citações Ricas (*Quote Posts*):** Suporte nativo a publicações citadas de ambas as redes, com identificação do autor original, texto e imagens.
-* **🎬 Leitor de Vídeo Integrado:** Suporte transparente para streaming adaptativo HLS (`.m3u8` do Bluesky) e ficheiros de vídeo/animações (`.mp4` e `gifv` do Mastodon).
-* **🖼️ Suporte a Imagens e Cartões de Links:** Pré-visualização de imagens sem cortes forçados, zoom em tamanho original e cartões de link com domínio.
-* **📊 Sondagens:** Cria sondagens com opções personalizadas e duração ajustável.
-* **⚠️ Avisos de Conteúdo (*Content Warning* / Spoiler):** Marca spoilers ou avisos sensíveis que são respeitados e integrados com as regras nativas de ambas as plataformas.
-* **🧵 Conversas e Fios:** Explora discussões completas em árvore com o botão de conversa.
-* **🌗 Modo Claro e Escuro:** Respeita automaticamente o tema do teu sistema operativo.
-
----
-
-## 🔒 Filosofia: Zero Dependências & Privacidade Absoluta
-
-* **Zero dependências externas:** Construído apenas com a biblioteca padrão do **Python 3** no servidor e **Vanilla JavaScript / CSS** no cliente. Nada de `pip install`, nem Node.js, nem NPM.
-* **100% Local-First:** O servidor corre estritamente em `127.0.0.1` (localhost).
-* **Privacidade total:** As tuas credenciais e dados nunca passam por servidores de terceiros ou serviços de recolha de dados; o teu computador comunica diretamente com a API do Bluesky e com a tua instância do Mastodon.
+* **🔄 Unified Timeline:** Read posts from the people you follow on both Bluesky and Mastodon, seamlessly interleaved in chronological order.
+* **🔥 Explore / "What's Hot":** Discover trending posts and viral conversations from both networks, even from accounts you don't follow.
+* **🔔 Centralized Notifications:** Track mentions, replies, likes, boosts, and quote posts in real-time with an unread badge.
+* **📝 1-Click Cross-Posting:** Compose once and choose whether to publish to Bluesky, Mastodon, or both at the same time, with live network-specific character count limits.
+* **💬 Native Quote Posts:** Rich rendering of quoted posts from both networks with quoted author avatars, text, and embedded media.
+* **🎬 Integrated Video Player:** Transparent HTML5 playback for both adaptive HLS streams (`.m3u8` from Bluesky) and direct video / animated files (`.mp4` and `gifv` from Mastodon).
+* **🖼️ Media Galleries & Link Previews:** Uncropped image previews with full-size zoom on click, plus compact external link cards with domain labels.
+* **📊 Interactive Polls:** Create cross-network polls with customizable options and expiration periods.
+* **⚠️ Content Warnings (CW / Spoilers):** Seamless spoiler labels that translate to native Mastodon CWs and Bluesky content labels.
+* **🧵 Conversation Threads:** Expand and follow complete conversation trees directly inline.
+* **🌗 Dark & Light Themes:** Automatically matches your operating system's color scheme.
 
 ---
 
-## 🚀 Como Executar
+## 🔒 Philosophy: Zero Dependencies & Privacy by Design
 
-### Pré-requisitos
-Apenas precisas do **Python 3** instalado (já vem por defeito no macOS e na maioria das distribuições Linux).
+* **Zero external dependencies:** Powered solely by the **Python 3 standard library** on the backend and **vanilla JavaScript & CSS** on the frontend. No `pip install`, no Node.js, no NPM.
+* **100% Local-First:** The server binds strictly to `127.0.0.1` (localhost).
+* **Total Privacy:** Your credentials and social data never pass through third-party servers; your computer talks directly to the official Bluesky ATProto XRPC endpoints and your own Mastodon instance API.
 
-### 1. Clonar o repositório
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+You only need **Python 3** installed (built-in on macOS and most Linux distributions).
+
+### 1. Clone the repository
 ```bash
-git clone https://github.com/O-TEU-UTILIZADOR/MastoSky.git
+git clone https://github.com/gjmcosta/MastoSky.git
 cd MastoSky
 ```
 
-### 2. Iniciar a aplicação
+### 2. Start the application
 ```bash
 python3 app.py
 ```
 
-### 3. Abrir no Browser
-Acede a:
+### 3. Open in your browser
+Navigate to:
 👉 **[http://127.0.0.1:8000](http://127.0.0.1:8000)**
 
-Se for a primeira vez que abres a ferramenta, surge automaticamente o **ecrã de configuração** para introduzires as tuas credenciais do Bluesky e/ou do Mastodon.
+On your first launch, a friendly **Setup Window** will automatically appear to let you enter your Bluesky and/or Mastodon credentials right in the browser UI.
 
-*(Em alternativa, podes copiar `cp config.example.json config.json` e preencher manualmente antes de iniciar).*
+*(Alternatively, you can copy `cp config.example.json config.json` and edit it manually before starting).*
 
 ---
 
-## 🔑 Onde obter as credenciais?
+## 🔑 Obtaining Your Credentials
 
 ### 🦋 Bluesky
-1. Vai a [bsky.app](https://bsky.app) e acede a **Definições** (*Settings*) > **Privacidade e Segurança** > **Palavras-passe da aplicação** (*App Passwords*).
-2. Cria uma nova palavra-passe com o nome `MastoSky`.
-3. Utiliza o teu handle (ex: `oteunome.bsky.social`) e a palavra-passe gerada (formato `xxxx-xxxx-xxxx-xxxx`).
-*(Nota: Nunca uses a tua palavra-passe principal da conta; usa sempre uma App Password!)*
+1. Go to [bsky.app](https://bsky.app) and navigate to **Settings** > **Privacy and Security** > **App Passwords**.
+2. Create a new App Password named `MastoSky`.
+3. Use your handle (e.g. `yourname.bsky.social`) and the generated 16-character password (`xxxx-xxxx-xxxx-xxxx`).
+*(Note: Never use your primary account password; always use an App Password!)*
 
 ### 🐘 Mastodon
-1. Acede à tua instância do Mastodon (ex: `https://masto.pt`, `https://mastodon.social`, etc.).
-2. Vai a **Preferências** (*Preferences*) > **Desenvolvimento** (*Development*) > **Nova aplicação** (*New Application*).
-3. Dá o nome `MastoSky`. Podes deixar as permissões padrão (`read`, `write`) e clicar em **Guardar**.
-4. Clica na aplicação criada e copia o **Token de acesso** (*Your access token*).
+1. Go to your Mastodon instance (e.g. `https://masto.pt`, `https://mastodon.social`, etc.).
+2. Navigate to **Preferences** > **Development** > **New Application**.
+3. Name it `MastoSky`. Leave the default permissions (`read`, `write`) and click **Save**.
+4. Click on your newly created app and copy **Your access token**.
 
 ---
 
-## 📁 Estrutura do Projeto
+## 📁 Project Structure
 
 ```text
 MastoSky/
-├── app.py              # Servidor HTTP local e clientes de API (ATProto / ActivityPub)
-├── index.html          # Interface de utilizador completa (HTML, CSS e JavaScript vanilla)
-├── config.example.json # Modelo de configuração de exemplo
-├── .gitignore          # Bloqueio de segurança para credenciais e ficheiros temporários
-└── README.md           # Documentação
+├── app.py              # Local HTTP server and API clients (ATProto / ActivityPub)
+├── index.html          # Complete single-page UI (vanilla HTML, CSS, JavaScript)
+├── config.example.json # Configuration template
+├── .gitignore          # Security guard preventing credentials from being committed
+├── README.md           # Documentation (English)
+├── README.pt.md        # Documentation (Português)
+└── LICENSE             # MIT License
 ```
 
 ---
 
-## 🛡️ Segurança
+## 🛡️ Security
 
-O ficheiro com as tuas credenciais pessoais (`config.json`) está protegido pelo ficheiro `.gitignore` e **nunca** deve ser adicionado ao controlo de versões.
+Your personal credentials file (`config.json`) is strictly ignored by `.gitignore` and **must never** be committed to version control.
 
 ---
 
-## 📄 Licença
+## 📄 License
 
-Este projeto é de código aberto sob a licença [MIT](LICENSE).
-
+This project is open-source under the [MIT License](LICENSE).
