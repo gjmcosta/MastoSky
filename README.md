@@ -93,3 +93,4 @@ O ficheiro com as tuas credenciais pessoais (`config.json`) está protegido pelo
 ## 📄 Licença
 
 Este projeto é de código aberto sob a licença [MIT](LICENSE).
+
