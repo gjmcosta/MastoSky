@@ -1,0 +1,11 @@
+{
+  "port": 8000,
+  "bluesky": {
+    "handle": "o-teu-nome.bsky.social",
+    "app_password": "xxxx-xxxx-xxxx-xxxx"
+  },
+  "mastodon": {
+    "instance": "https://mastodon.social",
+    "token": "O_TEU_TOKEN_DE_ACESSO"
+  }
+}

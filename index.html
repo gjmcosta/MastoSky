@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Timeline unificada</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<style>
+:root{
+  --bg:#EEF0F4; --card:#fff; --ink:#1B1E28; --muted:#6A7080; --line:#DDE0E8;
+  --bsky:#1083FE; --masto:#6364FF; --danger:#C0392B;
+  --serif:Charter,"Iowan Old Style",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#14161C;--card:#1D2029;--ink:#E7E9EF;--muted:#9097A8;--line:#2D313D;--bsky:#4DA3FF;--masto:#8F90FF;--danger:#FF7B6B}
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans)}
+main{max-width:640px;margin:0 auto;padding:20px 14px 60px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+h1{font:600 18px var(--sans);margin:0}
+button{font:inherit;cursor:pointer}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--bsky);outline-offset:2px}
+.ghost{background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:5px 12px}
+.ghost:hover{background:var(--card)}
+.compose{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px}
+.cw-row{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-bottom:8px}
+.cw-label{font-size:12.5px;font-weight:600;white-space:nowrap;color:var(--muted)}
+.cw-row input{flex:1;border:0;background:none;color:var(--ink);font-size:13.5px}
+.rm-sm{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--ink);border:0;display:grid;place-items:center;font-size:12px;cursor:pointer;flex:none}
+.rm-sm:hover{background:var(--muted);color:#fff}
+.poll-box{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;margin:8px 0 10px}
+.poll-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.poll-list{display:flex;flex-direction:column;gap:6px}
+.poll-opt-row{display:flex;gap:6px;align-items:center}
+.poll-opt-row input{flex:1;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:6px 10px;font-size:13px}
+.poll-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.ghost-sm{background:none;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
+.ghost-sm:hover{background:var(--card)}
+.ghost-sm[disabled]{opacity:.35;pointer-events:none}
+.poll-dur{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.poll-dur select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px}
+.previews{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+.prev-card{position:relative;display:flex;flex-direction:column;gap:5px;width:130px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px}
+.prev-card img{width:100%;height:85px;object-fit:cover;border-radius:4px}
+.prev-card input{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:4px;padding:3px 6px;font-size:11.5px;width:100%}
+.prev-card .rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--card);border:0;display:grid;place-items:center;font-size:11px;line-height:1;cursor:pointer}
+.compose-tools{display:flex;gap:6px;align-items:center}
+.btn-sm{font-size:13px;padding:5px 10px;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.btn-sm.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.btn-sm[disabled]{opacity:.35;pointer-events:none}
+textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;color:var(--ink);font:17px/1.45 var(--serif)}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px}
+.bar label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.dot{width:10px;height:10px;border-radius:50%}
+.count{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+.count.over{color:var(--danger);font-weight:600}
+.send{background:var(--ink);color:var(--card);border:0;border-radius:8px;padding:7px 18px;font-weight:600}
+.send:disabled{opacity:.35;cursor:default}
+.replying{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px}
+.replying button{border:0;background:none;color:var(--muted);text-decoration:underline}
+.msg{font-size:13px;margin-top:8px;min-height:18px}
+.msg.err{color:var(--danger)}
+.post{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:4px 12px 12px 4px;padding:12px 14px;margin-bottom:10px}
+.post.bluesky{--c:var(--bsky)} .post.mastodon{--c:var(--masto)}
+.boost{font-size:12px;color:var(--muted);margin-bottom:6px}
+.head{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.head img,.head .ph{width:38px;height:38px;border-radius:50%;background:var(--line);flex:none}
+.who{min-width:0;flex:1}
+.who b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who span{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.when{color:var(--muted);font-size:13px;text-decoration:none}
+.body{font:16.5px/1.5 var(--serif);overflow-wrap:anywhere}
+.body a{color:var(--c)}
+.media{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-top:8px}
+.media img{width:100%;max-height:380px;object-fit:cover;border-radius:8px;cursor:zoom-in}
+.media:has(> :only-child) img{max-height:520px;object-fit:contain;background:rgba(0,0,0,0.03)}
+.post-video{width:100%;max-height:480px;background:#000;border-radius:8px;margin-top:8px;outline:none;display:block}
+.quote-card{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);cursor:pointer;transition:border-color .15s}
+.quote-card:hover{border-color:var(--muted)}
+.quote-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.quote-av{width:22px;height:22px;border-radius:50%;background:var(--line);flex:none;object-fit:cover}
+.quote-who{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.quote-who b{font-weight:600;color:var(--ink)}
+.quote-who span{color:var(--muted)}
+.quote-body{font:15px/1.45 var(--serif);color:var(--ink);margin-bottom:6px;overflow-wrap:anywhere}
+.ext-card{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden;text-decoration:none;color:inherit;margin-top:8px;background:var(--bg);transition:border-color .15s}
+.ext-card:hover{border-color:var(--muted)}
+.ext-card img{width:100%;max-height:220px;object-fit:cover}
+.ext-card.no-thumb{flex-direction:row;align-items:stretch}
+.ext-placeholder{width:56px;background:var(--line);display:grid;place-items:center;color:var(--muted);flex:none;opacity:.7}
+.ext-info{padding:8px 10px;min-width:0;flex:1}
+.ext-domain{display:block;font-size:11.5px;color:var(--muted);margin-bottom:2px}
+.ext-info b{display:block;font-size:13.5px;color:var(--ink);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ext-info p{margin:0;font-size:12.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.acts{display:flex;gap:12px;margin-top:8px;align-items:center}
+.acts button{border:0;background:none;color:var(--muted);padding:4px 7px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-variant-numeric:tabular-nums;cursor:pointer}
+.acts button svg{display:block;flex:none}
+.acts button:hover{background:var(--bg);color:var(--ink)}
+.acts button.act-reply:hover{color:var(--bsky)}
+.acts button.act-boost:hover{color:#17BF63}
+.acts button.act-boost.on{color:#17BF63;font-weight:600}
+.acts button.act-like:hover{color:#E0245E}
+.acts button.act-like.on{color:#E0245E;font-weight:600}
+.acts button.act-like.on svg{fill:currentColor}
+.acts button.act-thread:hover{color:var(--ink)}
+.banner{background:var(--card);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px}
+.empty{text-align:center;color:var(--muted);padding:40px 0}
+.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 14px;margin-bottom:-1px;font-weight:600}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.badge{display:inline-block;min-width:18px;padding:0 6px;border-radius:9px;background:var(--danger);color:#fff;font-size:12px;line-height:18px;text-align:center;margin-left:4px}
+.notif .head{margin-bottom:4px}
+.notif .who b{white-space:normal}
+.notif .head img,.notif .head .ph{width:30px;height:30px}
+.net{width:22px;height:22px;border-radius:6px;background:var(--c);display:grid;place-items:center;flex:none}
+.net svg{width:14px;height:14px}
+.glyph{width:26px;height:26px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;font-size:14px;flex:none}
+.notif .body{color:var(--muted);font-size:15px}
+.notif.fresh{background:color-mix(in srgb,var(--c) 9%,var(--card))}
+.back{margin-bottom:12px}
+.chain{border-left:2px solid var(--line);margin:0 0 10px 12px;padding-left:10px}
+.post.focus{box-shadow:0 0 0 2px var(--c)}
+.post.focus .body{font-size:19px}
+.kids{margin-left:12px;padding-left:10px;border-left:2px solid var(--line)}
+.kids.flat{margin-left:0;padding-left:0;border-left:0}
+.replyto{display:block;width:100%;text-align:left;background:none;border:0;border-left:2px solid var(--line);padding:2px 0 2px 10px;margin:0 0 8px;color:var(--muted);font-size:13.5px;line-height:1.4}
+.replyto:hover{color:var(--ink);border-left-color:var(--c)}
+.replyto b{display:block;font-weight:600}
+.replyto .pv{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-family:var(--serif);font-size:14.5px}
+.setup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(5px);display:grid;place-items:center;z-index:999;padding:16px;overflow-y:auto}
+.setup-box{background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:480px;width:100%;padding:22px;box-shadow:0 16px 40px rgba(0,0,0,0.3);animation:popIn .2s ease-out}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.setup-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.setup-header h2{font:600 18px var(--sans);margin:0}
+.setup-desc{color:var(--muted);font-size:13px;margin:0 0 16px;line-height:1.45}
+.setup-section{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+.setup-sec-title{font-weight:600;font-size:13.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.setup-section label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px}
+.setup-section input{width:100%;margin-top:4px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:7px 10px;font-size:13px}
+.setup-help{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.35}
+.setup-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+@media (prefers-reduced-motion:no-preference){button{transition:background .15s,color .15s}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Timeline unificada</h1>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="ghost" id="settingsBtn" title="Definições / Contas">⚙️</button>
+      <button class="ghost" id="refresh">Atualizar</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="timeline">Timeline</button>
+    <button class="tab" role="tab" data-tab="explore">Em Alta</button>
+    <button class="tab" role="tab" data-tab="notifs">Notificações <span class="badge" id="badge" hidden></span></button>
+  </nav>
+
+  <section class="compose">
+    <div class="replying" id="replying" hidden>
+      <span id="replyingTo"></span><button id="cancelReply">Cancelar resposta</button>
+    </div>
+    <div class="cw-row" id="cwRow" hidden>
+      <span class="cw-label">⚠️ Spoiler:</span>
+      <input type="text" id="cwInput" placeholder="Aviso de conteúdo / Tema do spoiler (ex: Final da temporada)..." maxlength="100">
+      <button type="button" class="rm-sm" id="cwCancel" title="Remover aviso">✕</button>
+    </div>
+    <textarea id="text" placeholder="O que queres dizer?" aria-label="Novo post"></textarea>
+    <div class="poll-box" id="pollBox" hidden>
+      <div class="poll-head">
+        <span style="font-weight:600;font-size:13px">📊 Opções da sondagem</span>
+        <button type="button" class="rm-sm" id="pollCancel" title="Remover sondagem">✕</button>
+      </div>
+      <div class="poll-list" id="pollList"></div>
+      <div class="poll-foot">
+        <button type="button" class="ghost-sm" id="addOptionBtn">+ Opção</button>
+        <label class="poll-dur">Duração:
+          <select id="pollDuration">
+            <option value="3600">1 hora</option>
+            <option value="21600">6 horas</option>
+            <option value="86400" selected>1 dia</option>
+            <option value="259200">3 dias</option>
+            <option value="604800">7 dias</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <div class="previews" id="previews" hidden></div>
+    <div class="bar">
+      <div class="compose-tools">
+        <label class="ghost btn-sm" id="attachLabel" title="Anexar imagens (máx. 4)">
+          📷 Imagem <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
+        </label>
+        <button type="button" class="ghost btn-sm" id="pollBtn" title="Criar sondagem">📊 Sondagem</button>
+        <button type="button" class="ghost btn-sm" id="cwBtn" title="Aviso de conteúdo / Spoiler">⚠️ Spoiler</button>
+      </div>
+      <div id="targets" style="display:flex;gap:12px"></div>
+      <span class="count" id="count"></span>
+      <button class="send" id="send" disabled>Publicar</button>
+    </div>
+    <div class="msg" id="msg" role="status"></div>
+  </section>
+
+  <div id="pTimeline">
+    <div id="errors"></div>
+    <div id="feed"></div>
+  </div>
+  <div id="pExplore" hidden>
+    <div id="eerrors"></div>
+    <div id="efeed"></div>
+  </div>
+  <div id="pNotifs" hidden>
+    <div id="nerrors"></div>
+    <div id="nfeed"></div>
+  </div>
+  <div id="pThread" hidden></div>
+
+  <div id="setupOverlay" class="setup-overlay" hidden>
+    <div class="setup-box">
+      <div class="setup-header">
+        <h2>⚙️ Configuração do MastoSky</h2>
+        <button type="button" class="rm-sm" id="closeSetup" title="Fechar">✕</button>
+      </div>
+      <p class="setup-desc">Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.</p>
+
+      <div class="setup-section">
+        <div class="setup-sec-title">🦋 Bluesky</div>
+        <label>Handle:
+          <input type="text" id="cfgBskyHandle" placeholder="ex: o-teu-nome.bsky.social" autocomplete="off">
+        </label>
+        <label>Palavra-passe da aplicação (*App Password*):
+          <input type="password" id="cfgBskyPass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off">
+        </label>
+        <small class="setup-help">Gera em bsky.app &gt; Definições &gt; Privacidade e Segurança &gt; Palavras-passe da aplicação.</small>
+      </div>
+
+      <div class="setup-section">
+        <div class="setup-sec-title">🐘 Mastodon</div>
+        <label>Instância:
+          <input type="text" id="cfgMastoInst" placeholder="ex: https://masto.pt" autocomplete="off">
+        </label>
+        <label>Token de acesso:
+          <input type="password" id="cfgMastoToken" placeholder="O teu access token" autocomplete="off">
+        </label>
+        <small class="setup-help">Gera na tua instância em Preferências &gt; Desenvolvimento &gt; Nova aplicação.</small>
+      </div>
+
+      <div id="setupMsg" class="msg"></div>
+
+      <div class="setup-actions">
+        <button class="send" id="saveSetupBtn">Guardar e Iniciar</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const LIMITS = {bluesky: 300, mastodon: 500};
+const LABEL = {bluesky: "Bluesky", mastodon: "Mastodon"};
+const $ = id => document.getElementById(id);
+let networks = [], reply = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
+
+async function api(path, body) {
+  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
+  return r.json();
+}
+
+function ago(iso) {
+  const s = (Date.now() - new Date(iso)) / 1000;
+  if (s < 60) return "agora";
+  if (s < 3600) return Math.floor(s / 60) + " min";
+  if (s < 86400) return Math.floor(s / 3600) + " h";
+  return new Date(iso).toLocaleDateString("pt-PT", {day: "numeric", month: "short"});
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+const LOGO = {
+  bluesky: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/></svg>',
+  mastodon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M23.193 7.879c0-5.206-3.411-6.732-3.411-6.732C18.062.357 15.108.025 12.041 0h-.076c-3.068.025-6.02.357-7.74 1.147 0 0-3.411 1.526-3.411 6.732 0 1.192-.023 2.618.015 4.129.124 5.092.934 10.109 5.641 11.355 2.17.574 4.034.695 5.535.612 2.722-.15 4.25-.972 4.25-.972l-.09-1.975s-1.945.613-4.129.539c-2.165-.074-4.04-0.638-4.04-0.638s3.34-1.132 5.05-5.296c1.11-2.74 1.101-5.588 1.088-5.747zm-5.856 5.864h-2.11v-5.46c0-1.127-.474-1.696-1.424-1.696-.653 0-1.071.282-1.288.847-.13.342-.146.815-.146 1.488v3.136h-2.106v-3.136c0-.673-.016-1.146-.146-1.488-.217-.565-.635-.847-1.288-.847-.95 0-1.424.569-1.424 1.696v5.46h-2.11V7.931c0-1.077.275-1.933.826-2.569.566-.636 1.303-.956 2.212-.956 1.055 0 1.852.41 2.376 1.231l.542 1.011.542-1.011c.524-.821 1.321-1.231 2.376-1.231.909 0 1.646.32 2.212.956.551.636.826 1.492.826 2.569z"/></svg>'
+};
+const ICONS = {
+  reply: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  boost: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
+  like: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  thread: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5z"/><path d="M18 9h2a2 2 0 0 1 2 2v7l-3-3h-5a2 2 0 0 1-2-2v-1"/></svg>'
+};
+function netBadge(n) {
+  const s = el("span", "net");
+  s.innerHTML = LOGO[n]; // SVG fixo, não vem das redes
+  s.title = LABEL[n]; s.setAttribute("role", "img"); s.setAttribute("aria-label", LABEL[n]);
+  return s;
+}
+
+function attachVideo(v, src) {
+  if (!src) return;
+  const isHls = src.includes(".m3u8") || src.includes("playlist");
+  if (isHls) {
+    if (v.canPlayType('application/vnd.apple.mpegurl')) {
+      v.src = src;
+    } else if (window.Hls && Hls.isSupported()) {
+      const hls = new Hls({ enableWorker: true });
+      hls.loadSource(src);
+      hls.attachMedia(v);
+      v._hls = hls;
+    } else {
+      v.src = src;
+    }
+  } else {
+    v.src = src;
+  }
+}
+
+function renderMedia(mediaList) {
+  if (!mediaList || !mediaList.length) return null;
+  const m = el("div", "media");
+  for (const x of mediaList) {
+    if (x.type === "video" || x.type === "gifv") {
+      const v = el("video", "post-video");
+      v.controls = true;
+      v.preload = "metadata";
+      v.playsInline = true;
+      if (x.thumb) v.poster = x.thumb;
+      if (x.type === "gifv") {
+        v.autoplay = true;
+        v.loop = true;
+        v.muted = true;
+      }
+      attachVideo(v, x.url);
+      m.append(v);
+    } else if (x.type === "external") {
+      const a = el("a", "ext-card" + (x.thumb ? "" : " no-thumb"));
+      a.href = x.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      if (x.thumb) {
+        const img = el("img"); img.src = x.thumb; img.loading = "lazy"; a.append(img);
+      } else {
+        const ph = el("div", "ext-placeholder");
+        ph.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+        a.append(ph);
+      }
+      const info = el("div", "ext-info");
+      try {
+        const host = new URL(x.url).hostname;
+        if (host) info.append(el("span", "ext-domain", host));
+      } catch (_) {}
+      if (x.title) info.append(el("b", null, x.title));
+      if (x.description) info.append(el("p", null, x.description));
+      a.append(info);
+      m.append(a);
+    } else {
+      const img = el("img");
+      img.src = x.url || x.thumb;
+      img.alt = x.alt || "";
+      img.loading = "lazy";
+      img.onclick = (e) => {
+        e.stopPropagation();
+        window.open(x.url || x.thumb, "_blank");
+      };
+      m.append(img);
+    }
+  }
+  return m;
+}
+
+function renderQuote(q) {
+  if (!q) return null;
+  const card = el("div", "quote-card");
+  const head = el("div", "quote-head");
+  if (q.avatar) {
+    const av = el("img", "quote-av"); av.src = q.avatar; av.loading = "lazy";
+    head.append(av);
+  }
+  const who = el("div", "quote-who");
+  who.append(el("b", null, q.name), el("span", null, " " + q.handle));
+  head.append(who);
+  if (q.time) head.append(el("span", "when", ago(q.time)));
+  card.append(head);
+  if (q.html) {
+    const body = el("div", "quote-body");
+    body.innerHTML = q.html;
+    card.append(body);
+  }
+  if (q.media && q.media.length) {
+    const qm = renderMedia(q.media);
+    if (qm) card.append(qm);
+  }
+  if (q.url) {
+    card.onclick = (e) => {
+      if (e.target.tagName !== "A" && e.target.tagName !== "BUTTON" && e.target.tagName !== "VIDEO" && e.target.tagName !== "IMG") {
+        window.open(q.url, "_blank");
+      }
+    };
+  }
+  return card;
+}
+
+function postCard(it, o = {}) {
+  const p = el("article", "post " + it.network + (o.focus ? " focus" : ""));
+  if (it.boosted_by) p.append(el("div", "boost", "Partilhado por " + it.boosted_by));
+  const head = el("div", "head");
+  if (it.avatar) { const i = el("img"); i.src = it.avatar; i.alt = ""; i.loading = "lazy"; head.append(i); }
+  else head.append(el("div", "ph"));
+  const who = el("div", "who");
+  who.append(el("b", null, it.name), el("span", null, it.handle + " · " + LABEL[it.network]));
+  const when = el("a", "when", ago(it.time));
+  when.href = it.url; when.target = "_blank"; when.rel = "noopener noreferrer";
+  head.append(who, netBadge(it.network), when);
+  const body = el("div", "body");
+  body.innerHTML = it.html; // já limpo no servidor
+  p.append(head);
+  if (it.reply_to && !o.focus) {
+    const r = el("button", "replyto"), rt = it.reply_to;
+    r.title = "Ver conversa";
+    r.append(el("b", null, "↩ Em resposta a " + (rt.name || "uma publicação que não está disponível")));
+    if (rt.text) r.append(el("span", "pv", rt.text));
+    r.onclick = () => openThread(it);
+    p.append(r);
+  }
+  p.append(body);
+  const m = renderMedia(it.media);
+  if (m) p.append(m);
+  if (it.quote) p.append(renderQuote(it.quote));
+  const acts = el("div", "acts");
+  const bR = el("button", "act-btn act-reply");
+  bR.title = "Responder";
+  bR.setAttribute("aria-label", "Responder");
+  bR.innerHTML = ICONS.reply + (it.replies ? '<span>' + it.replies + '</span>' : '');
+  bR.onclick = () => startReply(it);
+
+  const bB = el("button", "act-btn act-boost");
+  bB.title = "Partilhar";
+  bB.setAttribute("aria-label", "Partilhar");
+  bB.innerHTML = ICONS.boost + (it.boosts ? '<span>' + it.boosts + '</span>' : '');
+  bB.onclick = () => act(it, "boost", bB);
+
+  const bL = el("button", "act-btn act-like");
+  bL.title = "Gostar";
+  bL.setAttribute("aria-label", "Gostar");
+  bL.innerHTML = ICONS.like + (it.likes ? '<span>' + it.likes + '</span>' : '');
+  bL.onclick = () => act(it, "like", bL);
+
+  acts.append(bR, bB, bL);
+
+  const hasReplies = Number(it.replies || 0) > 0;
+  const isReply = Boolean(it.is_reply || (it.reply_to && (it.reply_to.name || it.reply_to.text)));
+  const isConversation = hasReplies || isReply;
+
+  if (!o.focus && isConversation) {
+    const bT = el("button", "act-btn act-thread");
+    bT.title = "Ver conversa" + (hasReplies ? " (" + it.replies + " respostas)" : "");
+    bT.setAttribute("aria-label", "Ver conversa");
+    bT.innerHTML = ICONS.thread;
+    bT.onclick = () => openThread(it);
+    acts.append(bT);
+  }
+  p.append(acts);
+  return p;
+}
+
+function render() {
+  const feed = $("feed");
+  feed.replaceChildren();
+  if (!items.length) feed.append(el("div", "empty", "Sem posts para mostrar."));
+  for (const it of items) feed.append(postCard(it));
+}
+
+async function load() {
+  try {
+    const d = await api("/api/timeline");
+    items = d.items; networks = d.networks;
+    if (!networks || networks.length === 0) {
+      openSetup(true);
+      return;
+    }
+    $("errors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
+    buildTargets(); render(); update();
+  } catch (e) {
+    $("errors").replaceChildren(el("div", "banner", "Não consegui falar com o servidor local."));
+  }
+}
+
+async function loadExplore() {
+  try {
+    const d = await api("/api/explore");
+    exploreItems = d.items;
+    $("eerrors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
+    renderExplore();
+  } catch (e) {
+    $("eerrors").replaceChildren(el("div", "banner", "Não consegui falar com o servidor local."));
+  }
+}
+
+function renderExplore() {
+  const feed = $("efeed");
+  feed.replaceChildren();
+  if (!exploreItems.length) feed.append(el("div", "empty", "Sem posts em alta para mostrar."));
+  for (const it of exploreItems) feed.append(postCard(it));
+}
+
+const VERB = {like: "gostou do teu post", boost: "partilhou o teu post", follow: "começou a seguir-te",
+  follow_request: "pediu para te seguir", reply: "respondeu-te", mention: "mencionou-te", quote: "citou o teu post",
+  status: "publicou um post", update: "editou um post", poll: "– uma sondagem terminou", other: "enviou-te uma notificação"};
+const GLYPH = {like: "♥", boost: "⇄", follow: "+", follow_request: "+", reply: "↩", mention: "@", quote: "❝",
+  status: "•", update: "✎", poll: "▤", other: "•"};
+let seenBefore = localStorage.getItem("notifSeen");
+if (!seenBefore) { seenBefore = new Date().toISOString(); localStorage.setItem("notifSeen", seenBefore); }
+
+async function loadNotifs() {
+  try {
+    const d = await api("/api/notifications");
+    notifs = d.items;
+    $("nerrors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
+    renderNotifs();
+  } catch (e) {
+    $("nerrors").replaceChildren(el("div", "banner", "Não consegui falar com o servidor local."));
+  }
+  updateBadge();
+}
+
+function renderNotifs() {
+  const box = $("nfeed");
+  if (notifs === null) return;
+  box.replaceChildren();
+  if (!notifs.length) box.append(el("div", "empty", "Sem notificações."));
+  for (const n of notifs) {
+    const p = el("article", "post notif " + n.network + (n.time > seenBefore ? " fresh" : ""));
+    const head = el("div", "head");
+    const g = el("span", "glyph", GLYPH[n.kind] || "•"); g.setAttribute("aria-hidden", "true");
+    head.append(g);
+    if (n.avatar) { const i = el("img"); i.src = n.avatar; i.alt = ""; i.loading = "lazy"; head.append(i); }
+    else head.append(el("div", "ph"));
+    const who = el("div", "who");
+    who.append(el("b", null, n.name + " " + (VERB[n.kind] || VERB.other)), el("span", null, n.handle + " · " + LABEL[n.network]));
+    const when = el("a", "when", ago(n.time));
+    when.href = n.url; when.target = "_blank"; when.rel = "noopener noreferrer";
+    head.append(who, netBadge(n.network), when);
+    p.append(head);
+    if (n.html) { const b = el("div", "body"); b.innerHTML = n.html; p.append(b); } // já limpo no servidor
+    if (n.ref) {
+      const acts = el("div", "acts");
+      const r = el("button", "act-btn act-reply");
+      r.title = "Responder";
+      r.setAttribute("aria-label", "Responder");
+      r.innerHTML = ICONS.reply;
+      r.onclick = () => startReply(n);
+      acts.append(r);
+      if (n.kind === "reply" || n.kind === "mention" || n.kind === "quote") {
+        const c = el("button", "act-btn act-thread");
+        c.title = "Ver conversa";
+        c.setAttribute("aria-label", "Ver conversa");
+        c.innerHTML = ICONS.thread;
+        c.onclick = () => openThread(n);
+        acts.append(c);
+      }
+      p.append(acts);
+    }
+    box.append(p);
+  }
+}
+
+function updateBadge() {
+  const n = tab === "notifs" ? 0 : (notifs || []).filter(x => x.time > seenBefore).length;
+  $("badge").hidden = !n;
+  $("badge").textContent = n > 99 ? "99+" : n;
+}
+
+function setTab(t) {
+  tab = t;
+  $("pTimeline").hidden = t !== "timeline";
+  $("pExplore").hidden = t !== "explore";
+  $("pNotifs").hidden = t !== "notifs";
+  $("pThread").hidden = true;
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
+  if (t === "notifs") localStorage.setItem("notifSeen", new Date().toISOString());
+  else seenBefore = localStorage.getItem("notifSeen") || seenBefore;
+  if (t === "explore" && !exploreItems.length) loadExplore();
+  renderNotifs(); updateBadge();
+  history.replaceState(null, "", "#" + t);
+}
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+
+let threadIt = null, threadScroll = 0;
+
+async function openThread(it, keep) {
+  const box = $("pThread"), y = window.scrollY;
+  if (box.hidden) threadScroll = y;
+  threadIt = it;
+  $("pTimeline").hidden = true; $("pExplore").hidden = true; $("pNotifs").hidden = true; box.hidden = false;
+  const back = el("button", "ghost back", "← Voltar");
+  back.onclick = closeThread;
+  if (!keep) { box.replaceChildren(back, el("div", "empty", "A carregar conversa…")); window.scrollTo(0, 0); }
+  let d;
+  try { d = await api("/api/thread", {network: it.network, ref: it.ref}); }
+  catch (e) { d = {error: "Não consegui falar com o servidor local."}; }
+  if (threadIt !== it) return; // entretanto saíste desta conversa
+  box.replaceChildren(back);
+  if (d.error) { box.append(el("div", "banner", LABEL[it.network] + ": " + d.error)); return; }
+  if (d.ancestors.length) {
+    const chain = el("div", "chain");
+    d.ancestors.forEach(a => chain.append(postCard(a)));
+    box.append(chain);
+  }
+  const focus = postCard(d.focus, {focus: true});
+  box.append(focus);
+  const kids = (list, depth) => {
+    const w = el("div", depth < 4 ? "kids" : "kids flat");
+    list.forEach(r => { w.append(postCard(r)); if (r.children && r.children.length) w.append(kids(r.children, depth + 1)); });
+    return w;
+  };
+  box.append(d.replies.length ? kids(d.replies, 0) : el("div", "empty", "Ainda sem respostas."));
+  if (keep) window.scrollTo(0, y);
+  else if (d.ancestors.length) focus.scrollIntoView();
+}
+
+function closeThread() {
+  threadIt = null;
+  setTab(tab);
+  window.scrollTo(0, threadScroll);
+}
+
+function buildTargets() {
+  if ($("targets").children.length) return;
+  for (const n of networks) {
+    const l = el("label");
+    const c = el("input"); c.type = "checkbox"; c.checked = true; c.value = n; c.onchange = update;
+    const d = el("span", "dot"); d.style.background = `var(--${n === "bluesky" ? "bsky" : "masto"})`;
+    l.append(c, d, document.createTextNode(LABEL[n]));
+    $("targets").append(l);
+  }
+}
+
+function selected() {
+  return reply ? [reply.network] : [...$("targets").querySelectorAll("input:checked")].map(c => c.value);
+}
+
+async function processImage(file) {
+  if (file.type === "image/gif") {
+    if (file.size > 1000000) {
+      throw new Error("O GIF \"" + file.name + "\" excede o limite de 1 MB.");
+    }
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res({ data: r.result, mime: file.type, alt: "", aspectRatio: null });
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { naturalWidth: w, naturalHeight: h } = img;
+      const maxDim = 2000;
+      let targetW = w, targetH = h;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          targetW = maxDim;
+          targetH = Math.round((h * maxDim) / w);
+        } else {
+          targetH = maxDim;
+          targetW = Math.round((w * maxDim) / h);
+        }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+      let quality = 0.85;
+      let dataUrl = canvas.toDataURL("image/jpeg", quality);
+      if (dataUrl.length > 1300000) {
+        dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      }
+      resolve({
+        data: dataUrl,
+        mime: "image/jpeg",
+        alt: "",
+        aspectRatio: { width: targetW, height: targetH }
+      });
+    };
+    img.onerror = () => reject(new Error("Não foi possível carregar " + file.name));
+    img.src = url;
+  });
+}
+
+function renderPreviews() {
+  const box = $("previews");
+  box.replaceChildren();
+  if (!images.length) {
+    box.hidden = true;
+    $("attachLabel").removeAttribute("disabled");
+    return;
+  }
+  box.hidden = false;
+  if (images.length >= 4) {
+    $("attachLabel").setAttribute("disabled", "true");
+  } else {
+    $("attachLabel").removeAttribute("disabled");
+  }
+  images.forEach((img, idx) => {
+    const card = el("div", "prev-card");
+    const thumb = el("img"); thumb.src = img.data; thumb.alt = "";
+    const rm = el("button", "rm", "✕");
+    rm.title = "Remover imagem";
+    rm.onclick = () => {
+      images.splice(idx, 1);
+      renderPreviews();
+      update();
+    };
+    const inp = el("input");
+    inp.type = "text";
+    inp.placeholder = "Descrição (alt text)...";
+    inp.value = img.alt || "";
+    inp.oninput = () => { img.alt = inp.value; };
+    card.append(thumb, inp, rm);
+    box.append(card);
+  });
+}
+
+$("mediaInput").onchange = async (e) => {
+  const files = Array.from(e.target.files);
+  e.target.value = "";
+  if (!files.length) return;
+  const remaining = 4 - images.length;
+  if (remaining <= 0) return;
+  const toProcess = files.slice(0, remaining);
+  $("msg").className = "msg";
+  $("msg").textContent = "A processar imagens...";
+  try {
+    for (const f of toProcess) {
+      const proc = await processImage(f);
+      images.push(proc);
+    }
+    $("msg").textContent = "";
+  } catch (err) {
+    $("msg").className = "msg err";
+    $("msg").textContent = err.message || "Erro ao processar imagem.";
+  }
+  renderPreviews();
+  update();
+};
+
+function renderCW() {
+  const row = $("cwRow");
+  if (!hasCW) {
+    row.hidden = true;
+    $("cwBtn").classList.remove("on");
+    $("cwInput").value = "";
+    return;
+  }
+  row.hidden = false;
+  $("cwBtn").classList.add("on");
+  $("cwInput").focus();
+}
+
+$("cwBtn").onclick = () => {
+  hasCW = !hasCW;
+  renderCW();
+  update();
+};
+
+$("cwCancel").onclick = () => {
+  hasCW = false;
+  renderCW();
+  update();
+};
+
+$("cwInput").oninput = update;
+
+function renderPoll() {
+  const box = $("pollBox");
+  if (!hasPoll) {
+    box.hidden = true;
+    $("pollBtn").classList.remove("on");
+    return;
+  }
+  box.hidden = false;
+  $("pollBtn").classList.add("on");
+  const list = $("pollList");
+  list.replaceChildren();
+  pollOptions.forEach((opt, idx) => {
+    const row = el("div", "poll-opt-row");
+    const inp = el("input");
+    inp.type = "text";
+    inp.placeholder = "Opção " + (idx + 1);
+    inp.value = opt;
+    inp.maxLength = 50;
+    inp.oninput = (e) => {
+      pollOptions[idx] = e.target.value;
+      update();
+    };
+    row.append(inp);
+    if (pollOptions.length > 2) {
+      const rm = el("button", "rm-sm", "✕");
+      rm.type = "button";
+      rm.title = "Remover opção";
+      rm.onclick = () => {
+        pollOptions.splice(idx, 1);
+        renderPoll();
+        update();
+      };
+      row.append(rm);
+    }
+    list.append(row);
+  });
+  $("addOptionBtn").disabled = pollOptions.length >= 4;
+}
+
+$("pollBtn").onclick = () => {
+  if (images.length > 0) return;
+  hasPoll = !hasPoll;
+  if (hasPoll && pollOptions.length < 2) pollOptions = ["", ""];
+  renderPoll();
+  update();
+  if (hasPoll) {
+    const firstInp = $("pollList").querySelector("input");
+    if (firstInp) firstInp.focus();
+  }
+};
+
+$("pollCancel").onclick = () => {
+  hasPoll = false;
+  pollOptions = ["", ""];
+  renderPoll();
+  update();
+};
+
+$("addOptionBtn").onclick = () => {
+  if (pollOptions.length < 4) {
+    pollOptions.push("");
+    renderPoll();
+    const inps = $("pollList").querySelectorAll("input");
+    if (inps.length) inps[inps.length - 1].focus();
+    update();
+  }
+};
+
+$("pollDuration").onchange = update;
+
+function update() {
+  const t = selected();
+  const text = $("text").value;
+  const lenText = [...text].length;
+
+  let extraBskyLen = 0;
+  const cwVal = hasCW ? $("cwInput").value.trim() : "";
+  if (cwVal) {
+    extraBskyLen += [..."⚠️ [CW: " + cwVal + "]\n\n"].length;
+  }
+  const filledOpts = hasPoll ? pollOptions.map(o => o.trim()).filter(Boolean) : [];
+  if (hasPoll && filledOpts.length) {
+    extraBskyLen += [..."\n\n📊 Sondagem (1d):"].length;
+    for (let i = 0; i < filledOpts.length; i++) {
+      extraBskyLen += [..."\n" + (i + 1) + "️⃣ " + filledOpts[i]].length;
+    }
+  }
+
+  const limit = t.length ? Math.min(...t.map(n => LIMITS[n])) : 300;
+  const effectiveLen = (t.includes("bluesky") ? lenText + extraBskyLen : lenText);
+
+  $("count").textContent = effectiveLen + " / " + limit;
+  $("count").classList.toggle("over", effectiveLen > limit);
+
+  // Exclusividade mútua entre Sondagem e Imagens
+  if (images.length > 0) {
+    $("pollBtn").setAttribute("disabled", "true");
+    $("pollBtn").title = "Não é possível ter imagens e sondagem no mesmo post.";
+  } else {
+    $("pollBtn").removeAttribute("disabled");
+    $("pollBtn").title = "Criar sondagem";
+  }
+
+  if (hasPoll) {
+    $("attachLabel").setAttribute("disabled", "true");
+    $("attachLabel").title = "Não é possível ter sondagem e imagens no mesmo post.";
+  } else if (images.length >= 4) {
+    $("attachLabel").setAttribute("disabled", "true");
+    $("attachLabel").title = "Máximo de 4 imagens.";
+  } else {
+    $("attachLabel").removeAttribute("disabled");
+    $("attachLabel").title = "Anexar imagens (máx. 4)";
+  }
+
+  const pollValid = !hasPoll || filledOpts.length >= 2;
+  const hasContent = lenText > 0 || images.length > 0 || (hasPoll && filledOpts.length >= 2);
+
+  $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !t.length;
+  $("targets").style.display = reply ? "none" : "flex";
+}
+
+function startReply(it) {
+  reply = {network: it.network, ref: it.ref};
+  $("replying").hidden = false;
+  $("replyingTo").textContent = "A responder a " + it.name + " no " + LABEL[it.network];
+  $("text").focus(); update();
+}
+
+$("cancelReply").onclick = () => { reply = null; $("replying").hidden = true; update(); };
+$("text").oninput = update;
+$("refresh").onclick = async () => {
+  $("refresh").disabled = true;
+  const tasks = [load(), loadNotifs()];
+  if (tab === "explore" || exploreItems.length) tasks.push(loadExplore());
+  await Promise.all(tasks);
+  $("refresh").disabled = false;
+};
+
+$("send").onclick = async () => {
+  $("send").disabled = true;
+  const spoiler = hasCW ? $("cwInput").value.trim() : null;
+  const poll = hasPoll ? {
+    options: pollOptions.map(o => o.trim()).filter(Boolean),
+    expires_in: parseInt($("pollDuration").value, 10)
+  } : null;
+
+  const body = reply
+    ? {text: $("text").value, reply, images, spoiler, poll}
+    : {text: $("text").value, targets: selected(), images, spoiler, poll};
+
+  const res = await api("/api/post", body);
+  const bad = Object.entries(res).filter(([, v]) => v !== "ok");
+  const msg = $("msg");
+  if (bad.length) {
+    msg.className = "msg err";
+    msg.textContent = "Falhou: " + bad.map(([n, v]) => LABEL[n] + " (" + v + ")").join("; ");
+  } else {
+    msg.className = "msg"; msg.textContent = "Publicado.";
+    $("text").value = ""; images = []; renderPreviews();
+    hasCW = false; renderCW();
+    hasPoll = false; pollOptions = ["", ""]; renderPoll();
+    reply = null; $("replying").hidden = true;
+    setTimeout(load, 1200);
+    if (!$("pThread").hidden && threadIt) setTimeout(() => openThread(threadIt, true), 1500);
+  }
+  update();
+};
+
+async function act(it, action, btn) {
+  const r = await api("/api/action", {network: it.network, action, ref: it.ref});
+  if (r.ok) {
+    btn.classList.add("on");
+    const span = btn.querySelector("span");
+    if (span) {
+      const cur = parseInt(span.textContent, 10) || 0;
+      span.textContent = cur + 1;
+    } else {
+      const s = el("span", null, "1");
+      btn.append(s);
+    }
+    btn.title = action === "like" ? "Gostaste" : "Partilhado";
+  } else {
+    $("msg").className = "msg err";
+    $("msg").textContent = "Falhou: " + r.error;
+  }
+}
+
+async function openSetup(mandatory = false) {
+  $("setupOverlay").hidden = false;
+  $("closeSetup").hidden = mandatory;
+  $("setupMsg").textContent = "";
+  $("setupMsg").className = "msg";
+  try {
+    const s = await api("/api/status");
+    if (s.bluesky && s.bluesky.handle) $("cfgBskyHandle").value = s.bluesky.handle;
+    if (s.mastodon && s.mastodon.instance) $("cfgMastoInst").value = s.mastodon.instance;
+  } catch (_) {}
+}
+
+function closeSetup() {
+  $("setupOverlay").hidden = true;
+}
+
+$("settingsBtn").onclick = () => openSetup(false);
+$("closeSetup").onclick = closeSetup;
+
+$("saveSetupBtn").onclick = async () => {
+  const bskyHandle = $("cfgBskyHandle").value.trim();
+  const bskyPass = $("cfgBskyPass").value.trim();
+  const mastoInst = $("cfgMastoInst").value.trim();
+  const mastoToken = $("cfgMastoToken").value.trim();
+
+  if (!bskyHandle && !bskyPass && !mastoInst && !mastoToken) {
+    $("setupMsg").className = "msg err";
+    $("setupMsg").textContent = "Preenche as credenciais de pelo menos uma rede.";
+    return;
+  }
+
+  const payload = {};
+  if (bskyHandle || bskyPass) {
+    payload.bluesky = { handle: bskyHandle, app_password: bskyPass };
+  }
+  if (mastoInst || mastoToken) {
+    payload.mastodon = { instance: mastoInst, token: mastoToken };
+  }
+
+  $("saveSetupBtn").disabled = true;
+  $("setupMsg").className = "msg";
+  $("setupMsg").textContent = "A validar e a guardar...";
+
+  try {
+    const res = await api("/api/setup", payload);
+    if (res.ok) {
+      $("setupMsg").textContent = "Guardado com sucesso!";
+      setTimeout(() => {
+        closeSetup();
+        $("saveSetupBtn").disabled = false;
+        load();
+        loadNotifs();
+      }, 600);
+    } else {
+      $("saveSetupBtn").disabled = false;
+      $("setupMsg").className = "msg err";
+      $("setupMsg").textContent = "Erro: " + (res.error || "Não foi possível guardar.");
+    }
+  } catch (e) {
+    $("saveSetupBtn").disabled = false;
+    $("setupMsg").className = "msg err";
+    $("setupMsg").textContent = "Erro de ligação ao servidor local.";
+  }
+};
+
+const initTab = location.hash === "#notifs" ? "notifs" : (location.hash === "#explore" ? "explore" : "timeline");
+setTab(initTab);
+load();
+loadNotifs();
+if (initTab === "explore") loadExplore();
+setInterval(() => {
+  load();
+  loadNotifs();
+  if (tab === "explore") loadExplore();
+}, 120000);
+</script>
+</body>
+</html>
