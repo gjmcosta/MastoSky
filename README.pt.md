@@ -45,12 +45,18 @@ cd MastoSky
 ```
 
 ### 2. Iniciar a aplicação
-```bash
-python3 app.py
-```
+
+Escolhe a forma que preferires para iniciar o MastoSky:
+
+* **🍎 macOS:** Dá duplo clique em **`MastoSky.command`** (inicia o servidor e abre o teu browser automaticamente).
+* **🪟 Windows:** Dá duplo clique em **`MastoSky.bat`** (inicia o servidor e abre o teu browser automaticamente).
+* **💻 Linha de comandos (qualquer sistema):**
+  ```bash
+  python3 app.py
+  ```
 
 ### 3. Abrir no Browser
-Acede a:
+Se o browser não abrir automaticamente, acede a:  
 👉 **[http://127.0.0.1:8000](http://127.0.0.1:8000)**
 
 Se for a primeira vez que abres a ferramenta, surge automaticamente o **ecrã de configuração** para introduzires as tuas credenciais do Bluesky e/ou do Mastodon.
@@ -79,11 +85,15 @@ Se for a primeira vez que abres a ferramenta, surge automaticamente o **ecrã de
 
 ```text
 MastoSky/
+├── MastoSky.command    # Launcher de 1 clique para macOS
+├── MastoSky.bat        # Launcher de 1 clique para Windows
 ├── app.py              # Servidor HTTP local e clientes de API (ATProto / ActivityPub)
 ├── index.html          # Interface de utilizador completa (HTML, CSS e JavaScript vanilla)
 ├── config.example.json # Modelo de configuração de exemplo
 ├── .gitignore          # Bloqueio de segurança para credenciais e ficheiros temporários
-└── README.md           # Documentação
+├── README.md           # Documentação (Inglês)
+├── README.pt.md        # Documentação (Português)
+└── LICENSE             # Licença MIT
 ```
 
 ---
@@ -97,3 +107,4 @@ O ficheiro com as tuas credenciais pessoais (`config.json`) está protegido pelo
 ## 📄 Licença
 
 Este projeto é de código aberto sob a licença [MIT](LICENSE).
+

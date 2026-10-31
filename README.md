@@ -45,12 +45,18 @@ cd MastoSky
 ```
 
 ### 2. Start the application
-```bash
-python3 app.py
-```
+
+Choose your preferred way to launch MastoSky:
+
+* **🍎 macOS:** Double-click **`MastoSky.command`** (launches the server and automatically opens your browser).
+* **🪟 Windows:** Double-click **`MastoSky.bat`** (launches the server and automatically opens your browser).
+* **💻 Terminal (any OS):**
+  ```bash
+  python3 app.py
+  ```
 
 ### 3. Open in your browser
-Navigate to:
+If it doesn't open automatically, navigate to:  
 👉 **[http://127.0.0.1:8000](http://127.0.0.1:8000)**
 
 On your first launch, a friendly **Setup Window** will automatically appear to let you enter your Bluesky and/or Mastodon credentials right in the browser UI.
@@ -79,6 +85,8 @@ On your first launch, a friendly **Setup Window** will automatically appear to l
 
 ```text
 MastoSky/
+├── MastoSky.command    # 1-Click launcher for macOS
+├── MastoSky.bat        # 1-Click launcher for Windows
 ├── app.py              # Local HTTP server and API clients (ATProto / ActivityPub)
 ├── index.html          # Complete single-page UI (vanilla HTML, CSS, JavaScript)
 ├── config.example.json # Configuration template
