@@ -156,6 +156,27 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .thread-rm-btn:hover{background:color-mix(in srgb,var(--danger) 20%,transparent);color:var(--danger)}
 .thread-textarea{width:100%;min-height:68px;border:0;background:none;color:var(--ink);font:14.5px/1.45 var(--sans);resize:vertical;outline:none}
 .thread-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent);padding-top:6px}
+.drafts-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;font-size:10px;font-weight:700;line-height:1;min-width:16px;height:16px;padding:0 4px;border-radius:8px;margin-left:2px}
+.draft-indicator{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);user-select:none;margin-right:2px}
+.draft-indicator-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 5px var(--accent)}
+.draft-discard-link{border:0;background:none;color:var(--muted);cursor:pointer;padding:0 2px;font-size:11px;border-radius:4px;line-height:1;margin-left:2px}
+.draft-discard-link:hover{color:var(--danger)}
+.drafts-box{max-width:580px;width:100%;max-height:85vh;display:flex;flex-direction:column}
+.drafts-top-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.drafts-count-info{font-size:12px;color:var(--muted);font-weight:500}
+.drafts-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:4px;max-height:55vh}
+.draft-card{background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s,background-color .15s}
+.draft-card:hover{border-color:var(--accent);background:color-mix(in srgb,var(--surface-2) 60%,var(--surface-1))}
+.draft-header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.draft-time{font-size:11.5px;color:var(--muted);font-weight:500}
+.draft-tags{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.draft-pill{font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--surface-2);color:var(--ink);border:1px solid var(--line)}
+.draft-pill.pill-net{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,var(--line))}
+.draft-body{font-size:13.5px;color:var(--ink);line-height:1.45;white-space:pre-wrap;word-break:break-word;max-height:80px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.draft-body.empty-text{font-style:italic;color:var(--muted)}
+.draft-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:4px;padding-top:6px;border-top:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
+.drafts-empty{text-align:center;padding:36px 16px;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.drafts-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
 .search-box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
 .search-input-wrap{display:flex;align-items:center;gap:8px;background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:4px 8px 4px 12px;transition:border-color .15s}
 .search-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
@@ -677,6 +698,7 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-thread" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="1.75" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-draft" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="9" x2="8" y2="9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -801,6 +823,10 @@ body:not(.view-deck) .deck-col-body {
             <button type="button" class="tool" id="cwBtn" title="Aviso de conteúdo / Spoiler" data-i18n-title="composer.spoiler_title" aria-label="Aviso de conteúdo / Spoiler" aria-pressed="false">
               <svg class="ico"><use href="#i-cw"/></svg>
             </button>
+            <button type="button" class="tool" id="draftsBtn" title="Rascunhos" data-i18n-title="drafts.btn_title" aria-label="Rascunhos">
+              <svg class="ico"><use href="#i-draft"/></svg>
+              <span id="draftsBadge" class="drafts-badge" hidden>0</span>
+            </button>
             <button type="button" class="tool tool--network" id="netToggleBtn" title="Rede onde publicar" data-i18n-title="composer.net_target_title" aria-label="Rede onde publicar">
               <svg class="ico" id="netToggleIcon"><use href="#i-net-both"/></svg>
               <span id="netToggleText" class="tool-label">Ambas</span>
@@ -819,6 +845,11 @@ body:not(.view-deck) .deck-col-body {
           </select>
         </div>
         <div class="bar-right">
+          <span class="draft-indicator" id="draftIndicator" title="Rascunho em curso guardado" data-i18n-title="drafts.draft_saved_tip" hidden>
+            <span class="draft-indicator-dot"></span>
+            <span class="draft-indicator-text" data-i18n="drafts.draft_saved">Guardado</span>
+            <button type="button" class="draft-discard-link" id="discardComposerBtn" title="Descartar rascunho" data-i18n-title="drafts.discard">✕</button>
+          </span>
           <span class="count" id="count"></span>
           <button class="send" id="send" disabled data-i18n="composer.send">Publicar</button>
         </div>
@@ -1125,6 +1156,32 @@ body:not(.view-deck) .deck-col-body {
     </div>
   </div>
 
+  <div id="draftsOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="draftsModalTitle">
+    <div class="setup-box drafts-box">
+      <div class="setup-header">
+        <h2 id="draftsModalTitle" style="display:inline-flex;align-items:center;gap:8px">
+          <svg class="ico" style="width:20px;height:20px"><use href="#i-draft"/></svg>
+          <span data-i18n="drafts.title">Rascunhos</span>
+        </h2>
+        <button type="button" class="rm-sm" id="closeDrafts" title="Fechar (Esc)">✕</button>
+      </div>
+      <p class="setup-desc" data-i18n="drafts.desc">Os teus rascunhos são guardados localmente no teu navegador e nunca saem do teu computador.</p>
+
+      <div class="drafts-top-bar">
+        <button type="button" class="send-sm" id="saveCurrentDraftBtn" data-i18n="drafts.save_current">+ Guardar rascunho atual</button>
+        <span id="draftsCountText" class="drafts-count-info">0 rascunhos</span>
+      </div>
+
+      <div id="draftsMsg" class="msg"></div>
+
+      <div id="draftsList" class="drafts-list"></div>
+
+      <div class="drafts-foot" id="draftsFoot" hidden>
+        <button type="button" class="ghost-sm" id="clearAllDraftsBtn" style="color:var(--danger)" data-i18n="drafts.clear_all">Eliminar todos os rascunhos</button>
+      </div>
+    </div>
+  </div>
+
   <div id="imageLightbox" class="lightbox-overlay" hidden role="dialog" aria-modal="true" aria-label="Pré-visualização de imagem">
     <div class="lightbox-backdrop" onclick="closeImageLightbox()"></div>
     <div class="lightbox-container">
@@ -1266,6 +1323,38 @@ const I18N = {
       empty_results: "Nenhum resultado encontrado para \"{q}\".",
       searching: "A pesquisar nas redes...",
       err_search: "Erro na pesquisa: {err}"
+    },
+    drafts: {
+      title: "Rascunhos",
+      desc: "Os teus rascunhos são guardados localmente no teu navegador e nunca saem do teu computador.",
+      btn_title: "Ver e gerir rascunhos",
+      save_current: "+ Guardar rascunho atual",
+      saved_success: "Rascunho guardado com sucesso!",
+      save_empty_err: "O compositor está vazio; nada para guardar.",
+      count_one: "1 rascunho",
+      count_many: "{n} rascunhos",
+      empty: "Não tens nenhum rascunho guardado.",
+      empty_tip: "Podes guardar ideias, textos ou fios para continuar a editar e publicar mais tarde.",
+      load_btn: "Carregar",
+      load_confirm: "Substituir o conteúdo atual do compositor por este rascunho?",
+      loaded: "Rascunho carregado no compositor.",
+      del_btn: "Eliminar",
+      del_title: "Eliminar rascunho",
+      del_confirm: "Eliminar este rascunho?",
+      clear_all: "Eliminar todos os rascunhos",
+      clear_all_confirm: "Tens a certeza que queres eliminar TODOS os rascunhos guardados?",
+      autosave_restored: "Rascunho restaurado",
+      discard: "Descartar rascunho",
+      discard_confirm: "Tens a certeza que queres descartar o texto e anexos atuais?",
+      draft_saved: "Guardado",
+      draft_saved_tip: "Rascunho em curso guardado automaticamente",
+      tag_thread: "🧵 Fio ({n})",
+      tag_images: "🖼️ {n}",
+      tag_poll: "📊 Sondagem",
+      tag_cw: "⚠️ CW",
+      tag_quote: "🔁 Citação",
+      tag_reply: "💬 Resposta",
+      quota_err: "Limite de armazenamento atingido. Elimina rascunhos antigos."
     },
     actions: {
       reply: "Responder",
@@ -1525,6 +1614,38 @@ const I18N = {
       empty_results: "No results found for \"{q}\".",
       searching: "Searching networks...",
       err_search: "Search error: {err}"
+    },
+    drafts: {
+      title: "Drafts",
+      desc: "Your drafts are stored locally in your browser and never leave your machine.",
+      btn_title: "View and manage drafts",
+      save_current: "+ Save current draft",
+      saved_success: "Draft saved successfully!",
+      save_empty_err: "Composer is empty; nothing to save.",
+      count_one: "1 draft",
+      count_many: "{n} drafts",
+      empty: "No saved drafts yet.",
+      empty_tip: "Save post ideas, threads, or attachments to finish and publish later.",
+      load_btn: "Load",
+      load_confirm: "Replace current composer content with this draft?",
+      loaded: "Draft loaded into composer.",
+      del_btn: "Delete",
+      del_title: "Delete draft",
+      del_confirm: "Delete this draft?",
+      clear_all: "Delete all drafts",
+      clear_all_confirm: "Are you sure you want to delete ALL saved drafts?",
+      autosave_restored: "Draft restored",
+      discard: "Discard draft",
+      discard_confirm: "Are you sure you want to discard current text and attachments?",
+      draft_saved: "Saved",
+      draft_saved_tip: "In-progress draft saved automatically",
+      tag_thread: "🧵 Thread ({n})",
+      tag_images: "🖼️ {n}",
+      tag_poll: "📊 Poll",
+      tag_cw: "⚠️ CW",
+      tag_quote: "🔁 Quote",
+      tag_reply: "💬 Reply",
+      quota_err: "Storage limit reached. Delete older drafts."
     },
     actions: {
       reply: "Reply",
@@ -2023,6 +2144,12 @@ function closeImageLightbox() {
 }
 
 window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if ($("draftsOverlay") && !$("draftsOverlay").hidden) {
+      closeDraftsModal();
+      return;
+    }
+  }
   const overlay = $("imageLightbox");
   if (!overlay || overlay.hidden) return;
   if (e.key === "Escape") {
@@ -4059,6 +4186,7 @@ function update() {
   updateVisToggleUI();
 
   $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !targets.length || !threadValid;
+  scheduleAutoSave();
 }
 
 function startQuote(it, onlyNative = false) {
@@ -4112,6 +4240,424 @@ function renderQuoteBox() {
 }
 
 $("cancelQuote").onclick = cancelQuote;
+
+// --- SISTEMA DE RASCUNHOS (DRAFTS) ---
+
+let autoSaveTimer = null;
+function scheduleAutoSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    saveAutoDraft();
+  }, 400);
+}
+
+function getComposerState() {
+  const txt = ($("text") ? $("text").value : "").trim();
+  const cw = ($("cwInput") ? $("cwInput").value : "").trim();
+  const hasContent = txt.length > 0 ||
+    images.length > 0 ||
+    (hasPoll && pollOptions.some(o => o.trim().length > 0)) ||
+    cw.length > 0 ||
+    threadPosts.some(p => (p.text || "").trim().length > 0 || (p.images && p.images.length > 0)) ||
+    Boolean(reply) ||
+    Boolean(quote);
+
+  if (!hasContent) return null;
+
+  return {
+    text: $("text") ? $("text").value : "",
+    targets: selected(),
+    visibility: $("mastoVisibility") ? $("mastoVisibility").value : "public",
+    hasCW: Boolean(hasCW),
+    cwText: $("cwInput") ? $("cwInput").value : "",
+    hasPoll: Boolean(hasPoll),
+    pollOptions: [...pollOptions],
+    pollDuration: $("pollDuration") ? $("pollDuration").value : "86400",
+    images: images.map(img => ({ data: img.data, mime: img.mime, alt: img.alt || "", aspectRatio: img.aspectRatio })),
+    threadPosts: threadPosts.map(p => ({
+      text: p.text || "",
+      images: (p.images || []).map(img => ({ data: img.data, mime: img.mime, alt: img.alt || "", aspectRatio: img.aspectRatio }))
+    })),
+    reply: reply ? { ...reply } : null,
+    quote: quote ? { ...quote } : null,
+    updatedAt: Date.now()
+  };
+}
+
+function saveAutoDraft() {
+  const state = getComposerState();
+  const ind = $("draftIndicator");
+  if (!state) {
+    try { localStorage.removeItem("mastosky_autosave"); } catch (_) {}
+    if (ind) ind.hidden = true;
+    return;
+  }
+  try {
+    localStorage.setItem("mastosky_autosave", JSON.stringify(state));
+    if (ind) {
+      ind.hidden = false;
+      const txt = ind.querySelector(".draft-indicator-text");
+      if (txt) txt.textContent = t("drafts.draft_saved") || "Guardado";
+    }
+  } catch (err) {
+    if (err.name === "QuotaExceededError" || err.code === 22) {
+      try {
+        const lightweight = {
+          ...state,
+          images: [],
+          threadPosts: state.threadPosts.map(p => ({ ...p, images: [] }))
+        };
+        localStorage.setItem("mastosky_autosave", JSON.stringify(lightweight));
+        if (ind) ind.hidden = false;
+      } catch (_) {}
+    }
+  }
+}
+
+function checkAndRestoreAutoDraft() {
+  try {
+    const raw = localStorage.getItem("mastosky_autosave");
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    if (!draft) return;
+
+    const curText = ($("text") ? $("text").value : "").trim();
+    if (!curText && !images.length && !threadPosts.length) {
+      loadDraftIntoComposer(draft, false);
+      const ind = $("draftIndicator");
+      if (ind) {
+        ind.hidden = false;
+        const txt = ind.querySelector(".draft-indicator-text");
+        if (txt) txt.textContent = t("drafts.autosave_restored") || "Rascunho restaurado";
+      }
+    }
+  } catch (_) {}
+}
+
+function getSavedDrafts() {
+  try {
+    const raw = localStorage.getItem("mastosky_drafts");
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function persistSavedDrafts(drafts) {
+  try {
+    localStorage.setItem("mastosky_drafts", JSON.stringify(drafts));
+    updateDraftsBadge();
+    return true;
+  } catch (err) {
+    if (err.name === "QuotaExceededError" || err.code === 22) {
+      alert(t("drafts.quota_err") || "Limite de armazenamento atingido. Elimina rascunhos antigos.");
+    }
+    return false;
+  }
+}
+
+function updateDraftsBadge() {
+  const drafts = getSavedDrafts();
+  const badge = $("draftsBadge");
+  if (!badge) return;
+  if (drafts.length > 0) {
+    badge.textContent = drafts.length > 99 ? "99+" : drafts.length;
+    badge.hidden = false;
+  } else {
+    badge.hidden = true;
+  }
+}
+
+function saveCurrentComposerToDrafts() {
+  const state = getComposerState();
+  const msg = $("draftsMsg");
+  if (!state) {
+    if (msg) {
+      msg.className = "msg err";
+      msg.textContent = t("drafts.save_empty_err");
+      setTimeout(() => { if (msg.textContent === t("drafts.save_empty_err")) msg.textContent = ""; }, 3000);
+    }
+    return false;
+  }
+  const drafts = getSavedDrafts();
+  const entry = {
+    ...state,
+    id: "draft_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6)
+  };
+  drafts.unshift(entry);
+  if (persistSavedDrafts(drafts)) {
+    renderDraftsList();
+    if (msg) {
+      msg.className = "msg";
+      msg.textContent = t("drafts.saved_success");
+      setTimeout(() => { if (msg.textContent === t("drafts.saved_success")) msg.textContent = ""; }, 3000);
+    }
+    return true;
+  }
+  return false;
+}
+
+function loadDraftFromLibrary(id) {
+  const drafts = getSavedDrafts();
+  const draft = drafts.find(d => d.id === id);
+  if (!draft) return;
+
+  const curState = getComposerState();
+  if (curState) {
+    if (!confirm(t("drafts.load_confirm") || "Substituir o conteúdo atual do compositor por este rascunho?")) {
+      return;
+    }
+  }
+
+  loadDraftIntoComposer(draft, true);
+  closeDraftsModal();
+
+  $("msg").className = "msg";
+  $("msg").textContent = t("drafts.loaded") || "Rascunho carregado no compositor.";
+  setTimeout(() => { if ($("msg").textContent === t("drafts.loaded")) $("msg").textContent = ""; }, 3500);
+}
+
+function loadDraftIntoComposer(draft, fromLibrary = false) {
+  if (!draft) return;
+
+  $("text").value = draft.text || "";
+
+  if (draft.targets && draft.targets.length && $("targetSelect")) {
+    if (draft.targets.includes("bluesky") && draft.targets.includes("mastodon")) $("targetSelect").value = "all";
+    else if (draft.targets.includes("bluesky")) $("targetSelect").value = "bluesky";
+    else if (draft.targets.includes("mastodon")) $("targetSelect").value = "mastodon";
+    updateNetToggleUI();
+  }
+
+  images = Array.isArray(draft.images) ? draft.images.map(img => ({ ...img })) : [];
+  renderPreviews();
+
+  hasCW = Boolean(draft.hasCW);
+  if ($("cwInput")) $("cwInput").value = draft.cwText || "";
+  renderCW();
+
+  hasPoll = Boolean(draft.hasPoll);
+  pollOptions = Array.isArray(draft.pollOptions) && draft.pollOptions.length >= 2 ? [...draft.pollOptions] : ["", ""];
+  if ($("pollDuration") && draft.pollDuration) $("pollDuration").value = draft.pollDuration;
+  renderPoll();
+
+  if ($("mastoVisibility") && draft.visibility) {
+    $("mastoVisibility").value = draft.visibility;
+    updateVisToggleUI();
+  }
+
+  threadPosts = Array.isArray(draft.threadPosts) ? draft.threadPosts.map(p => ({
+    id: nextThreadId++,
+    text: p.text || "",
+    images: Array.isArray(p.images) ? [...p.images] : []
+  })) : [];
+  renderThreadPosts();
+
+  reply = draft.reply || null;
+  if (reply) {
+    $("replying").hidden = false;
+    $("replyingTo").textContent = t("composer.replying_to", {name: reply.name || reply.handle, net: LABEL[reply.network] || ""});
+  } else {
+    $("replying").hidden = true;
+  }
+
+  quote = draft.quote || null;
+  renderQuoteBox();
+
+  update();
+  saveAutoDraft();
+}
+
+function deleteDraftFromLibrary(id) {
+  const drafts = getSavedDrafts().filter(d => d.id !== id);
+  persistSavedDrafts(drafts);
+  renderDraftsList();
+}
+
+function clearAllDrafts() {
+  if (!confirm(t("drafts.clear_all_confirm") || "Tens a certeza que queres eliminar TODOS os rascunhos guardados?")) {
+    return;
+  }
+  persistSavedDrafts([]);
+  renderDraftsList();
+}
+
+function discardCurrentComposer() {
+  const curState = getComposerState();
+  if (curState) {
+    if (!confirm(t("drafts.discard_confirm") || "Tens a certeza que queres descartar o texto e anexos atuais?")) {
+      return;
+    }
+  }
+  $("text").value = "";
+  images = [];
+  renderPreviews();
+  threadPosts = [];
+  renderThreadPosts();
+  hasCW = false;
+  renderCW();
+  hasPoll = false;
+  pollOptions = ["", ""];
+  renderPoll();
+  reply = null;
+  $("replying").hidden = true;
+  quote = null;
+  renderQuoteBox();
+  try {
+    localStorage.removeItem("mastosky_autosave");
+  } catch (_) {}
+  const ind = $("draftIndicator");
+  if (ind) ind.hidden = true;
+  update();
+}
+
+function openDraftsModal() {
+  const overlay = $("draftsOverlay");
+  if (!overlay) return;
+  const msg = $("draftsMsg");
+  if (msg) msg.textContent = "";
+  renderDraftsList();
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeDraftsModal() {
+  const overlay = $("draftsOverlay");
+  if (!overlay) return;
+  overlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+function renderDraftsList() {
+  const list = $("draftsList");
+  const countText = $("draftsCountText");
+  const foot = $("draftsFoot");
+  if (!list) return;
+
+  const drafts = getSavedDrafts();
+  updateDraftsBadge();
+
+  if (countText) {
+    countText.textContent = drafts.length === 1
+      ? t("drafts.count_one")
+      : t("drafts.count_many", { n: drafts.length });
+  }
+
+  if (foot) {
+    foot.hidden = drafts.length < 2;
+  }
+
+  list.replaceChildren();
+
+  if (!drafts.length) {
+    const empty = el("div", "drafts-empty");
+    empty.innerHTML = `
+      <svg class="ico" style="width:36px;height:36px;opacity:0.4"><use href="#i-draft"/></svg>
+      <div><b>${t("drafts.empty")}</b></div>
+      <div style="font-size:12.5px;max-width:340px">${t("drafts.empty_tip")}</div>
+    `;
+    list.append(empty);
+    return;
+  }
+
+  drafts.forEach(draft => {
+    const card = el("div", "draft-card");
+
+    const head = el("div", "draft-header");
+    const time = el("span", "draft-time");
+    time.textContent = draft.updatedAt ? ago(new Date(draft.updatedAt).toISOString()) : "";
+
+    const tags = el("div", "draft-tags");
+
+    if (draft.targets && draft.targets.length) {
+      const netPill = el("span", "draft-pill pill-net");
+      if (draft.targets.includes("bluesky") && draft.targets.includes("mastodon")) {
+        netPill.textContent = "🌐 " + t("composer.net_badge_both");
+      } else if (draft.targets.includes("bluesky")) {
+        netPill.textContent = "🦋 Bluesky";
+      } else if (draft.targets.includes("mastodon")) {
+        netPill.textContent = "🐘 Mastodon";
+      }
+      tags.append(netPill);
+    }
+
+    if (draft.threadPosts && draft.threadPosts.length) {
+      const p = el("span", "draft-pill");
+      p.textContent = t("drafts.tag_thread", { n: draft.threadPosts.length + 1 });
+      tags.append(p);
+    }
+    if (draft.images && draft.images.length) {
+      const p = el("span", "draft-pill");
+      p.textContent = t("drafts.tag_images", { n: draft.images.length });
+      tags.append(p);
+    }
+    if (draft.hasPoll) {
+      const p = el("span", "draft-pill");
+      p.textContent = t("drafts.tag_poll");
+      tags.append(p);
+    }
+    if (draft.hasCW) {
+      const p = el("span", "draft-pill");
+      p.textContent = t("drafts.tag_cw");
+      tags.append(p);
+    }
+    if (draft.quote) {
+      const p = el("span", "draft-pill");
+      p.textContent = t("drafts.tag_quote");
+      tags.append(p);
+    }
+    if (draft.reply) {
+      const p = el("span", "draft-pill");
+      p.textContent = t("drafts.tag_reply");
+      tags.append(p);
+    }
+
+    head.append(time, tags);
+
+    const body = el("div", "draft-body");
+    const txt = (draft.text || "").trim();
+    if (txt) {
+      body.textContent = txt;
+    } else if (draft.threadPosts && draft.threadPosts.some(p => (p.text || "").trim())) {
+      const firstThreadTxt = draft.threadPosts.find(p => (p.text || "").trim())?.text || "";
+      body.textContent = firstThreadTxt;
+    } else {
+      body.classList.add("empty-text");
+      body.textContent = t("composer.no_text");
+    }
+
+    const acts = el("div", "draft-actions");
+    const loadBtn = el("button", "send-sm");
+    loadBtn.type = "button";
+    loadBtn.textContent = t("drafts.load_btn");
+    loadBtn.onclick = () => loadDraftFromLibrary(draft.id);
+
+    const delBtn = el("button", "rm-sm");
+    delBtn.type = "button";
+    delBtn.title = t("drafts.del_title");
+    delBtn.textContent = "🗑️";
+    delBtn.onclick = () => {
+      if (confirm(t("drafts.del_confirm"))) {
+        deleteDraftFromLibrary(draft.id);
+      }
+    };
+
+    acts.append(delBtn, loadBtn);
+    card.append(head, body, acts);
+    list.append(card);
+  });
+}
+
+if ($("draftsBtn")) $("draftsBtn").onclick = openDraftsModal;
+if ($("closeDrafts")) $("closeDrafts").onclick = closeDraftsModal;
+if ($("draftsOverlay")) {
+  $("draftsOverlay").onclick = (e) => {
+    if (e.target === $("draftsOverlay")) closeDraftsModal();
+  };
+}
+if ($("saveCurrentDraftBtn")) $("saveCurrentDraftBtn").onclick = saveCurrentComposerToDrafts;
+if ($("clearAllDraftsBtn")) $("clearAllDraftsBtn").onclick = clearAllDrafts;
+if ($("discardComposerBtn")) $("discardComposerBtn").onclick = discardCurrentComposer;
 
 function closeBoostMenu() {
   if (activeBoostMenu) {
@@ -4872,6 +5418,8 @@ $("send").onclick = async () => {
     hasPoll = false; pollOptions = ["", ""]; renderPoll();
     reply = null; $("replying").hidden = true;
     quote = null; renderQuoteBox();
+    try { localStorage.removeItem("mastosky_autosave"); } catch (_) {}
+    if ($("draftIndicator")) $("draftIndicator").hidden = true;
     setTimeout(load, 1200);
     if (profileLoaded) setTimeout(() => loadProfileFeed(false), 1200);
     if (threadIt) setTimeout(() => openThread(threadIt, true), 1500);
@@ -5173,6 +5721,8 @@ if ($("selfUpdateBtn")) $("selfUpdateBtn").onclick = triggerSelfUpdate;
 setNavMode(navMode);
 applyI18n();
 applyViewMode(viewMode);
+updateDraftsBadge();
+checkAndRestoreAutoDraft();
 
 const initTab = location.hash === "#notifs" ? "notifs" : (location.hash === "#explore" ? "explore" : (location.hash === "#profile" ? "profile" : "timeline"));
 setTab(initTab);
