@@ -199,7 +199,13 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
         <button type="button" class="ghost btn-sm" id="pollBtn" title="Criar sondagem">📊 Sondagem</button>
         <button type="button" class="ghost btn-sm" id="cwBtn" title="Aviso de conteúdo / Spoiler">⚠️ Spoiler</button>
       </div>
-      <div id="targets" style="display:flex;gap:12px"></div>
+      <div id="targets" style="display:flex;gap:12px;align-items:center"></div>
+      <select id="mastoVisibility" title="Visibilidade da publicação no Mastodon" style="font-size:12px;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink)" hidden>
+        <option value="public" selected>🌐 Público</option>
+        <option value="unlisted">🔓 Não listado</option>
+        <option value="private">🔒 Apenas seguidores</option>
+        <option value="direct">✉️ Directa</option>
+      </select>
       <span class="count" id="count"></span>
       <button class="send" id="send" disabled>Publicar</button>
     </div>
@@ -904,9 +910,14 @@ function update() {
   const hasContent = lenText > 0 || images.length > 0 || (hasPoll && filledOpts.length >= 2);
 
   const bskyActive = reply ? (reply.network === "bluesky") : t.includes("bluesky");
+  const mastoActive = reply ? (reply.network === "mastodon") : t.includes("mastodon");
   const noteEl = $("bskyNote");
   if (noteEl) {
     noteEl.hidden = !(bskyActive && (hasCW || hasPoll));
+  }
+  const visEl = $("mastoVisibility");
+  if (visEl) {
+    visEl.hidden = !mastoActive;
   }
 
   $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !t.length;
@@ -938,9 +949,12 @@ $("send").onclick = async () => {
     expires_in: parseInt($("pollDuration").value, 10)
   } : null;
 
+  const mastoActive = reply ? (reply.network === "mastodon") : selected().includes("mastodon");
+  const visibility = (mastoActive && $("mastoVisibility")) ? $("mastoVisibility").value : null;
+
   const body = reply
-    ? {text: $("text").value, reply, images, spoiler, poll}
-    : {text: $("text").value, targets: selected(), images, spoiler, poll};
+    ? {text: $("text").value, reply, images, spoiler, poll, visibility}
+    : {text: $("text").value, targets: selected(), images, spoiler, poll, visibility};
 
   const res = await api("/api/post", body);
   const bad = Object.entries(res).filter(([, v]) => v !== "ok");

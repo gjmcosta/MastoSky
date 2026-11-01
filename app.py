@@ -678,7 +678,7 @@ class Bsky:
         r = s._authed(lambda jwt: http("POST", url, data=raw_bytes, token=jwt, headers={"Content-Type": mime}))
         return r["blob"]
 
-    def post(s, text, ref=None, images=None, spoiler=None, poll=None):
+    def post(s, text, ref=None, images=None, spoiler=None, poll=None, lang=None):
         s._ensure()
         final_text = (text or "").strip()
         if poll and poll.get("options"):
@@ -720,6 +720,8 @@ class Bsky:
         rec = {"$type": "app.bsky.feed.post", "text": final_text, "createdAt": now_iso()}
         if clean_facets:
             rec["facets"] = clean_facets
+        if lang:
+            rec["langs"] = [lang]
         if ref:
             rec["reply"] = {"root": ref["root"], "parent": {"uri": ref["uri"], "cid": ref["cid"]}}
         if images:
@@ -894,7 +896,7 @@ class Masto:
                  headers={"Content-Type": ctype})
         return r["id"]
 
-    def post(s, text, ref=None, images=None, spoiler=None, poll=None):
+    def post(s, text, ref=None, images=None, spoiler=None, poll=None, lang=None, visibility=None):
         media_ids = []
         if images:
             for img in images:
@@ -903,6 +905,10 @@ class Masto:
         data = {"status": text or ""}
         if spoiler:
             data["spoiler_text"] = spoiler
+        if lang:
+            data["language"] = lang
+        if visibility:
+            data["visibility"] = visibility
         if poll and poll.get("options"):
             opts = [o.strip() for o in poll["options"] if o.strip()]
             if len(opts) >= 2:
@@ -1078,6 +1084,19 @@ class H(BaseHTTPRequestHandler):
             poll = d.get("poll")
             if poll is not None and not isinstance(poll, dict):
                 return s.send(400, {"error": "Sondagem inválida."})
+            lang = d.get("lang")
+            if lang is None:
+                lang = CFG.get("default_lang")
+            if lang is not None:
+                if not isinstance(lang, str):
+                    return s.send(400, {"error": "Idioma inválido."})
+                lang = lang.strip().lower()
+                if not lang or not re.match(r"^[a-z]{2}(-[a-z]{2})?$", lang):
+                    return s.send(400, {"error": "Idioma inválido."})
+            visibility = d.get("visibility")
+            if visibility is not None:
+                if not isinstance(visibility, str) or visibility not in ("public", "unlisted", "private", "direct"):
+                    return s.send(400, {"error": "Visibilidade inválida."})
             targets = [ref["network"]] if ref else d.get("targets", [])
             if (not isinstance(targets, list) or not targets
                     or not all(isinstance(t, str) for t in targets)):
@@ -1113,7 +1132,10 @@ class H(BaseHTTPRequestHandler):
                 })
             for t in targets:
                 try:
-                    CLIENTS[t].post(text, ref["ref"] if ref else None, parsed_images, spoiler=spoiler, poll=poll)
+                    kwargs = {"spoiler": spoiler, "poll": poll, "lang": lang}
+                    if t == "mastodon" and visibility:
+                        kwargs["visibility"] = visibility
+                    CLIENTS[t].post(text, ref["ref"] if ref else None, parsed_images, **kwargs)
                     results[t] = "ok"
                 except Exception as e:
                     results[t] = str(e)

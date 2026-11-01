@@ -326,6 +326,18 @@ class PostHandlerTests(unittest.TestCase):
         self.assertEqual(code, 500)
         self.assertNotIn("segredo", json.dumps(r))
 
+    def test_invalid_lang(self):
+        self.assertEqual(self._post("/api/post", {"text": "x", "targets": ["bluesky"], "lang": "invalid-long"})[0], 400)
+        self.assertEqual(self._post("/api/post", {"text": "x", "targets": ["bluesky"], "lang": 123})[0], 400)
+
+    def test_invalid_visibility(self):
+        self.assertEqual(self._post("/api/post", {"text": "x", "targets": ["bluesky"], "visibility": "secret"})[0], 400)
+
+    def test_valid_lang_and_visibility(self):
+        code, r = self._post("/api/post", {"text": "x", "targets": ["bluesky"], "lang": "pt", "visibility": "unlisted"})
+        self.assertEqual(code, 200)
+        self.assertEqual(self.client.post.call_args[1].get("lang"), "pt")
+
 
 class HttpErrorTests(unittest.TestCase):
     def _http_error(self, code, retry_after=None, body=b"x"):
@@ -692,6 +704,24 @@ class FacetsAndRichtextTests(unittest.TestCase):
         rec = calls[0][2]["record"]
         self.assertIn("⚠️ [CW: Alerta de spoiler]\n\nMensagem secreta", rec["text"])
         self.assertNotIn("labels", rec)
+
+    def test_bsky_post_lang(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+        calls = []
+        b.call = lambda m, n, d=None, p=None: calls.append((m, n, d, p)) or {}
+        b.post("Olá mundo", lang="pt")
+        self.assertEqual(calls[0][2]["record"].get("langs"), ["pt"])
+
+    def test_masto_post_lang_and_visibility(self):
+        m = app.Masto({"instance": "https://m.pt", "token": "tok"})
+        calls = []
+        m.call = lambda mth, pth, data=None, p=None: calls.append((mth, pth, data, p)) or {}
+        m.post("Olá mundo", lang="pt", visibility="unlisted")
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][2].get("language"), "pt")
+        self.assertEqual(calls[0][2].get("visibility"), "unlisted")
 
 
 

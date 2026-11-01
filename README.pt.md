@@ -20,6 +20,7 @@
 * **🖼️ Suporte a Imagens e Cartões de Links:** Pré-visualização de imagens sem cortes forçados, zoom em tamanho original e cartões de link com domínio.
 * **📊 Sondagens:** Cria sondagens com opções personalizadas e duração ajustável (nativas no Mastodon; formatadas como texto claro com opções no Bluesky).
 * **⚠️ Avisos de Conteúdo (*Content Warning* / Spoiler):** Marca spoilers ou avisos sensíveis (texto de aviso nativo no Mastodon; prefixo claro `⚠️ [CW: ...]` no Bluesky).
+* **🌐 Idioma e Visibilidade:** Etiquetagem de idioma da publicação (`default_lang` no config) e seletor de visibilidade para o Mastodon (Público, Não listado, Apenas seguidores, Direta).
 * **🧵 Conversas e Fios:** Explora discussões completas em árvore com o botão de conversa.
 * **🌗 Modo Claro e Escuro:** Respeita automaticamente o tema do teu sistema operativo.
 

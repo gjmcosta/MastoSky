@@ -20,6 +20,7 @@
 * **🖼️ Media Galleries & Link Previews:** Uncropped image previews with full-size zoom on click, plus compact external link cards with domain labels.
 * **📊 Interactive Polls:** Create polls with customizable options and expiration periods (native on Mastodon; formatted as clean text with voting options on Bluesky).
 * **⚠️ Content Warnings (CW / Spoilers):** Add content warnings to sensitive posts (native spoiler text on Mastodon; clear `⚠️ [CW: ...]` text prefix on Bluesky).
+* **🌐 Language & Visibility Controls:** Automatic post language tagging (`default_lang` in config) and customizable Mastodon post visibility (Public, Unlisted, Followers-only, Direct).
 * **🧵 Conversation Threads:** Expand and follow complete conversation trees directly inline.
 * **🌗 Dark & Light Themes:** Automatically matches your operating system's color scheme.
 

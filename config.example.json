@@ -1,5 +1,6 @@
 {
   "port": 8000,
+  "default_lang": "pt",
   "bluesky": {
     "handle": "o-teu-nome.bsky.social",
     "app_password": "xxxx-xxxx-xxxx-xxxx"
