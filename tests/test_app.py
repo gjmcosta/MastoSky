@@ -984,5 +984,42 @@ class BrandServingTests(unittest.TestCase):
         self.assertEqual(code, 404)
 
 
+class HelperRefactorTests(unittest.TestCase):
+    def test_strip_re_prefix(self):
+        html_input = 'RE: <a href="https://masto.pt/@someone">someone</a> Olá mundo'
+        self.assertEqual(app.strip_re_prefix(html_input), "Olá mundo")
+
+        html_suffix = 'Olá mundo <br> RE: <a href="https://masto.pt/@someone">someone</a>'
+        self.assertEqual(app.strip_re_prefix(html_suffix), "Olá mundo")
+
+        # None or empty
+        self.assertIsNone(app.strip_re_prefix(None))
+        self.assertEqual(app.strip_re_prefix(""), "")
+
+    def test_extract_masto_media(self):
+        st = {
+            "media_attachments": [
+                {"type": "image", "url": "https://img.pt/1.jpg", "preview_url": "https://img.pt/1_thumb.jpg", "description": "Alt 1"}
+            ],
+            "card": {"url": "https://card.pt", "image": "https://card.pt/thumb.jpg", "title": "Card Title"}
+        }
+        media = app.extract_masto_media(st)
+        self.assertEqual(len(media), 1)
+        self.assertEqual(media[0]["type"], "image")
+
+        # Fallback to card when no media attachments
+        st_no_media = {
+            "media_attachments": [],
+            "card": {"url": "https://card.pt", "image": "https://card.pt/thumb.jpg", "title": "Card Title", "description": "Card Desc"}
+        }
+        card_media = app.extract_masto_media(st_no_media, allow_card=True)
+        self.assertEqual(len(card_media), 1)
+        self.assertEqual(card_media[0]["type"], "external")
+        self.assertEqual(card_media[0]["url"], "https://card.pt")
+
+        card_media_disallowed = app.extract_masto_media(st_no_media, allow_card=False)
+        self.assertEqual(len(card_media_disallowed), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

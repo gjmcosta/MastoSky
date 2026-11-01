@@ -261,63 +261,63 @@ def render_bsky_text(text, facets):
 
 class Clean(HTMLParser):
     """Limpa o HTML que vem do Mastodon: só fica texto, <br> e links http(s)."""
-    def __init__(s, strip_quote_inline=False):
+    def __init__(self, strip_quote_inline=False):
         super().__init__()
-        s.o, s.sp, s.hide = [], [], 0
-        s.strip_quote_inline = strip_quote_inline
-        s.qi_stack = []  # tags abertas dentro de um bloco quote-inline (o primeiro é a raiz)
+        self.o, self.sp, self.hide = [], [], 0
+        self.strip_quote_inline = strip_quote_inline
+        self.qi_stack = []  # tags abertas dentro de um bloco quote-inline (o primeiro é a raiz)
 
     _VOID = frozenset(("br", "img", "hr", "input", "meta", "link", "wbr"))
 
-    def handle_startendtag(s, t, a):
+    def handle_startendtag(self, t, a):
         # <br/> & afins não abrem nada: não pode haver fecho correspondente.
-        if s.qi_stack:
+        if self.qi_stack:
             return
         if t == "br":
-            s.o.append("<br>")
+            self.o.append("<br>")
             return
-        s.handle_starttag(t, a)
-        s.handle_endtag(t)
+        self.handle_starttag(t, a)
+        self.handle_endtag(t)
 
-    def handle_starttag(s, t, a):
+    def handle_starttag(self, t, a):
         a = dict(a)
-        if s.qi_stack:
-            if t not in s._VOID:
-                s.qi_stack.append(t)
+        if self.qi_stack:
+            if t not in self._VOID:
+                self.qi_stack.append(t)
             return
-        if s.strip_quote_inline and ("quote-inline" in (a.get("class") or "")):
-            s.qi_stack.append(t)
-            s.hide += 1
+        if self.strip_quote_inline and ("quote-inline" in (a.get("class") or "")):
+            self.qi_stack.append(t)
+            self.hide += 1
             return
-        if t == "p" and s.o:
-            s.o.append("<br><br>")
+        if t == "p" and self.o:
+            self.o.append("<br><br>")
         elif t == "br":
-            s.o.append("<br>")
+            self.o.append("<br>")
         elif t == "span":
-            s.sp.append("invisible" in (a.get("class") or ""))
-            s.hide += s.sp[-1]
+            self.sp.append("invisible" in (a.get("class") or ""))
+            self.hide += self.sp[-1]
         elif t == "a":
             h = a.get("href") or ""
             ok = h.startswith(("http://", "https://"))
-            s.o.append(f'<a href="{html.escape(h, True)}" target="_blank" rel="noopener noreferrer">' if ok else "<a>")
+            self.o.append(f'<a href="{html.escape(h, True)}" target="_blank" rel="noopener noreferrer">' if ok else "<a>")
 
-    def handle_endtag(s, t):
-        if s.qi_stack:
+    def handle_endtag(self, t):
+        if self.qi_stack:
             # só fecha se a tag foi realmente aberta dentro do bloco
-            if t in s.qi_stack:
-                while s.qi_stack and s.qi_stack.pop() != t:
+            if t in self.qi_stack:
+                while self.qi_stack and self.qi_stack.pop() != t:
                     pass
-                if not s.qi_stack:
-                    s.hide -= 1
+                if not self.qi_stack:
+                    self.hide -= 1
             return
         if t == "a":
-            s.o.append("</a>")
-        elif t == "span" and s.sp:
-            s.hide -= s.sp.pop()
+            self.o.append("</a>")
+        elif t == "span" and self.sp:
+            self.hide -= self.sp.pop()
 
-    def handle_data(s, d):
-        if not s.hide:
-            s.o.append(html.escape(d))
+    def handle_data(self, d):
+        if not self.hide:
+            self.o.append(html.escape(d))
 
 
 def clean(h, strip_quote_inline=False):
@@ -485,6 +485,37 @@ def render_custom_emojis(raw_html, emojis):
     return raw_html
 
 
+def strip_re_prefix(html_str):
+    if not html_str:
+        return html_str
+    html_str = re.sub(r"^\s*RE:\s*<a\b[^>]*>.*?</a>(\s*<br\s*/?>\s*)*", "", html_str, flags=re.I)
+    html_str = re.sub(r"(\s*<br\s*/?>\s*)*\s*RE:\s*<a\b[^>]*>.*?</a>\s*$", "", html_str, flags=re.I).strip()
+    return html_str
+
+
+def extract_masto_media(st, allow_card=True):
+    media = []
+    for m in st.get("media_attachments", []):
+        mtype = m.get("type")
+        if mtype in ("image", "video", "gifv"):
+            media.append({
+                "type": mtype,
+                "url": m.get("url") or m.get("preview_url"),
+                "thumb": m.get("preview_url") or m.get("url"),
+                "alt": m.get("description") or ""
+            })
+    if not media and allow_card and st.get("card") and st["card"].get("url"):
+        card = st["card"]
+        media.append({
+            "type": "external",
+            "url": card.get("url"),
+            "thumb": card.get("image"),
+            "title": card.get("title", ""),
+            "description": card.get("description", "")
+        })
+    return media
+
+
 def parse_masto_quote(st):
     if not st or not isinstance(st, dict):
         return None
@@ -505,30 +536,10 @@ def parse_masto_quote(st):
         return None
 
     q_acc = qs.get("account") or {}
-    q_media = []
-    for m in qs.get("media_attachments", []):
-        mtype = m.get("type")
-        if mtype in ("image", "video", "gifv"):
-            q_media.append({
-                "type": mtype,
-                "url": m.get("url") or m.get("preview_url"),
-                "thumb": m.get("preview_url") or m.get("url"),
-                "alt": m.get("description") or ""
-            })
-    if not q_media and qs.get("card") and qs["card"].get("url"):
-        card = qs["card"]
-        q_media.append({
-            "type": "external",
-            "url": card.get("url"),
-            "thumb": card.get("image"),
-            "title": card.get("title", ""),
-            "description": card.get("description", "")
-        })
+    q_media = extract_masto_media(qs, allow_card=True)
 
     cw = f"<strong>{html.escape(qs['spoiler_text'])}</strong><br>" if qs.get("spoiler_text") else ""
-    q_html = cw + clean(qs.get("content"), strip_quote_inline=True)
-    q_html = re.sub(r"^\s*RE:\s*<a\b[^>]*>.*?</a>(\s*<br\s*/?>\s*)*", "", q_html, flags=re.I)
-    q_html = re.sub(r"(\s*<br\s*/?>\s*)*\s*RE:\s*<a\b[^>]*>.*?</a>\s*$", "", q_html, flags=re.I).strip()
+    q_html = strip_re_prefix(cw + clean(qs.get("content"), strip_quote_inline=True))
     q_html = render_custom_emojis(q_html, qs.get("emojis"))
     q_name = q_acc.get("display_name") or q_acc.get("username", "")
     q_name_html = render_custom_emojis(html.escape(q_name), q_acc.get("emojis")) if q_acc.get("emojis") else None
@@ -551,78 +562,78 @@ def parse_masto_quote(st):
 class Bsky:
     name = "bluesky"
 
-    def __init__(s, c):
-        s.c, s.jwt, s.refresh_jwt, s.did = c, None, None, None
-        s.host = c.get("service", "https://bsky.social")
-        s.lock = threading.RLock()  # protege login/refresh em pedidos concorrentes
-        s._handle_cache = {}
+    def __init__(self, c):
+        self.c, self.jwt, self.refresh_jwt, self.did = c, None, None, None
+        self.host = c.get("service", "https://bsky.social")
+        self.lock = threading.RLock()  # protege login/refresh em pedidos concorrentes
+        self._handle_cache = {}
 
-    def resolve_handle(s, handle):
+    def resolve_handle(self, handle):
         handle = (handle or "").strip().lstrip("@")
         if not handle:
             return None
-        with s.lock:
-            if handle in s._handle_cache:
-                return s._handle_cache[handle]
+        with self.lock:
+            if handle in self._handle_cache:
+                return self._handle_cache[handle]
         try:
-            res = s.call("GET", "com.atproto.identity.resolveHandle", params={"handle": handle})
+            res = self.call("GET", "com.atproto.identity.resolveHandle", params={"handle": handle})
             did = res.get("did")
             if did:
-                with s.lock:
-                    s._handle_cache[handle] = did
+                with self.lock:
+                    self._handle_cache[handle] = did
                 return did
         except Exception:
             pass
         return None
 
-    def login(s):
-        with s.lock:
-            r = http("POST", s.host + "/xrpc/com.atproto.server.createSession",
-                     {"identifier": s.c["handle"], "password": s.c["app_password"]})
-            s.jwt, s.refresh_jwt, s.did = r["accessJwt"], r.get("refreshJwt"), r["did"]
+    def login(self):
+        with self.lock:
+            r = http("POST", self.host + "/xrpc/com.atproto.server.createSession",
+                     {"identifier": self.c["handle"], "password": self.c["app_password"]})
+            self.jwt, self.refresh_jwt, self.did = r["accessJwt"], r.get("refreshJwt"), r["did"]
 
-    def _ensure(s):
-        with s.lock:
-            if not s.jwt:
-                s.login()
+    def _ensure(self):
+        with self.lock:
+            if not self.jwt:
+                self.login()
 
-    def _renew(s, failed_jwt):
+    def _renew(self, failed_jwt):
         """Renova a sessão: primeiro refreshSession; só se falhar volta a createSession."""
-        with s.lock:
-            if s.jwt != failed_jwt:  # outro pedido já renovou entretanto
+        with self.lock:
+            if self.jwt != failed_jwt:  # outro pedido já renovou entretanto
                 return
-            if s.refresh_jwt:
+            if self.refresh_jwt:
                 try:
-                    r = http("POST", s.host + "/xrpc/com.atproto.server.refreshSession", token=s.refresh_jwt)
-                    s.jwt, s.refresh_jwt = r["accessJwt"], r.get("refreshJwt") or s.refresh_jwt
-                    s.did = r.get("did") or s.did
+                    r = http("POST", self.host + "/xrpc/com.atproto.server.refreshSession", token=self.refresh_jwt)
+                    self.jwt, self.refresh_jwt = r["accessJwt"], r.get("refreshJwt") or self.refresh_jwt
+                    self.did = r.get("did") or self.did
                     return
                 except (RuntimeError, KeyError):
                     pass
-            s.jwt = None
-            s.login()
+            self.jwt = None
+            self.login()
 
     @staticmethod
     def _expired(e):
         return "ExpiredToken" in str(e) or str(e).startswith("401")
 
-    def _authed(s, fn):
+    def _authed(self, fn):
         """Executa fn(jwt); se o token expirou, renova a sessão e repete uma vez."""
-        s._ensure()
-        jwt = s.jwt
+        self._ensure()
+        jwt = self.jwt
         try:
             return fn(jwt)
         except RuntimeError as e:
-            if not s._expired(e):
+            if not self._expired(e):
                 raise
-            s._renew(jwt)
-            return fn(s.jwt)
+            self._renew(jwt)
+            return fn(self.jwt)
 
-    def call(s, method, nsid, data=None, params=None):
-        url = f"{s.host}/xrpc/{nsid}" + ("?" + urllib.parse.urlencode(params) if params else "")
-        return s._authed(lambda jwt: http(method, url, data, jwt))
+    def call(self, method, nsid, data=None, params=None):
+        url = f"{self.host}/xrpc/{nsid}" + ("?" + urllib.parse.urlencode(params) if params else "")
+        return self._authed(lambda jwt: http(method, url, data, jwt))
 
-    def item(s, p, reason=None, reply=None):
+    def item(self, p, reason=None, reply=None):
         a, rec = p["author"], p["record"]
         root = rec.get("reply", {}).get("root") or {"uri": p["uri"], "cid": p["cid"]}
         media, quote = [], None
@@ -671,57 +682,57 @@ class Bsky:
             "quote": quote,
             "replies": p.get("replyCount", 0), "boosts": p.get("repostCount", 0), "likes": p.get("likeCount", 0),
             "liked": bool(like_uri), "boosted": bool(repost_uri),
-            "is_own": bool(s.did and a.get("did") == s.did),
+            "is_own": bool(self.did and a.get("did") == self.did),
             "url": f"https://bsky.app/profile/{a['handle']}/post/{p['uri'].split('/')[-1]}",
             "ref": ref_obj,
             "is_reply": bool(rec.get("reply")),
         }
 
-    def timeline(s, cursor=None):
+    def timeline(self, cursor=None):
         params = {"limit": 40}
         if cursor:
             params["cursor"] = cursor
-        r = s.call("GET", "app.bsky.feed.getTimeline", params=params)
+        r = self.call("GET", "app.bsky.feed.getTimeline", params=params)
         feed = r.get("feed", [])
-        return [s.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
+        return [self.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
 
-    def explore(s, cursor=None):
+    def explore(self, cursor=None):
         feed_uri = "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot"
         params = {"feed": feed_uri, "limit": 40}
         if cursor:
             params["cursor"] = cursor
-        r = s.call("GET", "app.bsky.feed.getFeed", params=params)
+        r = self.call("GET", "app.bsky.feed.getFeed", params=params)
         feed = r.get("feed", [])
-        return [s.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
+        return [self.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
 
-    def thread(s, ref):
+    def thread(self, ref):
         ok = "app.bsky.feed.defs#threadViewPost"
-        r = s.call("GET", "app.bsky.feed.getPostThread",
+        r = self.call("GET", "app.bsky.feed.getPostThread",
                    params={"uri": ref["uri"], "depth": 8, "parentHeight": 30})["thread"]
         if r.get("$type") != ok:
             raise RuntimeError("Post não disponível (apagado ou bloqueado).")
         ancestors, n = [], r.get("parent")
         while n and n.get("$type") == ok:
-            ancestors.insert(0, s.item(n["post"]))
+            ancestors.insert(0, self.item(n["post"]))
             n = n.get("parent")
 
         def tree(node):
             out = []
             for c in node.get("replies") or []:
                 if c.get("$type") == ok:
-                    i = s.item(c["post"])
+                    i = self.item(c["post"])
                     i["children"] = tree(c)
                     out.append(i)
             return out
-        return {"ancestors": ancestors, "focus": s.item(r["post"]), "replies": tree(r)}
+        return {"ancestors": ancestors, "focus": self.item(r["post"]), "replies": tree(r)}
 
-    def upload_blob(s, raw_bytes, mime="image/jpeg"):
-        url = f"{s.host}/xrpc/com.atproto.repo.uploadBlob"
-        r = s._authed(lambda jwt: http("POST", url, data=raw_bytes, token=jwt, headers={"Content-Type": mime}))
+    def upload_blob(self, raw_bytes, mime="image/jpeg"):
+        url = f"{self.host}/xrpc/com.atproto.repo.uploadBlob"
+        r = self._authed(lambda jwt: http("POST", url, data=raw_bytes, token=jwt, headers={"Content-Type": mime}))
         return r["blob"]
 
-    def post(s, text, ref=None, images=None, spoiler=None, poll=None, lang=None):
-        s._ensure()
+    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None):
+        self._ensure()
         final_text = (text or "").strip()
         if poll and poll.get("options"):
             opts = [o.strip() for o in poll["options"] if o.strip()]
@@ -742,7 +753,7 @@ class Bsky:
                            "features": [{"$type": "app.bsky.richtext.facet#link", "uri": url}]})
         for m in _HANDLE_RE.finditer(final_text):
             handle = m.group(1)
-            did = s.resolve_handle(handle)
+            did = self.resolve_handle(handle)
             if did:
                 b_start, b_end = byte_span(final_text, m.start(), m.end())
                 facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
@@ -769,21 +780,21 @@ class Bsky:
         if images:
             embed_imgs = []
             for img in images:
-                blob = s.upload_blob(img["bytes"], img.get("mime", "image/jpeg"))
+                blob = self.upload_blob(img["bytes"], img.get("mime", "image/jpeg"))
                 item = {"alt": img.get("alt", "") or "", "image": blob}
                 if img.get("aspectRatio"):
                     item["aspectRatio"] = img["aspectRatio"]
                 embed_imgs.append(item)
             rec["embed"] = {"$type": "app.bsky.embed.images", "images": embed_imgs}
-        s.call("POST", "com.atproto.repo.createRecord",
-               {"repo": s.did, "collection": "app.bsky.feed.post", "record": rec})
+        self.call("POST", "com.atproto.repo.createRecord",
+               {"repo": self.did, "collection": "app.bsky.feed.post", "record": rec})
 
-    def act(s, action, ref):
-        s._ensure()
+    def act(self, action, ref):
+        self._ensure()
         if action in ("like", "boost"):
             col = {"like": "app.bsky.feed.like", "boost": "app.bsky.feed.repost"}[action]
-            return s.call("POST", "com.atproto.repo.createRecord", {
-                "repo": s.did, "collection": col,
+            return self.call("POST", "com.atproto.repo.createRecord", {
+                "repo": self.did, "collection": col,
                 "record": {"$type": col, "subject": {"uri": ref["uri"], "cid": ref["cid"]}, "createdAt": now_iso()}})
         elif action in ("unlike", "unboost"):
             col = {"unlike": "app.bsky.feed.like", "unboost": "app.bsky.feed.repost"}[action]
@@ -791,32 +802,32 @@ class Bsky:
             if not target_uri:
                 raise ApiError("URI do registo a remover não fornecido.")
             rkey = target_uri.split("/")[-1]
-            return s.call("POST", "com.atproto.repo.deleteRecord", {
-                "repo": s.did, "collection": col, "rkey": rkey})
+            return self.call("POST", "com.atproto.repo.deleteRecord", {
+                "repo": self.did, "collection": col, "rkey": rkey})
         elif action == "delete":
             target_uri = ref.get("uri")
             if not target_uri:
                 raise ApiError("URI do post a remover não fornecido.")
             rkey = target_uri.split("/")[-1]
-            return s.call("POST", "com.atproto.repo.deleteRecord", {
-                "repo": s.did, "collection": "app.bsky.feed.post", "rkey": rkey})
+            return self.call("POST", "com.atproto.repo.deleteRecord", {
+                "repo": self.did, "collection": "app.bsky.feed.post", "rkey": rkey})
         else:
             raise ApiError(f"Ação desconhecida: {action}")
 
-    def notifications(s, cursor=None):
+    def notifications(self, cursor=None):
         kinds = {"like": "like", "like-via-repost": "like", "repost": "boost", "repost-via-repost": "boost",
                  "follow": "follow", "mention": "mention", "reply": "reply", "quote": "quote"}
         params = {"limit": 40}
         if cursor:
             params["cursor"] = cursor
-        r = s.call("GET", "app.bsky.notification.listNotifications", params=params)
+        r = self.call("GET", "app.bsky.notification.listNotifications", params=params)
         ns = r.get("notifications", [])
         next_cursor = r.get("cursor")
         subjects = sorted({n["reasonSubject"] for n in ns
                            if n.get("reasonSubject") and kinds.get(n["reason"]) in ("like", "boost")})
         posts = {}
         for i in range(0, len(subjects), 25):
-            res = s.call("GET", "app.bsky.feed.getPosts", params=[("uris", u) for u in subjects[i:i + 25]])
+            res = self.call("GET", "app.bsky.feed.getPosts", params=[("uris", u) for u in subjects[i:i + 25]])
             for p in res.get("posts", []):
                 posts[p["uri"]] = p
         out = []
@@ -845,80 +856,61 @@ class Bsky:
 class Masto:
     name = "mastodon"
 
-    def __init__(s, c):
-        s.base, s.token = c["instance"].rstrip("/"), c["token"]
-        s.cache = {}  # posts "pai" já obtidos
-        s.cache_lock = threading.Lock()  # a cache é usada por várias threads em paralelo
-        s.my_id = None
+    def __init__(self, c):
+        self.base, self.token = c["instance"].rstrip("/"), c["token"]
+        self.cache = {}  # posts "pai" já obtidos
+        self.cache_lock = threading.Lock()  # a cache é usada por várias threads em paralelo
+        self.my_id = None
 
-    def get_my_id(s):
-        if s.my_id:
-            return s.my_id
+    def get_my_id(self):
+        if self.my_id:
+            return self.my_id
         try:
-            acc = s.call("GET", "/api/v1/accounts/verify_credentials")
-            s.my_id = str(acc.get("id"))
-            return s.my_id
+            acc = self.call("GET", "/api/v1/accounts/verify_credentials")
+            self.my_id = str(acc.get("id"))
+            return self.my_id
         except Exception:
             return None
 
-    def call(s, method, path, data=None, params=None):
-        url = s.base + path + ("?" + urllib.parse.urlencode(params) if params else "")
-        return http(method, url, data, s.token)
+    def call(self, method, path, data=None, params=None):
+        url = self.base + path + ("?" + urllib.parse.urlencode(params) if params else "")
+        return http(method, url, data, self.token)
 
-    def parent(s, sid):
-        with s.cache_lock:
-            if sid in s.cache:
-                return s.cache[sid]
+    def parent(self, sid):
+        with self.cache_lock:
+            if sid in self.cache:
+                return self.cache[sid]
         try:
-            p = s.call("GET", f"/api/v1/statuses/{sid}")
+            p = self.call("GET", f"/api/v1/statuses/{sid}")
         except Exception:
             return None
-        with s.cache_lock:
-            if len(s.cache) > 500:
-                s.cache.clear()
-            s.cache[sid] = p
+        with self.cache_lock:
+            if len(self.cache) > 500:
+                self.cache.clear()
+            self.cache[sid] = p
         return p
 
-    def reply_info(s, p):
+    def reply_info(self, p):
         if not p:
             return {"name": None, "handle": None, "text": ""}
         a = p["account"]
         return {"name": a.get("display_name") or a["username"], "handle": "@" + a["acct"],
                 "text": preview(p.get("spoiler_text") or plain(p.get("content")))}
 
-    def item(s, st, parents=None):
+    def item(self, st, parents=None):
         x = st.get("reblog") or st
         a = x["account"]
         rt = None
         if parents is not None and x.get("in_reply_to_id"):
-            rt = s.reply_info(parents.get(x["in_reply_to_id"]))
+            rt = self.reply_info(parents.get(x["in_reply_to_id"]))
         cw = f"<strong>{html.escape(x['spoiler_text'])}</strong><br>" if x.get("spoiler_text") else ""
         quote = parse_masto_quote(x)
         raw_html = clean(x.get("content"), strip_quote_inline=bool(quote))
         if quote:
-            raw_html = re.sub(r"^\s*RE:\s*<a\b[^>]*>.*?</a>(\s*<br\s*/?>\s*)*", "", raw_html, flags=re.I)
-            raw_html = re.sub(r"(\s*<br\s*/?>\s*)*\s*RE:\s*<a\b[^>]*>.*?</a>\s*$", "", raw_html, flags=re.I).strip()
+            raw_html = strip_re_prefix(raw_html)
 
-        media = []
-        for m in x.get("media_attachments", []):
-            mtype = m.get("type")
-            if mtype in ("image", "video", "gifv"):
-                media.append({
-                    "type": mtype,
-                    "url": m.get("url") or m.get("preview_url"),
-                    "thumb": m.get("preview_url") or m.get("url"),
-                    "alt": m.get("description") or ""
-                })
-        if not media and not quote and x.get("card") and x["card"].get("url"):
-            card = x["card"]
-            media.append({
-                "type": "external",
-                "url": card.get("url"),
-                "thumb": card.get("image"),
-                "title": card.get("title", ""),
-                "description": card.get("description", "")
-            })
-        my_id = s.get_my_id()
+        media = extract_masto_media(x, allow_card=(not quote))
+        my_id = self.get_my_id()
         name_plain = a.get("display_name") or a.get("username", "")
         name_html = render_custom_emojis(html.escape(name_plain), a.get("emojis")) if a.get("emojis") else None
         final_html = render_custom_emojis(cw + raw_html, x.get("emojis"))
@@ -939,61 +931,55 @@ class Masto:
             out["name_html"] = name_html
         return out
 
-    def timeline(s, cursor=None):
-        params = {"limit": 40}
+    def _fetch_statuses(self, path, cursor=None, params=None):
+        p = {"limit": 40}
+        if params:
+            p.update(params)
         if cursor:
-            params["max_id"] = cursor
-        sts = s.call("GET", "/api/v1/timelines/home", params=params)
+            p["max_id"] = cursor
+        sts = self.call("GET", path, params=p)
         parents = {x["id"]: x for x in (st.get("reblog") or st for st in sts)}
         need = list({x["in_reply_to_id"] for x in parents.values() if x.get("in_reply_to_id")} - set(parents))
         with ThreadPoolExecutor(max_workers=6) as ex:
-            for sid, par in zip(need, ex.map(s.parent, need)):
+            for sid, par in zip(need, ex.map(self.parent, need)):
                 if par:
                     parents[sid] = par
         next_cursor = str(sts[-1]["id"]) if sts else None
-        return [s.item(st, parents) for st in sts], next_cursor
+        return [self.item(st, parents) for st in sts], next_cursor
 
-    def explore(s, cursor=None):
-        params = {"limit": 40}
-        if cursor:
-            params["max_id"] = cursor
-        sts = s.call("GET", "/api/v1/trends/statuses", params=params)
-        parents = {x["id"]: x for x in (st.get("reblog") or st for st in sts)}
-        need = list({x["in_reply_to_id"] for x in parents.values() if x.get("in_reply_to_id")} - set(parents))
-        with ThreadPoolExecutor(max_workers=6) as ex:
-            for sid, par in zip(need, ex.map(s.parent, need)):
-                if par:
-                    parents[sid] = par
-        next_cursor = str(sts[-1]["id"]) if sts else None
-        return [s.item(st, parents) for st in sts], next_cursor
+    def timeline(self, cursor=None):
+        return self._fetch_statuses("/api/v1/timelines/home", cursor=cursor)
 
-    def thread(s, ref):
-        st = s.call("GET", f"/api/v1/statuses/{ref['id']}")
-        c = s.call("GET", f"/api/v1/statuses/{ref['id']}/context")
+    def explore(self, cursor=None):
+        return self._fetch_statuses("/api/v1/trends/statuses", cursor=cursor)
+
+    def thread(self, ref):
+        st = self.call("GET", f"/api/v1/statuses/{ref['id']}")
+        c = self.call("GET", f"/api/v1/statuses/{ref['id']}/context")
         nodes = {}
         for d in c["descendants"]:
-            i = s.item(d)
+            i = self.item(d)
             i["children"] = []
             nodes[d["id"]] = i
         replies = []
         for d in c["descendants"]:
             parent = nodes.get(d.get("in_reply_to_id"))
             (parent["children"] if parent else replies).append(nodes[d["id"]])
-        return {"ancestors": [s.item(x) for x in c["ancestors"]], "focus": s.item(st), "replies": replies}
+        return {"ancestors": [self.item(x) for x in c["ancestors"]], "focus": self.item(st), "replies": replies}
 
-    def upload_media(s, raw_bytes, mime="image/jpeg", description=""):
+    def upload_media(self, raw_bytes, mime="image/jpeg", description=""):
         ext = mime.split("/")[-1] if "/" in mime else "jpg"
         data, ctype = multipart_encode({"description": description or ""},
                                        {"file": (f"media.{ext}", raw_bytes, mime)})
-        r = http("POST", s.base + "/api/v2/media", data=data, token=s.token,
+        r = http("POST", self.base + "/api/v2/media", data=data, token=self.token,
                  headers={"Content-Type": ctype})
         return r["id"]
 
-    def post(s, text, ref=None, images=None, spoiler=None, poll=None, lang=None, visibility=None):
+    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, visibility=None):
         media_ids = []
         if images:
             for img in images:
-                mid = s.upload_media(img["bytes"], img.get("mime", "image/jpeg"), img.get("alt", ""))
+                mid = self.upload_media(img["bytes"], img.get("mime", "image/jpeg"), img.get("alt", ""))
                 media_ids.append(mid)
         data = {"status": text or ""}
         if spoiler:
@@ -1014,11 +1000,11 @@ class Masto:
             data["media_ids"] = media_ids
         if ref:
             data["in_reply_to_id"] = ref["id"]
-        s.call("POST", "/api/v1/statuses", data)
+        self.call("POST", "/api/v1/statuses", data)
 
-    def act(s, action, ref):
+    def act(self, action, ref):
         if action == "delete":
-            return s.call("DELETE", f"/api/v1/statuses/{ref['id']}")
+            return self.call("DELETE", f"/api/v1/statuses/{ref['id']}")
         endpoints = {
             "like": f"/api/v1/statuses/{ref['id']}/favourite",
             "unlike": f"/api/v1/statuses/{ref['id']}/unfavourite",
@@ -1027,15 +1013,15 @@ class Masto:
         }
         if action not in endpoints:
             raise ApiError(f"Ação desconhecida: {action}")
-        return s.call("POST", endpoints[action])
+        return self.call("POST", endpoints[action])
 
-    def notifications(s, cursor=None):
+    def notifications(self, cursor=None):
         kinds = {"favourite": "like", "reblog": "boost", "follow": "follow", "follow_request": "follow_request",
                  "mention": "mention", "quote": "quote", "status": "status", "update": "update", "poll": "poll"}
         params = {"limit": 40}
         if cursor:
             params["max_id"] = cursor
-        raw = s.call("GET", "/api/v1/notifications", params=params)
+        raw = self.call("GET", "/api/v1/notifications", params=params)
         next_cursor = str(raw[-1]["id"]) if raw else None
         out = []
         for n in raw:
@@ -1081,48 +1067,51 @@ CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 
 
 
 class H(BaseHTTPRequestHandler):
-    def log_message(s, *a):
-        pass
+    verbose = False
 
-    def allowed(s):
+    def log_message(self, *a):
+        if self.verbose:
+            super().log_message(*a)
+
+    def allowed(self):
         # Protege contra outros sites a falarem com o servidor local.
         ok = (f"127.0.0.1:{PORT}", f"localhost:{PORT}")
-        o = s.headers.get("Origin")
-        return s.headers.get("Host") in ok and (o is None or o in [f"http://{h}" for h in ok])
+        o = self.headers.get("Origin")
+        return self.headers.get("Host") in ok and (o is None or o in [f"http://{h}" for h in ok])
 
-    def send(s, code, body, ctype="application/json"):
+    def send(self, code, body, ctype="application/json"):
         b = body if isinstance(body, bytes) else json.dumps(body).encode()
-        s.send_response(code)
-        s.send_header("Content-Type", ctype + "; charset=utf-8")
-        s.send_header("Content-Length", str(len(b)))
-        s.send_header("X-Content-Type-Options", "nosniff")
-        s.send_header("Referrer-Policy", "no-referrer")
-        s.send_header("X-Frame-Options", "DENY")
-        s.send_header("Content-Security-Policy", CSP)
-        s.end_headers()
-        s.wfile.write(b)
+        self.send_response(code)
+        self.send_header("Content-Type", ctype + "; charset=utf-8")
+        self.send_header("Content-Length", str(len(b)))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Content-Security-Policy", CSP)
+        self.end_headers()
+        self.wfile.write(b)
 
-    def do_GET(s):
-        parsed = urllib.parse.urlparse(s.path)
+    def do_GET(self):
+        parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
-        if not s.allowed():
-            return s.send(403, {"error": "forbidden"})
+        if not self.allowed():
+            return self.send(403, {"error": "forbidden"})
         if path == "/":
-            return s.send(200, (DIR / "index.html").read_bytes(), "text/html")
+            return self.send(200, (DIR / "index.html").read_bytes(), "text/html")
         if path == "/vendor/hls.min.js":
-            return s.send(200, (DIR / "vendor" / "hls.min.js").read_bytes(), "application/javascript")
+            return self.send(200, (DIR / "vendor" / "hls.min.js").read_bytes(), "application/javascript")
         if path.startswith("/brand/"):
             rel = path[7:]
             target = (DIR / "brand" / rel).resolve()
             if target.is_file() and str(target).startswith(str((DIR / "brand").resolve())):
                 mime = "image/svg+xml" if path.endswith(".svg") else ("text/css" if path.endswith(".css") else "application/octet-stream")
-                return s.send(200, target.read_bytes(), mime)
+                return self.send(200, target.read_bytes(), mime)
         if path in ("/favicon.ico", "/favicon.svg"):
             fav = DIR / "brand" / "favicon.svg"
             if fav.is_file():
-                return s.send(200, fav.read_bytes(), "image/svg+xml")
+                return self.send(200, fav.read_bytes(), "image/svg+xml")
         if path == "/api/status":
-            return s.send(200, {
+            return self.send(200, {
                 "configured": bool(CLIENTS),
                 "networks": list(CLIENTS),
                 "bluesky": {
@@ -1136,7 +1125,7 @@ class H(BaseHTTPRequestHandler):
             })
         if path in ("/api/timeline", "/api/notifications", "/api/explore"):
             if not CLIENTS:
-                return s.send(200, {"items": [], "errors": {}, "networks": [], "cursors": {}})
+                return self.send(200, {"items": [], "errors": {}, "networks": [], "cursors": {}})
             what = path.rsplit("/", 1)[1]
             qs = urllib.parse.parse_qs(parsed.query)
             cursors_in = {
@@ -1177,23 +1166,23 @@ class H(BaseHTTPRequestHandler):
                 for its in network_items.values():
                     items += its
                 items = sort_items(items)
-            return s.send(200, {"items": items, "errors": errors, "networks": list(CLIENTS), "cursors": next_cursors})
-        s.send(404, {"error": "not found"})
+            return self.send(200, {"items": items, "errors": errors, "networks": list(CLIENTS), "cursors": next_cursors})
+        self.send(404, {"error": "not found"})
 
-    def do_POST(s):
+    def do_POST(self):
         try:
-            s._do_post()
+            self._do_post()
         except Exception:
             # Resposta genérica: nunca expor tracebacks nem segredos.
             try:
-                s.send(500, {"error": "Erro interno do servidor."})
+                self.send(500, {"error": "Erro interno do servidor."})
             except Exception:
                 pass
 
-    def _read_json(s):
+    def _read_json(self):
         """Lê o corpo JSON. Devolve (dict, None) ou (None, (código, mensagem))."""
         try:
-            n = int(s.headers.get("Content-Length", 0))
+            n = int(self.headers.get("Content-Length", 0))
         except (TypeError, ValueError):
             return None, (400, "Content-Length inválido.")
         if n < 0:
@@ -1201,61 +1190,61 @@ class H(BaseHTTPRequestHandler):
         if n > MAX_BODY:
             return None, (413, "Pedido demasiado grande.")
         try:
-            d = json.loads(s.rfile.read(n) or b"{}")
+            d = json.loads(self.rfile.read(n) or b"{}")
         except (ValueError, UnicodeDecodeError):
             return None, (400, "JSON inválido")
         if not isinstance(d, dict):
             return None, (400, "JSON inválido")
         return d, None
 
-    def _do_post(s):
+    def _do_post(self):
         global CFG, CLIENTS
-        if not s.allowed():
-            return s.send(403, {"error": "forbidden"})
-        d, err = s._read_json()
+        if not self.allowed():
+            return self.send(403, {"error": "forbidden"})
+        d, err = self._read_json()
         if err:
-            return s.send(err[0], {"error": err[1]})
+            return self.send(err[0], {"error": err[1]})
         results = {}
-        if s.path == "/api/post":
+        if self.path == "/api/post":
             text = (d.get("text") or "").strip()
             ref = d.get("reply")  # {"network": ..., "ref": {...}}
             if ref is not None and not (isinstance(ref, dict) and isinstance(ref.get("ref"), dict)
                                         and isinstance(ref.get("network"), str)):
-                return s.send(400, {"error": "Resposta inválida."})
+                return self.send(400, {"error": "Resposta inválida."})
             spoiler = (d.get("spoiler") or "").strip() or None
             poll = d.get("poll")
             if poll is not None and not isinstance(poll, dict):
-                return s.send(400, {"error": "Sondagem inválida."})
+                return self.send(400, {"error": "Sondagem inválida."})
             lang = d.get("lang")
             if lang is None:
                 lang = CFG.get("default_lang")
             if lang is not None:
                 if not isinstance(lang, str):
-                    return s.send(400, {"error": "Idioma inválido."})
+                    return self.send(400, {"error": "Idioma inválido."})
                 lang = lang.strip().lower()
                 if not lang or not re.match(r"^[a-z]{2}(-[a-z]{2})?$", lang):
-                    return s.send(400, {"error": "Idioma inválido."})
+                    return self.send(400, {"error": "Idioma inválido."})
             visibility = d.get("visibility")
             if visibility is not None:
                 if not isinstance(visibility, str) or visibility not in ("public", "unlisted", "private", "direct"):
-                    return s.send(400, {"error": "Visibilidade inválida."})
+                    return self.send(400, {"error": "Visibilidade inválida."})
             targets = [ref["network"]] if ref else d.get("targets", [])
             if (not isinstance(targets, list) or not targets
                     or not all(isinstance(t, str) for t in targets)):
-                return s.send(400, {"error": "Escolhe pelo menos uma rede."})
+                return self.send(400, {"error": "Escolhe pelo menos uma rede."})
             unknown = [t for t in targets if t not in CLIENTS]
             if unknown:
-                return s.send(400, {"error": "Rede não configurada: " + ", ".join(unknown)})
+                return self.send(400, {"error": "Rede não configurada: " + ", ".join(unknown)})
             raw_images = d.get("images") or []
             if not isinstance(raw_images, list):
-                return s.send(400, {"error": "Imagens inválidas."})
+                return self.send(400, {"error": "Imagens inválidas."})
             parsed_images = []
             for img in raw_images:
                 if not isinstance(img, dict):
-                    return s.send(400, {"error": "Imagens inválidas."})
+                    return self.send(400, {"error": "Imagens inválidas."})
                 raw_data = img.get("data", "")
                 if not isinstance(raw_data, str):
-                    return s.send(400, {"error": "Imagens inválidas."})
+                    return self.send(400, {"error": "Imagens inválidas."})
                 if "," in raw_data:
                     hdr, b64 = raw_data.split(",", 1)
                     mime = hdr.split(";")[0].replace("data:", "") or "image/jpeg"
@@ -1265,7 +1254,7 @@ class H(BaseHTTPRequestHandler):
                 try:
                     img_bytes = base64.b64decode(b64, validate=True)
                 except (binascii.Error, ValueError):
-                    return s.send(400, {"error": "Imagem com codificação inválida."})
+                    return self.send(400, {"error": "Imagem com codificação inválida."})
                 parsed_images.append({
                     "bytes": img_bytes,
                     "mime": mime,
@@ -1281,22 +1270,22 @@ class H(BaseHTTPRequestHandler):
                     results[t] = "ok"
                 except Exception as e:
                     results[t] = str(e)
-            return s.send(200, results)
-        if s.path == "/api/thread":
+            return self.send(200, results)
+        if self.path == "/api/thread":
             try:
-                return s.send(200, CLIENTS[d["network"]].thread(d["ref"]))
+                return self.send(200, CLIENTS[d["network"]].thread(d["ref"]))
             except Exception as e:
-                return s.send(200, {"error": str(e)})
-        if s.path == "/api/action":
+                return self.send(200, {"error": str(e)})
+        if self.path == "/api/action":
             try:
                 res = CLIENTS[d["network"]].act(d["action"], d["ref"])
                 out = {"ok": True}
                 if isinstance(res, dict) and "uri" in res:
                     out["uri"] = res["uri"]
-                return s.send(200, out)
+                return self.send(200, out)
             except Exception as e:
-                return s.send(200, {"ok": False, "error": str(e)})
-        if s.path == "/api/setup":
+                return self.send(200, {"ok": False, "error": str(e)})
+        if self.path == "/api/setup":
             new_cfg = dict(CFG)
             new_cfg["port"] = PORT
             if isinstance(d.get("bluesky"), dict):
@@ -1323,16 +1312,16 @@ class H(BaseHTTPRequestHandler):
 
             test_clients = init_clients(new_cfg)
             if not test_clients:
-                return s.send(400, {"error": "Introduz dados de acesso válidos para pelo menos uma das redes."})
+                return self.send(400, {"error": "Introduz dados de acesso válidos para pelo menos uma das redes."})
 
             try:
                 write_config(new_cfg)
                 CFG = new_cfg
                 CLIENTS = test_clients
-                return s.send(200, {"ok": True, "networks": list(CLIENTS)})
+                return self.send(200, {"ok": True, "networks": list(CLIENTS)})
             except Exception as e:
-                return s.send(500, {"error": f"Não foi possível guardar config.json: {e}"})
-        s.send(404, {"error": "not found"})
+                return self.send(500, {"error": f"Não foi possível guardar config.json: {e}"})
+        self.send(404, {"error": "not found"})
 
 
 if __name__ == "__main__":
