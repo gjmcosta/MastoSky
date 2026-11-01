@@ -2,7 +2,7 @@
 """Timeline unificada Bluesky + Mastodon. Corre só no teu Mac (127.0.0.1)."""
 import base64, binascii, html, json, os, re, socket, stat, threading, time, urllib.error, urllib.parse, urllib.request, uuid
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -120,6 +120,37 @@ def http(method, url, data=None, token=None, headers=None):
 
 def now_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+def sort_items(items):
+    return sorted(items, key=lambda i: parse_time(i.get("time")), reverse=True)
+
+
+_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+_TIME_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:[.,](\d+))?)?\s*(Z|[+-]\d{2}(?::?\d{2})?)?$", re.I)
+
+
+def parse_time(s):
+    """ISO 8601 → datetime com fuso. Tolera 'Z', offsets e qualquer nº de casas decimais.
+    Valor inválido → época 0 (vai para o fim da timeline)."""
+    if not isinstance(s, str):
+        return _EPOCH
+    m = _TIME_RE.match(s.strip())
+    if not m:
+        return _EPOCH
+    y, mo, d, h, mi, sec, frac, tz = m.groups()
+    try:
+        micro = int((frac or "0")[:6].ljust(6, "0"))
+        if not tz or tz.upper() == "Z":
+            tzinfo = timezone.utc
+        else:
+            sign = -1 if tz[0] == "-" else 1
+            digits = tz[1:].replace(":", "")
+            off = timedelta(hours=int(digits[:2]), minutes=int(digits[2:4] or 0))
+            tzinfo = timezone(sign * off)
+        return datetime(int(y), int(mo), int(d), int(h), int(mi), int(sec or 0), micro, tzinfo=tzinfo)
+    except (ValueError, OverflowError):
+        return _EPOCH
 
 
 def linkify(text):
@@ -466,7 +497,7 @@ class Bsky:
         return {
             "network": "bluesky", "name": a.get("displayName") or a["handle"], "handle": "@" + a["handle"],
             "avatar": safe_url(a.get("avatar")), "html": linkify(rec.get("text", "")),
-            "time": reason.get("indexedAt") or rec["createdAt"],
+            "time": reason.get("indexedAt") or p.get("indexedAt") or rec["createdAt"],
             "boosted_by": by.get("displayName") or by.get("handle"), "reply_to": rt,
             "media": media,
             "quote": quote,
@@ -838,7 +869,7 @@ class H(BaseHTTPRequestHandler):
                 items = []
                 for its in network_items.values():
                     items += its
-                items.sort(key=lambda i: i["time"], reverse=True)
+                items = sort_items(items)
             return s.send(200, {"items": items, "errors": errors, "networks": list(CLIENTS)})
         s.send(404, {"error": "not found"})
 

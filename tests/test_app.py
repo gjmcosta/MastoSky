@@ -456,5 +456,42 @@ class BskySessionTests(unittest.TestCase):
         self.assertEqual(h.call_count, 1)
 
 
+class ParseTimeTests(unittest.TestCase):
+    def test_formats(self):
+        from datetime import datetime, timezone
+        ref = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+        for s in ("2026-01-02T03:04:05Z", "2026-01-02T03:04:05+00:00", "2026-01-02T03:04:05.000Z",
+                  "2026-01-02T03:04:05.000000+00:00", "2026-01-02T04:04:05+01:00", "2026-01-02T03:04:05"):
+            self.assertEqual(app.parse_time(s), ref, s)
+
+    def test_fractions(self):
+        a = app.parse_time("2026-01-02T03:04:05.5Z")
+        b = app.parse_time("2026-01-02T03:04:05.123456789Z")
+        self.assertEqual(a.microsecond, 500000)
+        self.assertEqual(b.microsecond, 123456)
+
+    def test_invalid_is_epoch(self):
+        for s in ("", "ontem", None, 5, "2026-13-45T99:99:99Z"):
+            self.assertEqual(app.parse_time(s).year, 1970, s)
+
+    def test_sort_mixed_networks(self):
+        items = [
+            {"id": "bsky-z", "time": "2026-01-02T03:04:06Z"},
+            {"id": "masto-frac", "time": "2026-01-02T03:04:05.900Z"},
+            {"id": "bsky-offset", "time": "2026-01-02T05:00:00+01:00"},  # = 04:00:00Z
+            {"id": "bad", "time": "lixo"},
+            {"id": "masto-old", "time": "2026-01-01T00:00:00.000Z"},
+        ]
+        self.assertEqual([i["id"] for i in app.sort_items(items)],
+                         ["bsky-offset", "bsky-z", "masto-frac", "masto-old", "bad"])
+
+    def test_bsky_item_prefers_indexed_at(self):
+        p = {"uri": "at://did:plc:x/app.bsky.feed.post/abc", "cid": "c",
+             "author": {"handle": "a.bsky.social"}, "indexedAt": "2026-01-02T00:00:00Z",
+             "record": {"text": "x", "createdAt": "2099-01-01T00:00:00Z"}}
+        it = app.Bsky({"handle": "h", "app_password": "p"}).item(p)
+        self.assertEqual(it["time"], "2026-01-02T00:00:00Z")
+
+
 if __name__ == "__main__":
     unittest.main()
