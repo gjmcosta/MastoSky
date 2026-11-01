@@ -490,21 +490,52 @@ def proxy_fetch_image(url_str):
     if ip and (ip.is_private or ip.is_loopback or ip.is_link_local):
         raise ValueError("Acesso a endereços de rede privada não permitido.")
 
-    req = urllib.request.Request(
-        u,
-        headers={
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
-        }
-    )
-    with urllib.request.urlopen(req, timeout=10) as resp:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Referer": f"{p.scheme}://{p.netloc}/"
+    }
+    req = urllib.request.Request(u, headers=headers)
+    ssl_ctx = None
+    try:
+        import ssl
+        try:
+            import certifi
+            ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            ssl_ctx = ssl.create_default_context()
+    except Exception:
+        ssl_ctx = None
+
+    try:
+        resp = urllib.request.urlopen(req, timeout=10, context=ssl_ctx)
+    except Exception:
+        try:
+            import ssl
+            resp = urllib.request.urlopen(req, timeout=10, context=ssl._create_unverified_context())
+        except Exception as e:
+            raise ValueError(f"Não foi possível obter imagem remota: {e}")
+
+    with resp:
         ctype = resp.headers.get_content_type()
-        if not ctype or not (ctype.startswith("image/") or ctype == "application/octet-stream"):
-            raise ValueError("O conteúdo remoto não é uma imagem válida.")
         data = resp.read(10 * 1024 * 1024 + 1)
         if len(data) > 10 * 1024 * 1024:
             raise ValueError("Imagem excede o limite máximo de 10MB.")
-        return data, ctype if ctype.startswith("image/") else "image/jpeg"
+
+        if data.startswith(b"\xff\xd8\xff"):
+            ctype = "image/jpeg"
+        elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+            ctype = "image/png"
+        elif data.startswith(b"GIF87a") or data.startswith(b"GIF89a"):
+            ctype = "image/gif"
+        elif len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            ctype = "image/webp"
+        elif len(data) >= 16 and b"ftypavif" in data[:16]:
+            ctype = "image/avif"
+        elif not ctype or not (ctype.startswith("image/") or ctype == "application/octet-stream"):
+            raise ValueError("O conteúdo remoto não é uma imagem válida.")
+
+        return data, ctype if (ctype and ctype.startswith("image/")) else "image/jpeg"
 
 
 def extract_bsky_embed(embed, did=None):
@@ -1047,7 +1078,7 @@ class Bsky:
         elif embed_imgs:
             rec["embed"] = {"$type": "app.bsky.embed.images", "images": embed_imgs}
 
-        self.call("POST", "com.atproto.repo.createRecord",
+        return self.call("POST", "com.atproto.repo.createRecord",
                {"repo": self.did, "collection": "app.bsky.feed.post", "record": rec})
 
     def act(self, action, ref):
@@ -1429,7 +1460,7 @@ class Masto:
             data["media_ids"] = media_ids
         if ref:
             data["in_reply_to_id"] = ref["id"]
-        self.call("POST", "/api/v1/statuses", data)
+        return self.call("POST", "/api/v1/statuses", data)
 
     def act(self, action, ref):
         if action == "delete":
@@ -1772,38 +1803,118 @@ class H(BaseHTTPRequestHandler):
             unknown = [t for t in targets if t not in CLIENTS]
             if unknown:
                 return self.send(400, {"error": "Rede não configurada: " + ", ".join(unknown)})
-            raw_images = d.get("images") or []
-            if not isinstance(raw_images, list):
-                return self.send(400, {"error": "Imagens inválidas."})
-            parsed_images = []
-            for img in raw_images:
-                if not isinstance(img, dict):
-                    return self.send(400, {"error": "Imagens inválidas."})
-                raw_data = img.get("data", "")
-                if not isinstance(raw_data, str):
-                    return self.send(400, {"error": "Imagens inválidas."})
-                if "," in raw_data:
-                    hdr, b64 = raw_data.split(",", 1)
-                    mime = hdr.split(";")[0].replace("data:", "") or "image/jpeg"
-                else:
-                    mime = img.get("mime") or "image/jpeg"
-                    b64 = raw_data
+            raw_thread = d.get("thread")
+            def _parse_imgs(raw_images):
+                if not raw_images:
+                    return []
+                if not isinstance(raw_images, list):
+                    raise ValueError("Imagens inválidas.")
+                parsed = []
+                for img in raw_images:
+                    if not isinstance(img, dict):
+                        raise ValueError("Imagens inválidas.")
+                    raw_data = img.get("data", "")
+                    if not isinstance(raw_data, str):
+                        raise ValueError("Imagens inválidas.")
+                    if "," in raw_data:
+                        hdr, b64 = raw_data.split(",", 1)
+                        mime = hdr.split(";")[0].replace("data:", "") or "image/jpeg"
+                    else:
+                        mime = img.get("mime") or "image/jpeg"
+                        b64 = raw_data
+                    try:
+                        img_bytes = base64.b64decode(b64, validate=True)
+                    except (binascii.Error, ValueError):
+                        raise ValueError("Imagem com codificação inválida.")
+                    parsed.append({
+                        "bytes": img_bytes,
+                        "mime": mime,
+                        "alt": img.get("alt", ""),
+                        "aspectRatio": img.get("aspectRatio")
+                    })
+                return parsed
+
+            if raw_thread is not None:
+                if not isinstance(raw_thread, list) or not raw_thread:
+                    return self.send(400, {"error": "Fio inválido."})
+                if len(raw_thread) > 25:
+                    return self.send(400, {"error": "Fio demasiado longo (máx. 25 posts)."})
+                thread_items = []
+                for idx, item in enumerate(raw_thread):
+                    if not isinstance(item, dict):
+                        return self.send(400, {"error": f"Post #{idx+1} do fio inválido."})
+                    item_text = (item.get("text") or "").strip()
+                    try:
+                        item_imgs = _parse_imgs(item.get("images") or [])
+                    except ValueError as ve:
+                        return self.send(400, {"error": str(ve)})
+                    if not item_text and not item_imgs:
+                        return self.send(400, {"error": f"O post #{idx+1} do fio não tem conteúdo."})
+                    thread_items.append({
+                        "text": item_text,
+                        "images": item_imgs,
+                        "spoiler": (item.get("spoiler") or "").strip() or spoiler,
+                        "poll": item.get("poll") if idx == 0 else None,
+                        "quote": item.get("quote") if idx == 0 else quote
+                    })
+            else:
                 try:
-                    img_bytes = base64.b64decode(b64, validate=True)
-                except (binascii.Error, ValueError):
-                    return self.send(400, {"error": "Imagem com codificação inválida."})
-                parsed_images.append({
-                    "bytes": img_bytes,
-                    "mime": mime,
-                    "alt": img.get("alt", ""),
-                    "aspectRatio": img.get("aspectRatio")
-                })
+                    parsed_images = _parse_imgs(d.get("images") or [])
+                except ValueError as ve:
+                    return self.send(400, {"error": str(ve)})
+                thread_items = [{
+                    "text": text,
+                    "images": parsed_images,
+                    "spoiler": spoiler,
+                    "poll": poll,
+                    "quote": quote
+                }]
+
             for t in targets:
                 try:
-                    kwargs = {"spoiler": spoiler, "poll": poll, "lang": lang, "quote": quote}
-                    if t == "mastodon" and visibility:
-                        kwargs["visibility"] = visibility
-                    CLIENTS[t].post(text, ref["ref"] if ref else None, parsed_images, **kwargs)
+                    current_ref = ref["ref"] if ref else None
+                    root_bsky = None
+                    if t == "bluesky" and current_ref and "root" in current_ref:
+                        root_bsky = current_ref["root"]
+
+                    for idx, item in enumerate(thread_items):
+                        item_text = item["text"]
+                        item_imgs = item["images"]
+                        item_spoiler = item["spoiler"]
+                        item_poll = item["poll"]
+                        item_quote = item["quote"]
+                        kwargs = {"spoiler": item_spoiler, "poll": item_poll, "lang": lang, "quote": item_quote}
+                        if t == "mastodon" and visibility:
+                            kwargs["visibility"] = visibility
+
+                        created = CLIENTS[t].post(item_text, current_ref, item_imgs, **kwargs)
+
+                        if t == "mastodon":
+                            m_id = None
+                            if isinstance(created, dict):
+                                m_id = created.get("id")
+                            elif hasattr(created, "get"):
+                                m_id = created.get("id")
+                            if m_id:
+                                current_ref = {"id": str(m_id)}
+                        elif t == "bluesky":
+                            b_uri = None
+                            b_cid = None
+                            if isinstance(created, dict):
+                                b_uri = created.get("uri")
+                                b_cid = created.get("cid")
+                            elif hasattr(created, "get"):
+                                b_uri = created.get("uri")
+                                b_cid = created.get("cid")
+                            if b_uri and b_cid:
+                                if not root_bsky:
+                                    root_bsky = {"uri": b_uri, "cid": b_cid}
+                                current_ref = {
+                                    "root": root_bsky,
+                                    "uri": b_uri,
+                                    "cid": b_cid
+                                }
+
                     results[t] = "ok"
                 except Exception as e:
                     results[t] = str(e)

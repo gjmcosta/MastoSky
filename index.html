@@ -145,6 +145,17 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .send{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:0 18px;height:36px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s,background .15s}
 .send:hover:not(:disabled){opacity:.9}
 .send:disabled{opacity:.35;cursor:default}
+.thread-container{display:flex;flex-direction:column;gap:12px;margin:10px 0 14px;padding-left:14px;border-left:2px dashed color-mix(in srgb,var(--accent) 45%,var(--line));position:relative}
+.thread-item{position:relative;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1)}
+.thread-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.thread-item-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent);padding:2px 8px;border-radius:12px}
+.thread-item-tools{display:flex;align-items:center;gap:6px}
+.thread-count{font:11.5px var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.thread-count.over{color:var(--danger);font-weight:700}
+.thread-rm-btn{background:none;border:none;color:var(--muted);cursor:pointer;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;padding:0;transition:background-color .15s,color .15s}
+.thread-rm-btn:hover{background:color-mix(in srgb,var(--danger) 20%,transparent);color:var(--danger)}
+.thread-textarea{width:100%;min-height:68px;border:0;background:none;color:var(--ink);font:14.5px/1.45 var(--sans);resize:vertical;outline:none}
+.thread-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent);padding-top:6px}
 .replying{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px}
 .replying button{border:0;background:none;color:var(--muted);text-decoration:underline}
 .msg{font-size:13px;margin-top:8px;min-height:18px}
@@ -635,6 +646,7 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="3 21 3 16 8 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="21 3 21 8 16 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-arrow-up" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><polyline points="5 12 12 5 19 12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-thread" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="1.75" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -734,9 +746,14 @@ body:not(.view-deck) .deck-col-body {
         </div>
       </div>
       <div class="previews" id="previews" hidden></div>
+      <div id="threadContainer" class="thread-container" hidden></div>
       <div class="bar">
         <div class="bar-left">
           <div class="compose-tools">
+            <button type="button" class="tool" id="addThreadBtn" title="Adicionar ao fio (Thread)" data-i18n-title="composer.add_thread_title" aria-label="Adicionar ao fio">
+              <svg class="ico"><use href="#i-thread"/></svg>
+              <span class="tool-label" data-i18n="composer.add_thread">+ Fio</span>
+            </button>
             <label class="tool" id="attachLabel" title="Anexar imagens (máx. 4)" data-i18n-title="composer.attach_title" aria-label="Anexar imagens">
               <svg class="ico"><use href="#i-image"/></svg>
               <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
@@ -1117,8 +1134,16 @@ const I18N = {
       img_err: "Erro ao processar imagem.",
       paste_img_title: "Colar imagem da área de transferência (Cmd+V)",
       paste_no_img: "Nenhuma imagem encontrada na área de transferência.",
+      paste_tip: "Dica: Podes colar com Cmd+V dentro do texto ou arrastar a imagem.",
       attach_disabled_poll: "Não é possível ter sondagem e imagens no mesmo post.",
-      attach_disabled_max: "Máximo de 4 imagens."
+      attach_disabled_max: "Máximo de 4 imagens.",
+      add_thread: "+ Fio",
+      add_thread_title: "Adicionar publicação ao fio (Thread)",
+      publish_thread: "Publicar fio ({count})",
+      thread_badge: "Fio #{n}",
+      thread_ph: "Continua o teu fio...",
+      thread_rm: "Remover do fio",
+      thread_published: "Fio publicado com sucesso!"
     },
     update: {
       section_title: "🔄 Versão e Atualizações",
@@ -1350,8 +1375,16 @@ const I18N = {
       img_err: "Error processing image.",
       paste_img_title: "Paste image from clipboard (Cmd+V)",
       paste_no_img: "No image found in clipboard.",
+      paste_tip: "Tip: You can paste with Cmd+V in the text field or drag and drop.",
       attach_disabled_poll: "Cannot have both a poll and images in the same post.",
-      attach_disabled_max: "Maximum 4 images."
+      attach_disabled_max: "Maximum 4 images.",
+      add_thread: "+ Thread",
+      add_thread_title: "Add post to thread",
+      publish_thread: "Publish thread ({count})",
+      thread_badge: "Thread #{n}",
+      thread_ph: "Continue your thread...",
+      thread_rm: "Remove from thread",
+      thread_published: "Thread published successfully!"
     },
     update: {
       section_title: "🔄 Version & Updates",
@@ -1719,6 +1752,7 @@ function closeDeckDetail() {
   threadIt = null;
 }
 let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
+let threadPosts = [], nextThreadId = 1;
 let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
 
 async function api(path, body) {
@@ -3086,7 +3120,7 @@ function extractImageFilesSync(cd) {
   return files;
 }
 
-async function extractBlobsFromClipboardApi() {
+async function extractBlobsFromClipboardApi(rethrow = false) {
   if (!navigator.clipboard || !navigator.clipboard.read) return [];
   try {
     const items = await navigator.clipboard.read();
@@ -3123,7 +3157,8 @@ async function extractBlobsFromClipboardApi() {
       }
     }
     return blobs;
-  } catch (_) {
+  } catch (err) {
+    if (rethrow) throw err;
     return [];
   }
 }
@@ -3242,9 +3277,10 @@ if ($("pasteImgBtn")) {
   $("pasteImgBtn").onclick = async () => {
     $("msg").className = "msg";
     $("msg").textContent = t("composer.img_processing");
+    let permDenied = false;
     try {
       // 1. Tentar ler blobs de imagem via Async Clipboard API
-      const apiBlobs = await extractBlobsFromClipboardApi();
+      const apiBlobs = await extractBlobsFromClipboardApi(true);
       if (apiBlobs.length > 0) {
         await handleImageFiles(apiBlobs);
         $("msg").textContent = "";
@@ -3261,16 +3297,17 @@ if ($("pasteImgBtn")) {
         }
       }
     } catch (err) {
-      if (err.name === "NotAllowedError") {
-        $("msg").className = "msg err";
-        $("msg").textContent = t("composer.paste_blocked") || "Permissão da área de transferência negada pelo browser. Podes colar com Cmd+V ou arrastar a imagem.";
-        setTimeout(() => { $("msg").textContent = ""; }, 4000);
-        return;
+      if (err.name === "NotAllowedError" || err.name === "SecurityError") {
+        permDenied = true;
       }
     }
     $("msg").className = "msg err";
-    $("msg").textContent = t("composer.paste_no_img");
-    setTimeout(() => { if ($("msg").textContent.includes(t("composer.paste_no_img"))) $("msg").textContent = ""; }, 3500);
+    if (permDenied) {
+      $("msg").textContent = t("composer.paste_tip") || "Dica: Podes colar diretamente com Cmd+V no campo de texto ou usar o botão da câmara (📷).";
+    } else {
+      $("msg").textContent = (t("composer.paste_no_img") || "Nenhuma imagem encontrada na área de transferência.") + " " + (t("composer.paste_tip") || "Dica: Podes colar com Cmd+V ou arrastar a imagem.");
+    }
+    setTimeout(() => { if ($("msg").className.includes("err")) $("msg").textContent = ""; }, 4500);
   };
 }
 
@@ -3419,6 +3456,163 @@ $("addOptionBtn").onclick = () => {
 
 $("pollDuration").onchange = update;
 
+function renderThreadPosts() {
+  const container = $("threadContainer");
+  if (!container) return;
+  if (!threadPosts.length) {
+    container.hidden = true;
+    container.innerHTML = "";
+    update();
+    return;
+  }
+  container.hidden = false;
+  container.innerHTML = "";
+
+  const targets = selected();
+  const limit = targets.length ? Math.min(...targets.map(n => LIMITS[n])) : 300;
+
+  threadPosts.forEach((post, index) => {
+    const item = el("div", "thread-item");
+    item.dataset.id = String(post.id);
+
+    // Cabeçalho do item do fio
+    const head = el("div", "thread-item-head");
+    const badge = el("span", "thread-item-badge");
+    badge.textContent = t("composer.thread_badge", {n: index + 2});
+
+    const tools = el("div", "thread-item-tools");
+    const countSpan = el("span", "thread-count");
+    countSpan.id = "threadCount_" + post.id;
+    const len = [...(post.text || "")].length;
+    countSpan.textContent = len + " / " + limit;
+    countSpan.classList.toggle("over", len > limit);
+
+    const rmBtn = el("button", "thread-rm-btn", "✕");
+    rmBtn.type = "button";
+    rmBtn.title = t("composer.thread_rm");
+    rmBtn.onclick = () => {
+      threadPosts = threadPosts.filter(p => p.id !== post.id);
+      renderThreadPosts();
+    };
+    tools.append(countSpan, rmBtn);
+    head.append(badge, tools);
+
+    // Textarea do item
+    const ta = el("textarea", "thread-textarea");
+    ta.placeholder = t("composer.thread_ph");
+    ta.value = post.text || "";
+    ta.oninput = () => {
+      post.text = ta.value;
+      const curLen = [...post.text].length;
+      countSpan.textContent = curLen + " / " + limit;
+      countSpan.classList.toggle("over", curLen > limit);
+      update();
+    };
+    ta.addEventListener("paste", async (e) => {
+      const cd = e.clipboardData || window.clipboardData;
+      if (!cd) return;
+      const files = extractImageFilesSync(cd);
+      if (files.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        await handleThreadImages(post, files);
+      }
+    });
+
+    // Pré-visualização de imagens do item do fio
+    const prevWrap = el("div", "previews");
+    prevWrap.id = "threadPreviews_" + post.id;
+    if (!post.images || !post.images.length) prevWrap.hidden = true;
+    renderThreadItemPreviews(post, prevWrap);
+
+    // Rodapé de ferramentas do item
+    const foot = el("div", "thread-footer");
+    const attachBtn = el("label", "tool");
+    attachBtn.title = t("composer.attach_title");
+    attachBtn.innerHTML = '<svg class="ico"><use href="#i-image"/></svg>';
+    const fileInp = el("input");
+    fileInp.type = "file";
+    fileInp.accept = "image/jpeg,image/png,image/webp,image/gif";
+    fileInp.multiple = true;
+    fileInp.hidden = true;
+    fileInp.onchange = async (e) => {
+      const fs = Array.from(e.target.files);
+      fileInp.value = "";
+      await handleThreadImages(post, fs);
+    };
+    attachBtn.append(fileInp);
+    foot.append(attachBtn);
+
+    item.append(head, ta, prevWrap, foot);
+    container.append(item);
+  });
+
+  update();
+}
+
+function renderThreadItemPreviews(post, wrap) {
+  wrap.innerHTML = "";
+  if (!post.images || !post.images.length) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  post.images.forEach((img, idx) => {
+    const card = el("div", "prev-card");
+    const thumb = el("img");
+    thumb.src = img.data;
+    thumb.title = t("composer.img_view");
+    thumb.onclick = () => openImageLightbox(post.images.map(x => x.data), idx);
+
+    const rm = el("button", "rm", "✕");
+    rm.title = t("composer.img_remove");
+    rm.onclick = () => {
+      post.images.splice(idx, 1);
+      renderThreadItemPreviews(post, wrap);
+      update();
+    };
+    const inp = el("input");
+    inp.type = "text";
+    inp.placeholder = t("composer.img_alt_ph");
+    inp.value = img.alt || "";
+    inp.oninput = () => { img.alt = inp.value; };
+    card.append(thumb, inp, rm);
+    wrap.append(card);
+  });
+}
+
+async function handleThreadImages(post, files) {
+  if (!files || !files.length) return;
+  post.images = post.images || [];
+  const remaining = 4 - post.images.length;
+  if (remaining <= 0) return;
+  const toProcess = Array.from(files).slice(0, remaining);
+  for (const f of toProcess) {
+    const proc = await processImage(f);
+    post.images.push(proc);
+  }
+  const wrap = $("threadPreviews_" + post.id);
+  if (wrap) renderThreadItemPreviews(post, wrap);
+  update();
+}
+
+function addThreadPost() {
+  if (threadPosts.length >= 24) return;
+  threadPosts.push({ id: nextThreadId++, text: "", images: [] });
+  renderThreadPosts();
+  setTimeout(() => {
+    const c = $("threadContainer");
+    if (c && c.lastElementChild) {
+      const ta = c.lastElementChild.querySelector("textarea");
+      if (ta) ta.focus();
+    }
+  }, 50);
+}
+
+if ($("addThreadBtn")) {
+  $("addThreadBtn").onclick = addThreadPost;
+}
+
 function update() {
   const targets = selected();
   const text = $("text").value;
@@ -3470,6 +3664,21 @@ function update() {
   const pollValid = !hasPoll || filledOpts.length >= 2;
   const hasContent = lenText > 0 || images.length > 0 || (hasPoll && filledOpts.length >= 2) || Boolean(quote);
 
+  let threadValid = true;
+  if (threadPosts.length > 0) {
+    threadValid = threadPosts.every(p => {
+      const pLen = [...(p.text || "")].length;
+      const hasPostContent = (p.text || "").trim().length > 0 || (p.images && p.images.length > 0);
+      return hasPostContent && pLen <= limit;
+    });
+  }
+
+  if (threadPosts.length > 0) {
+    $("send").textContent = t("composer.publish_thread", {count: threadPosts.length + 1});
+  } else {
+    $("send").textContent = t("composer.send");
+  }
+
   const bskyActive = reply ? (reply.network === "bluesky") : targets.includes("bluesky");
   const mastoActive = reply ? (reply.network === "mastodon") : targets.includes("mastodon");
   const noteEl = $("bskyNote");
@@ -3485,7 +3694,7 @@ function update() {
   updateNetToggleUI();
   updateVisToggleUI();
 
-  $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !targets.length;
+  $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !targets.length || !threadValid;
 }
 
 function startQuote(it, onlyNative = false) {
@@ -3609,6 +3818,8 @@ function openBoostMenu(it, btn) {
 let crossPostTarget = null;
 let crossPostTheme = "cosmic";
 
+const FONT_SANS = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
 function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 12) {
   const words = text.split(/\s+/);
   let line = "";
@@ -3641,13 +3852,19 @@ function loadImgSafe(url) {
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => {
-      // Se falhar diretamente (CORS ou restrição externa), tenta via proxy local
-      const pImg = new Image();
-      pImg.onload = () => resolve(pImg);
-      pImg.onerror = () => resolve(null);
-      pImg.src = "/api/proxy_image?url=" + encodeURIComponent(url);
+      // Se o proxy falhou, tenta carregar diretamente da URL com CORS anónimo
+      const direct = new Image();
+      direct.crossOrigin = "anonymous";
+      direct.onload = () => resolve(direct);
+      direct.onerror = () => {
+        // Fallback: carregar diretamente sem crossOrigin
+        const noCors = new Image();
+        noCors.onload = () => resolve(noCors);
+        noCors.onerror = () => resolve(null);
+        noCors.src = url;
+      };
+      direct.src = url;
     };
-    // Tenta primeiro através do proxy se for URL absoluto externo para garantir que não suja (taint) o canvas
     if (url.startsWith("http://") || url.startsWith("https://")) {
       img.src = "/api/proxy_image?url=" + encodeURIComponent(url);
     } else {
@@ -3692,6 +3909,39 @@ function drawRoundedImage(ctx, img, x, y, w, h, r = 16) {
   ctx.restore();
 }
 
+function drawRichLinkCard(ctx, x, y, w, h, r = 16, m = {}) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  const bgGrad = ctx.createLinearGradient(x, y, x, y + h);
+  bgGrad.addColorStop(0, "#151B38");
+  bgGrad.addColorStop(1, "#0D1126");
+  ctx.fillStyle = bgGrad;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(77, 178, 255, 0.28)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const pad = 30;
+  const innerW = w - pad * 2;
+  const domain = (m.url || "").replace(/^https?:\/\//, "").split("/")[0] || "LINK";
+  ctx.fillStyle = "#4DB2FF";
+  ctx.font = "bold 18px " + FONT_SANS;
+  ctx.fillText("🔗 " + domain.toUpperCase(), x + pad, y + pad + 14);
+
+  const title = m.title || domain;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "bold 26px " + FONT_SANS;
+  const titleEndY = wrapCanvasText(ctx, title, x + pad, y + pad + 60, innerW, 36, 3);
+
+  if (m.description) {
+    ctx.fillStyle = "#9AA0D6";
+    ctx.font = "18px " + FONT_SANS;
+    wrapCanvasText(ctx, m.description, x + pad, titleEndY + 22, innerW, 26, 3);
+  }
+  ctx.restore();
+}
+
 function drawMediaFallback(ctx, x, y, w, h, r = 16, label = "🖼️ Imagem") {
   ctx.save();
   ctx.beginPath();
@@ -3702,7 +3952,7 @@ function drawMediaFallback(ctx, x, y, w, h, r = 16, label = "🖼️ Imagem") {
   ctx.lineWidth = 1;
   ctx.stroke();
   ctx.fillStyle = "#9AA0D6";
-  ctx.font = "20px system-ui, -apple-system, sans-serif";
+  ctx.font = "18px " + FONT_SANS;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   const displayLabel = label.length > 42 ? label.slice(0, 39) + "..." : label;
@@ -3736,7 +3986,7 @@ async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH) {
         ctx.fillStyle = "rgba(10, 14, 28, 0.88)";
         ctx.fillRect(boxX, barY, boxW, barH);
         ctx.fillStyle = "#EEF0FF";
-        ctx.font = "bold 16px system-ui, -apple-system, sans-serif";
+        ctx.font = "bold 16px " + FONT_SANS;
         ctx.textBaseline = "middle";
         const domain = (m0.url || "").replace(/^https?:\/\//, "").split("/")[0];
         let label = domain;
@@ -3745,7 +3995,11 @@ async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH) {
         ctx.restore();
       }
     } else {
-      drawMediaFallback(ctx, boxX, boxY, boxW, boxH, radius, m0.type === "external" ? (m0.title || "🔗 Link") : "🖼️ Imagem");
+      if (m0.type === "external") {
+        drawRichLinkCard(ctx, boxX, boxY, boxW, boxH, radius, m0);
+      } else {
+        drawMediaFallback(ctx, boxX, boxY, boxW, boxH, radius, "🖼️ Imagem");
+      }
     }
   } else if (count === 2) {
     const wEach = (boxW - gap) / 2;
@@ -3796,7 +4050,7 @@ async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH) {
           ctx.fillStyle = "rgba(0,0,0,0.65)";
           ctx.fill();
           ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 34px system-ui, sans-serif";
+          ctx.font = "bold 32px " + FONT_SANS;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(`+${mediaList.length - 3}`, x + wEach / 2, y + hEach / 2);
@@ -3908,7 +4162,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
       ctx.fillStyle = it.network === "bluesky" ? "#0A78D6" : "#5B4BDB";
       ctx.fill();
       ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 28px system-ui, sans-serif";
+      ctx.font = "bold 28px " + FONT_SANS;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText((it.name || "U")[0].toUpperCase(), avX + avR, avY + avR);
@@ -3919,7 +4173,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
     ctx.fillStyle = it.network === "bluesky" ? "#0A78D6" : "#5B4BDB";
     ctx.fill();
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 28px system-ui, sans-serif";
+    ctx.font = "bold 28px " + FONT_SANS;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText((it.name || "U")[0].toUpperCase(), avX + avR, avY + avR);
@@ -3930,11 +4184,11 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   // Nome e handle
   const textLeft = avX + avR * 2 + 20;
   ctx.fillStyle = "#EEF0FF";
-  ctx.font = "bold 30px system-ui, -apple-system, sans-serif";
+  ctx.font = "bold 28px " + FONT_SANS;
   ctx.fillText(it.name || it.handle, textLeft, avY + 32);
 
   ctx.fillStyle = "#9AA0D6";
-  ctx.font = "20px system-ui, -apple-system, sans-serif";
+  ctx.font = "18px " + FONT_SANS;
   ctx.fillText(it.handle + " · " + LABEL[it.network] + (it.time ? " · " + ago(it.time) : ""), textLeft, avY + 62);
 
   // Distintivo da rede
@@ -3945,7 +4199,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   ctx.roundRect(badgeNetX, badgeNetY, 100, 34, 10);
   ctx.fill();
   ctx.fillStyle = it.network === "bluesky" ? "#4DB2FF" : "#9AA0FF";
-  ctx.font = "bold 16px system-ui, sans-serif";
+  ctx.font = "bold 15px " + FONT_SANS;
   ctx.textAlign = "center";
   ctx.fillText(it.network === "bluesky" ? "Bluesky" : "Mastodon", badgeNetX + 50, badgeNetY + 23);
   ctx.textAlign = "start";
@@ -3962,7 +4216,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   // 6. Conteúdo do post (Texto e/ou Media)
   const mediaList = (it.media || []).filter(m => {
     if (!m) return false;
-    if (m.type === "external") return Boolean(m.thumb);
+    if (m.type === "external") return Boolean(m.thumb || m.url);
     return Boolean(m.url || m.thumb);
   });
   const hasMedia = mediaList.length > 0;
@@ -3987,7 +4241,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
 
     if (postTxt) {
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "26px/1.4 system-ui, -apple-system, sans-serif";
+      ctx.font = "26px " + FONT_SANS;
       const textEndY = wrapCanvasText(ctx, postTxt, contentLeft, contentTop + 24, availW, 36, 3);
       imgBoxY = Math.min(textEndY + 16, contentTop + 140);
       imgBoxH = contentBottom - imgBoxY;
@@ -3996,13 +4250,13 @@ async function renderCrossCanvas(it, theme = "cosmic") {
     await drawMediaGrid(ctx, mediaList, contentLeft, imgBoxY, availW, imgBoxH);
   } else {
     ctx.fillStyle = "#FFFFFF";
-    ctx.font = "30px/1.45 system-ui, -apple-system, sans-serif";
+    ctx.font = "30px " + FONT_SANS;
     wrapCanvasText(ctx, postTxt || t("composer.no_text"), contentLeft, contentTop + 28, availW, 44, 13);
   }
 
   // 7. Rodapé de métricas no cartão
   ctx.fillStyle = "#7D85B2";
-  ctx.font = "20px system-ui, sans-serif";
+  ctx.font = "18px " + FONT_SANS;
   const metricsStr = `💬 ${Number(it.replies || 0)}   🔄 ${Number(it.boosts || 0)}   ❤️ ${Number(it.likes || 0)}`;
   ctx.fillText(metricsStr, cardX + 45, metricsY);
 
@@ -4024,16 +4278,16 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   ctx.fill();
 
   ctx.fillStyle = "#EEF0FF";
-  ctx.font = "bold 22px system-ui, sans-serif";
+  ctx.font = "bold 22px " + FONT_SANS;
   ctx.fillText("MastoSky", starX + 18, footY);
 
   ctx.fillStyle = "#8E96C8";
-  ctx.font = "18px system-ui, sans-serif";
+  ctx.font = "16px " + FONT_SANS;
   ctx.fillText(t("cross_post.branding_tagline"), starX + 125, footY);
 
   if (it.url) {
     ctx.fillStyle = "#4DB2FF";
-    ctx.font = "16px system-ui, -apple-system, sans-serif";
+    ctx.font = "16px " + FONT_SANS;
     ctx.textAlign = "right";
     const shortUrl = it.url.replace(/^https?:\/\//, "");
     ctx.fillText(shortUrl.length > 40 ? shortUrl.slice(0, 38) + "..." : shortUrl, cardX + cardW, footY);
@@ -4224,9 +4478,20 @@ $("send").onclick = async () => {
   const mastoActive = reply ? (reply.network === "mastodon") : selected().includes("mastodon");
   const visibility = (mastoActive && $("mastoVisibility")) ? $("mastoVisibility").value : null;
 
+  let threadPayload = null;
+  if (threadPosts.length > 0) {
+    threadPayload = [
+      { text: $("text").value.trim(), images, spoiler, poll, quote },
+      ...threadPosts.map(p => ({
+        text: (p.text || "").trim(),
+        images: p.images || []
+      }))
+    ];
+  }
+
   const body = reply
-    ? {text: $("text").value, reply, images, spoiler, poll, visibility, quote, lang: currentLang}
-    : {text: $("text").value, targets: selected(), images, spoiler, poll, visibility, quote, lang: currentLang};
+    ? {text: $("text").value, reply, images, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload}
+    : {text: $("text").value, targets: selected(), images, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload};
 
   const res = await api("/api/post", body);
   const bad = Object.entries(res).filter(([, v]) => v !== "ok");
@@ -4235,8 +4500,10 @@ $("send").onclick = async () => {
     msg.className = "msg err";
     msg.textContent = t("composer.post_failed", {err: bad.map(([n, v]) => LABEL[n] + " (" + v + ")").join("; ")});
   } else {
-    msg.className = "msg"; msg.textContent = t("composer.posted");
+    msg.className = "msg";
+    msg.textContent = threadPayload ? (t("composer.thread_published") || "Fio publicado com sucesso!") : t("composer.posted");
     $("text").value = ""; images = []; renderPreviews();
+    threadPosts = []; renderThreadPosts();
     hasCW = false; renderCW();
     hasPoll = false; pollOptions = ["", ""]; renderPoll();
     reply = null; $("replying").hidden = true;

@@ -382,6 +382,85 @@ class PostHandlerTests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(self.client.post.call_args[1].get("lang"), "pt")
 
+    def test_thread_validation(self):
+        # Empty thread
+        self.assertEqual(self._post("/api/post", {"thread": [], "targets": ["bluesky"]})[0], 400)
+        # Not a list
+        self.assertEqual(self._post("/api/post", {"thread": "invalid", "targets": ["bluesky"]})[0], 400)
+        # Thread too long
+        self.assertEqual(self._post("/api/post", {"thread": [{"text": str(i)} for i in range(26)], "targets": ["bluesky"]})[0], 400)
+        # Thread post with empty content
+        self.assertEqual(self._post("/api/post", {"thread": [{"text": "ok"}, {"text": ""}], "targets": ["bluesky"]})[0], 400)
+
+    def test_thread_publishing_chain_bsky(self):
+        self.client.post.side_effect = [
+            {"uri": "at://did:plc:123/app.bsky.feed.post/1", "cid": "cid1"},
+            {"uri": "at://did:plc:123/app.bsky.feed.post/2", "cid": "cid2"},
+            {"uri": "at://did:plc:123/app.bsky.feed.post/3", "cid": "cid3"}
+        ]
+        payload = {
+            "targets": ["bluesky"],
+            "thread": [
+                {"text": "Primeiro post do fio"},
+                {"text": "Segundo post do fio"},
+                {"text": "Terceiro post do fio"}
+            ]
+        }
+        code, r = self._post("/api/post", payload)
+        self.assertEqual(code, 200)
+        self.assertEqual(r, {"bluesky": "ok"})
+        self.assertEqual(self.client.post.call_count, 3)
+
+        # Call 1: root post
+        args1, kwargs1 = self.client.post.call_args_list[0]
+        self.assertEqual(args1[0], "Primeiro post do fio")
+        self.assertIsNone(args1[1])
+
+        # Call 2: replies to post 1
+        args2, kwargs2 = self.client.post.call_args_list[1]
+        self.assertEqual(args2[0], "Segundo post do fio")
+        self.assertEqual(args2[1]["root"], {"uri": "at://did:plc:123/app.bsky.feed.post/1", "cid": "cid1"})
+        self.assertEqual(args2[1]["uri"], "at://did:plc:123/app.bsky.feed.post/1")
+        self.assertEqual(args2[1]["cid"], "cid1")
+
+        # Call 3: root is post 1, parent is post 2
+        args3, kwargs3 = self.client.post.call_args_list[2]
+        self.assertEqual(args3[0], "Terceiro post do fio")
+        self.assertEqual(args3[1]["root"], {"uri": "at://did:plc:123/app.bsky.feed.post/1", "cid": "cid1"})
+        self.assertEqual(args3[1]["uri"], "at://did:plc:123/app.bsky.feed.post/2")
+        self.assertEqual(args3[1]["cid"], "cid2")
+
+    def test_thread_publishing_chain_mastodon(self):
+        from unittest import mock
+        masto_client = mock.Mock()
+        masto_client.post.side_effect = [
+            {"id": "1001"},
+            {"id": "1002"},
+            {"id": "1003"}
+        ]
+        with mock.patch.dict(app.CLIENTS, {"mastodon": masto_client}):
+            payload = {
+                "targets": ["mastodon"],
+                "thread": [
+                    {"text": "Masto 1"},
+                    {"text": "Masto 2"},
+                    {"text": "Masto 3"}
+                ]
+            }
+            code, r = self._post("/api/post", payload)
+            self.assertEqual(code, 200)
+            self.assertEqual(r, {"mastodon": "ok"})
+            self.assertEqual(masto_client.post.call_count, 3)
+
+            # Call 1: root
+            self.assertIsNone(masto_client.post.call_args_list[0][0][1])
+
+            # Call 2: in_reply_to 1001
+            self.assertEqual(masto_client.post.call_args_list[1][0][1], {"id": "1001"})
+
+            # Call 3: in_reply_to 1002
+            self.assertEqual(masto_client.post.call_args_list[2][0][1], {"id": "1002"})
+
 
 class HttpErrorTests(unittest.TestCase):
     def _http_error(self, code, retry_after=None, body=b"x"):
