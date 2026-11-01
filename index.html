@@ -868,7 +868,7 @@ function setLang(newLang) {
   localStorage.setItem("mastosky_lang", newLang);
   applyI18n();
 
-  if (tab === "timeline") renderTimeline();
+  if (tab === "timeline") render();
   else if (tab === "explore") renderExplore();
   else if (tab === "notifs") renderNotifs();
   else if (tab === "profile") {
@@ -1195,15 +1195,19 @@ async function loadMoreTimeline() {
 async function load() {
   try {
     const d = await api("/api/timeline");
-    items = d.items; networks = d.networks; timelineCursors = d.cursors || {};
+    if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
+    items = d.items || []; networks = d.networks || []; timelineCursors = d.cursors || {};
     if (!networks || networks.length === 0) {
       openSetup(true);
       return;
     }
-    $("errors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
+    const errList = Object.entries(d.errors || {}).map(([n, e]) => el("div", "banner", (LABEL[n] || n) + ": " + e));
+    $("errors").replaceChildren(...errList);
     buildTargets(); render(); update();
   } catch (e) {
-    $("errors").replaceChildren(el("div", "banner", t("feed.error_server")));
+    console.error("load() error:", e);
+    const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
+    $("errors").replaceChildren(el("div", "banner", msg));
   }
 }
 
@@ -1220,11 +1224,15 @@ async function loadMoreExplore() {
 async function loadExplore() {
   try {
     const d = await api("/api/explore");
-    exploreItems = d.items; exploreCursors = d.cursors || {};
-    $("eerrors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
+    if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
+    exploreItems = d.items || []; exploreCursors = d.cursors || {};
+    const errList = Object.entries(d.errors || {}).map(([n, e]) => el("div", "banner", (LABEL[n] || n) + ": " + e));
+    $("eerrors").replaceChildren(...errList);
     renderExplore();
   } catch (e) {
-    $("eerrors").replaceChildren(el("div", "banner", t("feed.error_server")));
+    console.error("loadExplore() error:", e);
+    const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
+    $("eerrors").replaceChildren(el("div", "banner", msg));
   }
 }
 
@@ -1254,11 +1262,15 @@ async function loadMoreNotifs() {
 async function loadNotifs() {
   try {
     const d = await api("/api/notifications");
-    notifs = d.items; notifsCursors = d.cursors || {};
-    $("nerrors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
+    if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
+    notifs = d.items || []; notifsCursors = d.cursors || {};
+    const errList = Object.entries(d.errors || {}).map(([n, e]) => el("div", "banner", (LABEL[n] || n) + ": " + e));
+    $("nerrors").replaceChildren(...errList);
     renderNotifs();
   } catch (e) {
-    $("nerrors").replaceChildren(el("div", "banner", t("feed.error_server")));
+    console.error("loadNotifs() error:", e);
+    const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
+    $("nerrors").replaceChildren(el("div", "banner", msg));
   }
   updateBadge();
 }

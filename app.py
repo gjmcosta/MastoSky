@@ -80,7 +80,7 @@ def _retry_after(headers):
 RETRY_MAX_WAIT = 5  # segundos: só repete um GET num 429 se o servidor pedir menos do que isto
 
 
-def http(method, url, data=None, token=None, headers=None):
+def http(method, url, data=None, token=None, headers=None, timeout=30):
     req = urllib.request.Request(url, method=method)
     req.add_header("User-Agent", "MastoSky/1.0")
     if token:
@@ -101,7 +101,7 @@ def http(method, url, data=None, token=None, headers=None):
     host = urllib.parse.urlparse(url).netloc
     for attempt in (0, 1):
         try:
-            with urllib.request.urlopen(req, body, timeout=30) as r:
+            with urllib.request.urlopen(req, body, timeout=timeout) as r:
                 raw = r.read()
                 return json.loads(raw) if raw else {}
         except urllib.error.HTTPError as e:
@@ -1028,16 +1028,16 @@ class Masto:
         except Exception:
             return None
 
-    def call(self, method, path, data=None, params=None):
+    def call(self, method, path, data=None, params=None, timeout=30):
         url = self.base + path + ("?" + urllib.parse.urlencode(params) if params else "")
-        return http(method, url, data, self.token)
+        return http(method, url, data, self.token, timeout=timeout)
 
     def parent(self, sid):
         with self.cache_lock:
             if sid in self.cache:
                 return self.cache[sid]
         try:
-            p = self.call("GET", f"/api/v1/statuses/{sid}")
+            p = self.call("GET", f"/api/v1/statuses/{sid}", timeout=4)
         except Exception:
             return None
         with self.cache_lock:
