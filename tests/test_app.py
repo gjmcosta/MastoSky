@@ -1315,5 +1315,52 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(prof_m["posts_count"], 10)
 
 
+class ProxyImageTests(unittest.TestCase):
+    def test_blocks_localhost_and_private_ips(self):
+        for bad in ("http://localhost/pic.jpg", "http://127.0.0.1/pic.jpg", "http://192.168.0.1/pic.jpg", "http://10.0.0.1/pic.jpg"):
+            with self.assertRaises(ValueError):
+                app.proxy_fetch_image(bad)
+
+    def test_blocks_invalid_urls(self):
+        for bad in ("", "javascript:alert(1)", "file:///etc/passwd", "not_a_url"):
+            with self.assertRaises(ValueError):
+                app.proxy_fetch_image(bad)
+
+    def test_proxy_fetch_image_success(self):
+        fake_bytes = b"\xff\xd8\xff\xe0fake_jpeg_content"
+        mock_resp = mock.MagicMock()
+        mock_resp.headers.get_content_type.return_value = "image/jpeg"
+        mock_resp.read.return_value = fake_bytes
+        mock_resp.__enter__.return_value = mock_resp
+
+        with mock.patch("urllib.request.urlopen", return_value=mock_resp):
+            data, ctype = app.proxy_fetch_image("https://cdn.bsky.app/img.jpg")
+            self.assertEqual(data, fake_bytes)
+            self.assertEqual(ctype, "image/jpeg")
+
+    def test_proxy_endpoint_serves_image(self):
+        fake_bytes = b"\x89PNGfake_png"
+        h = object.__new__(app.H)
+        h.path = "/api/proxy_image?url=" + app.urllib.parse.quote("https://cdn.bsky.app/img.png")
+        h.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+        h.wfile = io.BytesIO()
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+
+        with mock.patch("app.proxy_fetch_image", return_value=(fake_bytes, "image/png")):
+            h.do_GET()
+
+        code = [v for k, v in h.sent if k == "code"][0]
+        ct = [v for k, v in h.sent if k == "Content-Type"][0]
+        cache = [v for k, v in h.sent if k == "Cache-Control"][0]
+        self.assertEqual(code, 200)
+        self.assertEqual(ct, "image/png")
+        self.assertIn("max-age", cache)
+        self.assertEqual(h.wfile.getvalue(), fake_bytes)
+
+
 if __name__ == "__main__":
     unittest.main()
+

@@ -413,7 +413,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
       <p class="setup-desc" id="crossPostDesc">Cria um repost/citação na rede de origem e partilha um cartão visual enriquecido na outra rede.</p>
 
       <div class="cross-preview-wrap">
-        <canvas id="crossCanvas" width="1080" height="960" style="display:none"></canvas>
+        <canvas id="crossCanvas" width="1080" height="1080" style="display:none"></canvas>
         <img id="crossImgPreview" class="cross-img-preview" alt="Pré-visualização do cartão">
       </div>
 
@@ -1713,16 +1713,155 @@ function loadImgSafe(url) {
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = url;
+    img.onerror = () => {
+      // Se falhar diretamente (CORS ou restrição externa), tenta via proxy local
+      const pImg = new Image();
+      pImg.onload = () => resolve(pImg);
+      pImg.onerror = () => resolve(null);
+      pImg.src = "/api/proxy_image?url=" + encodeURIComponent(url);
+    };
+    // Tenta primeiro através do proxy se for URL absoluto externo para garantir que não suja (taint) o canvas
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      img.src = "/api/proxy_image?url=" + encodeURIComponent(url);
+    } else {
+      img.src = url;
+    }
   });
+}
+
+function drawRoundedImage(ctx, img, x, y, w, h, r = 16) {
+  if (!img) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.clip();
+
+  const nw = img.naturalWidth || img.width || 1;
+  const nh = img.naturalHeight || img.height || 1;
+  const imgRatio = nw / nh;
+  const targetRatio = w / h;
+  let sx, sy, sw, sh;
+  if (imgRatio > targetRatio) {
+    sh = nh;
+    sw = sh * targetRatio;
+    sx = (nw - sw) / 2;
+    sy = 0;
+  } else {
+    sw = nw;
+    sh = sw / targetRatio;
+    sx = 0;
+    sy = (nh - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+  ctx.restore();
+
+  // Borda subtil
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.strokeStyle = "rgba(255,255,255,0.14)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawMediaFallback(ctx, x, y, w, h, r = 16) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.fillStyle = "rgba(255,255,255,0.06)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = "#9AA0D6";
+  ctx.font = "24px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🖼️ Imagem", x + w / 2, y + h / 2);
+  ctx.restore();
+}
+
+async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH) {
+  const count = Math.min(mediaList.length, 4);
+  const gap = 12;
+  const radius = 18;
+
+  const loadedImgs = await Promise.all(
+    mediaList.slice(0, count).map(m => loadImgSafe(m.url || m.thumb))
+  );
+
+  if (count === 1) {
+    if (loadedImgs[0]) {
+      drawRoundedImage(ctx, loadedImgs[0], boxX, boxY, boxW, boxH, radius);
+    } else {
+      drawMediaFallback(ctx, boxX, boxY, boxW, boxH, radius);
+    }
+  } else if (count === 2) {
+    const wEach = (boxW - gap) / 2;
+    for (let i = 0; i < 2; i++) {
+      const x = boxX + i * (wEach + gap);
+      if (loadedImgs[i]) {
+        drawRoundedImage(ctx, loadedImgs[i], x, boxY, wEach, boxH, radius);
+      } else {
+        drawMediaFallback(ctx, x, boxY, wEach, boxH, radius);
+      }
+    }
+  } else if (count === 3) {
+    const wLeft = (boxW - gap) * 0.58;
+    const wRight = boxW - gap - wLeft;
+    const hEach = (boxH - gap) / 2;
+    if (loadedImgs[0]) {
+      drawRoundedImage(ctx, loadedImgs[0], boxX, boxY, wLeft, boxH, radius);
+    } else {
+      drawMediaFallback(ctx, boxX, boxY, wLeft, boxH, radius);
+    }
+    if (loadedImgs[1]) {
+      drawRoundedImage(ctx, loadedImgs[1], boxX + wLeft + gap, boxY, wRight, hEach, radius);
+    } else {
+      drawMediaFallback(ctx, boxX + wLeft + gap, boxY, wRight, hEach, radius);
+    }
+    if (loadedImgs[2]) {
+      drawRoundedImage(ctx, loadedImgs[2], boxX + wLeft + gap, boxY + hEach + gap, wRight, hEach, radius);
+    } else {
+      drawMediaFallback(ctx, boxX + wLeft + gap, boxY + hEach + gap, wRight, hEach, radius);
+    }
+  } else if (count >= 4) {
+    const wEach = (boxW - gap) / 2;
+    const hEach = (boxH - gap) / 2;
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 2; c++) {
+        const idx = r * 2 + c;
+        const x = boxX + c * (wEach + gap);
+        const y = boxY + r * (hEach + gap);
+        if (loadedImgs[idx]) {
+          drawRoundedImage(ctx, loadedImgs[idx], x, y, wEach, hEach, radius);
+        } else {
+          drawMediaFallback(ctx, x, y, wEach, hEach, radius);
+        }
+        if (idx === 3 && mediaList.length > 4) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(x, y, wEach, hEach, radius);
+          ctx.fillStyle = "rgba(0,0,0,0.65)";
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 34px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(`+${mediaList.length - 3}`, x + wEach / 2, y + hEach / 2);
+          ctx.restore();
+        }
+      }
+    }
+  }
 }
 
 async function renderCrossCanvas(it, theme = "cosmic") {
   const canvas = $("crossCanvas");
   const ctx = canvas.getContext("2d");
   const W = 1080;
-  const H = 960;
+  const H = 1080;
   canvas.width = W;
   canvas.height = H;
 
@@ -1759,11 +1898,13 @@ async function renderCrossCanvas(it, theme = "cosmic") {
     [380, 180, 1.5, "rgba(255,255,255,0.6)"],
     [850, 120, 3.5, "rgba(77,178,255,0.9)"],
     [980, 80, 2, "rgba(255,214,107,0.7)"],
-    [150, 840, 2, "rgba(255,255,255,0.6)"],
-    [940, 820, 2.5, "rgba(77,178,255,0.7)"],
-    [70, 480, 1.5, "rgba(255,214,107,0.6)"],
-    [1010, 440, 2, "rgba(255,255,255,0.7)"],
-    [890, 580, 1.5, "rgba(77,178,255,0.6)"]
+    [150, 960, 2, "rgba(255,255,255,0.6)"],
+    [940, 940, 2.5, "rgba(77,178,255,0.7)"],
+    [70, 520, 1.5, "rgba(255,214,107,0.6)"],
+    [1010, 500, 2, "rgba(255,255,255,0.7)"],
+    [890, 680, 1.5, "rgba(77,178,255,0.6)"],
+    [120, 750, 1.5, "rgba(77,178,255,0.5)"],
+    [970, 780, 2, "rgba(255,214,107,0.6)"]
   ];
   for (const [sx, sy, sr, sc] of starCoords) {
     ctx.beginPath();
@@ -1773,17 +1914,17 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   }
 
   // 3. Cartão central
-  const cardX = 90;
-  const cardY = 100;
-  const cardW = 900;
-  const cardH = 720;
-  const radius = 26;
+  const cardX = 80;
+  const cardY = 75;
+  const cardW = 920;
+  const cardH = 880;
+  const radius = 28;
 
   // Sombra do cartão
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.5)";
-  ctx.shadowBlur = 35;
-  ctx.shadowOffsetY = 16;
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 18;
   ctx.beginPath();
   ctx.roundRect(cardX, cardY, cardW, cardH, radius);
   ctx.fillStyle = "#121936";
@@ -1799,7 +1940,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
 
   // 4. Cabeçalho do post dentro do cartão (Avatar, Nome, Handle, Badge)
   const avX = cardX + 45;
-  const avY = cardY + 45;
+  const avY = cardY + 40;
   const avR = 36;
 
   const avImg = await loadImgSafe(it.avatar);
@@ -1812,7 +1953,6 @@ async function renderCrossCanvas(it, theme = "cosmic") {
       ctx.drawImage(avImg, avX, avY, avR * 2, avR * 2);
       ctx.restore();
     } catch (_) {
-      // Fallback em caso de taint
       ctx.beginPath();
       ctx.arc(avX + avR, avY + avR, avR, 0, Math.PI * 2);
       ctx.fillStyle = it.network === "bluesky" ? "#0A78D6" : "#5B4BDB";
@@ -1861,34 +2001,59 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   ctx.textAlign = "start";
 
   // 5. Linha divisória
+  const dividerY = avY + avR * 2 + 20;
   ctx.strokeStyle = "rgba(255,255,255,0.08)";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(cardX + 45, avY + avR * 2 + 25);
-  ctx.lineTo(cardX + cardW - 45, avY + avR * 2 + 25);
+  ctx.moveTo(cardX + 45, dividerY);
+  ctx.lineTo(cardX + cardW - 45, dividerY);
   ctx.stroke();
 
-  // 6. Texto do post
-  let postTxt = it.text || "";
+  // 6. Conteúdo do post (Texto e/ou Media)
+  const mediaList = (it.media || []).filter(m => m && (m.url || m.thumb));
+  const hasMedia = mediaList.length > 0;
+
+  let postTxt = (it.text || "").trim();
   if (!postTxt && it.html) {
     const tmp = document.createElement("div");
     tmp.innerHTML = it.html;
-    postTxt = tmp.textContent || "";
+    postTxt = (tmp.textContent || "").trim();
   }
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = "28px/1.45 system-ui, -apple-system, sans-serif";
-  const textTop = avY + avR * 2 + 70;
-  wrapCanvasText(ctx, postTxt || "(Sem texto)", cardX + 45, textTop, cardW - 90, 42, 9);
+
+  const contentLeft = cardX + 45;
+  const availW = cardW - 90;
+  const contentTop = dividerY + 25;
+  const metricsY = cardY + cardH - 35;
+  const contentBottom = metricsY - 25;
+  const availH = contentBottom - contentTop;
+
+  if (hasMedia) {
+    let imgBoxY = contentTop;
+    let imgBoxH = availH;
+
+    if (postTxt) {
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "26px/1.4 system-ui, -apple-system, sans-serif";
+      const textEndY = wrapCanvasText(ctx, postTxt, contentLeft, contentTop + 24, availW, 36, 3);
+      imgBoxY = Math.min(textEndY + 16, contentTop + 140);
+      imgBoxH = contentBottom - imgBoxY;
+    }
+
+    await drawMediaGrid(ctx, mediaList, contentLeft, imgBoxY, availW, imgBoxH);
+  } else {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "30px/1.45 system-ui, -apple-system, sans-serif";
+    wrapCanvasText(ctx, postTxt || "(Sem texto)", contentLeft, contentTop + 28, availW, 44, 13);
+  }
 
   // 7. Rodapé de métricas no cartão
-  const metricsY = cardY + cardH - 30;
   ctx.fillStyle = "#7D85B2";
   ctx.font = "20px system-ui, sans-serif";
   const metricsStr = `💬 ${Number(it.replies || 0)}   🔄 ${Number(it.boosts || 0)}   ❤️ ${Number(it.likes || 0)}`;
   ctx.fillText(metricsStr, cardX + 45, metricsY);
 
   // 8. Rodapé fora do cartão (Branding MastoSky)
-  const footY = H - 55;
+  const footY = H - 35;
   ctx.fillStyle = "#FFD66B";
   ctx.beginPath();
   const starX = cardX + 12;
@@ -1924,9 +2089,8 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   let dataUrl = "";
   try {
     dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-  } catch (_) {
-    // Se ainda houver problema com avatar externo, redesenhar sem avatar externo
-    avImg.crossOrigin = "";
+  } catch (e) {
+    console.error("Canvas toDataURL falhou:", e);
   }
   $("crossImgPreview").src = dataUrl;
   return dataUrl;
@@ -1984,6 +2148,9 @@ $("submitCrossPost").onclick = async () => {
 
   try {
     const dataUrl = $("crossCanvas").toDataURL("image/jpeg", 0.92);
+    if (!dataUrl || dataUrl === "data:,") {
+      throw new Error("Não foi possível gerar a imagem do cartão.");
+    }
 
     // 1. Ação na rede de origem do post (it.network)
     let originPromise;
@@ -2001,11 +2168,15 @@ $("submitCrossPost").onclick = async () => {
         }
       });
     } else {
-      originPromise = api("/api/action", {
-        network: it.network,
-        action: "boost",
-        ref: it.ref
-      });
+      if (it.boosted) {
+        originPromise = Promise.resolve({ok: true});
+      } else {
+        originPromise = api("/api/action", {
+          network: it.network,
+          action: "boost",
+          ref: it.ref
+        });
+      }
     }
 
     // 2. Ação na outra rede (otherNet) com o cartão visual e link canónico
@@ -2025,13 +2196,25 @@ $("submitCrossPost").onclick = async () => {
     const [resOrigin, resDest] = await Promise.all([originPromise, destPromise]);
 
     const errors = [];
-    if (resOrigin && resOrigin.error) errors.push(LABEL[it.network] + ": " + resOrigin.error);
-    if (resOrigin && Object.values(resOrigin).some(v => v !== "ok" && typeof v === "string")) {
-      errors.push(LABEL[it.network] + " falhou");
+
+    // Verificação de resposta na rede de origem
+    if (comment) {
+      if (resOrigin && resOrigin.error) {
+        errors.push(LABEL[it.network] + ": " + resOrigin.error);
+      } else if (resOrigin && resOrigin[it.network] && resOrigin[it.network] !== "ok") {
+        errors.push(LABEL[it.network] + ": " + resOrigin[it.network]);
+      }
+    } else {
+      if (resOrigin && (!resOrigin.ok || resOrigin.error)) {
+        errors.push(LABEL[it.network] + ": " + (resOrigin.error || "falha na republicação"));
+      }
     }
-    if (resDest && resDest.error) errors.push(LABEL[otherNet] + ": " + resDest.error);
-    if (resDest && Object.values(resDest).some(v => v !== "ok" && typeof v === "string")) {
-      errors.push(LABEL[otherNet] + " falhou");
+
+    // Verificação de resposta na rede de destino
+    if (resDest && resDest.error) {
+      errors.push(LABEL[otherNet] + ": " + resDest.error);
+    } else if (resDest && resDest[otherNet] && resDest[otherNet] !== "ok") {
+      errors.push(LABEL[otherNet] + ": " + resDest[otherNet]);
     }
 
     if (errors.length) {

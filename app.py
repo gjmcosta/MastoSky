@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """MastoSky: cliente local-first Bluesky + Mastodon (127.0.0.1)."""
-import argparse, base64, binascii, html, json, os, re, socket, stat, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
+import argparse, base64, binascii, html, ipaddress, json, os, re, socket, stat, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
@@ -363,6 +363,41 @@ def safe_media(m):
 
 def safe_media_list(items):
     return [x for x in (safe_media(m) for m in items) if x]
+
+
+def proxy_fetch_image(url_str):
+    """Descarrega com segurança uma imagem remota para o gerador de cartões da publicação cruzada."""
+    u = safe_url(url_str)
+    if not u:
+        raise ValueError("URL inválida.")
+    p = urllib.parse.urlparse(u)
+    host = (p.hostname or "").lower()
+    if not host:
+        raise ValueError("Host inválido.")
+    if host in ("localhost", "127.0.0.1", "::1", "0.0.0.0") or host.endswith(".local"):
+        raise ValueError("Acesso a endereços locais não permitido.")
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        ip = None
+    if ip and (ip.is_private or ip.is_loopback or ip.is_link_local):
+        raise ValueError("Acesso a endereços de rede privada não permitido.")
+
+    req = urllib.request.Request(
+        u,
+        headers={
+            "User-Agent": "MastoSky/0.2 (+https://github.com/gjmcosta/MastoSky)",
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        }
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        ctype = resp.headers.get_content_type()
+        if not ctype or not (ctype.startswith("image/") or ctype == "application/octet-stream"):
+            raise ValueError("O conteúdo remoto não é uma imagem válida.")
+        data = resp.read(10 * 1024 * 1024 + 1)
+        if len(data) > 10 * 1024 * 1024:
+            raise ValueError("Imagem excede o limite máximo de 10MB.")
+        return data, ctype if ctype.startswith("image/") else "image/jpeg"
 
 
 def extract_bsky_embed(embed):
@@ -1238,12 +1273,15 @@ class H(BaseHTTPRequestHandler):
     def send(self, code, body, ctype="application/json"):
         b = body if isinstance(body, bytes) else json.dumps(body).encode()
         self.send_response(code)
-        self.send_header("Content-Type", ctype + "; charset=utf-8")
+        ct_header = ctype if (ctype.startswith("image/") and ctype != "image/svg+xml") or ctype == "application/octet-stream" else (ctype + "; charset=utf-8")
+        self.send_header("Content-Type", ct_header)
         self.send_header("Content-Length", str(len(b)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Content-Security-Policy", CSP)
+        if ctype.startswith("image/"):
+            self.send_header("Cache-Control", "public, max-age=86400")
         self.end_headers()
         self.wfile.write(b)
 
@@ -1266,6 +1304,16 @@ class H(BaseHTTPRequestHandler):
             fav = DIR / "brand" / "favicon.svg"
             if fav.is_file():
                 return self.send(200, fav.read_bytes(), "image/svg+xml")
+        if path == "/api/proxy_image":
+            qs = urllib.parse.parse_qs(parsed.query)
+            target_url = qs.get("url", [None])[0]
+            if not target_url:
+                return self.send(400, {"error": "Parâmetro url em falta."})
+            try:
+                data, ctype = proxy_fetch_image(target_url)
+                return self.send(200, data, ctype)
+            except Exception as e:
+                return self.send(400, {"error": str(e)})
         if path == "/api/status":
             return self.send(200, {
                 "configured": bool(CLIENTS),
