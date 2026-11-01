@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Timeline unificada Bluesky + Mastodon. Corre só no teu Mac (127.0.0.1)."""
-import base64, binascii, html, json, os, re, socket, stat, threading, time, urllib.error, urllib.parse, urllib.request, uuid
+"""MastoSky: cliente local-first Bluesky + Mastodon (127.0.0.1)."""
+import argparse, base64, binascii, html, json, os, re, socket, stat, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
@@ -82,7 +82,7 @@ RETRY_MAX_WAIT = 5  # segundos: só repete um GET num 429 se o servidor pedir me
 
 def http(method, url, data=None, token=None, headers=None):
     req = urllib.request.Request(url, method=method)
-    req.add_header("User-Agent", "timeline-unificada/1.0")
+    req.add_header("User-Agent", "MastoSky/1.0")
     if token:
         req.add_header("Authorization", "Bearer " + token)
     if headers:
@@ -1324,6 +1324,32 @@ class H(BaseHTTPRequestHandler):
         self.send(404, {"error": "not found"})
 
 
+def main():
+    global PORT
+    parser = argparse.ArgumentParser(description="MastoSky: cliente local-first Bluesky + Mastodon.")
+    parser.add_argument("--port", type=int, default=None, help="Porto HTTP local (por omissão: config.json ou 8000)")
+    parser.add_argument("--open", action="store_true", help="Abrir automaticamente o navegador predefinido")
+    parser.add_argument("--verbose", action="store_true", help="Ativar registo de pedidos HTTP em stderr")
+    args = parser.parse_args()
+
+    if args.port:
+        PORT = args.port
+    if args.verbose:
+        H.verbose = True
+
+    url = f"http://127.0.0.1:{PORT}"
+    server = ThreadingHTTPServer(("127.0.0.1", PORT), H)
+    print(f"MastoSky a correr em {url}  (Ctrl+C para parar)")
+
+    if args.open:
+        webbrowser.open(url)
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nA encerrar MastoSky...")
+        server.server_close()
+
+
 if __name__ == "__main__":
-    print(f"A correr em http://127.0.0.1:{PORT}  (Ctrl+C para parar)")
-    ThreadingHTTPServer(("127.0.0.1", PORT), H).serve_forever()
+    main()

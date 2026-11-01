@@ -57,8 +57,18 @@ Escolhe a forma que preferires para iniciar o MastoSky:
 * **🪟 Windows:** Dá duplo clique em **`MastoSky.bat`** (inicia o servidor e abre o teu browser automaticamente).
 * **💻 Linha de comandos (qualquer sistema):**
   ```bash
-  python3 app.py
+  python3 app.py --open
   ```
+
+#### Opções de Linha de Comandos (CLI)
+```text
+python3 app.py [-h] [--port PORT] [--open] [--verbose]
+
+Opções:
+  --port PORT   Porto HTTP local (substitui o config.json ou o padrão 8000)
+  --open        Abre automaticamente o browser predefinido ao iniciar
+  --verbose     Regista pedidos HTTP não-sensíveis no terminal (stderr)
+```
 
 ### 3. Abrir no Browser
 Se o browser não abrir automaticamente, acede a:  

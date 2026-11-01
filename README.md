@@ -57,8 +57,18 @@ Choose your preferred way to launch MastoSky:
 * **🪟 Windows:** Double-click **`MastoSky.bat`** (launches the server and automatically opens your browser).
 * **💻 Terminal (any OS):**
   ```bash
-  python3 app.py
+  python3 app.py --open
   ```
+
+#### CLI Options
+```text
+python3 app.py [-h] [--port PORT] [--open] [--verbose]
+
+Options:
+  --port PORT   Local HTTP port (overrides config.json or default 8000)
+  --open        Automatically open default web browser on launch
+  --verbose     Log non-sensitive HTTP requests to stderr
+```
 
 ### 3. Open in your browser
 If it doesn't open automatically, navigate to:  

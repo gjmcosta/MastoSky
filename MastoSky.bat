@@ -13,13 +13,10 @@ echo A abrir http://127.0.0.1:8000 no teu browser...
 echo Podes fechar esta janela para encerrar o servidor.
 echo.
 
-:: Abre o browser predefinido na pagina do MastoSky
-start "" "http://127.0.0.1:8000"
-
-:: Tenta executar com 'python' ou 'py'
-python app.py 2>nul
+:: Executa o MastoSky e abre o browser predefinido
+python app.py --open 2>nul
 if %errorlevel% neq 0 (
-    py app.py 2>nul
+    py app.py --open 2>nul
 )
 
 if %errorlevel% neq 0 (

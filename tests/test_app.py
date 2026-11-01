@@ -5,6 +5,7 @@ import os
 import stat
 import sys
 import unittest
+from unittest import mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -1019,6 +1020,32 @@ class HelperRefactorTests(unittest.TestCase):
 
         card_media_disallowed = app.extract_masto_media(st_no_media, allow_card=False)
         self.assertEqual(len(card_media_disallowed), 0)
+
+
+class CliAndMiscTests(unittest.TestCase):
+    def test_user_agent(self):
+        with mock.patch("urllib.request.urlopen") as mock_open:
+            mock_resp = mock.MagicMock()
+            mock_resp.read.return_value = b"{}"
+            mock_resp.headers = {}
+            mock_open.return_value.__enter__.return_value = mock_resp
+            app.http("GET", "https://example.com/api")
+            req = mock_open.call_args[0][0]
+            self.assertEqual(req.get_header("User-agent"), "MastoSky/1.0")
+
+    def test_verbose_logging_enabled(self):
+        h = object.__new__(app.H)
+        h.verbose = True
+        with mock.patch.object(app.BaseHTTPRequestHandler, "log_message") as mock_log:
+            h.log_message("test format %s", "arg")
+            mock_log.assert_called_once_with("test format %s", "arg")
+
+    def test_verbose_logging_disabled(self):
+        h = object.__new__(app.H)
+        h.verbose = False
+        with mock.patch.object(app.BaseHTTPRequestHandler, "log_message") as mock_log:
+            h.log_message("test format %s", "arg")
+            mock_log.assert_not_called()
 
 
 if __name__ == "__main__":
