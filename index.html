@@ -106,6 +106,7 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .acts button.act-like.on{color:#E0245E;font-weight:600}
 .acts button.act-like.on svg{fill:currentColor}
 .acts button.act-thread:hover{color:var(--ink)}
+.acts button.act-del:hover{color:var(--danger)}
 .banner{background:var(--card);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px}
 .empty{text-align:center;color:var(--muted);padding:40px 0}
 .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
@@ -306,7 +307,8 @@ const ICONS = {
   reply: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
   boost: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
   like: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
-  thread: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5z"/><path d="M18 9h2a2 2 0 0 1 2 2v7l-3-3h-5a2 2 0 0 1-2-2v-1"/></svg>'
+  thread: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5z"/><path d="M18 9h2a2 2 0 0 1 2 2v7l-3-3h-5a2 2 0 0 1-2-2v-1"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>'
 };
 function netBadge(n) {
   const s = el("span", "net");
@@ -463,6 +465,15 @@ function postCard(it, o = {}) {
   bL.onclick = () => act(it, "like", bL);
 
   acts.append(bR, bB, bL);
+
+  if (it.is_own) {
+    const bD = el("button", "act-btn act-del");
+    bD.title = "Apagar publicação";
+    bD.setAttribute("aria-label", "Apagar publicação");
+    bD.innerHTML = ICONS.trash;
+    bD.onclick = () => deletePost(it, p);
+    acts.append(bD);
+  }
 
   const hasReplies = Number(it.replies || 0) > 0;
   const isReply = Boolean(it.is_reply || (it.reply_to && (it.reply_to.name || it.reply_to.text)));
@@ -1031,6 +1042,25 @@ async function act(it, type, btn) {
     }
   } finally {
     btn.disabled = false;
+  }
+}
+
+async function deletePost(it, postEl) {
+  if (!confirm("Tens a certeza de que queres apagar esta publicação?")) return;
+  try {
+    const r = await api("/api/action", {network: it.network, action: "delete", ref: it.ref});
+    if (r.ok) {
+      postEl.remove();
+      $("msg").className = "msg";
+      $("msg").textContent = "Publicação apagada.";
+      setTimeout(() => { if ($("msg").textContent === "Publicação apagada.") $("msg").textContent = ""; }, 3000);
+    } else {
+      $("msg").className = "msg err";
+      $("msg").textContent = "Falhou ao apagar: " + (r.error || "erro desconhecido");
+    }
+  } catch (err) {
+    $("msg").className = "msg err";
+    $("msg").textContent = "Erro: " + err.message;
   }
 }
 

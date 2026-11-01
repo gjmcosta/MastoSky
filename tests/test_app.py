@@ -801,6 +801,56 @@ class ActionsTests(unittest.TestCase):
         self.assertEqual(calls[-1][2]["rkey"], "repost456")
         self.assertEqual(calls[-1][2]["collection"], "app.bsky.feed.repost")
 
+    def test_delete_and_is_own(self):
+        # Mastodon
+        m = app.Masto({"instance": "https://m.pt", "token": "tok"})
+        calls = []
+        def fake_masto_call(mth, pth, data=None, p=None):
+            calls.append((mth, pth))
+            if pth == "/api/v1/accounts/verify_credentials":
+                return {"id": "my_user_id"}
+            return {}
+
+        m.call = fake_masto_call
+
+        own_st = {"id": "1", "account": {"id": "my_user_id", "username": "me", "acct": "me"}, "content": "meu"}
+        other_st = {"id": "2", "account": {"id": "other_id", "username": "other", "acct": "other"}, "content": "dele"}
+
+        self.assertTrue(m.item(own_st)["is_own"])
+        self.assertFalse(m.item(other_st)["is_own"])
+
+        m.act("delete", {"id": "1"})
+        self.assertEqual(calls[-1], ("DELETE", "/api/v1/statuses/1"))
+
+        # Bluesky
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+
+        bsky_calls = []
+        b.call = lambda mth, nsid, data=None, p=None: bsky_calls.append((mth, nsid, data)) or {}
+
+        own_p = {
+            "uri": "at://did:plc:me/app.bsky.feed.post/my_post_key",
+            "cid": "cid1",
+            "author": {"did": "did:plc:me", "handle": "me.bsky.social"},
+            "record": {"text": "meu", "createdAt": "2026-01-01T00:00:00Z"}
+        }
+        other_p = {
+            "uri": "at://did:plc:other/app.bsky.feed.post/other_post_key",
+            "cid": "cid2",
+            "author": {"did": "did:plc:other", "handle": "other.bsky.social"},
+            "record": {"text": "dele", "createdAt": "2026-01-01T00:00:00Z"}
+        }
+
+        self.assertTrue(b.item(own_p)["is_own"])
+        self.assertFalse(b.item(other_p)["is_own"])
+
+        b.act("delete", {"uri": "at://did:plc:me/app.bsky.feed.post/my_post_key"})
+        self.assertEqual(bsky_calls[-1][1], "com.atproto.repo.deleteRecord")
+        self.assertEqual(bsky_calls[-1][2]["collection"], "app.bsky.feed.post")
+        self.assertEqual(bsky_calls[-1][2]["rkey"], "my_post_key")
+
 
 
 

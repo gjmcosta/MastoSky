@@ -647,6 +647,7 @@ class Bsky:
             "quote": quote,
             "replies": p.get("replyCount", 0), "boosts": p.get("repostCount", 0), "likes": p.get("likeCount", 0),
             "liked": bool(like_uri), "boosted": bool(repost_uri),
+            "is_own": bool(s.did and a.get("did") == s.did),
             "url": f"https://bsky.app/profile/{a['handle']}/post/{p['uri'].split('/')[-1]}",
             "ref": ref_obj,
             "is_reply": bool(rec.get("reply")),
@@ -760,6 +761,13 @@ class Bsky:
             rkey = target_uri.split("/")[-1]
             return s.call("POST", "com.atproto.repo.deleteRecord", {
                 "repo": s.did, "collection": col, "rkey": rkey})
+        elif action == "delete":
+            target_uri = ref.get("uri")
+            if not target_uri:
+                raise ApiError("URI do post a remover não fornecido.")
+            rkey = target_uri.split("/")[-1]
+            return s.call("POST", "com.atproto.repo.deleteRecord", {
+                "repo": s.did, "collection": "app.bsky.feed.post", "rkey": rkey})
         else:
             raise ApiError(f"Ação desconhecida: {action}")
 
@@ -804,6 +812,17 @@ class Masto:
         s.base, s.token = c["instance"].rstrip("/"), c["token"]
         s.cache = {}  # posts "pai" já obtidos
         s.cache_lock = threading.Lock()  # a cache é usada por várias threads em paralelo
+        s.my_id = None
+
+    def get_my_id(s):
+        if s.my_id:
+            return s.my_id
+        try:
+            acc = s.call("GET", "/api/v1/accounts/verify_credentials")
+            s.my_id = str(acc.get("id"))
+            return s.my_id
+        except Exception:
+            return None
 
     def call(s, method, path, data=None, params=None):
         url = s.base + path + ("?" + urllib.parse.urlencode(params) if params else "")
@@ -862,15 +881,17 @@ class Masto:
                 "title": card.get("title", ""),
                 "description": card.get("description", "")
             })
+        my_id = s.get_my_id()
         return {
-            "network": "mastodon", "name": a.get("display_name") or a["username"], "handle": "@" + a["acct"],
+            "network": "mastodon", "name": a.get("display_name") or a.get("username", ""), "handle": "@" + a.get("acct", ""),
             "avatar": safe_url(a.get("avatar")), "html": cw + raw_html,
-            "time": st["created_at"],
+            "time": st.get("created_at"),
             "boosted_by": (st["account"].get("display_name") or st["account"]["username"]) if st.get("reblog") else None,
             "media": safe_media_list(media),
             "quote": quote,
             "replies": x.get("replies_count", 0), "boosts": x.get("reblogs_count", 0), "likes": x.get("favourites_count", 0),
             "liked": bool(x.get("favourited")), "boosted": bool(x.get("reblogged")),
+            "is_own": bool(my_id and str(a.get("id")) == my_id),
             "url": safe_url(x.get("url")), "ref": {"id": x["id"]}, "reply_to": rt,
             "is_reply": bool(x.get("in_reply_to_id")),
         }
@@ -945,6 +966,8 @@ class Masto:
         s.call("POST", "/api/v1/statuses", data)
 
     def act(s, action, ref):
+        if action == "delete":
+            return s.call("DELETE", f"/api/v1/statuses/{ref['id']}")
         endpoints = {
             "like": f"/api/v1/statuses/{ref['id']}/favourite",
             "unlike": f"/api/v1/statuses/{ref['id']}/unfavourite",
