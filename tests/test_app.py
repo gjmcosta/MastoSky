@@ -573,5 +573,113 @@ class CleanQuoteInlineTests(unittest.TestCase):
         self.assertIn("RE: x", app.clean(h))
 
 
+class FacetsAndRichtextTests(unittest.TestCase):
+    def test_byte_span_with_emojis_and_accents(self):
+        text = "é 😀 @alice.bsky.social #olá"
+        # "é" is 2 bytes (0..2), " " is 1 byte (2..3), "😀" is 4 bytes (3..7), " " is 1 byte (7..8)
+        # "@alice.bsky.social" starts at char index 5 -> byte offset 8
+        handle_start = text.index("@alice.bsky.social")
+        handle_end = handle_start + len("@alice.bsky.social")
+        b_start, b_end = app.byte_span(text, handle_start, handle_end)
+        self.assertEqual(b_start, 8)
+        self.assertEqual(b_end, 8 + len("@alice.bsky.social".encode("utf-8")))
+        self.assertEqual(text.encode("utf-8")[b_start:b_end].decode("utf-8"), "@alice.bsky.social")
+
+    def test_linkify_strips_trailing_punctuation(self):
+        res = app.linkify("Vê https://exemplo.pt/x., por favor (https://y.pt/fim)!")
+        self.assertIn('<a href="https://exemplo.pt/x" target="_blank" rel="noopener noreferrer">https://exemplo.pt/x</a>.,', res)
+        self.assertIn('(<a href="https://y.pt/fim" target="_blank" rel="noopener noreferrer">https://y.pt/fim</a>)!', res)
+
+    def test_render_bsky_text_without_facets_uses_linkify(self):
+        res = app.render_bsky_text("Vê https://exemplo.pt/aqui", None)
+        self.assertIn('<a href="https://exemplo.pt/aqui"', res)
+
+    def test_render_bsky_text_with_facets_and_escaping(self):
+        text = "<script>alert(1)</script> @alice.bsky.social #notícias https://link.pt"
+        b_text = text.encode("utf-8")
+        mention_sub = "@alice.bsky.social".encode("utf-8")
+        tag_sub = "#notícias".encode("utf-8")
+        link_sub = "https://link.pt".encode("utf-8")
+
+        m_start = b_text.index(mention_sub)
+        t_start = b_text.index(tag_sub)
+        l_start = b_text.index(link_sub)
+
+        facets = [
+            {
+                "index": {"byteStart": m_start, "byteEnd": m_start + len(mention_sub)},
+                "features": [{"$type": "app.bsky.richtext.facet#mention", "did": "did:plc:123"}]
+            },
+            {
+                "index": {"byteStart": t_start, "byteEnd": t_start + len(tag_sub)},
+                "features": [{"$type": "app.bsky.richtext.facet#tag", "tag": "notícias"}]
+            },
+            {
+                "index": {"byteStart": l_start, "byteEnd": l_start + len(link_sub)},
+                "features": [{"$type": "app.bsky.richtext.facet#link", "uri": "https://link.pt"}]
+            }
+        ]
+
+        rendered = app.render_bsky_text(text, facets)
+        self.assertNotIn("<script>", rendered)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", rendered)
+        self.assertIn('<a href="https://bsky.app/profile/did%3Aplc%3A123" target="_blank" rel="noopener noreferrer">@alice.bsky.social</a>', rendered)
+        self.assertIn('<a href="https://bsky.app/hashtag/not%C3%ADcias" target="_blank" rel="noopener noreferrer">#notícias</a>', rendered)
+        self.assertIn('<a href="https://link.pt" target="_blank" rel="noopener noreferrer">https://link.pt</a>', rendered)
+
+    def test_render_bsky_text_ignores_overlapping_or_invalid_facets(self):
+        text = "Hello world"
+        facets = [
+            {"index": {"byteStart": 0, "byteEnd": 5}, "features": [{"$type": "app.bsky.richtext.facet#tag", "tag": "first"}]},
+            {"index": {"byteStart": 3, "byteEnd": 8}, "features": [{"$type": "app.bsky.richtext.facet#tag", "tag": "overlap"}]},
+            {"index": {"byteStart": 100, "byteEnd": 200}, "features": [{"$type": "app.bsky.richtext.facet#tag", "tag": "oob"}]},
+            {"index": "invalid", "features": []}
+        ]
+        rendered = app.render_bsky_text(text, facets)
+        self.assertIn("hashtag/first", rendered)
+        self.assertNotIn("hashtag/overlap", rendered)
+        self.assertIn("world", rendered)
+
+    def test_bsky_post_extracts_and_resolves_facets(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+
+        calls = []
+        def fake_call(method, nsid, data=None, params=None):
+            calls.append((method, nsid, data, params))
+            if nsid == "com.atproto.identity.resolveHandle":
+                if params.get("handle") == "bob.bsky.social":
+                    return {"did": "did:plc:bob"}
+                raise app.ApiError("404: Not Found")
+            return {"uri": "at://did:plc:me/app.bsky.feed.post/123", "cid": "cid123"}
+
+        b.call = fake_call
+        post_text = "Olá @bob.bsky.social e @inexistente.com #teste https://exemplo.pt/x"
+        b.post(post_text)
+
+        create_calls = [c for c in calls if c[1] == "com.atproto.repo.createRecord"]
+        self.assertEqual(len(create_calls), 1)
+        rec = create_calls[0][2]["record"]
+        facets = rec.get("facets", [])
+
+        # Should have mention for bob, tag for teste, link for exemplo.pt
+        types = [f["features"][0]["$type"] for f in facets]
+        self.assertIn("app.bsky.richtext.facet#mention", types)
+        self.assertIn("app.bsky.richtext.facet#tag", types)
+        self.assertIn("app.bsky.richtext.facet#link", types)
+
+        # bob resolved
+        mention_facet = next(f for f in facets if f["features"][0]["$type"] == "app.bsky.richtext.facet#mention")
+        self.assertEqual(mention_facet["features"][0]["did"], "did:plc:bob")
+
+        # nonexistent mention skipped
+        self.assertFalse(any(f["features"][0].get("did") == "did:plc:inexistente" for f in facets))
+
+        # Check handle cache works
+        self.assertEqual(b._handle_cache.get("bob.bsky.social"), "did:plc:bob")
+
+
+
 if __name__ == "__main__":
     unittest.main()

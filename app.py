@@ -153,9 +153,110 @@ def parse_time(s):
         return _EPOCH
 
 
+def byte_span(text, start, end):
+    b = len(text[:start].encode("utf-8"))
+    return b, b + len(text[start:end].encode("utf-8"))
+
+
+_HANDLE_RE = re.compile(r"(?<![\w/@])@([a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?)+)")
+_HASHTAG_RE = re.compile(r"(?<![\w&])#(\w*[^\W\d]\w*)")
+_URL_RE = re.compile(r"https?://[^\s]+")
+
+
 def linkify(text):
-    return re.sub(r"(https?://[^\s<]+)", r'<a href="\1" target="_blank" rel="noopener noreferrer">\1</a>',
-                  html.escape(text)).replace("\n", "<br>")
+    if not text:
+        return ""
+    parts = []
+    last = 0
+    for m in re.finditer(r"https?://[^\s<]+", text):
+        parts.append(html.escape(text[last:m.start()]))
+        full = m.group(0)
+        u = full.rstrip(".,;:!?)")
+        tail = full[len(u):]
+        su = safe_url(u)
+        if su:
+            parts.append(f'<a href="{html.escape(su, True)}" target="_blank" rel="noopener noreferrer">{html.escape(u)}</a>')
+        else:
+            parts.append(html.escape(u))
+        parts.append(html.escape(tail))
+        last = m.end()
+    parts.append(html.escape(text[last:]))
+    return "".join(parts).replace("\n", "<br>")
+
+
+def render_bsky_text(text, facets):
+    if not text:
+        return ""
+    if not facets or not isinstance(facets, list):
+        return linkify(text)
+
+    raw_bytes = text.encode("utf-8")
+    valid_facets = []
+    for f in facets:
+        if not isinstance(f, dict):
+            continue
+        idx = f.get("index")
+        if not isinstance(idx, dict):
+            continue
+        try:
+            start = int(idx.get("byteStart"))
+            end = int(idx.get("byteEnd"))
+        except (TypeError, ValueError):
+            continue
+        if 0 <= start < end <= len(raw_bytes) and f.get("features"):
+            valid_facets.append((start, end, f["features"]))
+
+    if not valid_facets:
+        return linkify(text)
+
+    valid_facets.sort(key=lambda x: (x[0], -x[1]))
+
+    out = []
+    last_end = 0
+    for start, end, features in valid_facets:
+        if start < last_end:
+            continue
+        if start > last_end:
+            chunk = raw_bytes[last_end:start].decode("utf-8", errors="replace")
+            out.append(linkify(chunk))
+        facet_chunk = raw_bytes[start:end].decode("utf-8", errors="replace")
+        feat = features[0] if isinstance(features, list) and features else {}
+        ftype = feat.get("$type") if isinstance(feat, dict) else ""
+        if ftype == "app.bsky.richtext.facet#link":
+            u = safe_url(feat.get("uri"))
+            if u:
+                out.append(f'<a href="{html.escape(u, True)}" target="_blank" rel="noopener noreferrer">{html.escape(facet_chunk)}</a>')
+            else:
+                out.append(html.escape(facet_chunk))
+        elif ftype == "app.bsky.richtext.facet#mention":
+            did = feat.get("did")
+            if did and isinstance(did, str):
+                u = safe_url(f"https://bsky.app/profile/{urllib.parse.quote(did)}")
+                if u:
+                    out.append(f'<a href="{html.escape(u, True)}" target="_blank" rel="noopener noreferrer">{html.escape(facet_chunk)}</a>')
+                else:
+                    out.append(html.escape(facet_chunk))
+            else:
+                out.append(html.escape(facet_chunk))
+        elif ftype == "app.bsky.richtext.facet#tag":
+            tag = feat.get("tag")
+            if tag and isinstance(tag, str):
+                u = safe_url(f"https://bsky.app/hashtag/{urllib.parse.quote(tag)}")
+                if u:
+                    out.append(f'<a href="{html.escape(u, True)}" target="_blank" rel="noopener noreferrer">{html.escape(facet_chunk)}</a>')
+                else:
+                    out.append(html.escape(facet_chunk))
+            else:
+                out.append(html.escape(facet_chunk))
+        else:
+            out.append(html.escape(facet_chunk))
+        last_end = end
+
+    if last_end < len(raw_bytes):
+        chunk = raw_bytes[last_end:].decode("utf-8", errors="replace")
+        out.append(linkify(chunk))
+
+    return "".join(out)
 
 
 class Clean(HTMLParser):
@@ -353,12 +454,13 @@ def parse_bsky_quote(rec):
         m_list, _ = extract_bsky_embed(emb)
         q_media.extend(m_list)
     text = val.get("text") or rec.get("text", "")
+    facets = val.get("facets") or rec.get("facets")
     return {
         "network": "bluesky",
         "name": author.get("displayName") or handle,
         "handle": "@" + handle if handle else "",
         "avatar": safe_url(author.get("avatar")),
-        "html": linkify(text) if text else "",
+        "html": render_bsky_text(text, facets) if text else "",
         "time": val.get("createdAt") or rec.get("createdAt") or rec.get("indexedAt"),
         "url": f"https://bsky.app/profile/{handle}/post/{rec.get('uri', '').split('/')[-1]}" if handle else None,
         "media": q_media
@@ -429,6 +531,25 @@ class Bsky:
         s.c, s.jwt, s.refresh_jwt, s.did = c, None, None, None
         s.host = c.get("service", "https://bsky.social")
         s.lock = threading.RLock()  # protege login/refresh em pedidos concorrentes
+        s._handle_cache = {}
+
+    def resolve_handle(s, handle):
+        handle = (handle or "").strip().lstrip("@")
+        if not handle:
+            return None
+        with s.lock:
+            if handle in s._handle_cache:
+                return s._handle_cache[handle]
+        try:
+            res = s.call("GET", "com.atproto.identity.resolveHandle", params={"handle": handle})
+            did = res.get("did")
+            if did:
+                with s.lock:
+                    s._handle_cache[handle] = did
+                return did
+        except Exception:
+            pass
+        return None
 
     def login(s):
         with s.lock:
@@ -511,7 +632,7 @@ class Bsky:
                 rt = {"name": None, "handle": None, "text": ""}
         return {
             "network": "bluesky", "name": a.get("displayName") or a["handle"], "handle": "@" + a["handle"],
-            "avatar": safe_url(a.get("avatar")), "html": linkify(rec.get("text", "")),
+            "avatar": safe_url(a.get("avatar")), "html": render_bsky_text(rec.get("text", ""), rec.get("facets")),
             "time": reason.get("indexedAt") or p.get("indexedAt") or rec["createdAt"],
             "boosted_by": by.get("displayName") or by.get("handle"), "reply_to": rt,
             "media": media,
@@ -572,14 +693,33 @@ class Bsky:
         if spoiler:
             final_text = f"⚠️ [CW: {spoiler}]\n\n{final_text}".strip()
         facets = []
-        for m in re.finditer(r"https?://[^\s]+", final_text):
+        for m in _URL_RE.finditer(final_text):
             url = m.group().rstrip(".,;:!?)")
-            b = len(final_text[:m.start()].encode())
-            facets.append({"index": {"byteStart": b, "byteEnd": b + len(url.encode())},
+            b_start, b_end = byte_span(final_text, m.start(), m.start() + len(url))
+            facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
                            "features": [{"$type": "app.bsky.richtext.facet#link", "uri": url}]})
+        for m in _HANDLE_RE.finditer(final_text):
+            handle = m.group(1)
+            did = s.resolve_handle(handle)
+            if did:
+                b_start, b_end = byte_span(final_text, m.start(), m.end())
+                facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
+                               "features": [{"$type": "app.bsky.richtext.facet#mention", "did": did}]})
+        for m in _HASHTAG_RE.finditer(final_text):
+            tag = m.group(1)
+            b_start, b_end = byte_span(final_text, m.start(), m.end())
+            facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
+                           "features": [{"$type": "app.bsky.richtext.facet#tag", "tag": tag}]})
+        clean_facets = []
+        last_end = 0
+        for f in sorted(facets, key=lambda f: (f["index"]["byteStart"], -f["index"]["byteEnd"])):
+            st, en = f["index"]["byteStart"], f["index"]["byteEnd"]
+            if st >= last_end and en > st:
+                clean_facets.append(f)
+                last_end = en
         rec = {"$type": "app.bsky.feed.post", "text": final_text, "createdAt": now_iso()}
-        if facets:
-            rec["facets"] = facets
+        if clean_facets:
+            rec["facets"] = clean_facets
         if spoiler:
             rec["labels"] = {"$type": "com.atproto.label.defs#selfLabels", "values": [{"val": "spoiler"}]}
         if ref:
@@ -618,19 +758,22 @@ class Bsky:
         for n in ns:
             kind, a = kinds.get(n["reason"], "other"), n["author"]
             subject = posts.get(n.get("reasonSubject"))
-            ref, text, url = None, "", f"https://bsky.app/profile/{a['handle']}"
+            ref, text, facets, url = None, "", None, f"https://bsky.app/profile/{a['handle']}"
             if kind in ("reply", "mention", "quote"):
                 rec = n["record"]
                 text = rec.get("text", "")
+                facets = rec.get("facets")
                 root = rec.get("reply", {}).get("root") or {"uri": n["uri"], "cid": n["cid"]}
                 ref = {"uri": n["uri"], "cid": n["cid"], "root": {"uri": root["uri"], "cid": root["cid"]}}
                 url = f"https://bsky.app/profile/{a['handle']}/post/{n['uri'].split('/')[-1]}"
             elif subject:
-                text = subject["record"].get("text", "")
+                srec = subject.get("record") or {}
+                text = srec.get("text", "")
+                facets = srec.get("facets")
                 url = f"https://bsky.app/profile/{subject['author']['handle']}/post/{subject['uri'].split('/')[-1]}"
             out.append({"network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
                         "handle": "@" + a["handle"], "avatar": safe_url(a.get("avatar")),
-                        "html": linkify(text) if text else "", "time": n["indexedAt"], "url": url, "ref": ref})
+                        "html": render_bsky_text(text, facets) if text else "", "time": n["indexedAt"], "url": url, "ref": ref})
         return out
 
 
