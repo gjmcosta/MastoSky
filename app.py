@@ -1575,6 +1575,31 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, data, ctype)
             except Exception as e:
                 return self.send(400, {"error": str(e)})
+        if path == "/api/local_image":
+            qs = urllib.parse.parse_qs(parsed.query)
+            target_path = qs.get("path", [None])[0]
+            if not target_path:
+                return self.send(400, {"error": "Parâmetro path em falta."})
+            p = Path(target_path).expanduser().resolve()
+            home = Path.home().resolve()
+            if not (p.is_file() and (str(p).startswith(str(home)) or str(p).startswith(str(DIR.resolve())))):
+                return self.send(403, {"error": "Acesso a ficheiro não permitido."})
+            valid_exts = {
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".webp": "image/webp",
+                ".gif": "image/gif",
+                ".bmp": "image/bmp",
+                ".svg": "image/svg+xml",
+                ".avif": "image/avif"
+            }
+            ext = p.suffix.lower()
+            if ext not in valid_exts:
+                return self.send(400, {"error": "Extensão de imagem inválida."})
+            if p.stat().st_size > 15 * 1024 * 1024:
+                return self.send(400, {"error": "Ficheiro demasiado grande (máx 15MB)."})
+            return self.send(200, p.read_bytes(), valid_exts[ext])
         if path == "/api/status":
             return self.send(200, {
                 "configured": bool(CLIENTS),

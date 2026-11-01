@@ -3086,108 +3086,191 @@ function extractImageFilesSync(cd) {
   return files;
 }
 
-function handlePasteEvent(e) {
+async function extractBlobsFromClipboardApi() {
+  if (!navigator.clipboard || !navigator.clipboard.read) return [];
+  try {
+    const items = await navigator.clipboard.read();
+    const blobs = [];
+    for (const it of items) {
+      for (const type of it.types) {
+        if (type.startsWith("image/")) {
+          const b = await it.getType(type);
+          if (b && b.size > 0) {
+            blobs.push(b);
+            break;
+          }
+        }
+      }
+      if (!blobs.length && it.types.includes("text/html")) {
+        try {
+          const htmlBlob = await it.getType("text/html");
+          const htmlText = await htmlBlob.text();
+          const mData = htmlText.match(/<img[^>]+src=["'](data:image\/([^;]+);base64,[a-zA-Z0-9+/=]+)["']/i);
+          if (mData) {
+            const b = dataUriToBlob(mData[1]);
+            if (b) blobs.push(b);
+          } else {
+            const mUrl = htmlText.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
+            if (mUrl) {
+              const res = await fetch("/api/proxy_image?url=" + encodeURIComponent(mUrl[1]));
+              if (res.ok) {
+                const b = await res.blob();
+                if (b && b.size > 0) blobs.push(b);
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    }
+    return blobs;
+  } catch (_) {
+    return [];
+  }
+}
+
+async function extractImageFromText(text) {
+  if (!text || typeof text !== "string") return [];
+  const tStr = text.trim();
+  if (!tStr) return [];
+
+  // 1. Data URI direta
+  if (tStr.startsWith("data:image/")) {
+    const b = dataUriToBlob(tStr);
+    if (b) return [b];
+  }
+
+  // 2. URL remota de imagem (ex: https://.../pic.jpg ou png ou webp ou gif)
+  if (/^https?:\/\/[^\s]+\.(png|jpe?g|webp|gif|avif)(\?[^\s]*)?$/i.test(tStr)) {
+    try {
+      const res = await fetch("/api/proxy_image?url=" + encodeURIComponent(tStr));
+      if (res.ok) {
+        const b = await res.blob();
+        if (b && b.size > 0) return [b];
+      }
+    } catch (_) {}
+  }
+
+  // 3. Caminho local de ficheiro (copiado no Finder ou gestor de ficheiros)
+  let cleanPath = tStr;
+  if (cleanPath.startsWith("file://")) {
+    try { cleanPath = decodeURIComponent(cleanPath.replace(/^file:\/\//, "")); } catch (_) {}
+  }
+  if (/^(\/|[a-zA-Z]:[\\\/]).*\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(cleanPath)) {
+    try {
+      const res = await fetch("/api/local_image?path=" + encodeURIComponent(cleanPath));
+      if (res.ok) {
+        const b = await res.blob();
+        if (b && b.size > 0) return [b];
+      }
+    } catch (_) {}
+  }
+
+  return [];
+}
+
+async function handlePasteEvent(e) {
   const cd = e.clipboardData || window.clipboardData;
   if (!cd) return;
 
+  // 1. Ficheiros síncronos da clipboard
   const files = extractImageFilesSync(cd);
   if (files.length > 0) {
-    // Intercetar imediatamente e sincronamente antes que o browser descarte a clipboard
     e.preventDefault();
     e.stopPropagation();
-    handleImageFiles(files);
+    await handleImageFiles(files);
     return;
   }
 
-  // Fallback para quando o utilizador copia uma imagem da web (HTML com tag <img> remota)
+  // 2. HTML com tag <img>
   try {
     const html = cd.getData("text/html");
-    const plain = (cd.getData("text/plain") || "").trim();
-    if (html && (!plain || plain.startsWith("http") || plain.length < 120)) {
+    if (html) {
+      const mData = html.match(/<img[^>]+src=["'](data:image\/([^;]+);base64,[a-zA-Z0-9+/=]+)["']/i);
+      if (mData) {
+        const b = dataUriToBlob(mData[1]);
+        if (b) {
+          e.preventDefault();
+          e.stopPropagation();
+          await handleImageFiles([b]);
+          return;
+        }
+      }
       const mUrl = html.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
       if (mUrl && mUrl[1]) {
         e.preventDefault();
         e.stopPropagation();
         $("msg").className = "msg";
         $("msg").textContent = t("composer.img_processing");
-        fetch("/api/proxy_image?url=" + encodeURIComponent(mUrl[1]))
-          .then(res => {
-            if (!res.ok) throw new Error("HTTP " + res.status);
-            return res.blob();
-          })
-          .then(blob => {
-            if (blob && blob.size > 0) {
-              handleImageFiles([blob]);
-            } else {
-              throw new Error("Imagem vazia");
-            }
-          })
-          .catch(() => {
-            if ($("text") && !$("text").value.includes(mUrl[1])) {
-              const start = $("text").selectionStart || $("text").value.length;
-              const val = $("text").value;
-              $("text").value = val.slice(0, start) + (val ? " " : "") + mUrl[1] + val.slice(start);
-              update();
-            }
+        const res = await fetch("/api/proxy_image?url=" + encodeURIComponent(mUrl[1]));
+        if (res.ok) {
+          const b = await res.blob();
+          if (b && b.size > 0) {
+            await handleImageFiles([b]);
             $("msg").textContent = "";
-          });
-        return;
+            return;
+          }
+        }
       }
     }
   } catch (_) {}
 
-  // 3. Fallback: Se o evento não entregou o ficheiro (comum no Safari / WebKit ou cópia de apps nativas do macOS)
-  if (navigator.clipboard && navigator.clipboard.read) {
-    const cdTypes = Array.from(cd.types || []);
-    const plain = (cd.getData("text/plain") || "").trim();
-    const mightHaveImage = cdTypes.some(t => t.startsWith("image/") || t === "Files" || t === "public.png" || t === "public.tiff") || (!plain && cdTypes.length > 0);
-    if (mightHaveImage) {
-      navigator.clipboard.read().then(async (clipboardItems) => {
-        const found = [];
-        for (const it of clipboardItems) {
-          for (const type of it.types) {
-            if (type.startsWith("image/")) {
-              const b = await it.getType(type);
-              if (b && b.size > 0) found.push(b);
-              break;
-            }
-          }
-        }
-        if (found.length > 0) {
-          await handleImageFiles(found);
-        }
-      }).catch(() => {});
+  // 3. Texto simples (URL de imagem ou caminho de ficheiro no computador copiado no Finder)
+  try {
+    const plain = cd.getData("text/plain");
+    const textImgs = await extractImageFromText(plain);
+    if (textImgs.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      await handleImageFiles(textImgs);
+      return;
     }
-  }
+  } catch (_) {}
+
+  // 4. Async Clipboard API (quando o evento de paste do browser é sandboxed e não traz o ficheiro)
+  try {
+    const apiBlobs = await extractBlobsFromClipboardApi();
+    if (apiBlobs.length > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      await handleImageFiles(apiBlobs);
+      return;
+    }
+  } catch (_) {}
 }
 
 if ($("pasteImgBtn")) {
   $("pasteImgBtn").onclick = async () => {
-    if (navigator.clipboard && navigator.clipboard.read) {
-      try {
-        $("msg").className = "msg";
-        $("msg").textContent = t("composer.img_processing");
-        const items = await navigator.clipboard.read();
-        const found = [];
-        for (const it of items) {
-          for (const type of it.types) {
-            if (type.startsWith("image/")) {
-              const b = await it.getType(type);
-              if (b && b.size > 0) found.push(b);
-              break;
-            }
-          }
-        }
-        if (found.length > 0) {
-          await handleImageFiles(found);
+    $("msg").className = "msg";
+    $("msg").textContent = t("composer.img_processing");
+    try {
+      // 1. Tentar ler blobs de imagem via Async Clipboard API
+      const apiBlobs = await extractBlobsFromClipboardApi();
+      if (apiBlobs.length > 0) {
+        await handleImageFiles(apiBlobs);
+        $("msg").textContent = "";
+        return;
+      }
+      // 2. Tentar ler texto da clipboard (URL de imagem ou ficheiro local copiado no Finder)
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const txt = await navigator.clipboard.readText();
+        const textImgs = await extractImageFromText(txt);
+        if (textImgs.length > 0) {
+          await handleImageFiles(textImgs);
           $("msg").textContent = "";
           return;
         }
-      } catch (_) {}
+      }
+    } catch (err) {
+      if (err.name === "NotAllowedError") {
+        $("msg").className = "msg err";
+        $("msg").textContent = t("composer.paste_blocked") || "Permissão da área de transferência negada pelo browser. Podes colar com Cmd+V ou arrastar a imagem.";
+        setTimeout(() => { $("msg").textContent = ""; }, 4000);
+        return;
+      }
     }
-    $("msg").className = "msg";
+    $("msg").className = "msg err";
     $("msg").textContent = t("composer.paste_no_img");
-    setTimeout(() => { if ($("msg").textContent.includes(t("composer.paste_no_img"))) $("msg").textContent = ""; }, 3000);
+    setTimeout(() => { if ($("msg").textContent.includes(t("composer.paste_no_img"))) $("msg").textContent = ""; }, 3500);
   };
 }
 

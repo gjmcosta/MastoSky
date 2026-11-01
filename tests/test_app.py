@@ -1741,6 +1741,42 @@ class ProxyImageTests(unittest.TestCase):
         code = [v for k, v in h.sent if k == "code"][0]
         self.assertEqual(code, 403)
 
+    def test_local_image_endpoint(self):
+        import io, tempfile, urllib.parse
+        # Criar imagem temporária válida dentro da diretoria do projeto
+        with tempfile.NamedTemporaryFile(suffix=".png", dir=str(app.DIR), delete=False) as tf:
+            tf.write(b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR...")
+            tmp_path = tf.name
+        try:
+            h = object.__new__(app.H)
+            h.path = "/api/local_image?path=" + urllib.parse.quote(tmp_path)
+            h.headers = {"Host": "127.0.0.1:%d" % app.PORT}
+            h.wfile = io.BytesIO()
+            h.sent = []
+            h.send_response = lambda code: h.sent.append(("code", code))
+            h.send_header = lambda k, v: h.sent.append((k, v))
+            h.end_headers = lambda: None
+            h.do_GET()
+            code = [v for k, v in h.sent if k == "code"][0]
+            self.assertEqual(code, 200)
+
+            # Teste ficheiro com extensão inválida
+            h_bad = object.__new__(app.H)
+            h_bad.path = "/api/local_image?path=/tmp/test.sh"
+            h_bad.headers = {"Host": "127.0.0.1:%d" % app.PORT}
+            h_bad.wfile = io.BytesIO()
+            h_bad.sent = []
+            h_bad.send_response = lambda code: h_bad.sent.append(("code", code))
+            h_bad.send_header = lambda k, v: h_bad.sent.append((k, v))
+            h_bad.end_headers = lambda: None
+            h_bad.do_GET()
+            code_bad = [v for k, v in h_bad.sent if k == "code"][0]
+            self.assertIn(code_bad, (400, 403))
+        finally:
+            import os
+            try: os.unlink(tmp_path)
+            except OSError: pass
+
 
 if __name__ == "__main__":
     unittest.main()
