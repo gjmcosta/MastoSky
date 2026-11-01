@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """MastoSky: cliente local-first Bluesky + Mastodon (127.0.0.1)."""
-import argparse, base64, binascii, html, ipaddress, json, os, re, socket, stat, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
+import argparse, base64, binascii, hmac, html, ipaddress, json, os, re, secrets, socket, stat, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
@@ -46,6 +46,7 @@ def load_cfg():
 MAX_BODY = 32 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens em base64)
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
+SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
 
 
 def multipart_encode(fields, files):
@@ -1421,13 +1422,29 @@ class H(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b)
 
+    def do_OPTIONS(self):
+        if not self.allowed():
+            return self.send(403, {"error": "forbidden"})
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
+        origin = self.headers.get("Origin")
+        if origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+        self.end_headers()
+
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         if not self.allowed():
             return self.send(403, {"error": "forbidden"})
         if path == "/":
-            return self.send(200, (DIR / "index.html").read_bytes(), "text/html")
+            html_text = (DIR / "index.html").read_text(encoding="utf-8")
+            if '<meta name="csrf-token"' in html_text:
+                html_text = re.sub(r'<meta name="csrf-token" content="[^"]*">', f'<meta name="csrf-token" content="{SESSION_TOKEN}">', html_text)
+            else:
+                html_text = html_text.replace("</head>", f'<meta name="csrf-token" content="{SESSION_TOKEN}">\n</head>', 1)
+            return self.send(200, html_text.encode("utf-8"), "text/html")
         if path == "/vendor/hls.min.js":
             return self.send(200, (DIR / "vendor" / "hls.min.js").read_bytes(), "application/javascript")
         if path.startswith("/brand/"):
@@ -1579,9 +1596,12 @@ class H(BaseHTTPRequestHandler):
         return d, None
 
     def _do_post(self):
-        global CFG, CLIENTS
+        global CFG, CLIENTS, SESSION_TOKEN
         if not self.allowed():
             return self.send(403, {"error": "forbidden"})
+        token = self.headers.get("X-CSRF-Token")
+        if not token or not hmac.compare_digest(token, SESSION_TOKEN):
+            return self.send(403, {"error": "Token de sessão inválido ou ausente."})
         d, err = self._read_json()
         if err:
             return self.send(err[0], {"error": err[1]})

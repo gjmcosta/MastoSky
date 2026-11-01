@@ -266,15 +266,37 @@ class SecurityHeadersTests(unittest.TestCase):
         self.assertTrue((app.DIR / "vendor" / "hls.min.js").exists())
         self.assertNotIn("cdn.jsdelivr", (app.DIR / "index.html").read_text())
 
+    def test_index_serves_session_token(self):
+        h = self._handler("127.0.0.1:%d" % app.PORT)
+        h.path = "/"
+        h.do_GET()
+        body = h.wfile.getvalue().decode("utf-8")
+        self.assertIn(f'<meta name="csrf-token" content="{app.SESSION_TOKEN}">', body)
+
+    def test_options_allowed(self):
+        h = self._handler("127.0.0.1:%d" % app.PORT, "http://127.0.0.1:%d" % app.PORT)
+        h.do_OPTIONS()
+        code = [v for k, v in h.sent if k == "code"][0]
+        self.assertEqual(code, 204)
+
+    def test_options_rejected_for_foreign_origin(self):
+        h = self._handler("127.0.0.1:%d" % app.PORT, "https://evil.example")
+        h.do_OPTIONS()
+        code = [v for k, v in h.sent if k == "code"][0]
+        self.assertEqual(code, 403)
+
 
 class PostHandlerTests(unittest.TestCase):
-    def _post(self, path, body, length=None):
+    def _post(self, path, body, length=None, token=None):
         import io
         raw = body if isinstance(body, bytes) else json.dumps(body).encode()
         h = object.__new__(app.H)
         h.path = path
+        tok = app.SESSION_TOKEN if token is None else token
         h.headers = {"Host": "127.0.0.1:%d" % app.PORT,
                      "Content-Length": str(len(raw)) if length is None else length}
+        if tok:
+            h.headers["X-CSRF-Token"] = tok
         h.rfile = io.BytesIO(raw)
         h.wfile = io.BytesIO()
         h.sent = []
@@ -291,6 +313,16 @@ class PostHandlerTests(unittest.TestCase):
         p = mock.patch.dict(app.CLIENTS, {"bluesky": self.client}, clear=True)
         p.start()
         self.addCleanup(p.stop)
+
+    def test_csrf_token_required(self):
+        code, r = self._post("/api/post", b"{}", token="")
+        self.assertEqual(code, 403)
+        self.assertIn("Token de sessão", r["error"])
+
+    def test_csrf_token_invalid_rejected(self):
+        code, r = self._post("/api/post", b"{}", token="token-falso-123")
+        self.assertEqual(code, 403)
+        self.assertIn("Token de sessão", r["error"])
 
     def test_invalid_json(self):
         code, r = self._post("/api/post", b"{nao e json")

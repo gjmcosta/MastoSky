@@ -135,9 +135,35 @@ Contribuições são muito bem-vindas! Consulta o [CONTRIBUTING.md](CONTRIBUTING
 
 ---
 
-## 🛡️ Segurança
+## 🛡️ Segurança & Modelo de Ameaças
 
-O ficheiro com as tuas credenciais pessoais (`config.json`) está protegido pelo ficheiro `.gitignore` e **nunca** deve ser adicionado ao controlo de versões.
+O MastoSky foi desenhado com uma arquitetura estrita **local-first e sem telemetria**. Como a premissa central é *"As tuas credenciais não saem da tua máquina"*, o sistema aplica defesa em profundidade em todas as fronteiras de rede e browser:
+
+### 1. Isolamento em Localhost (Fronteira de Rede)
+* O servidor HTTP faz bind exclusivamente em `127.0.0.1` (interface de loopback). **Nunca** faz bind em `0.0.0.0` nem em interfaces de rede públicas. Nenhum outro computador ou dispositivo ligado à tua rede Wi-Fi/LAN consegue aceder à tua instância ou porta do MastoSky.
+
+### 2. Proteção Anti-DNS Rebinding e Validação de Host
+* Cada pedido valida obrigatoriamente o cabeçalho `Host` contra uma lista estrita autorizada (`127.0.0.1:{PORT}` e `localhost:{PORT}`). Pedidos com nomes de domínio falsificados ou externos (ex.: domínios maliciosos configurados para resolver em `127.0.0.1` através de DNS rebinding) são imediatamente bloqueados com `403 Forbidden`.
+
+### 3. Proteção Cross-Origin & Token CSRF por Sessão
+* Ao navegar na Web no mesmo browser, sites maliciosos não conseguem interagir com a tua instância local do MastoSky:
+  * **Validação Estrita de Origin:** O servidor bloqueia qualquer pedido que apresente um cabeçalho `Origin` externo (`403 Forbidden`).
+  * **Token CSRF por Sessão:** No arranque, o servidor gera um token criptográfico aleatório (`secrets.token_hex(32)`) injetado na interface. Qualquer pedido de alteração de estado (`/api/post`, `/api/action`, `/api/setup`) exige obrigatoriamente este token através do cabeçalho `X-CSRF-Token`.
+  * **Same-Origin Policy:** Sites de terceiros não conseguem ler este token devido à política de mesma origem do browser.
+  * **Preflight CORS Obrigatório:** A presença do cabeçalho customizado `X-CSRF-Token` força o browser a disparar uma verificação preliminar (`OPTIONS`), bloqueando submissões cegas via `<form>`, `<img>` ou `sendBeacon`.
+
+### 4. Sandboxing de Iframes e Content Security Policy (CSP)
+* Todas as respostas HTTP incluem cabeçalhos de segurança rigorosos:
+  * `Content-Security-Policy: frame-ancestors 'none'; base-uri 'none'; form-action 'none'` (impede que o MastoSky seja embutido em iframes ou sofra ataques de clickjacking).
+  * `X-Frame-Options: DENY`
+  * `X-Content-Type-Options: nosniff`
+  * `Referrer-Policy: no-referrer`
+
+### 5. Mitigação de SSRF (Server-Side Request Forgery)
+* O proxy de imagens local (`/api/proxy_image`) analisa e valida os endereços IP de destino antes de efetuar qualquer pedido, bloqueando estritamente gamas de IP privadas, de loopback ou de rede local (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`).
+
+### 6. Armazenamento de Credenciais
+* As tuas credenciais (App Passwords e Access Tokens) são guardadas localmente no ficheiro `config.json` com permissões restritas de sistema de ficheiros (`0600` — legível apenas pela tua conta de utilizador). Nunca são enviadas para servidores de terceiros, analítica ou proxies externos — apenas diretamente para a tua instância Mastodon e para a API oficial do Bluesky. O ficheiro está também protegido no `.gitignore`.
 
 ---
 

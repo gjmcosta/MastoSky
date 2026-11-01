@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="">
 <title>MastoSky</title>
 <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
 <script src="/vendor/hls.min.js"></script>
@@ -1667,8 +1668,12 @@ function closeDeckDetail() {
 let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
 let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
 
+const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+
 async function api(path, body) {
-  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
+  const headers = {"Content-Type": "application/json"};
+  if (CSRF_TOKEN) headers["X-CSRF-Token"] = CSRF_TOKEN;
+  const r = await fetch(path, body ? {method: "POST", headers, body: JSON.stringify(body)} : {});
   return r.json();
 }
 

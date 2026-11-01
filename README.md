@@ -135,9 +135,35 @@ Contributions are warmly welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-## 🛡️ Security
+## 🛡️ Security & Threat Model
 
-Your personal credentials file (`config.json`) is strictly ignored by `.gitignore` and **must never** be committed to version control.
+MastoSky is built around a strict **local-first, zero-telemetry** architecture. Since the core pitch is *"Your credentials stay on your machine"*, the system enforces defense-in-depth across every boundary:
+
+### 1. Localhost Isolation (Network Boundary)
+* The HTTP server binds exclusively to `127.0.0.1` (loopback interface). It **never** binds to `0.0.0.0` or public network adapters. Other devices on your local Wi-Fi or LAN cannot access your MastoSky instance or port.
+
+### 2. DNS Rebinding & Host Enforcement
+* Every request verifies the HTTP `Host` header against an explicit whitelist (`127.0.0.1:{PORT}` and `localhost:{PORT}`). Requests carrying spoofed or external hostnames (e.g. malicious domains resolving to `127.0.0.1` via DNS rebinding) are immediately rejected with `403 Forbidden`.
+
+### 3. Cross-Origin Protection & Per-Session CSRF Token
+* When you browse the web in the same browser, malicious websites cannot interact with your local MastoSky instance:
+  * **Strict Origin Validation:** The server rejects any request carrying a foreign `Origin` header (`403 Forbidden`).
+  * **Per-Session CSRF Token:** On startup, the server generates a cryptographically random token (`secrets.token_hex(32)`) injected into the UI. Every state-changing request (`/api/post`, `/api/action`, `/api/setup`) must supply this token via the `X-CSRF-Token` header.
+  * **Same-Origin Policy:** Third-party websites cannot read this token due to the browser's Same-Origin Policy.
+  * **Mandatory CORS Preflight:** The custom `X-CSRF-Token` header forces browsers to trigger an `OPTIONS` preflight, preventing blind `<form>`, `<img>`, or `sendBeacon` submissions from foreign origins.
+
+### 4. Frame Sandboxing & Content Security Policy (CSP)
+* All responses include strict security headers:
+  * `Content-Security-Policy: frame-ancestors 'none'; base-uri 'none'; form-action 'none'` (prevents framing and clickjacking).
+  * `X-Frame-Options: DENY`
+  * `X-Content-Type-Options: nosniff`
+  * `Referrer-Policy: no-referrer`
+
+### 5. SSRF (Server-Side Request Forgery) Mitigation
+* The local image proxy (`/api/proxy_image`) parses and verifies target IP addresses before fetching, strictly blocking private, loopback, or link-local subnets (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`).
+
+### 6. Credential Storage
+* Your credentials (App Passwords and Access Tokens) are stored locally in `config.json` with restricted file permissions (`0600` — readable only by your user account). They are never transmitted to any third-party server, analytics service, or proxy — only directly to the official Mastodon instance and Bluesky API endpoints you configure. The file is also strictly ignored by `.gitignore`.
 
 ---
 
