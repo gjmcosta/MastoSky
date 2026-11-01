@@ -908,6 +908,47 @@ class PaginationTests(unittest.TestCase):
             masto_mock.timeline.assert_called_with(cursor="m_cur")
 
 
+class CustomEmojiTests(unittest.TestCase):
+    def test_render_custom_emojis_valid(self):
+        emojis = [{
+            "shortcode": "blobcat",
+            "static_url": "https://cdn.masto/blobcat.png",
+            "url": "https://cdn.masto/blobcat.gif"
+        }]
+        html_in = "Olá :blobcat: fixolas!"
+        html_out = app.render_custom_emojis(html_in, emojis)
+        self.assertIn('<img class="emoji" src="https://cdn.masto/blobcat.png" alt=":blobcat:" title=":blobcat:">', html_out)
+
+    def test_render_custom_emojis_invalid_url(self):
+        emojis = [{
+            "shortcode": "bad",
+            "static_url": "javascript:alert(1)"
+        }]
+        html_in = "Teste :bad: aqui"
+        html_out = app.render_custom_emojis(html_in, emojis)
+        self.assertEqual(html_out, html_in)
+        self.assertNotIn("<img", html_out)
+
+    def test_masto_item_custom_emojis(self):
+        m = app.Masto({"instance": "https://m.pt", "token": "tok"})
+        st = {
+            "id": "1",
+            "account": {
+                "id": "1", "username": "alice", "acct": "alice",
+                "display_name": "Alice :verified:",
+                "emojis": [{"shortcode": "verified", "static_url": "https://m.pt/badge.png"}]
+            },
+            "content": "<p>Gatinho :blobcat: giro</p>",
+            "emojis": [{"shortcode": "blobcat", "static_url": "https://m.pt/cat.png"}],
+            "created_at": "2026-01-01T00:00:00Z"
+        }
+        item = m.item(st)
+        self.assertEqual(item["name"], "Alice :verified:")
+        self.assertIn('<img class="emoji" src="https://m.pt/badge.png"', item["name_html"])
+        self.assertIn('<img class="emoji" src="https://m.pt/cat.png"', item["html"])
+
+
+
 
 
 

@@ -78,6 +78,7 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .media img{width:100%;max-height:380px;object-fit:cover;border-radius:8px;cursor:zoom-in}
 .media:has(> :only-child) img{max-height:520px;object-fit:contain;background:rgba(0,0,0,0.03)}
 .post-video{width:100%;max-height:480px;background:#000;border-radius:8px;margin-top:8px;outline:none;display:block}
+img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:inline}
 .quote-card{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);cursor:pointer;transition:border-color .15s}
 .quote-card:hover{border-color:var(--muted)}
 .quote-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
@@ -396,7 +397,10 @@ function renderQuote(q) {
     head.append(av);
   }
   const who = el("div", "quote-who");
-  who.append(el("b", null, q.name), el("span", null, " " + q.handle));
+  const bQName = el("b");
+  if (q.name_html) bQName.innerHTML = q.name_html;
+  else bQName.textContent = q.name;
+  who.append(bQName, el("span", null, " " + q.handle));
   head.append(who);
   if (q.time) head.append(el("span", "when", ago(q.time)));
   card.append(head);
@@ -426,7 +430,10 @@ function postCard(it, o = {}) {
   if (it.avatar) { const i = el("img"); i.src = su(it.avatar) || ""; i.alt = ""; i.loading = "lazy"; head.append(i); }
   else head.append(el("div", "ph"));
   const who = el("div", "who");
-  who.append(el("b", null, it.name), el("span", null, it.handle + " · " + LABEL[it.network]));
+  const bItName = el("b");
+  if (it.name_html) bItName.innerHTML = it.name_html;
+  else bItName.textContent = it.name;
+  who.append(bItName, el("span", null, it.handle + " · " + LABEL[it.network]));
   const when = el("a", "when", ago(it.time));
   when.href = su(it.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
   head.append(who, netBadge(it.network), when);
@@ -639,7 +646,14 @@ function renderNotifs() {
     if (n.avatar) { const i = el("img"); i.src = su(n.avatar) || ""; i.alt = ""; i.loading = "lazy"; head.append(i); }
     else head.append(el("div", "ph"));
     const who = el("div", "who");
-    who.append(el("b", null, n.name + " " + (VERB[n.kind] || VERB.other)), el("span", null, n.handle + " · " + LABEL[n.network]));
+    const bNName = el("b");
+    if (n.name_html) {
+      const sNName = el("span"); sNName.innerHTML = n.name_html;
+      bNName.append(sNName, document.createTextNode(" " + (VERB[n.kind] || VERB.other)));
+    } else {
+      bNName.textContent = n.name + " " + (VERB[n.kind] || VERB.other);
+    }
+    who.append(bNName, el("span", null, n.handle + " · " + LABEL[n.network]));
     const when = el("a", "when", ago(n.time));
     when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
     head.append(who, netBadge(n.network), when);

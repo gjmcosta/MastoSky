@@ -467,6 +467,24 @@ def parse_bsky_quote(rec):
     }
 
 
+def render_custom_emojis(raw_html, emojis):
+    if not raw_html or not emojis or not isinstance(emojis, list):
+        return raw_html
+    for em in emojis:
+        if not isinstance(em, dict):
+            continue
+        code = em.get("shortcode")
+        if not code or not isinstance(code, str):
+            continue
+        u = safe_url(em.get("static_url") or em.get("url"))
+        if not u:
+            continue
+        escaped_code = html.escape(code)
+        img = f'<img class="emoji" src="{html.escape(u, True)}" alt=":{escaped_code}:" title=":{escaped_code}:">'
+        raw_html = re.sub(rf":{re.escape(code)}:", img, raw_html)
+    return raw_html
+
+
 def parse_masto_quote(st):
     if not st or not isinstance(st, dict):
         return None
@@ -511,10 +529,13 @@ def parse_masto_quote(st):
     q_html = cw + clean(qs.get("content"), strip_quote_inline=True)
     q_html = re.sub(r"^\s*RE:\s*<a\b[^>]*>.*?</a>(\s*<br\s*/?>\s*)*", "", q_html, flags=re.I)
     q_html = re.sub(r"(\s*<br\s*/?>\s*)*\s*RE:\s*<a\b[^>]*>.*?</a>\s*$", "", q_html, flags=re.I).strip()
+    q_html = render_custom_emojis(q_html, qs.get("emojis"))
+    q_name = q_acc.get("display_name") or q_acc.get("username", "")
+    q_name_html = render_custom_emojis(html.escape(q_name), q_acc.get("emojis")) if q_acc.get("emojis") else None
 
-    return {
+    out = {
         "network": "mastodon",
-        "name": q_acc.get("display_name") or q_acc.get("username", ""),
+        "name": q_name,
         "handle": "@" + q_acc.get("acct", ""),
         "avatar": safe_url(q_acc.get("avatar")),
         "html": q_html,
@@ -522,6 +543,9 @@ def parse_masto_quote(st):
         "url": safe_url(qs.get("url")),
         "media": safe_media_list(q_media)
     }
+    if q_name_html:
+        out["name_html"] = q_name_html
+    return out
 
 
 class Bsky:
@@ -895,9 +919,12 @@ class Masto:
                 "description": card.get("description", "")
             })
         my_id = s.get_my_id()
-        return {
-            "network": "mastodon", "name": a.get("display_name") or a.get("username", ""), "handle": "@" + a.get("acct", ""),
-            "avatar": safe_url(a.get("avatar")), "html": cw + raw_html,
+        name_plain = a.get("display_name") or a.get("username", "")
+        name_html = render_custom_emojis(html.escape(name_plain), a.get("emojis")) if a.get("emojis") else None
+        final_html = render_custom_emojis(cw + raw_html, x.get("emojis"))
+        out = {
+            "network": "mastodon", "name": name_plain, "handle": "@" + a.get("acct", ""),
+            "avatar": safe_url(a.get("avatar")), "html": final_html,
             "time": st.get("created_at"),
             "boosted_by": (st["account"].get("display_name") or st["account"]["username"]) if st.get("reblog") else None,
             "media": safe_media_list(media),
@@ -908,6 +935,9 @@ class Masto:
             "url": safe_url(x.get("url")), "ref": {"id": x["id"]}, "reply_to": rt,
             "is_reply": bool(x.get("in_reply_to_id")),
         }
+        if name_html:
+            out["name_html"] = name_html
+        return out
 
     def timeline(s, cursor=None):
         params = {"limit": 40}
@@ -1014,11 +1044,20 @@ class Masto:
             if kind == "mention" and st and st.get("in_reply_to_id"):
                 kind = "reply"
             cw = f"<strong>{html.escape(st['spoiler_text'])}</strong><br>" if st and st.get("spoiler_text") else ""
-            out.append({"network": "mastodon", "kind": kind, "name": a.get("display_name") or a.get("username", ""),
-                        "handle": "@" + a.get("acct", ""), "avatar": safe_url(a.get("avatar")),
-                        "html": (cw + clean(st.get("content"))) if st else "", "time": n.get("created_at"),
-                        "url": safe_url((st or {}).get("url") or a.get("url")),
-                        "ref": {"id": st["id"]} if st and kind in ("reply", "mention", "quote") else None})
+            notif_html = render_custom_emojis(cw + clean(st.get("content")), st.get("emojis")) if st else ""
+            a_emojis = a.get("emojis")
+            a_name = a.get("display_name") or a.get("username", "")
+            a_name_html = render_custom_emojis(html.escape(a_name), a_emojis) if a_emojis else None
+            notif_item = {
+                "network": "mastodon", "kind": kind, "name": a_name,
+                "handle": "@" + a.get("acct", ""), "avatar": safe_url(a.get("avatar")),
+                "html": notif_html, "time": n.get("created_at"),
+                "url": safe_url((st or {}).get("url") or a.get("url")),
+                "ref": {"id": st["id"]} if st and kind in ("reply", "mention", "quote") else None
+            }
+            if a_name_html:
+                notif_item["name_html"] = a_name_html
+            out.append(notif_item)
         return out, next_cursor
 
 
