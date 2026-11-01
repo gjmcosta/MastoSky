@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Timeline unificada Bluesky + Mastodon. Corre só no teu Mac (127.0.0.1)."""
-import base64, binascii, html, json, os, re, stat, threading, urllib.error, urllib.parse, urllib.request, uuid
+import base64, binascii, html, json, os, re, socket, stat, threading, time, urllib.error, urllib.parse, urllib.request, uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from html.parser import HTMLParser
@@ -61,6 +61,25 @@ def multipart_encode(fields, files):
     return bytes(body), f"multipart/form-data; boundary={boundary}"
 
 
+class ApiError(RuntimeError):
+    """Erro de API. `str(e)` mantém o formato "{código}: ..." de que o resto do código depende."""
+    def __init__(self, message, status=None, retry_after=None):
+        super().__init__(message)
+        self.status = status
+        self.retry_after = retry_after
+
+
+def _retry_after(headers):
+    try:
+        v = headers.get("Retry-After") if headers else None
+        return max(0, int(float(v))) if v is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+RETRY_MAX_WAIT = 5  # segundos: só repete um GET num 429 se o servidor pedir menos do que isto
+
+
 def http(method, url, data=None, token=None, headers=None):
     req = urllib.request.Request(url, method=method)
     req.add_header("User-Agent", "timeline-unificada/1.0")
@@ -79,12 +98,24 @@ def http(method, url, data=None, token=None, headers=None):
             body = json.dumps(data).encode()
             if not headers or "Content-Type" not in headers:
                 req.add_header("Content-Type", "application/json")
-    try:
-        with urllib.request.urlopen(req, body, timeout=30) as r:
-            raw = r.read()
-            return json.loads(raw) if raw else {}
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"{e.code}: {e.read()[:200].decode(errors='replace')}")
+    host = urllib.parse.urlparse(url).netloc
+    for attempt in (0, 1):
+        try:
+            with urllib.request.urlopen(req, body, timeout=30) as r:
+                raw = r.read()
+                return json.loads(raw) if raw else {}
+        except urllib.error.HTTPError as e:
+            ra = _retry_after(e.headers)
+            if e.code == 429 and method == "GET" and attempt == 0 and ra is not None and ra <= RETRY_MAX_WAIT:
+                time.sleep(ra)
+                continue
+            msg = f"{e.code}: {e.read()[:200].decode(errors='replace')}"
+            if e.code == 429:
+                msg += f" (limite de pedidos; tenta de novo{f' dentro de {ra} s' if ra is not None else ' mais tarde'})"
+            raise ApiError(msg, status=e.code, retry_after=ra)
+        except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError) as e:
+            reason = getattr(e, "reason", e)
+            raise ApiError(f"Sem ligação a {host}: {reason}")
 
 
 def now_iso():

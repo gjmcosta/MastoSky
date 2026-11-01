@@ -327,5 +327,72 @@ class PostHandlerTests(unittest.TestCase):
         self.assertNotIn("segredo", json.dumps(r))
 
 
+class HttpErrorTests(unittest.TestCase):
+    def _http_error(self, code, retry_after=None, body=b"x"):
+        import io
+        import urllib.error
+        from email.message import Message
+        hdrs = Message()
+        if retry_after is not None:
+            hdrs["Retry-After"] = str(retry_after)
+        return urllib.error.HTTPError("https://x.pt/a", code, "err", hdrs, io.BytesIO(body))
+
+    def test_http_error_keeps_code_prefix(self):
+        from unittest import mock
+        with mock.patch("app.urllib.request.urlopen", side_effect=self._http_error(401, body=b"ExpiredToken")):
+            with self.assertRaises(app.ApiError) as cm:
+                app.http("GET", "https://x.pt/a", token="SEGREDO")
+        self.assertTrue(str(cm.exception).startswith("401"))
+        self.assertIn("ExpiredToken", str(cm.exception))
+        self.assertEqual(cm.exception.status, 401)
+        self.assertNotIn("SEGREDO", str(cm.exception))
+        self.assertIsInstance(cm.exception, RuntimeError)
+
+    def test_429_short_retry_after_retries_get(self):
+        from unittest import mock
+        ok = mock.MagicMock()
+        ok.__enter__.return_value.read.return_value = b'{"a": 1}'
+        with mock.patch("app.urllib.request.urlopen", side_effect=[self._http_error(429, 2), ok]) as u, \
+                mock.patch("app.time.sleep") as sl:
+            self.assertEqual(app.http("GET", "https://x.pt/a"), {"a": 1})
+        sl.assert_called_once_with(2)
+        self.assertEqual(u.call_count, 2)
+
+    def test_429_long_retry_after_propagates(self):
+        from unittest import mock
+        with mock.patch("app.urllib.request.urlopen", side_effect=self._http_error(429, 120)), \
+                mock.patch("app.time.sleep") as sl:
+            with self.assertRaises(app.ApiError) as cm:
+                app.http("GET", "https://x.pt/a")
+        sl.assert_not_called()
+        self.assertEqual(cm.exception.retry_after, 120)
+        self.assertIn("120", str(cm.exception))
+
+    def test_429_without_retry_after_and_post_not_retried(self):
+        from unittest import mock
+        with mock.patch("app.urllib.request.urlopen", side_effect=self._http_error(429)) as u:
+            with self.assertRaises(app.ApiError) as cm:
+                app.http("GET", "https://x.pt/a")
+        self.assertIsNone(cm.exception.retry_after)
+        self.assertEqual(u.call_count, 1)
+        with mock.patch("app.urllib.request.urlopen", side_effect=self._http_error(429, 1)) as u:
+            with self.assertRaises(app.ApiError):
+                app.http("POST", "https://x.pt/a", data={})
+        self.assertEqual(u.call_count, 1)
+
+    def test_url_error_and_timeout(self):
+        import socket
+        import urllib.error
+        from unittest import mock
+        with mock.patch("app.urllib.request.urlopen", side_effect=urllib.error.URLError("dns")):
+            with self.assertRaises(app.ApiError) as cm:
+                app.http("GET", "https://bsky.social/x")
+        self.assertIn("Sem ligação a bsky.social", str(cm.exception))
+        with mock.patch("app.urllib.request.urlopen", side_effect=socket.timeout("timed out")):
+            with self.assertRaises(app.ApiError) as cm:
+                app.http("GET", "https://bsky.social/x")
+        self.assertIn("Sem ligação a bsky.social", str(cm.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
