@@ -653,13 +653,23 @@ body:not(.view-deck) .deck-add-col-card {
 .deck-col-compose textarea {
   min-height: 95px;
 }
-.compose-hub-divider {
-  height: 1px;
-  background: var(--line);
-  margin: 14px 0 16px 0;
+.user-profile-box {
+  max-width: 580px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
 }
-body.view-deck #colProfileSingle {
-  display: none !important;
+.user-profile-modal-body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-width: thin;
 }
 .panel-section{background:color-mix(in srgb,var(--surface-2) 40%,var(--card));border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
 .panel-sec-title{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
@@ -1047,19 +1057,17 @@ body:not(.view-deck) .deck-col-body {
       <div class="deck-col-head">
         <div class="deck-col-head-left">
           <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
-          <span class="deck-col-title" id="deckComposeTitle" data-i18n="header.col_compose_hub">Compor & Menu</span>
+          <span class="deck-col-title" id="deckComposeTitle" data-i18n="header.col_compose">Novo post</span>
         </div>
         <div class="deck-col-actions">
           <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('compose', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
           <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('compose', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
-          <button type="button" class="deck-act-btn" onclick="refreshProfileView()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="$('colComposeBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
           <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('compose')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colComposeBody">
         <div id="deckComposeWrap"></div>
-        <div class="compose-hub-divider" id="composeHubDivider" hidden></div>
       </div>
     </div>
 
@@ -1231,11 +1239,21 @@ body:not(.view-deck) .deck-col-body {
       </div>
     </div>
 
-    <div class="deck-col" id="colProfileSingle" data-col="profile">
+    <div class="deck-col" id="colProfile" data-col="profile">
       <div class="deck-col-head">
-        <span class="deck-col-title" id="deckProfileTitle" data-i18n="panel.title">Menu & Perfil</span>
+        <div class="deck-col-head-left">
+          <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
+          <span class="deck-col-title" id="deckProfileTitle" data-i18n="tabs.profile">Perfil</span>
+        </div>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('profile', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
+          <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('profile', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="refreshProfileView()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colProfileBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+          <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('profile')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
+        </div>
       </div>
-      <div class="deck-col-body" id="colProfileSingleBody">
+      <div class="deck-col-body" id="colProfileBody">
         <div id="pProfile" hidden>
           <div id="perrors"></div>
           
@@ -1329,12 +1347,13 @@ body:not(.view-deck) .deck-col-body {
           <div style="font-size:12.5px;font-weight:600;margin-bottom:4px" data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
           <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px" data-i18n="setup.deck_col_order_tip">Podes arrastar as colunas ou usar as setas no cabeçalho do Deck para reordenar.</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px">
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Compor & Menu</span></label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Novo post</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColTimeline"> <span data-i18n="setup.deck_col_timeline">Timeline</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColExplore"> <span data-i18n="setup.deck_col_explore">Em Alta</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColSearch"> <span data-i18n="setup.deck_col_search">Pesquisa</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColSaved"> <span data-i18n="setup.deck_col_saved">Guardados</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
           </div>
         </div>
       </div>
@@ -1441,6 +1460,19 @@ body:not(.view-deck) .deck-col-body {
 
       <div class="drafts-foot" id="draftsFoot" hidden>
         <button type="button" class="ghost-sm" id="clearAllDraftsBtn" style="color:var(--danger)" data-i18n="drafts.clear_all">Eliminar todos os rascunhos</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="userProfileOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="userProfileModalTitle">
+    <div class="setup-box user-profile-box">
+      <div class="setup-header">
+        <h2 id="userProfileModalTitle" style="font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Perfil</h2>
+        <button type="button" class="rm-sm" id="closeUserProfileModal" title="Fechar (Esc)">✕</button>
+      </div>
+      <div id="userProfileModalBody" class="user-profile-modal-body">
+        <div id="userProfileModalCard"></div>
+        <div id="userProfileModalFeed"></div>
       </div>
     </div>
   </div>
@@ -1752,7 +1784,7 @@ const I18N = {
       view_mode_deck: "Colunas múltiplas (Deck View)",
       deck_cols_label: "Colunas visíveis no Deck:",
       deck_col_order_tip: "Podes arrastar as colunas ou usar as setas no cabeçalho do Deck para reordenar.",
-      deck_col_compose: "Compor & Menu",
+      deck_col_compose: "Novo post",
       deck_col_timeline: "Timeline (Feed unificado)",
       deck_col_explore: "Em Alta (Trending)",
       deck_col_search: "Pesquisa",
@@ -2072,7 +2104,7 @@ const I18N = {
       view_mode_deck: "Multi-column (Deck View)",
       deck_cols_label: "Visible columns in Deck:",
       deck_col_order_tip: "You can drag columns or use the arrows in the Deck header to reorder.",
-      deck_col_compose: "Compose & Menu",
+      deck_col_compose: "New Post",
       deck_col_timeline: "Timeline (Unified feed)",
       deck_col_explore: "Trending (Explore)",
       deck_col_search: "Search",
@@ -2109,7 +2141,7 @@ const I18N = {
 
 let currentLang = localStorage.getItem("mastosky_lang") || ((navigator.language && navigator.language.startsWith("pt")) ? "pt" : "en");
 let viewMode = localStorage.getItem("mastosky_view_mode") || "single";
-const ALL_DECK_COLS = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+const ALL_DECK_COLS = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
 let deckColumns = (() => {
   try {
     const raw = JSON.parse(localStorage.getItem("mastosky_deck_columns") || '["compose","timeline","explore","notifs"]');
@@ -2264,17 +2296,18 @@ function handleScrollNav() {
 window.addEventListener("scroll", handleScrollNav, {passive: true});
 
 const DECK_COL_INFO = {
-  compose: { titleKey: "header.col_compose_hub", defTitle: "Compor & Menu", icon: "#i-draft" },
+  compose: { titleKey: "header.col_compose", defTitle: "Novo post", icon: "#i-draft" },
   timeline: { titleKey: "header.col_timeline", defTitle: "Timeline", icon: "#i-cross" },
   explore: { titleKey: "header.col_explore", defTitle: "Em Alta", icon: "#i-poll" },
   search: { titleKey: "header.col_search", defTitle: "Pesquisa", icon: "#i-search" },
   saved: { titleKey: "header.col_saved", defTitle: "Guardados", icon: "#i-bookmark" },
-  notifs: { titleKey: "header.col_notifs", defTitle: "Notificações", icon: "#i-vis-public" }
+  notifs: { titleKey: "header.col_notifs", defTitle: "Notificações", icon: "#i-vis-public" },
+  profile: { titleKey: "tabs.profile", defTitle: "Perfil", icon: "#i-net-both" }
 };
 
 function applyDeckColumnVisibility() {
   if (viewMode !== "deck") return;
-  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
   allCols.forEach(c => {
     const el = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
     if (!el) return;
@@ -2356,7 +2389,7 @@ function reorderDeckColumn(draggedCol, targetCol, insertBefore) {
 }
 
 function syncDeckColsCheckboxes() {
-  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
   colIds.forEach(c => {
     const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
     if (chk) chk.checked = deckColumns.includes(c);
@@ -2368,7 +2401,7 @@ function renderAddColMenu() {
   if (!list) return;
   list.replaceChildren();
 
-  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
   const available = allCols.filter(c => !deckColumns.includes(c));
 
   if (!available.length) {
@@ -2418,7 +2451,7 @@ function initDeckDragAndDrop() {
   const container = $("deckContainer");
   if (!container) return;
 
-  const cols = container.querySelectorAll(".deck-col:not(.deck-add-col-card):not(#colProfileSingle)");
+  const cols = container.querySelectorAll(".deck-col:not(.deck-add-col-card)");
   cols.forEach(col => {
     const head = col.querySelector(".deck-col-head");
     if (!head) return;
@@ -2480,23 +2513,11 @@ function applyViewMode(mode) {
   document.body.classList.toggle("view-deck", mode === "deck");
 
   const comp = $("composeSection");
-  const prof = $("pProfile");
-  const thProf = $("threadProfile");
-  const divider = $("composeHubDivider");
 
   if (mode === "deck") {
     if (comp) $("deckComposeWrap")?.appendChild(comp);
-    if (prof) {
-      $("colComposeBody")?.appendChild(prof);
-      prof.hidden = false;
-    }
-    if (thProf) $("colComposeBody")?.appendChild(thProf);
-    if (divider) divider.hidden = false;
   } else {
     if (comp) $("singleComposeWrap")?.appendChild(comp);
-    if (prof) $("colProfileSingleBody")?.appendChild(prof);
-    if (thProf) $("colProfileSingleBody")?.appendChild(thProf);
-    if (divider) divider.hidden = true;
   }
 
   const viewBtn = $("viewToggleBtn");
@@ -2518,6 +2539,7 @@ function applyViewMode(mode) {
     if ($("pSearch")) $("pSearch").hidden = false;
     if ($("pSaved")) $("pSaved").hidden = false;
     $("pNotifs").hidden = false;
+    if ($("pProfile")) $("pProfile").hidden = false;
     if (!exploreItems.length) loadExplore();
     renderSavedFeed();
     if (!notifs) loadNotifs();
@@ -2714,6 +2736,10 @@ function closeImageLightbox() {
 
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
+      closeUserProfileModal();
+      return;
+    }
     if ($("draftsOverlay") && !$("draftsOverlay").hidden) {
       closeDraftsModal();
       return;
@@ -3615,8 +3641,7 @@ function renderProfileAccountsList(profiles, errors) {
 }
 
 function updateProfileTitle(title) {
-  if ($("deckProfileTitle")) $("deckProfileTitle").textContent = title || t("panel.title");
-  if ($("deckComposeTitle")) $("deckComposeTitle").textContent = title || t("header.col_compose_hub");
+  if ($("deckProfileTitle")) $("deckProfileTitle").textContent = title || t("tabs.profile");
 }
 
 async function viewOwnAccount(net) {
@@ -3732,83 +3757,82 @@ function renderSingleProfileCard(p, isOwn = false) {
   return card;
 }
 
+let userProfileModalCursor = null;
+let userProfileModalItems = [];
+let activeModalActor = null;
+let activeModalNet = null;
+
 async function openUserProfile(network, actor) {
   if (!network || !actor) return;
-  if (viewMode === "single") {
-    if (tab !== "profile") {
-      previousTab = tab;
-      setTab("profile");
-    }
-  } else {
-    const colProf = $("colCompose");
-    if (colProf) {
-      colProf.hidden = false;
-      colProf.scrollIntoView({behavior: "smooth", inline: "start"});
-    }
-  }
+  activeModalNet = network;
+  activeModalActor = actor;
+  userProfileModalCursor = null;
+  userProfileModalItems = [];
 
-  activeProfileMode = "user";
-  activeProfileNet = network;
-  activeProfileActor = actor;
-  userProfileCursor = null;
+  const overlay = $("userProfileOverlay");
+  const titleEl = $("userProfileModalTitle");
+  const cardWrap = $("userProfileModalCard");
+  const feedWrap = $("userProfileModalFeed");
+  const modalBody = $("userProfileModalBody");
 
-  $("pProfile").hidden = false;
-  if ($("panelHubView")) $("panelHubView").hidden = true;
-  $("profileDetailView").hidden = false;
-  $("profileBackBtn").textContent = (previousTab && viewMode === "single") ? t("actions.back") : t("profile.back_to_profiles");
-  updateProfileTitle(actor);
+  if (!overlay) return;
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
 
-  $("profileActiveCard").replaceChildren(el("div", "empty", t("feed.loading_profile")));
-  $("profileActiveFeed").replaceChildren();
+  if (modalBody) modalBody.scrollTo({top: 0, behavior: "instant"});
+  if (titleEl) titleEl.textContent = actor;
+  if (cardWrap) cardWrap.replaceChildren(el("div", "empty", t("feed.loading_profile")));
+  if (feedWrap) feedWrap.replaceChildren();
 
   try {
     const profRes = await api("/api/user_profile?network=" + encodeURIComponent(network) + "&actor=" + encodeURIComponent(actor));
-    if (activeProfileActor !== actor) return;
+    if (activeModalActor !== actor) return;
     if (profRes.error) {
-      $("profileActiveCard").replaceChildren(el("div", "banner", LABEL[network] + ": " + profRes.error));
+      if (cardWrap) cardWrap.replaceChildren(el("div", "banner", LABEL[network] + ": " + profRes.error));
       return;
     }
     const prof = profRes.profile;
     if (prof && (prof.name || prof.handle)) {
-      updateProfileTitle(prof.name || prof.handle);
+      if (titleEl) titleEl.textContent = prof.name || prof.handle;
     }
-    $("profileActiveCard").replaceChildren(renderSingleProfileCard(prof, false));
+    if (cardWrap) cardWrap.replaceChildren(renderSingleProfileCard(prof, false));
 
-    const feedWrap = $("profileActiveFeed");
-    feedWrap.replaceChildren(el("div", "empty", t("feed.loading_posts")));
-    await loadAuthorFeed(feedWrap);
+    if (feedWrap) {
+      feedWrap.replaceChildren(el("div", "empty", t("feed.loading_posts")));
+      await loadModalAuthorFeed(feedWrap);
+    }
   } catch (err) {
-    if (activeProfileActor === actor) {
-      $("profileActiveCard").replaceChildren(el("div", "banner", t("feed.error_loading_profile", {err: err.message})));
+    if (activeModalActor === actor && cardWrap) {
+      cardWrap.replaceChildren(el("div", "banner", t("feed.error_loading_profile", {err: err.message})));
     }
   }
 }
 
-async function loadAuthorFeed(feedWrap, isMore = false) {
+async function loadModalAuthorFeed(feedWrap, isMore = false) {
   const q = new URLSearchParams({
-    network: activeProfileNet,
-    actor: activeProfileActor
+    network: activeModalNet,
+    actor: activeModalActor
   });
-  if (userProfileCursor) q.set("cursor", userProfileCursor);
+  if (userProfileModalCursor) q.set("cursor", userProfileModalCursor);
 
   try {
     const d = await api("/api/user_feed?" + q.toString());
-    if (activeProfileActor !== q.get("actor")) return;
-    userProfileCursor = d.cursor || null;
+    if (activeModalActor !== q.get("actor")) return;
+    userProfileModalCursor = d.cursor || null;
     const items = d.items || [];
     if (!isMore) {
-      userProfileItems = [];
+      userProfileModalItems = [];
       feedWrap.replaceChildren();
     } else {
       const moreBtn = feedWrap.querySelector(".more-wrap");
       if (moreBtn) moreBtn.remove();
     }
-    for (const it of items) userProfileItems.push(it);
-    if (!userProfileItems.length) {
+    for (const it of items) userProfileModalItems.push(it);
+    if (!userProfileModalItems.length) {
       feedWrap.append(el("div", "empty", t("feed.empty_user_profile")));
     } else {
       for (const it of items) feedWrap.append(postCard(it));
-      if (userProfileCursor) {
+      if (userProfileModalCursor) {
         const wrap = el("div", "more-wrap");
         wrap.style.textAlign = "center";
         wrap.style.padding = "20px 0";
@@ -3816,7 +3840,7 @@ async function loadAuthorFeed(feedWrap, isMore = false) {
         btn.onclick = async () => {
           btn.disabled = true;
           btn.textContent = t("actions.loading");
-          await loadAuthorFeed(feedWrap, true);
+          await loadModalAuthorFeed(feedWrap, true);
         };
         wrap.append(btn);
         feedWrap.append(wrap);
@@ -3827,24 +3851,24 @@ async function loadAuthorFeed(feedWrap, isMore = false) {
   }
 }
 
-function returnFromProfileDetail() {
-  if (activeProfileMode === "user" && viewMode === "single" && previousTab && previousTab !== "profile") {
-    const pt = previousTab;
-    previousTab = null;
-    activeProfileActor = null;
-    activeProfileMode = "hub";
-    $("profileDetailView").hidden = true;
-    $("panelHubView").hidden = false;
-    updateProfileTitle(t("header.col_compose_hub"));
-    setTab(pt);
-    return;
+function closeUserProfileModal() {
+  const overlay = $("userProfileOverlay");
+  if (overlay) {
+    overlay.hidden = true;
+    document.body.style.overflow = "";
   }
+  activeModalActor = null;
+  activeModalNet = null;
+  userProfileModalCursor = null;
+}
+
+function returnFromProfileDetail() {
   activeProfileActor = null;
   activeProfileNet = null;
   activeProfileMode = "hub";
   $("profileDetailView").hidden = true;
   $("panelHubView").hidden = false;
-  updateProfileTitle(t("header.col_compose_hub"));
+  updateProfileTitle(t("tabs.profile"));
 }
 
 function closeUserProfile() {
@@ -3859,9 +3883,7 @@ function refreshAllFeeds() {
 }
 
 function refreshProfileView() {
-  if (activeProfileMode === "user") {
-    openUserProfile(activeProfileNet, activeProfileActor);
-  } else if (activeProfileMode === "account") {
+  if (activeProfileMode === "account") {
     loadProfile(true).then(() => {
       if (profileData && profileData[activeProfileNet]) viewOwnAccount(activeProfileNet);
     });
@@ -3879,7 +3901,7 @@ function setTab(newTab) {
       search: "colSearch",
       saved: "colSaved",
       notifs: "colNotifs",
-      profile: "colCompose"
+      profile: "colProfile"
     };
     const colId = colMap[newTab];
     if (colId && $(colId)) {
@@ -3932,6 +3954,9 @@ function getActiveColId(it) {
 }
 
 async function openThread(it, keep) {
+  if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
+    closeUserProfileModal();
+  }
   threadIt = it;
   if (!keep) {
     activeThreadColId = getActiveColId(it);
@@ -5394,6 +5419,12 @@ if ($("draftsOverlay")) {
     if (e.target === $("draftsOverlay")) closeDraftsModal();
   };
 }
+if ($("closeUserProfileModal")) $("closeUserProfileModal").onclick = closeUserProfileModal;
+if ($("userProfileOverlay")) {
+  $("userProfileOverlay").onclick = (e) => {
+    if (e.target === $("userProfileOverlay")) closeUserProfileModal();
+  };
+}
 if ($("saveCurrentDraftBtn")) $("saveCurrentDraftBtn").onclick = saveCurrentComposerToDrafts;
 if ($("clearAllDraftsBtn")) $("clearAllDraftsBtn").onclick = clearAllDrafts;
 if ($("discardComposerBtn")) $("discardComposerBtn").onclick = discardCurrentComposer;
@@ -6253,7 +6284,7 @@ async function openSetup(mandatory = false) {
   if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
   if ($("cfgViewModeSelect")) $("cfgViewModeSelect").value = viewMode;
   if ($("deckColsConfig")) $("deckColsConfig").hidden = viewMode !== "deck";
-  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
   colIds.forEach(c => {
     const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
     if (chk) chk.checked = deckColumns.includes(c);
@@ -6335,7 +6366,7 @@ if ($("cfgViewModeSelect")) {
   $("cfgViewModeSelect").value = viewMode;
   $("cfgViewModeSelect").onchange = (e) => applyViewMode(e.target.value);
 }
-const deckColIds = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+const deckColIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
 deckColIds.forEach(c => {
   const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
   if (chk) {
