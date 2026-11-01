@@ -788,10 +788,10 @@ body:not(.view-deck) .deck-col-body {
               <svg class="ico"><use href="#i-thread"/></svg>
               <span class="tool-label" data-i18n="composer.add_thread">+ Fio</span>
             </button>
-            <label class="tool" id="attachLabel" title="Anexar imagens (máx. 4)" data-i18n-title="composer.attach_title" aria-label="Anexar imagens">
+            <button type="button" class="tool" id="attachBtn" title="Anexar imagens (máx. 4)" data-i18n-title="composer.attach_title" aria-label="Anexar imagens">
               <svg class="ico"><use href="#i-image"/></svg>
-              <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
-            </label>
+            </button>
+            <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none">
             <button type="button" class="tool" id="pasteImgBtn" title="Colar imagem da área de transferência (Cmd+V)" data-i18n-title="composer.paste_img_title" aria-label="Colar imagem">
               <svg class="ico"><use href="#i-clipboard"/></svg>
             </button>
@@ -3328,16 +3328,17 @@ async function processImage(file) {
 function renderPreviews() {
   const box = $("previews");
   box.replaceChildren();
+  const btn = $("attachBtn") || $("attachLabel");
   if (!images.length) {
     box.hidden = true;
-    $("attachLabel").removeAttribute("disabled");
+    if (btn) btn.removeAttribute("disabled");
     return;
   }
   box.hidden = false;
   if (images.length >= 4) {
-    $("attachLabel").setAttribute("disabled", "true");
+    if (btn) btn.setAttribute("disabled", "true");
   } else {
-    $("attachLabel").removeAttribute("disabled");
+    if (btn) btn.removeAttribute("disabled");
   }
   images.forEach((img, idx) => {
     const card = el("div", "prev-card");
@@ -3367,7 +3368,7 @@ function renderPreviews() {
 
 async function handleImageFiles(files) {
   if (!files || !files.length) return;
-  if (poll) {
+  if (hasPoll) {
     $("msg").className = "msg err";
     $("msg").textContent = t("composer.attach_disabled_poll");
     return;
@@ -3514,42 +3515,42 @@ async function extractBlobsFromClipboardApi(rethrow = false) {
 
 async function extractImageFromText(text) {
   if (!text || typeof text !== "string") return [];
-  const tStr = text.trim();
-  if (!tStr) return [];
+  const lines = text.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
+  const out = [];
+  for (const tStr of lines) {
+    // 1. Data URI direta
+    if (tStr.startsWith("data:image/")) {
+      const b = dataUriToBlob(tStr);
+      if (b) { out.push(b); continue; }
+    }
 
-  // 1. Data URI direta
-  if (tStr.startsWith("data:image/")) {
-    const b = dataUriToBlob(tStr);
-    if (b) return [b];
-  }
+    // 2. URL remota de imagem (ex: https://.../pic.jpg ou png ou webp ou gif)
+    if (/^https?:\/\/[^\s]+\.(png|jpe?g|webp|gif|avif)(\?[^\s]*)?$/i.test(tStr)) {
+      try {
+        const res = await fetch("/api/proxy_image?url=" + encodeURIComponent(tStr));
+        if (res.ok) {
+          const b = await res.blob();
+          if (b && b.size > 0) { out.push(b); continue; }
+        }
+      } catch (_) {}
+    }
 
-  // 2. URL remota de imagem (ex: https://.../pic.jpg ou png ou webp ou gif)
-  if (/^https?:\/\/[^\s]+\.(png|jpe?g|webp|gif|avif)(\?[^\s]*)?$/i.test(tStr)) {
-    try {
-      const res = await fetch("/api/proxy_image?url=" + encodeURIComponent(tStr));
-      if (res.ok) {
-        const b = await res.blob();
-        if (b && b.size > 0) return [b];
-      }
-    } catch (_) {}
+    // 3. Caminho local de ficheiro (copiado no Finder ou gestor de ficheiros)
+    let cleanPath = tStr;
+    if (cleanPath.startsWith("file://")) {
+      try { cleanPath = decodeURIComponent(cleanPath.replace(/^file:\/\//, "")); } catch (_) {}
+    }
+    if (/^(\/|[a-zA-Z]:[\\\/]).*\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(cleanPath)) {
+      try {
+        const res = await fetch("/api/local_image?path=" + encodeURIComponent(cleanPath));
+        if (res.ok) {
+          const b = await res.blob();
+          if (b && b.size > 0) { out.push(b); continue; }
+        }
+      } catch (_) {}
+    }
   }
-
-  // 3. Caminho local de ficheiro (copiado no Finder ou gestor de ficheiros)
-  let cleanPath = tStr;
-  if (cleanPath.startsWith("file://")) {
-    try { cleanPath = decodeURIComponent(cleanPath.replace(/^file:\/\//, "")); } catch (_) {}
-  }
-  if (/^(\/|[a-zA-Z]:[\\\/]).*\.(png|jpe?g|webp|gif|bmp|svg|avif)$/i.test(cleanPath)) {
-    try {
-      const res = await fetch("/api/local_image?path=" + encodeURIComponent(cleanPath));
-      if (res.ok) {
-        const b = await res.blob();
-        if (b && b.size > 0) return [b];
-      }
-    } catch (_) {}
-  }
-
-  return [];
+  return out;
 }
 
 async function handlePasteEvent(e) {
@@ -3598,9 +3599,9 @@ async function handlePasteEvent(e) {
     }
   } catch (_) {}
 
-  // 3. Texto simples (URL de imagem ou caminho de ficheiro no computador copiado no Finder)
+  // 3. Texto simples ou uri-list (URL de imagem ou caminho de ficheiro no computador copiado no Finder)
   try {
-    const plain = cd.getData("text/plain");
+    const plain = (cd.getData("text/plain") || "") + "\n" + (cd.getData("text/uri-list") || "");
     const textImgs = await extractImageFromText(plain);
     if (textImgs.length > 0) {
       e.preventDefault();
@@ -3658,6 +3659,10 @@ if ($("pasteImgBtn")) {
     }
     setTimeout(() => { if ($("msg").className.includes("err")) $("msg").textContent = ""; }, 4500);
   };
+}
+
+if ($("attachBtn")) {
+  $("attachBtn").onclick = () => $("mediaInput").click();
 }
 
 $("mediaInput").onchange = async (e) => {
@@ -3995,19 +4000,29 @@ function update() {
     $("pollBtn").title = t("composer.poll_title");
   }
 
-  if (hasPoll) {
-    $("attachLabel").setAttribute("disabled", "true");
-    $("attachLabel").title = t("composer.attach_disabled_poll");
-  } else if (images.length >= 4) {
-    $("attachLabel").setAttribute("disabled", "true");
-    $("attachLabel").title = t("composer.attach_disabled_max");
-  } else {
-    $("attachLabel").removeAttribute("disabled");
-    $("attachLabel").title = t("composer.attach_title");
+  const attachEl = $("attachBtn") || $("attachLabel");
+  if (attachEl) {
+    if (hasPoll) {
+      attachEl.setAttribute("disabled", "true");
+      attachEl.title = t("composer.attach_disabled_poll");
+    } else if (images.length >= 4) {
+      attachEl.setAttribute("disabled", "true");
+      attachEl.title = t("composer.attach_disabled_max");
+    } else {
+      attachEl.removeAttribute("disabled");
+      attachEl.title = t("composer.attach_title");
+    }
+    attachEl.classList.toggle("active", images.length > 0);
+    attachEl.setAttribute("aria-pressed", images.length > 0 ? "true" : "false");
   }
-  if ($("attachLabel")) {
-    $("attachLabel").classList.toggle("active", images.length > 0);
-    $("attachLabel").setAttribute("aria-pressed", images.length > 0 ? "true" : "false");
+
+  const pasteEl = $("pasteImgBtn");
+  if (pasteEl) {
+    if (hasPoll || images.length >= 4) {
+      pasteEl.setAttribute("disabled", "true");
+    } else {
+      pasteEl.removeAttribute("disabled");
+    }
   }
 
   const pollValid = !hasPoll || filledOpts.length >= 2;
