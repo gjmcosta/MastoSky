@@ -309,13 +309,17 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif .body a{color:var(--c)}
 .notif{transition:background .35s ease,border-color .35s ease;position:relative}
 .notif.fresh{background:color-mix(in srgb,var(--c) 11%,var(--card));border-left:3px solid var(--c)}
-.notif-header-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,var(--card));position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
-.notif-filter-pills{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center;flex:1;min-width:0}
-.notif-filter-pills::-webkit-scrollbar{display:none}
-.notif-filter-pills .filter-pill{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;padding:4px 10px;font-size:11.5px}
-.notif-filter-pills .filter-pill .ico{width:12.5px;height:12.5px}
-.mark-read-ghost-btn{font-size:11.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:14px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;background:var(--surface-2);cursor:pointer;transition:all .15s}
+.notif-header-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,var(--card));position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
+.notif-filter-pills{display:flex;gap:5px;align-items:center;flex:1;min-width:0;overflow:hidden}
+.notif-filter-pills .filter-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;min-width:28px;padding:0 7px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-size:11.5px;font-weight:600;cursor:pointer;transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);white-space:nowrap}
+.notif-filter-pills .filter-pill .filter-label{display:none;font-size:11.5px;line-height:1}
+.notif-filter-pills .filter-pill.active{background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);border-color:var(--accent);padding:0 10px}
+.notif-filter-pills .filter-pill.active .filter-label{display:inline}
+.notif-filter-pills .filter-pill:hover:not(.active){color:var(--ink);border-color:var(--muted);background:var(--card)}
+.notif-filter-pills .filter-pill .ico{width:13px;height:13px;flex-shrink:0}
+.mark-read-ghost-btn{height:28px;min-width:28px;padding:0 7px;border-radius:14px;border:1px solid var(--line);color:var(--muted);background:var(--surface-2);display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all .15s;flex-shrink:0}
 .mark-read-ghost-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--card)}
+.mark-read-ghost-btn .ico{width:13px;height:13px}
 .back{margin-bottom:12px}
 .chain{border-left:2px solid var(--line);margin:0 0 10px 12px;padding-left:10px}
 .post.focus{box-shadow:0 0 0 2px var(--c)}
@@ -1253,30 +1257,29 @@ body:not(.view-deck) .deck-col-body {
         <div id="pNotifs" hidden>
           <div class="notif-header-bar">
             <div class="notif-filter-pills" id="notifFilterPills">
-              <button type="button" class="filter-pill active" data-notif-filter="all">
+              <button type="button" class="filter-pill active" data-notif-filter="all" title="Todas" data-i18n-title="notifs.filter_all">
                 <svg class="ico"><use href="#i-bell"/></svg>
-                <span data-i18n="notifs.filter_all">Todas</span>
+                <span class="filter-label" data-i18n="notifs.filter_all">Todas</span>
               </button>
-              <button type="button" class="filter-pill" data-notif-filter="replies">
+              <button type="button" class="filter-pill" data-notif-filter="replies" title="Respostas" data-i18n-title="notifs.filter_replies">
                 <svg class="ico"><use href="#i-reply"/></svg>
-                <span data-i18n="notifs.filter_replies">Respostas</span>
+                <span class="filter-label" data-i18n="notifs.filter_replies">Respostas</span>
               </button>
-              <button type="button" class="filter-pill" data-notif-filter="likes">
+              <button type="button" class="filter-pill" data-notif-filter="likes" title="Gostos" data-i18n-title="notifs.filter_likes">
                 <svg class="ico"><use href="#i-heart"/></svg>
-                <span data-i18n="notifs.filter_likes">Gostos</span>
+                <span class="filter-label" data-i18n="notifs.filter_likes">Gostos</span>
               </button>
-              <button type="button" class="filter-pill" data-notif-filter="boosts">
+              <button type="button" class="filter-pill" data-notif-filter="boosts" title="Partilhas" data-i18n-title="notifs.filter_boosts">
                 <svg class="ico"><use href="#i-repost"/></svg>
-                <span data-i18n="notifs.filter_boosts">Partilhas</span>
+                <span class="filter-label" data-i18n="notifs.filter_boosts">Partilhas</span>
               </button>
-              <button type="button" class="filter-pill" data-notif-filter="follows">
+              <button type="button" class="filter-pill" data-notif-filter="follows" title="Seguidores" data-i18n-title="notifs.filter_follows">
                 <svg class="ico"><use href="#i-user"/></svg>
-                <span data-i18n="notifs.filter_follows">Seguidores</span>
+                <span class="filter-label" data-i18n="notifs.filter_follows">Seguidores</span>
               </button>
             </div>
             <button type="button" class="mark-read-ghost-btn" id="markAllReadGhostBtn" onclick="markAllNotifsAsRead()" title="Marcar todas como lidas" data-i18n-title="notifs.mark_all_read">
               <svg class="ico" style="width:13px;height:13px"><use href="#i-check-all"/></svg>
-              <span data-i18n="notifs.mark_all_read">Marcar como lidas</span>
             </button>
           </div>
           <div id="nerrors"></div>
