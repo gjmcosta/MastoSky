@@ -96,7 +96,7 @@ button{font:inherit;cursor:pointer}
 button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--bsky);outline-offset:2px}
 .ghost{background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:5px 12px}
 .ghost:hover{background:var(--card)}
-.compose{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px}
+.compose{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px;max-width:100%;box-sizing:border-box;overflow-x:hidden}
 .cw-row{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-bottom:8px}
 .cw-label{font-size:12.5px;font-weight:600;white-space:nowrap;color:var(--muted)}
 .cw-row input{flex:1;border:0;background:none;color:var(--ink);font-size:13.5px}
@@ -116,6 +116,13 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .send-sm:disabled{opacity:.4;cursor:default}
 .update-pill{background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;cursor:pointer;transition:transform .1s,background-color .15s}
 .update-pill:hover{background:var(--accent);color:#fff;transform:translateY(-1px)}
+.header-actions{display:flex;gap:10px;align-items:center}
+.header-nav-group{display:inline-flex;align-items:center;gap:3px;background:var(--surface-1);border:1px solid var(--line);border-radius:24px;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.header-nav-btn{width:34px;height:34px;border-radius:50%;border:0;background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s ease;padding:0}
+.header-nav-btn:hover{color:var(--ink);background:var(--surface-2);transform:scale(1.06)}
+.header-nav-btn:disabled{opacity:.35;cursor:not-allowed}
+.header-nav-btn .ico{width:18px;height:18px}
+.header-lang-badge{font-size:11px;font-weight:700;font-family:var(--sans);letter-spacing:.5px}
 .poll-dur{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .poll-dur select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px}
 .previews{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px;padding:8px;background:rgba(255,255,255,0.02);border:1px dashed var(--line);border-radius:10px}
@@ -127,19 +134,19 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .prev-card .rm{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--danger, #e53935);color:#fff;border:2px solid var(--card);display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;cursor:pointer;transition:transform .1s}
 .prev-card .rm:hover{transform:scale(1.1)}
 .compose.drag-over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,var(--card))}
-.compose-tools{display:flex;gap:4px;align-items:center}
+.compose-tools{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 .ico{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
-.tool{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:36px;height:36px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:inherit;cursor:pointer;transition:color .15s,background-color .15s,transform .1s}
+.tool{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:36px;height:36px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:inherit;cursor:pointer;transition:color .15s,background-color .15s,transform .1s;max-width:100%}
 .tool:hover{color:var(--ink);background:var(--surface-2)}
 .tool[aria-pressed="true"],.tool.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent)}
 .tool:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tool:disabled,.tool[disabled]{opacity:.35;pointer-events:none}
 @media (pointer: coarse){.tool{min-width:44px;height:44px}}
 .tool--network{--n1:var(--net-mastodon);--n2:var(--net-bluesky)}
-.tool-label{font-size:12px;font-weight:600;white-space:nowrap}
+.tool-label{font-size:12px;font-weight:600;white-space:nowrap;max-width:110px;text-overflow:ellipsis;overflow:hidden}
 textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;color:var(--ink);font:15px/1.45 var(--sans)}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
-.bar-left{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bar-left{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
 .bar-right{display:flex;align-items:center;gap:10px;margin-left:auto}
 .count{color:var(--muted);font:12px var(--mono);font-variant-numeric:tabular-nums}
 .count.over{color:var(--danger);font-weight:700}
@@ -632,6 +639,7 @@ body:not(.view-deck) .deck-add-col-card {
 .deck-col-body {
   flex: 1 1 auto;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 12px;
   scrollbar-width: thin;
 }
@@ -910,14 +918,22 @@ body:not(.view-deck) .deck-col-body {
           <img src="/brand/logo-lockup-light.svg" alt="MastoSky" height="32" style="display:block">
         </picture>
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div class="header-actions">
         <button type="button" class="update-pill" id="headerUpdatePill" hidden>✨ Nova versão</button>
-        <button class="ghost" id="viewToggleBtn" title="Mudar para vista em colunas" data-i18n-title="header.view_mode_single_title" aria-label="Mudar visualização" style="display:grid;place-items:center;padding:5px 8px">
-          <svg class="ico" id="viewToggleIcon" style="width:18px;height:18px"><use href="#i-view-deck"/></svg>
-        </button>
-        <button class="ghost" id="langToggleBtn" title="Mudar idioma / Switch language" style="font-weight:600;font-size:12px;padding:5px 9px;display:inline-flex;align-items:center;gap:5px"><svg class="ico" style="width:16px;height:16px"><use href="#i-language"/></svg><span id="langToggleText">EN</span></button>
-        <button class="ghost" id="settingsBtn" title="Definições / Contas" data-i18n-title="header.settings_title" aria-label="Definições"><svg class="ico" style="width:18px;height:18px"><use href="#i-settings"/></svg></button>
-        <button class="ghost" id="refresh" data-i18n="header.refresh">Atualizar</button>
+        <div class="header-nav-group">
+          <button type="button" class="header-nav-btn" id="viewToggleBtn" title="Mudar para vista em colunas" data-i18n-title="header.view_mode_single_title" aria-label="Mudar visualização">
+            <svg class="ico" id="viewToggleIcon"><use href="#i-view-deck"/></svg>
+          </button>
+          <button type="button" class="header-nav-btn" id="refresh" title="Atualizar" data-i18n-title="header.refresh" aria-label="Atualizar">
+            <svg class="ico"><use href="#i-refresh"/></svg>
+          </button>
+          <button type="button" class="header-nav-btn" id="langToggleBtn" title="Mudar idioma / Switch language" data-i18n-title="header.lang_switch_title" aria-label="Mudar idioma">
+            <span id="langToggleText" class="header-lang-badge">EN</span>
+          </button>
+          <button type="button" class="header-nav-btn" id="settingsBtn" title="Definições / Contas" data-i18n-title="header.settings_title" aria-label="Definições">
+            <svg class="ico"><use href="#i-settings"/></svg>
+          </button>
+        </div>
       </div>
     </header>
 
