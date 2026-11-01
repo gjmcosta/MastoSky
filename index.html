@@ -234,13 +234,17 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .media:has(> :only-child) img{max-height:520px;object-fit:contain;background:rgba(0,0,0,0.03)}
 .post-video{width:100%;max-height:480px;background:#000;border-radius:8px;margin-top:8px;outline:none;display:block}
 img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:inline}
-.quote-card{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);cursor:pointer;transition:border-color .15s}
-.quote-card:hover{border-color:var(--muted)}
+.quote-card{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);cursor:pointer;transition:border-color .15s, background .15s}
+.quote-card:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--line));background:color-mix(in srgb, var(--card) 92%, var(--surface-2))}
 .quote-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .quote-av{width:22px;height:22px;border-radius:50%;background:var(--line);flex:none;object-fit:cover}
+.quote-head img.author-link{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.quote-head img.author-link:hover{transform:scale(1.1);box-shadow:0 0 0 2px var(--accent);text-decoration:none}
 .quote-who{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
 .quote-who b{font-weight:600;color:var(--ink)}
 .quote-who span{color:var(--muted)}
+.quote-ext-link{margin-left:auto;color:var(--muted);font-size:12.5px;text-decoration:none;padding:2px 6px;border-radius:6px;transition:color .15s,background .15s;line-height:1}
+.quote-ext-link:hover{color:var(--accent);background:var(--surface-2)}
 .quote-body{font:14px/1.45 var(--sans);color:var(--ink);margin-bottom:6px;overflow-wrap:anywhere}
 .ext-card{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;overflow:hidden;text-decoration:none;color:inherit;margin-top:8px;background:var(--bg);transition:border-color .15s}
 .ext-card:hover{border-color:var(--muted)}
@@ -2815,35 +2819,70 @@ function renderMedia(mediaList) {
 function renderQuote(q) {
   if (!q) return null;
   const card = el("div", "quote-card");
+  card.title = t("actions.view_thread");
   const head = el("div", "quote-head");
+  const onAuthorClick = (e) => {
+    e.stopPropagation();
+    openUserProfile(q.network, q.author_id || q.author_handle || q.handle);
+  };
   if (q.avatar) {
-    const av = el("img", "quote-av"); av.src = su(q.avatar) || ""; av.loading = "lazy";
+    const av = el("img", "quote-av author-link");
+    av.src = su(q.avatar) || "";
+    av.loading = "lazy";
+    av.title = t("post.view_profile", {name: q.name || q.handle});
+    av.onclick = onAuthorClick;
     head.append(av);
   }
   const who = el("div", "quote-who");
-  const bQName = el("b");
+  const bQName = el("b", "author-link");
   if (q.name_html) bQName.innerHTML = q.name_html;
   else bQName.textContent = q.name;
+  bQName.title = t("post.view_profile", {name: q.name || q.handle});
+  bQName.onclick = onAuthorClick;
   who.append(bQName, el("span", null, " " + q.handle));
   head.append(who);
   if (q.time) head.append(el("span", "when", ago(q.time)));
+  if (q.url) {
+    const ext = el("a", "quote-ext-link", "↗");
+    ext.href = su(q.url) || "#";
+    ext.target = "_blank";
+    ext.rel = "noopener noreferrer";
+    ext.title = t("post.view_web");
+    ext.onclick = (e) => e.stopPropagation();
+    head.append(ext);
+  }
   card.append(head);
   if (q.html) {
     const body = el("div", "quote-body");
     body.innerHTML = q.html;
+    body.addEventListener("click", (e) => {
+      const a = e.target.closest("a");
+      if (!a || !a.href) return;
+      const mTag = a.href.match(/(?:tags|hashtag)\/([^/?#]+)/i);
+      if (mTag && mTag[1]) {
+        e.preventDefault();
+        e.stopPropagation();
+        const tagName = decodeURIComponent(mTag[1]);
+        setTab("search");
+        doSearch("#" + tagName);
+      }
+    });
     card.append(body);
   }
   if (q.media && q.media.length) {
     const qm = renderMedia(q.media);
     if (qm) card.append(qm);
   }
-  if (q.url) {
-    card.onclick = (e) => {
-      if (e.target.tagName !== "A" && e.target.tagName !== "BUTTON" && e.target.tagName !== "VIDEO" && e.target.tagName !== "IMG") {
-        { const u = su(q.url); if (u) window.open(u, "_blank", "noopener,noreferrer"); }
-      }
-    };
-  }
+  card.onclick = (e) => {
+    if (e.target.closest("a, button, video, img, input, textarea")) return;
+    if (q.ref) {
+      e.stopPropagation();
+      openThread(q);
+    } else if (q.url) {
+      const u = su(q.url);
+      if (u) window.open(u, "_blank", "noopener,noreferrer");
+    }
+  };
   return card;
 }
 
@@ -3919,6 +3958,7 @@ function setTab(newTab) {
     ["Timeline", "Explore", "Search", "Saved", "Notifs", "Profile"].forEach(c => {
       const th = $("thread" + c);
       if (th) { th.hidden = true; th.replaceChildren(); }
+      if (typeof threadHistory !== "undefined") threadHistory[c.toLowerCase()] = [];
     });
     if (newTab === "saved") renderSavedFeed();
   }
@@ -3942,6 +3982,7 @@ document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.datase
 let threadIt = null;
 let activeThreadColId = "timeline";
 let colScrolls = {};
+let threadHistory = {};
 
 function getActiveColId(it) {
   if (viewMode === "single") return tab || "timeline";
@@ -3957,11 +3998,8 @@ async function openThread(it, keep) {
   if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
     closeUserProfileModal();
   }
-  threadIt = it;
-  if (!keep) {
-    activeThreadColId = getActiveColId(it);
-  }
-  const colId = activeThreadColId || "timeline";
+  const colId = keep ? (activeThreadColId || "timeline") : getActiveColId(it);
+  activeThreadColId = colId;
   const capCol = colId === "compose" ? "Profile" : (colId.charAt(0).toUpperCase() + colId.slice(1));
   const mainEl = $("p" + capCol);
   const threadEl = $("thread" + capCol);
@@ -3970,7 +4008,13 @@ async function openThread(it, keep) {
   if (!threadEl) return;
 
   if (!keep) {
-    colScrolls[colId] = (viewMode === "single" ? window.scrollY : (bodyEl ? bodyEl.scrollTop : 0));
+    if (threadEl && !threadEl.hidden && threadIt && threadIt !== it) {
+      if (!threadHistory[colId]) threadHistory[colId] = [];
+      threadHistory[colId].push(threadIt);
+    } else {
+      threadHistory[colId] = [];
+      colScrolls[colId] = (viewMode === "single" ? window.scrollY : (bodyEl ? bodyEl.scrollTop : 0));
+    }
     if (viewMode === "single") {
       window.scrollTo(0, 0);
     } else if (bodyEl) {
@@ -3978,9 +4022,10 @@ async function openThread(it, keep) {
     }
   }
 
+  threadIt = it;
+
   if (colId === "compose") {
     if ($("deckComposeWrap")) $("deckComposeWrap").hidden = true;
-    if ($("composeHubDivider")) $("composeHubDivider").hidden = true;
   }
   if (mainEl) mainEl.hidden = true;
   threadEl.hidden = false;
@@ -4029,6 +4074,11 @@ async function openThread(it, keep) {
 }
 
 function closeColumnThread(colId) {
+  if (threadHistory[colId] && threadHistory[colId].length > 0) {
+    const prevIt = threadHistory[colId].pop();
+    openThread(prevIt, false);
+    return;
+  }
   const capCol = colId === "compose" ? "Profile" : (colId.charAt(0).toUpperCase() + colId.slice(1));
   const mainEl = $("p" + capCol);
   const threadEl = $("thread" + capCol);
@@ -4041,9 +4091,9 @@ function closeColumnThread(colId) {
   if (mainEl) mainEl.hidden = false;
   if (colId === "compose") {
     if ($("deckComposeWrap")) $("deckComposeWrap").hidden = false;
-    if ($("composeHubDivider")) $("composeHubDivider").hidden = false;
   }
   threadIt = null;
+  threadHistory[colId] = [];
 
   const prevY = colScrolls[colId] || 0;
   if (viewMode === "single") {

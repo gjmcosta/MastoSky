@@ -667,15 +667,28 @@ def parse_bsky_quote(rec):
         q_media.extend(m_list)
     text = val.get("text") or rec.get("text", "")
     facets = val.get("facets") or rec.get("facets")
+    uri = rec.get("uri")
+    cid = rec.get("cid")
+    viewer = rec.get("viewer") or {}
+    like_uri = viewer.get("like")
+    repost_uri = viewer.get("repost")
+    ref_obj = {"uri": uri, "cid": cid} if uri else None
+    if ref_obj and like_uri:
+        ref_obj["like_uri"] = like_uri
+    if ref_obj and repost_uri:
+        ref_obj["repost_uri"] = repost_uri
     return {
         "network": "bluesky",
         "name": author.get("displayName") or handle,
         "handle": "@" + handle if handle else "",
+        "author_id": author.get("did") or handle,
+        "author_handle": handle,
         "avatar": safe_url(author.get("avatar")),
         "text": text,
         "html": render_bsky_text(text, facets) if text else "",
         "time": val.get("createdAt") or rec.get("createdAt") or rec.get("indexedAt"),
-        "url": f"https://bsky.app/profile/{handle}/post/{rec.get('uri', '').split('/')[-1]}" if handle else None,
+        "url": f"https://bsky.app/profile/{handle}/post/{rec.get('uri', '').split('/')[-1]}" if handle and uri else None,
+        "ref": ref_obj,
         "media": q_media
     }
 
@@ -758,15 +771,19 @@ def parse_masto_quote(st):
     q_name_html = render_custom_emojis(html.escape(q_name), q_acc.get("emojis")) if q_acc.get("emojis") else None
 
     plain_text = ((f"[{qs['spoiler_text']}] " if qs.get("spoiler_text") else "") + plain(qs.get("content"))).strip()
+    ref_obj = {"id": qs.get("id")} if qs.get("id") else None
     out = {
         "network": "mastodon",
         "name": q_name,
         "handle": "@" + q_acc.get("acct", ""),
+        "author_id": q_acc.get("id") or q_acc.get("acct"),
+        "author_handle": q_acc.get("acct"),
         "avatar": safe_url(q_acc.get("avatar")),
         "text": plain_text,
         "html": q_html,
         "time": qs.get("created_at"),
         "url": safe_url(qs.get("url")),
+        "ref": ref_obj,
         "media": safe_media_list(q_media)
     }
     if q_name_html:

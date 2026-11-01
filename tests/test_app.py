@@ -77,6 +77,8 @@ class BskyEmbedTests(unittest.TestCase):
         self.assertEqual(m, [])
         self.assertEqual(q["name"], "A")
         self.assertEqual(q["media"][0]["url"], "https://f/2")
+        self.assertEqual(q["ref"]["uri"], "at://did:plc:x/app.bsky.feed.post/abc")
+        self.assertEqual(q["author_handle"], "a.bsky.social")
 
     def test_record_with_media(self):
         m, q = app.extract_bsky_embed({
@@ -109,9 +111,10 @@ class MastoQuoteTests(unittest.TestCase):
         return s
 
     def test_accepted(self):
-        q = app.parse_masto_quote({"quote": {"state": "accepted", "quoted_status": self._status()}})
+        q = app.parse_masto_quote({"quote": {"state": "accepted", "quoted_status": self._status(id="789")}})
         self.assertEqual(q["handle"], "@m@x.pt")
         self.assertEqual(q["html"], "citado")
+        self.assertEqual(q["ref"], {"id": "789"})
 
     def test_pending_ok_rejected_none(self):
         self.assertIsNotNone(app.parse_masto_quote({"quote": {"state": "pending", "quoted_status": self._status()}}))
