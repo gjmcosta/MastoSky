@@ -76,7 +76,7 @@ On your first launch, a friendly **Setup Window** will automatically appear to l
 ### 🐘 Mastodon
 1. Go to your Mastodon instance (e.g. `https://masto.pt`, `https://mastodon.social`, etc.).
 2. Navigate to **Preferences** > **Development** > **New Application**.
-3. Name it `MastoSky`. Leave the default permissions (`read`, `write`) and click **Save**.
+3. Name it `MastoSky`. **Untick** the default scopes (`read`, `write`, `follow`, `push`) and tick only the minimum MastoSky needs: `read:statuses read:notifications write:statuses write:media write:favourites`. Click **Save**.
 4. Click on your newly created app and copy **Your access token**.
 
 ---

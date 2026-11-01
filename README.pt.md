@@ -76,7 +76,7 @@ Se for a primeira vez que abres a ferramenta, surge automaticamente o **ecrã de
 ### 🐘 Mastodon
 1. Acede à tua instância do Mastodon (ex: `https://masto.pt`, `https://mastodon.social`, etc.).
 2. Vai a **Preferências** (*Preferences*) > **Desenvolvimento** (*Development*) > **Nova aplicação** (*New Application*).
-3. Dá o nome `MastoSky`. Podes deixar as permissões padrão (`read`, `write`) e clicar em **Guardar**.
+3. Dá o nome `MastoSky`. **Desmarca** os âmbitos por omissão (`read`, `write`, `follow`, `push`) e marca apenas o mínimo de que o MastoSky precisa: `read:statuses read:notifications write:statuses write:media write:favourites`. Clica em **Guardar**.
 4. Clica na aplicação criada e copia o **Token de acesso** (*Your access token*).
 
 ---
