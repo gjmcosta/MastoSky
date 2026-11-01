@@ -246,6 +246,39 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .head img.author-link:hover{transform:scale(1.08);box-shadow:0 0 0 2px var(--accent);text-decoration:none}
 .profile-card.single{margin-bottom:16px;cursor:default}
 .profile-card.single:hover{border-color:var(--line)}
+.top-nav-wrap{transition:transform .24s cubic-bezier(0.16, 1, 0.3, 1),background .2s}
+body.nav-sticky .top-nav-wrap{position:sticky;top:0;z-index:100;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding-top:12px;margin-top:-12px;border-bottom:1px solid var(--line)}
+body.nav-sticky .top-nav-wrap.sticky-hidden{transform:translateY(-100%);pointer-events:none}
+body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
+
+.side-nav-rail{position:fixed;z-index:900;opacity:0;pointer-events:none;transition:opacity .22s ease-out,transform .25s cubic-bezier(0.16, 1, 0.3, 1)}
+.side-nav-inner{display:flex;align-items:center;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--line);box-shadow:0 12px 36px rgba(0,0,0,0.22)}
+.side-nav-btn{border:0;background:transparent;color:var(--muted);cursor:pointer;position:relative;display:grid;place-items:center;transition:all .15s}
+.side-nav-btn:hover{color:var(--ink);background:var(--surface-2);transform:scale(1.08)}
+.side-nav-btn.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(91,75,219,0.35)}
+.side-nav-divider{background:var(--line)}
+.side-nav-badge{position:absolute;top:2px;right:2px;display:flex;align-items:center;gap:2px;padding:0 4px;border-radius:10px;background:var(--star);color:#0B1020;font-size:10px;font-weight:700}
+.side-nav-btn.side-nav-compose{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.side-nav-btn.side-nav-compose:hover{background:var(--accent);color:#fff}
+.side-nav-btn.side-nav-lang{font-size:11px;font-weight:700;font-family:var(--sans)}
+
+/* Desktop: Barra lateral à esquerda */
+@media (min-width: 768px){
+  .side-nav-rail{left:max(16px, calc(50% - 320px - 68px));top:50%;transform:translateY(-50%) translateX(-25px)}
+  .side-nav-rail.visible{opacity:1;pointer-events:auto;transform:translateY(-50%) translateX(0)}
+  .side-nav-inner{flex-direction:column;gap:6px;border-radius:28px;padding:8px 6px}
+  .side-nav-btn{width:40px;height:40px;border-radius:50%}
+  .side-nav-divider{width:22px;height:1px;margin:2px 0}
+}
+
+/* Mobile: Barra horizontal no fundo */
+@media (max-width: 767px){
+  .side-nav-rail{left:50%;bottom:14px;top:auto;transform:translateX(-50%) translateY(30px)}
+  .side-nav-rail.visible{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+  .side-nav-inner{flex-direction:row;gap:6px;border-radius:32px;padding:6px 12px}
+  .side-nav-btn{width:38px;height:38px;border-radius:50%}
+  .side-nav-divider,.side-nav-lang,.side-nav-top{display:none}
+}
 @media (prefers-reduced-motion:no-preference){button{transition:background .15s,color .15s}}
 </style>
 </head>
@@ -255,27 +288,60 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
   <div class="cosmos-mammoth"></div>
   <div class="cosmos-stars"></div>
 </div>
-<main>
-  <header>
-    <div style="display:flex;align-items:center;gap:10px">
-      <picture>
-        <source srcset="/brand/logo-lockup-dark.svg" media="(prefers-color-scheme: dark)">
-        <img src="/brand/logo-lockup-light.svg" alt="MastoSky" height="32" style="display:block">
-      </picture>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="ghost" id="langToggleBtn" title="Mudar idioma / Switch language" style="font-weight:600;font-size:12px;padding:5px 9px">EN</button>
-      <button class="ghost" id="settingsBtn" title="Definições / Contas" data-i18n-title="header.settings_title">⚙️</button>
-      <button class="ghost" id="refresh" data-i18n="header.refresh">Atualizar</button>
-    </div>
-  </header>
 
-  <nav class="tabs" role="tablist">
-    <button class="tab" role="tab" data-tab="timeline" data-i18n="tabs.timeline">Timeline</button>
-    <button class="tab" role="tab" data-tab="explore" data-i18n="tabs.explore">Em Alta</button>
-    <button class="tab" role="tab" data-tab="notifs"><span data-i18n="tabs.notifs">Notificações</span> <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span></button>
-    <button class="tab" role="tab" data-tab="profile" data-i18n="tabs.profile">Perfil</button>
-  </nav>
+<nav class="side-nav-rail" id="sideNavRail" aria-label="Navegação rápida">
+  <div class="side-nav-inner">
+    <button type="button" class="side-nav-btn active" data-tab="timeline" title="Timeline" data-i18n-title="tabs.timeline" aria-label="Timeline">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </button>
+    <button type="button" class="side-nav-btn" data-tab="explore" title="Em Alta" data-i18n-title="tabs.explore" aria-label="Em Alta">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+    </button>
+    <button type="button" class="side-nav-btn" data-tab="notifs" title="Notificações" data-i18n-title="tabs.notifs" aria-label="Notificações">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="side-nav-badge" id="sideBadge" hidden><span class="star-badge" aria-hidden="true"></span><span id="sideBadgeCount"></span></span>
+    </button>
+    <button type="button" class="side-nav-btn" data-tab="profile" title="Perfil" data-i18n-title="tabs.profile" aria-label="Perfil">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+    <div class="side-nav-divider"></div>
+    <button type="button" class="side-nav-btn side-nav-compose" id="sideComposeBtn" title="Novo post" data-i18n-title="nav.new_post" aria-label="Novo post">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    </button>
+    <button type="button" class="side-nav-btn" id="sideRefreshBtn" title="Atualizar" data-i18n-title="header.refresh" aria-label="Atualizar">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+    </button>
+    <button type="button" class="side-nav-btn" id="sideSettingsBtn" title="Definições" data-i18n-title="header.settings_title" aria-label="Definições">⚙️</button>
+    <button type="button" class="side-nav-btn side-nav-lang" id="sideLangBtn" title="Mudar idioma" data-i18n-title="header.lang_switch_title">EN</button>
+    <button type="button" class="side-nav-btn side-nav-top" id="sideScrollTopBtn" title="Ir para o topo" data-i18n-title="nav.scroll_top" aria-label="Ir para o topo">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+  </div>
+</nav>
+
+<main>
+  <div id="topNavWrap" class="top-nav-wrap">
+    <header>
+      <div style="display:flex;align-items:center;gap:10px">
+        <picture>
+          <source srcset="/brand/logo-lockup-dark.svg" media="(prefers-color-scheme: dark)">
+          <img src="/brand/logo-lockup-light.svg" alt="MastoSky" height="32" style="display:block">
+        </picture>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="ghost" id="langToggleBtn" title="Mudar idioma / Switch language" style="font-weight:600;font-size:12px;padding:5px 9px">EN</button>
+        <button class="ghost" id="settingsBtn" title="Definições / Contas" data-i18n-title="header.settings_title">⚙️</button>
+        <button class="ghost" id="refresh" data-i18n="header.refresh">Atualizar</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="timeline" data-i18n="tabs.timeline">Timeline</button>
+      <button class="tab" role="tab" data-tab="explore" data-i18n="tabs.explore">Em Alta</button>
+      <button class="tab" role="tab" data-tab="notifs"><span data-i18n="tabs.notifs">Notificações</span> <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span></button>
+      <button class="tab" role="tab" data-tab="profile" data-i18n="tabs.profile">Perfil</button>
+    </nav>
+  </div>
 
   <section class="compose">
     <div class="replying" id="replying" hidden>
@@ -376,11 +442,18 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
       <p class="setup-desc" data-i18n="setup.desc">Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.</p>
 
       <div class="setup-section">
-        <div class="setup-sec-title"><span data-i18n="setup.lang_title">🌐 Idioma / Language</span></div>
+        <div class="setup-sec-title"><span data-i18n="setup.pref_title">⚙️ Preferências / Preferences</span></div>
         <label><span data-i18n="setup.lang_label">Idioma da interface:</span>
           <select id="cfgLangSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
             <option value="pt">Português (PT)</option>
             <option value="en">English (EN)</option>
+          </select>
+        </label>
+        <label style="display:block;margin-top:10px"><span data-i18n="setup.nav_mode_label">Navegação no scroll:</span>
+          <select id="cfgNavModeSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+            <option id="optNavSidebar" value="sidebar">Barra lateral flutuante (Recomendado)</option>
+            <option id="optNavSticky" value="sticky">Cabeçalho fixo no topo</option>
+            <option id="optNavNone" value="none">Estático (Sem elementos fixos)</option>
           </select>
         </label>
       </div>
@@ -465,6 +538,10 @@ const I18N = {
       explore: "Em Alta",
       notifs: "Notificações",
       profile: "Perfil"
+    },
+    nav: {
+      new_post: "Novo post",
+      scroll_top: "Ir para o topo"
     },
     composer: {
       placeholder: "O que queres dizer?",
@@ -597,8 +674,14 @@ const I18N = {
     setup: {
       title: "⚙️ Configuração do MastoSky",
       desc: "Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.",
+      pref_title: "⚙️ Preferências",
       lang_title: "🌐 Idioma / Language",
       lang_label: "Idioma da interface:",
+      nav_mode_title: "Navegação no Scroll",
+      nav_mode_label: "Navegação ao fazer scroll:",
+      nav_mode_sidebar: "Barra lateral flutuante (Recomendado)",
+      nav_mode_sticky: "Cabeçalho fixo no topo",
+      nav_mode_none: "Estático (Sem elementos fixos)",
       active_session: "Sessão ativa",
       bsky_pass_label: "Palavra-passe da aplicação (*App Password*):",
       bsky_help: "Gera em bsky.app > Definições > Privacidade e Segurança > Palavras-passe da aplicação.",
@@ -630,6 +713,10 @@ const I18N = {
       explore: "Trending",
       notifs: "Notifications",
       profile: "Profile"
+    },
+    nav: {
+      new_post: "New post",
+      scroll_top: "Scroll to top"
     },
     composer: {
       placeholder: "What's on your mind?",
@@ -762,8 +849,14 @@ const I18N = {
     setup: {
       title: "⚙️ MastoSky Settings",
       desc: "You can connect both networks or just one. Your credentials are saved locally and never leave your computer.",
+      pref_title: "⚙️ Preferences",
       lang_title: "🌐 Language / Idioma",
       lang_label: "Interface language:",
+      nav_mode_title: "Scroll Navigation",
+      nav_mode_label: "Behavior when scrolling down:",
+      nav_mode_sidebar: "Floating sidebar (Recommended)",
+      nav_mode_sticky: "Sticky top header",
+      nav_mode_none: "Static (No fixed elements)",
       active_session: "Active session",
       bsky_pass_label: "App Password:",
       bsky_help: "Generate at bsky.app > Settings > Privacy and Security > App Passwords.",
@@ -847,6 +940,16 @@ function applyI18n() {
     langBtn.title = t("header.lang_switch_title");
   }
 
+  const sideLangBtn = $("sideLangBtn");
+  if (sideLangBtn) {
+    sideLangBtn.textContent = currentLang === "pt" ? "EN" : "PT";
+    sideLangBtn.title = t("header.lang_switch_title");
+  }
+
+  if ($("optNavSidebar")) $("optNavSidebar").textContent = t("setup.nav_mode_sidebar");
+  if ($("optNavSticky")) $("optNavSticky").textContent = t("setup.nav_mode_sticky");
+  if ($("optNavNone")) $("optNavNone").textContent = t("setup.nav_mode_none");
+
   const cfgLang = $("cfgLangSelect");
   if (cfgLang && cfgLang.value !== currentLang) {
     cfgLang.value = currentLang;
@@ -880,6 +983,41 @@ function setLang(newLang) {
 const LIMITS = {bluesky: 300, mastodon: 500};
 const LABEL = {bluesky: "Bluesky", mastodon: "Mastodon"};
 const $ = id => document.getElementById(id);
+let navMode = localStorage.getItem("mastosky_nav_mode") || "sidebar";
+
+function setNavMode(newMode) {
+  if (newMode !== "sidebar" && newMode !== "sticky" && newMode !== "none") return;
+  navMode = newMode;
+  localStorage.setItem("mastosky_nav_mode", newMode);
+  document.body.classList.toggle("nav-sticky", newMode === "sticky");
+  const sideRail = $("sideNavRail"), topWrap = $("topNavWrap");
+  if (newMode !== "sidebar" && sideRail) sideRail.classList.remove("visible");
+  if (newMode !== "sticky" && topWrap) topWrap.classList.remove("sticky-hidden");
+  const sel = $("cfgNavModeSelect");
+  if (sel && sel.value !== newMode) sel.value = newMode;
+  handleScrollNav();
+}
+
+let lastScrollY = window.scrollY, scrollDownAccum = 0, scrollUpAccum = 0;
+function handleScrollNav() {
+  const curY = window.scrollY, diff = curY - lastScrollY, isDown = diff > 0;
+  if (isDown) { scrollDownAccum += diff; scrollUpAccum = 0; }
+  else { scrollUpAccum += Math.abs(diff); scrollDownAccum = 0; }
+  const sideRail = $("sideNavRail"), topWrap = $("topNavWrap");
+  if (navMode === "sidebar") {
+    if (curY > 120) sideRail?.classList.add("visible");
+    else sideRail?.classList.remove("visible");
+  } else if (navMode === "sticky") {
+    sideRail?.classList.remove("visible");
+    if (curY > 120 && isDown && scrollDownAccum > 30) topWrap?.classList.add("sticky-hidden");
+    else if (!isDown && (scrollUpAccum > 20 || curY <= 120)) topWrap?.classList.remove("sticky-hidden");
+  } else {
+    sideRail?.classList.remove("visible");
+    topWrap?.classList.remove("sticky-hidden");
+  }
+  lastScrollY = curY;
+}
+window.addEventListener("scroll", handleScrollNav, {passive: true});
 let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
 let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
 
@@ -1345,6 +1483,8 @@ function updateBadge() {
   const n = tab === "notifs" ? 0 : (notifs || []).filter(x => x.time > seenBefore).length;
   $("badge").hidden = !n;
   if ($("badgeCount")) $("badgeCount").textContent = n > 99 ? "99+" : n;
+  if ($("sideBadge")) $("sideBadge").hidden = !n;
+  if ($("sideBadgeCount")) $("sideBadgeCount").textContent = n > 99 ? "99+" : n;
 }
 
 async function loadProfile(keep = false) {
@@ -1532,6 +1672,7 @@ function setTab(newTab) {
   $("pThread").hidden = true;
   $("pUserProfile").hidden = true;
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === newTab));
+  document.querySelectorAll(".side-nav-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === newTab));
   if (newTab === "notifs") localStorage.setItem("notifSeen", new Date().toISOString());
   else seenBefore = localStorage.getItem("notifSeen") || seenBefore;
   if (newTab === "explore" && !exploreItems.length) loadExplore();
@@ -2824,6 +2965,7 @@ async function openSetup(mandatory = false) {
   $("closeSetup").hidden = mandatory;
   $("setupMsg").textContent = "";
   $("setupMsg").className = "msg";
+  if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
   try {
     const s = await api("/api/status");
     if (s.bluesky && s.bluesky.handle) $("cfgBskyHandle").value = s.bluesky.handle;
@@ -2891,6 +3033,34 @@ if ($("cfgLangSelect")) {
   $("cfgLangSelect").value = currentLang;
   $("cfgLangSelect").onchange = (e) => setLang(e.target.value);
 }
+if ($("cfgNavModeSelect")) {
+  $("cfgNavModeSelect").value = navMode;
+  $("cfgNavModeSelect").onchange = (e) => setNavMode(e.target.value);
+}
+
+document.querySelectorAll(".side-nav-btn[data-tab]").forEach(b => {
+  b.onclick = () => {
+    setTab(b.dataset.tab);
+    window.scrollTo({top: 0, behavior: "smooth"});
+  };
+});
+if ($("sideComposeBtn")) $("sideComposeBtn").onclick = () => {
+  window.scrollTo({top: 0, behavior: "smooth"});
+  setTimeout(() => $("text")?.focus(), 250);
+};
+if ($("sideRefreshBtn")) $("sideRefreshBtn").onclick = () => {
+  load();
+  loadNotifs();
+  if (tab === "explore") loadExplore();
+  if (tab === "profile") loadProfile(true);
+};
+if ($("sideSettingsBtn")) $("sideSettingsBtn").onclick = () => openSetup(false);
+if ($("sideLangBtn")) $("sideLangBtn").onclick = () => setLang(currentLang === "pt" ? "en" : "pt");
+if ($("sideScrollTopBtn")) $("sideScrollTopBtn").onclick = () => {
+  window.scrollTo({top: 0, behavior: "smooth"});
+};
+
+setNavMode(navMode);
 applyI18n();
 
 const initTab = location.hash === "#notifs" ? "notifs" : (location.hash === "#explore" ? "explore" : (location.hash === "#profile" ? "profile" : "timeline"));
