@@ -110,3 +110,4 @@ echo ""
 
 # Iniciar MastoSky
 exec python3 "$INSTALL_DIR/app.py" --open
+

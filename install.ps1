@@ -78,3 +78,4 @@ Write-Host "A iniciar servidor e a abrir o teu browser..."
 # 5. Iniciar
 Set-Location $installDir
 Start-Process -FilePath $targetBat
+

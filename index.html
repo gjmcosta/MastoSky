@@ -634,6 +634,7 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-view-deck" viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.75"/><rect x="10.25" y="4" width="5.5" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.75"/><rect x="17.5" y="4" width="3.5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.75" opacity="0.6"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="3 21 3 16 8 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="21 3 21 8 16 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-arrow-up" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><polyline points="5 12 12 5 19 12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -740,6 +741,9 @@ body:not(.view-deck) .deck-col-body {
               <svg class="ico"><use href="#i-image"/></svg>
               <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
             </label>
+            <button type="button" class="tool" id="pasteImgBtn" title="Colar imagem da área de transferência (Cmd+V)" data-i18n-title="composer.paste_img_title" aria-label="Colar imagem">
+              <svg class="ico"><use href="#i-clipboard"/></svg>
+            </button>
             <button type="button" class="tool" id="pollBtn" title="Criar sondagem" data-i18n-title="composer.poll_title" aria-label="Criar sondagem" aria-pressed="false">
               <svg class="ico"><use href="#i-poll"/></svg>
             </button>
@@ -1111,6 +1115,8 @@ const I18N = {
       img_alt_ph: "Descrição (alt text)...",
       img_processing: "A processar imagens...",
       img_err: "Erro ao processar imagem.",
+      paste_img_title: "Colar imagem da área de transferência (Cmd+V)",
+      paste_no_img: "Nenhuma imagem encontrada na área de transferência.",
       attach_disabled_poll: "Não é possível ter sondagem e imagens no mesmo post.",
       attach_disabled_max: "Máximo de 4 imagens."
     },
@@ -1342,6 +1348,8 @@ const I18N = {
       img_alt_ph: "Description (alt text)...",
       img_processing: "Processing images...",
       img_err: "Error processing image.",
+      paste_img_title: "Paste image from clipboard (Cmd+V)",
+      paste_no_img: "No image found in clipboard.",
       attach_disabled_poll: "Cannot have both a poll and images in the same post.",
       attach_disabled_max: "Maximum 4 images."
     },
@@ -3127,6 +3135,60 @@ function handlePasteEvent(e) {
       }
     }
   } catch (_) {}
+
+  // 3. Fallback: Se o evento não entregou o ficheiro (comum no Safari / WebKit ou cópia de apps nativas do macOS)
+  if (navigator.clipboard && navigator.clipboard.read) {
+    const cdTypes = Array.from(cd.types || []);
+    const plain = (cd.getData("text/plain") || "").trim();
+    const mightHaveImage = cdTypes.some(t => t.startsWith("image/") || t === "Files" || t === "public.png" || t === "public.tiff") || (!plain && cdTypes.length > 0);
+    if (mightHaveImage) {
+      navigator.clipboard.read().then(async (clipboardItems) => {
+        const found = [];
+        for (const it of clipboardItems) {
+          for (const type of it.types) {
+            if (type.startsWith("image/")) {
+              const b = await it.getType(type);
+              if (b && b.size > 0) found.push(b);
+              break;
+            }
+          }
+        }
+        if (found.length > 0) {
+          await handleImageFiles(found);
+        }
+      }).catch(() => {});
+    }
+  }
+}
+
+if ($("pasteImgBtn")) {
+  $("pasteImgBtn").onclick = async () => {
+    if (navigator.clipboard && navigator.clipboard.read) {
+      try {
+        $("msg").className = "msg";
+        $("msg").textContent = t("composer.img_processing");
+        const items = await navigator.clipboard.read();
+        const found = [];
+        for (const it of items) {
+          for (const type of it.types) {
+            if (type.startsWith("image/")) {
+              const b = await it.getType(type);
+              if (b && b.size > 0) found.push(b);
+              break;
+            }
+          }
+        }
+        if (found.length > 0) {
+          await handleImageFiles(found);
+          $("msg").textContent = "";
+          return;
+        }
+      } catch (_) {}
+    }
+    $("msg").className = "msg";
+    $("msg").textContent = t("composer.paste_no_img");
+    setTimeout(() => { if ($("msg").textContent.includes(t("composer.paste_no_img"))) $("msg").textContent = ""; }, 3000);
+  };
 }
 
 $("mediaInput").onchange = async (e) => {
