@@ -117,21 +117,22 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .prev-card img{width:100%;height:85px;object-fit:cover;border-radius:4px}
 .prev-card input{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:4px;padding:3px 6px;font-size:11.5px;width:100%}
 .prev-card .rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--card);border:0;display:grid;place-items:center;font-size:11px;line-height:1;cursor:pointer}
-.compose-tools{display:flex;gap:5px;align-items:center}
-.compose-selects{display:flex;gap:5px;align-items:center}
-.tool-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:0 8px;height:26px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;cursor:pointer;transition:all .15s}
-.tool-btn:hover{color:var(--ink);border-color:var(--accent);background:var(--card)}
-.tool-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.tool-btn[disabled]{opacity:.35;pointer-events:none}
-.compose-select{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:0 8px;height:26px;font-size:12px;font-weight:500;cursor:pointer;transition:border-color .15s;outline:none}
-.compose-select:hover,.compose-select:focus{border-color:var(--accent)}
+.compose-tools{display:flex;gap:4px;align-items:center}
+.ico{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tool{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:36px;height:36px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:inherit;cursor:pointer;transition:color .15s,background-color .15s,transform .1s}
+.tool:hover{color:var(--ink);background:var(--surface-2)}
+.tool[aria-pressed="true"],.tool.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 15%,transparent)}
+.tool:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tool:disabled,.tool[disabled]{opacity:.35;pointer-events:none}
+@media (pointer: coarse){.tool{min-width:44px;height:44px}}
+.tool--network{--n1:var(--net-mastodon);--n2:var(--net-bluesky)}
 textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;color:var(--ink);font:15px/1.45 var(--sans)}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
 .bar-left{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .bar-right{display:flex;align-items:center;gap:10px;margin-left:auto}
 .count{color:var(--muted);font:12px var(--mono);font-variant-numeric:tabular-nums}
 .count.over{color:var(--danger);font-weight:700}
-.send{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:0 16px;height:26px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s}
+.send{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:0 18px;height:36px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s,background .15s}
 .send:hover:not(:disabled){opacity:.9}
 .send:disabled{opacity:.35;cursor:default}
 .replying{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px}
@@ -246,9 +247,8 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .head img.author-link:hover{transform:scale(1.08);box-shadow:0 0 0 2px var(--accent);text-decoration:none}
 .profile-card.single{margin-bottom:16px;cursor:default}
 .profile-card.single:hover{border-color:var(--line)}
-.top-nav-wrap{transition:transform .24s cubic-bezier(0.16, 1, 0.3, 1),background .2s}
-body.nav-sticky .top-nav-wrap{position:sticky;top:0;z-index:100;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);padding-top:12px;margin-top:-12px;border-bottom:1px solid var(--line)}
-body.nav-sticky .top-nav-wrap.sticky-hidden{transform:translateY(-100%);pointer-events:none}
+.top-nav-wrap{transition:background .2s}
+body.nav-sticky .top-nav-wrap{position:sticky;top:0;z-index:100;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);margin:-20px -14px 14px -14px;padding:14px 14px 4px 14px;border-bottom:1px solid var(--line)}
 body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
 
 .side-nav-rail{position:fixed;z-index:900;opacity:0;pointer-events:none;transition:opacity .22s ease-out,transform .25s cubic-bezier(0.16, 1, 0.3, 1)}
@@ -283,6 +283,18 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
 </style>
 </head>
 <body>
+<svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="0" height="0" style="position:absolute;display:none">
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.8 16.5 L9 11.5 L12.5 15 L15 12.5 L20.2 17.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.5" cy="8.5" r="1.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-poll" viewBox="0 0 24 24"><path d="M4 6.5 H13 M4 12 H17.5 M4 17.5 H8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.5" cy="6.5" r="1.9" fill="currentColor" stroke="none"/><circle cx="20.5" cy="12" r="1.9" fill="currentColor" stroke="none"/><circle cx="11.5" cy="17.5" r="1.9" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-cw" viewBox="0 0 24 24"><path d="M2.5 12 C5 7.5 8.5 5.5 12 5.5 C15.5 5.5 19 7.5 21.5 12 C19 16.5 15.5 18.5 12 18.5 C8.5 18.5 5 16.5 2.5 12 Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 20 L19.5 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-net-both" viewBox="0 0 24 24"><path d="M9.5 13.5 L14.5 10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="15.5" r="3" fill="currentColor" stroke="none" style="fill:var(--n1,currentColor)"/><circle cx="17.5" cy="8.5" r="3" fill="currentColor" stroke="none" style="fill:var(--n2,currentColor)"/></symbol>
+  <symbol id="i-net-masto" viewBox="0 0 24 24"><circle cx="6.5" cy="15.5" r="3" fill="currentColor" stroke="none" style="fill:var(--n1,currentColor)"/><circle cx="17.5" cy="8.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
+  <symbol id="i-net-bsky" viewBox="0 0 24 24"><circle cx="6.5" cy="15.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="17.5" cy="8.5" r="3" fill="currentColor" stroke="none" style="fill:var(--n2,currentColor)"/></symbol>
+  <symbol id="i-language" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.75"/><ellipse cx="12" cy="12" rx="3.8" ry="9" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M3 12 H21" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
+  <symbol id="i-visibility" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><path d="M8.3 8.6 Q6 12 8.3 15.4 M15.7 8.6 Q18 12 15.7 15.4 M5.3 5.6 Q1.4 12 5.3 18.4 M18.7 5.6 Q22.6 12 18.7 18.4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7H9a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m8 21-4-4 4-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17h11a4 4 0 0 0 4-4v-2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
   <div class="cosmos-mammoth"></div>
@@ -311,8 +323,8 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
     <button type="button" class="side-nav-btn" id="sideRefreshBtn" title="Atualizar" data-i18n-title="header.refresh" aria-label="Atualizar">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
     </button>
-    <button type="button" class="side-nav-btn" id="sideSettingsBtn" title="Definições" data-i18n-title="header.settings_title" aria-label="Definições">⚙️</button>
-    <button type="button" class="side-nav-btn side-nav-lang" id="sideLangBtn" title="Mudar idioma" data-i18n-title="header.lang_switch_title">EN</button>
+    <button type="button" class="side-nav-btn" id="sideSettingsBtn" title="Definições" data-i18n-title="header.settings_title" aria-label="Definições"><svg class="ico"><use href="#i-settings"/></svg></button>
+    <button type="button" class="side-nav-btn side-nav-lang" id="sideLangBtn" title="Mudar idioma" data-i18n-title="header.lang_switch_title"><svg class="ico"><use href="#i-language"/></svg></button>
     <button type="button" class="side-nav-btn side-nav-top" id="sideScrollTopBtn" title="Ir para o topo" data-i18n-title="nav.scroll_top" aria-label="Ir para o topo">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
     </button>
@@ -329,8 +341,8 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
         </picture>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="ghost" id="langToggleBtn" title="Mudar idioma / Switch language" style="font-weight:600;font-size:12px;padding:5px 9px">EN</button>
-        <button class="ghost" id="settingsBtn" title="Definições / Contas" data-i18n-title="header.settings_title">⚙️</button>
+        <button class="ghost" id="langToggleBtn" title="Mudar idioma / Switch language" style="font-weight:600;font-size:12px;padding:5px 9px;display:inline-flex;align-items:center;gap:5px"><svg class="ico" style="width:16px;height:16px"><use href="#i-language"/></svg><span id="langToggleText">EN</span></button>
+        <button class="ghost" id="settingsBtn" title="Definições / Contas" data-i18n-title="header.settings_title" aria-label="Definições"><svg class="ico" style="width:18px;height:18px"><use href="#i-settings"/></svg></button>
         <button class="ghost" id="refresh" data-i18n="header.refresh">Atualizar</button>
       </div>
     </header>
@@ -348,13 +360,13 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
       <span id="replyingTo"></span><button id="cancelReply" data-i18n="composer.cancel_reply">Cancelar resposta</button>
     </div>
     <div class="cw-row" id="cwRow" hidden>
-      <span class="cw-label" data-i18n="composer.spoiler_label">⚠️ Spoiler:</span>
+      <span class="cw-label" style="display:inline-flex;align-items:center;gap:5px"><svg class="ico" style="width:16px;height:16px"><use href="#i-cw"/></svg> <span data-i18n="composer.spoiler_label">Spoiler:</span></span>
       <input type="text" id="cwInput" placeholder="Aviso de conteúdo / Tema do spoiler (ex: Final da temporada)..." data-i18n-ph="composer.spoiler_ph" maxlength="100">
       <button type="button" class="rm-sm" id="cwCancel" title="Remover aviso" data-i18n-title="composer.spoiler_rm">✕</button>
     </div>
     <div class="quote-box" id="quoteBox" hidden>
       <div class="quote-box-head">
-        <span class="quote-box-label" data-i18n="composer.quote_label">💬 A citar publicação</span>
+        <span class="quote-box-label" style="display:inline-flex;align-items:center;gap:6px"><svg class="ico" style="width:16px;height:16px"><use href="#i-cross"/></svg> <span data-i18n="composer.quote_label">A citar publicação</span></span>
         <button type="button" class="rm-sm" id="cancelQuote" title="Remover citação" data-i18n-title="composer.quote_rm">✕</button>
       </div>
       <div class="quote-box-card" id="quoteCard"></div>
@@ -362,7 +374,7 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
     <textarea id="text" placeholder="O que queres dizer?" data-i18n-ph="composer.placeholder" aria-label="Novo post" data-i18n-aria="composer.new_post_aria"></textarea>
     <div class="poll-box" id="pollBox" hidden>
       <div class="poll-head">
-        <span style="font-weight:600;font-size:13px" data-i18n="composer.poll_options_title">📊 Opções da sondagem</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px"><svg class="ico" style="width:16px;height:16px"><use href="#i-poll"/></svg> <span data-i18n="composer.poll_options_title">Opções da sondagem</span></span>
         <button type="button" class="rm-sm" id="pollCancel" title="Remover sondagem" data-i18n-title="composer.poll_rm">✕</button>
       </div>
       <div class="poll-list" id="pollList"></div>
@@ -383,28 +395,37 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
     <div class="bar">
       <div class="bar-left">
         <div class="compose-tools">
-          <label class="tool-btn" id="attachLabel" title="Anexar imagens (máx. 4)" data-i18n-title="composer.attach_title">
-            <span data-i18n="composer.attach_img">📷 Imagem</span> <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
+          <label class="tool" id="attachLabel" title="Anexar imagens (máx. 4)" data-i18n-title="composer.attach_title" aria-label="Anexar imagens">
+            <svg class="ico"><use href="#i-image"/></svg>
+            <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
           </label>
-          <button type="button" class="tool-btn" id="pollBtn" title="Criar sondagem" data-i18n="composer.poll_btn" data-i18n-title="composer.poll_title">📊 Sondagem</button>
-          <button type="button" class="tool-btn" id="cwBtn" title="Aviso de conteúdo / Spoiler" data-i18n="composer.spoiler_btn" data-i18n-title="composer.spoiler_title">⚠️ Spoiler</button>
+          <button type="button" class="tool" id="pollBtn" title="Criar sondagem" data-i18n-title="composer.poll_title" aria-label="Criar sondagem" aria-pressed="false">
+            <svg class="ico"><use href="#i-poll"/></svg>
+          </button>
+          <button type="button" class="tool" id="cwBtn" title="Aviso de conteúdo / Spoiler" data-i18n-title="composer.spoiler_title" aria-label="Aviso de conteúdo / Spoiler" aria-pressed="false">
+            <svg class="ico"><use href="#i-cw"/></svg>
+          </button>
+          <button type="button" class="tool tool--network" id="netToggleBtn" title="Rede onde publicar" data-i18n-title="composer.net_target_title" aria-label="Rede onde publicar">
+            <svg class="ico" id="netToggleIcon"><use href="#i-net-both"/></svg>
+          </button>
+          <button type="button" class="tool" id="visToggleBtn" title="Visibilidade no Mastodon" data-i18n-title="composer.vis_title" aria-label="Visibilidade no Mastodon" hidden>
+            <svg class="ico"><use href="#i-visibility"/></svg>
+          </button>
         </div>
-        <div class="compose-selects">
-          <select id="targetSelect" class="compose-select" title="Redes onde publicar"></select>
-          <select id="mastoVisibility" class="compose-select" title="Visibilidade no Mastodon" hidden>
-            <option id="optVisPub" value="public" selected>🌐 Público</option>
-            <option id="optVisUnl" value="unlisted">🔓 Não listado</option>
-            <option id="optVisPriv" value="private">🔒 Seguidores</option>
-            <option id="optVisDir" value="direct">✉️ Direta</option>
-          </select>
-        </div>
+        <select id="targetSelect" hidden></select>
+        <select id="mastoVisibility" hidden>
+          <option id="optVisPub" value="public" selected>Público</option>
+          <option id="optVisUnl" value="unlisted">Não listado</option>
+          <option id="optVisPriv" value="private">Seguidores</option>
+          <option id="optVisDir" value="direct">Direta</option>
+        </select>
       </div>
       <div class="bar-right">
         <span class="count" id="count"></span>
         <button class="send" id="send" disabled data-i18n="composer.send">Publicar</button>
       </div>
     </div>
-    <div class="bsky-note" id="bskyNote" style="font-size:12px;color:var(--muted);margin-top:6px" hidden data-i18n="composer.bsky_note">ℹ️ No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).</div>
+    <div class="bsky-note" id="bskyNote" style="font-size:12px;color:var(--muted);margin-top:6px" hidden data-i18n="composer.bsky_note">No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).</div>
     <div class="msg" id="msg" role="status"></div>
   </section>
 
@@ -424,9 +445,9 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
     <div id="perrors"></div>
     <div id="profileCards" class="profile-cards"></div>
     <div class="filter-pills" id="profileFilters" hidden>
-      <button class="pill active" data-net="all" id="pillAll" data-i18n="profile.both_pills">✨ Ambos</button>
-      <button class="pill" data-net="bluesky" id="pillBsky">🦋 Bluesky</button>
-      <button class="pill" data-net="mastodon" id="pillMasto">🐘 Mastodon</button>
+      <button class="pill active" data-net="all" id="pillAll" data-i18n="profile.both_pills">Ambos</button>
+      <button class="pill" data-net="bluesky" id="pillBsky">Bluesky</button>
+      <button class="pill" data-net="mastodon" id="pillMasto">Mastodon</button>
     </div>
     <div id="profileFeed"></div>
   </div>
@@ -436,13 +457,13 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
   <div id="setupOverlay" class="setup-overlay" hidden>
     <div class="setup-box">
       <div class="setup-header">
-        <h2 data-i18n="setup.title">⚙️ Configuração do MastoSky</h2>
+        <h2 data-i18n="setup.title">Configuração do MastoSky</h2>
         <button type="button" class="rm-sm" id="closeSetup" title="Fechar">✕</button>
       </div>
       <p class="setup-desc" data-i18n="setup.desc">Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.</p>
 
       <div class="setup-section">
-        <div class="setup-sec-title"><span data-i18n="setup.pref_title">⚙️ Preferências / Preferences</span></div>
+        <div class="setup-sec-title"><span data-i18n="setup.pref_title">Preferências / Preferences</span></div>
         <label><span data-i18n="setup.lang_label">Idioma da interface:</span>
           <select id="cfgLangSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
             <option value="pt">Português (PT)</option>
@@ -548,13 +569,13 @@ const I18N = {
       new_post_aria: "Novo post",
       replying_to: "A responder a {name} no {net}",
       cancel_reply: "Cancelar resposta",
-      spoiler_label: "⚠️ Spoiler:",
+      spoiler_label: "Spoiler:",
       spoiler_ph: "Aviso de conteúdo / Tema do spoiler (ex: Final da temporada)...",
       spoiler_rm: "Remover aviso",
-      quote_label: "💬 A citar publicação",
+      quote_label: "A citar publicação",
       quote_rm: "Remover citação",
       no_text: "(Sem texto)",
-      poll_options_title: "📊 Opções da sondagem",
+      poll_options_title: "Opções da sondagem",
       poll_rm: "Remover sondagem",
       poll_add_opt: "+ Opção",
       poll_opt_ph: "Opção {n}",
@@ -564,23 +585,26 @@ const I18N = {
       poll_dur_1d: "1 dia",
       poll_dur_3d: "3 dias",
       poll_dur_7d: "7 dias",
-      attach_img: "📷 Imagem",
+      attach_img: "Imagem",
       attach_title: "Anexar imagens (máx. 4)",
-      poll_btn: "📊 Sondagem",
+      poll_btn: "Sondagem",
       poll_title: "Criar sondagem",
       poll_remove_opt: "Remover opção",
       poll_disabled_img: "Não é possível ter imagens e sondagem no mesmo post.",
-      spoiler_btn: "⚠️ Spoiler",
+      spoiler_btn: "Spoiler",
       spoiler_title: "Aviso de conteúdo / Spoiler",
-      target_all: "🌐 Ambas as redes (Crosspost)",
-      target_only_bsky: "🦋 Apenas Bluesky",
-      target_only_masto: "🐘 Apenas Mastodon",
-      vis_public: "🌐 Público",
-      vis_unlisted: "🔓 Não listado",
-      vis_private: "🔒 Seguidores",
-      vis_direct: "✉️ Direta",
+      net_target_title: "Redes onde publicar",
+      target_all: "Ambas as redes (Bluesky + Mastodon)",
+      target_only_bsky: "Apenas Bluesky",
+      target_only_masto: "Apenas Mastodon",
+      vis_title: "Visibilidade no Mastodon",
+      vis_label: "Visibilidade no Mastodon: {vis}",
+      vis_public: "Público",
+      vis_unlisted: "Não listado",
+      vis_private: "Seguidores",
+      vis_direct: "Direta",
       send: "Publicar",
-      bsky_note: "ℹ️ No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).",
+      bsky_note: "No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).",
       posted: "Publicado.",
       post_failed: "Falhou: {err}",
       success: "Publicado com sucesso!",
@@ -614,19 +638,19 @@ const I18N = {
       quote: "Citação"
     },
     cross_post: {
-      modal_title: "🔀 Publicação Cruzada",
+      modal_title: "Publicação Cruzada",
       modal_desc: "Cria um repost/citação no {origin} e publica o cartão visual com link no {dest}.",
       card_style: "Estilo do cartão:",
       comment_ph: "Escreve um comentário / citação (opcional)...",
       cancel: "Cancelar",
-      submit: "🔀 Publicar nas duas redes",
+      submit: "Publicar nas duas redes",
       submitting: "A publicar nas duas redes...",
       success: "Publicação cruzada efetuada com sucesso!",
       retry: "Tentar novamente",
       failed: "Falhou: {err}",
       cant_generate: "Não foi possível gerar a imagem do cartão.",
       branding_tagline: "· Cliente unificado Bluesky & Mastodon",
-      orig_link_label: "🔗 Post original no {net}: {url}"
+      orig_link_label: "Post original no {net}: {url}"
     },
     feed: {
       empty_timeline: "Ainda não há posts para mostrar. Segue mais contas ou adiciona a outra rede!",
@@ -663,7 +687,7 @@ const I18N = {
       other: "enviou-te uma notificação"
     },
     profile: {
-      both_pills: "✨ Ambos",
+      both_pills: "Ambos",
       your_account: "A tua conta",
       view_on_web: "Ver na web ↗",
       posts_stat: "posts",
@@ -672,10 +696,10 @@ const I18N = {
       load_more_posts: "Carregar mais publicações"
     },
     setup: {
-      title: "⚙️ Configuração do MastoSky",
+      title: "Configuração do MastoSky",
       desc: "Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.",
-      pref_title: "⚙️ Preferências",
-      lang_title: "🌐 Idioma / Language",
+      pref_title: "Preferências",
+      lang_title: "Idioma / Language",
       lang_label: "Idioma da interface:",
       nav_mode_title: "Navegação no Scroll",
       nav_mode_label: "Navegação ao fazer scroll:",
@@ -723,13 +747,13 @@ const I18N = {
       new_post_aria: "New post",
       replying_to: "Replying to {name} on {net}",
       cancel_reply: "Cancel reply",
-      spoiler_label: "⚠️ Spoiler:",
+      spoiler_label: "Spoiler:",
       spoiler_ph: "Content warning / Spoiler topic (e.g., Season finale)...",
       spoiler_rm: "Remove warning",
-      quote_label: "💬 Quoting post",
+      quote_label: "Quoting post",
       quote_rm: "Remove quote",
       no_text: "(No text)",
-      poll_options_title: "📊 Poll options",
+      poll_options_title: "Poll options",
       poll_rm: "Remove poll",
       poll_add_opt: "+ Option",
       poll_opt_ph: "Option {n}",
@@ -739,23 +763,26 @@ const I18N = {
       poll_dur_1d: "1 day",
       poll_dur_3d: "3 days",
       poll_dur_7d: "7 days",
-      attach_img: "📷 Image",
+      attach_img: "Image",
       attach_title: "Attach images (max. 4)",
-      poll_btn: "📊 Poll",
+      poll_btn: "Poll",
       poll_title: "Create poll",
       poll_remove_opt: "Remove option",
       poll_disabled_img: "Cannot have both images and a poll in the same post.",
-      spoiler_btn: "⚠️ Spoiler",
+      spoiler_btn: "Spoiler",
       spoiler_title: "Content warning / Spoiler",
-      target_all: "🌐 Both networks (Crosspost)",
-      target_only_bsky: "🦋 Bluesky only",
-      target_only_masto: "🐘 Mastodon only",
-      vis_public: "🌐 Public",
-      vis_unlisted: "🔓 Unlisted",
-      vis_private: "🔒 Followers",
-      vis_direct: "✉️ Direct",
+      net_target_title: "Networks to publish to",
+      target_all: "Both networks (Bluesky + Mastodon)",
+      target_only_bsky: "Bluesky only",
+      target_only_masto: "Mastodon only",
+      vis_title: "Mastodon visibility",
+      vis_label: "Mastodon visibility: {vis}",
+      vis_public: "Public",
+      vis_unlisted: "Unlisted",
+      vis_private: "Followers",
+      vis_direct: "Direct",
       send: "Publish",
-      bsky_note: "ℹ️ On Bluesky, content warnings are prepended as text prefixes and polls as formatted text (they are native on Mastodon).",
+      bsky_note: "On Bluesky, content warnings are prepended as text prefixes and polls as formatted text (they are native on Mastodon).",
       posted: "Published.",
       post_failed: "Failed: {err}",
       success: "Published successfully!",
@@ -789,19 +816,19 @@ const I18N = {
       quote: "Quote"
     },
     cross_post: {
-      modal_title: "🔀 Cross-Posting",
+      modal_title: "Cross-Posting",
       modal_desc: "Quotes/reposts on {origin} and shares an enriched visual card with link on {dest}.",
       card_style: "Card style:",
       comment_ph: "Write a comment / quote (optional)...",
       cancel: "Cancel",
-      submit: "🔀 Publish to both networks",
+      submit: "Publish to both networks",
       submitting: "Publishing to both networks...",
       success: "Cross-posted successfully!",
       retry: "Try again",
       failed: "Failed: {err}",
       cant_generate: "Could not generate card image.",
       branding_tagline: "· Unified client for Bluesky & Mastodon",
-      orig_link_label: "🔗 Original post on {net}: {url}"
+      orig_link_label: "Original post on {net}: {url}"
     },
     feed: {
       empty_timeline: "No posts yet. Follow more accounts or connect the other network!",
@@ -838,7 +865,7 @@ const I18N = {
       other: "sent you a notification"
     },
     profile: {
-      both_pills: "✨ Both",
+      both_pills: "Both",
       your_account: "Your account",
       view_on_web: "View on web ↗",
       posts_stat: "posts",
@@ -847,10 +874,10 @@ const I18N = {
       load_more_posts: "Load more posts"
     },
     setup: {
-      title: "⚙️ MastoSky Settings",
+      title: "MastoSky Settings",
       desc: "You can connect both networks or just one. Your credentials are saved locally and never leave your computer.",
-      pref_title: "⚙️ Preferences",
-      lang_title: "🌐 Language / Idioma",
+      pref_title: "Preferences",
+      lang_title: "Language / Idioma",
       lang_label: "Interface language:",
       nav_mode_title: "Scroll Navigation",
       nav_mode_label: "Behavior when scrolling down:",
@@ -935,14 +962,15 @@ function applyI18n() {
   if ($("optVisDir")) $("optVisDir").textContent = t("composer.vis_direct");
 
   const langBtn = $("langToggleBtn");
+  const langText = $("langToggleText");
   if (langBtn) {
-    langBtn.textContent = currentLang === "pt" ? "EN" : "PT";
+    if (langText) langText.textContent = currentLang === "pt" ? "EN" : "PT";
+    else langBtn.textContent = currentLang === "pt" ? "EN" : "PT";
     langBtn.title = t("header.lang_switch_title");
   }
 
   const sideLangBtn = $("sideLangBtn");
   if (sideLangBtn) {
-    sideLangBtn.textContent = currentLang === "pt" ? "EN" : "PT";
     sideLangBtn.title = t("header.lang_switch_title");
   }
 
@@ -990,30 +1018,22 @@ function setNavMode(newMode) {
   navMode = newMode;
   localStorage.setItem("mastosky_nav_mode", newMode);
   document.body.classList.toggle("nav-sticky", newMode === "sticky");
-  const sideRail = $("sideNavRail"), topWrap = $("topNavWrap");
+  const sideRail = $("sideNavRail");
   if (newMode !== "sidebar" && sideRail) sideRail.classList.remove("visible");
-  if (newMode !== "sticky" && topWrap) topWrap.classList.remove("sticky-hidden");
   const sel = $("cfgNavModeSelect");
   if (sel && sel.value !== newMode) sel.value = newMode;
   handleScrollNav();
 }
 
-let lastScrollY = window.scrollY, scrollDownAccum = 0, scrollUpAccum = 0;
+let lastScrollY = window.scrollY;
 function handleScrollNav() {
-  const curY = window.scrollY, diff = curY - lastScrollY, isDown = diff > 0;
-  if (isDown) { scrollDownAccum += diff; scrollUpAccum = 0; }
-  else { scrollUpAccum += Math.abs(diff); scrollDownAccum = 0; }
-  const sideRail = $("sideNavRail"), topWrap = $("topNavWrap");
+  const curY = window.scrollY;
+  const sideRail = $("sideNavRail");
   if (navMode === "sidebar") {
     if (curY > 120) sideRail?.classList.add("visible");
     else sideRail?.classList.remove("visible");
-  } else if (navMode === "sticky") {
-    sideRail?.classList.remove("visible");
-    if (curY > 120 && isDown && scrollDownAccum > 30) topWrap?.classList.add("sticky-hidden");
-    else if (!isDown && (scrollUpAccum > 20 || curY <= 120)) topWrap?.classList.remove("sticky-hidden");
   } else {
     sideRail?.classList.remove("visible");
-    topWrap?.classList.remove("sticky-hidden");
   }
   lastScrollY = curY;
 }
@@ -1833,13 +1853,53 @@ async function loadUserFeed(feedWrap, isMore = false) {
   }
 }
 
+function updateNetToggleUI() {
+  const btn = $("netToggleBtn");
+  const ico = $("netToggleIcon");
+  const sel = $("targetSelect");
+  if (!btn || !ico || !sel) return;
+  if (networks.length <= 1 || reply) {
+    btn.hidden = true;
+    return;
+  }
+  btn.hidden = false;
+  const val = sel.value;
+  if (val === "all") {
+    ico.querySelector("use").setAttribute("href", "#i-net-both");
+    btn.title = t("composer.target_all");
+  } else if (val === "mastodon") {
+    ico.querySelector("use").setAttribute("href", "#i-net-masto");
+    btn.title = t("composer.target_only_masto");
+  } else if (val === "bluesky") {
+    ico.querySelector("use").setAttribute("href", "#i-net-bsky");
+    btn.title = t("composer.target_only_bsky");
+  }
+  btn.setAttribute("aria-label", btn.title);
+}
+
+function updateVisToggleUI() {
+  const btn = $("visToggleBtn");
+  const sel = $("mastoVisibility");
+  if (!btn || !sel) return;
+  const targets = selected();
+  if (!targets.includes("mastodon") || reply) {
+    btn.hidden = true;
+    return;
+  }
+  btn.hidden = false;
+  const val = sel.value || "public";
+  const visName = t("composer.vis_" + val) || val;
+  btn.title = t("composer.vis_label", {vis: visName});
+  btn.setAttribute("aria-label", btn.title);
+}
+
 function buildTargets() {
   const sel = $("targetSelect");
   if (!sel) return;
   const currentVal = sel.value;
   sel.replaceChildren();
+  sel.hidden = true;
   if (networks.length > 1) {
-    sel.hidden = Boolean(reply);
     const optAll = el("option", null, t("composer.target_all"));
     optAll.value = "all";
     sel.append(optAll);
@@ -1855,16 +1915,15 @@ function buildTargets() {
       sel.value = "all";
     }
   } else if (networks.length === 1) {
-    sel.hidden = true;
     const n = networks[0];
-    const opt = el("option", null, (n === "bluesky" ? "🦋 " : "🐘 ") + LABEL[n]);
+    const opt = el("option", null, LABEL[n]);
     opt.value = n;
     sel.append(opt);
     sel.value = n;
-  } else {
-    sel.hidden = true;
   }
   sel.onchange = update;
+  updateNetToggleUI();
+  updateVisToggleUI();
 }
 
 function selected() {
@@ -1988,12 +2047,14 @@ function renderCW() {
   const row = $("cwRow");
   if (!hasCW) {
     row.hidden = true;
-    $("cwBtn").classList.remove("on");
+    $("cwBtn")?.classList.remove("active");
+    $("cwBtn")?.setAttribute("aria-pressed", "false");
     $("cwInput").value = "";
     return;
   }
   row.hidden = false;
-  $("cwBtn").classList.add("on");
+  $("cwBtn")?.classList.add("active");
+  $("cwBtn")?.setAttribute("aria-pressed", "true");
   $("cwInput").focus();
 }
 
@@ -2015,11 +2076,13 @@ function renderPoll() {
   const box = $("pollBox");
   if (!hasPoll) {
     box.hidden = true;
-    $("pollBtn").classList.remove("on");
+    $("pollBtn")?.classList.remove("active");
+    $("pollBtn")?.setAttribute("aria-pressed", "false");
     return;
   }
   box.hidden = false;
-  $("pollBtn").classList.add("on");
+  $("pollBtn")?.classList.add("active");
+  $("pollBtn")?.setAttribute("aria-pressed", "true");
   const list = $("pollList");
   list.replaceChildren();
   pollOptions.forEach((opt, idx) => {
@@ -2125,7 +2188,8 @@ function update() {
     $("attachLabel").title = t("composer.attach_title");
   }
   if ($("attachLabel")) {
-    $("attachLabel").classList.toggle("on", images.length > 0);
+    $("attachLabel").classList.toggle("active", images.length > 0);
+    $("attachLabel").setAttribute("aria-pressed", images.length > 0 ? "true" : "false");
   }
 
   const pollValid = !hasPoll || filledOpts.length >= 2;
@@ -2137,13 +2201,14 @@ function update() {
   if (noteEl) {
     noteEl.hidden = !(bskyActive && (hasCW || hasPoll));
   }
-  const visEl = $("mastoVisibility");
-  if (visEl) {
-    visEl.hidden = !mastoActive;
+  if ($("mastoVisibility")) {
+    $("mastoVisibility").hidden = true;
   }
   if ($("targetSelect")) {
-    $("targetSelect").hidden = Boolean(reply) || networks.length <= 1;
+    $("targetSelect").hidden = true;
   }
+  updateNetToggleUI();
+  updateVisToggleUI();
 
   $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !targets.length;
 }
@@ -3036,6 +3101,32 @@ if ($("cfgLangSelect")) {
 if ($("cfgNavModeSelect")) {
   $("cfgNavModeSelect").value = navMode;
   $("cfgNavModeSelect").onchange = (e) => setNavMode(e.target.value);
+}
+
+if ($("netToggleBtn")) {
+  $("netToggleBtn").onclick = () => {
+    const sel = $("targetSelect");
+    if (!sel || networks.length <= 1) return;
+    const order = ["all", "bluesky", "mastodon"];
+    const curIdx = order.indexOf(sel.value);
+    const nextVal = order[(curIdx + 1) % order.length];
+    sel.value = nextVal;
+    updateNetToggleUI();
+    update();
+  };
+}
+
+if ($("visToggleBtn")) {
+  $("visToggleBtn").onclick = () => {
+    const sel = $("mastoVisibility");
+    if (!sel) return;
+    const order = ["public", "unlisted", "private", "direct"];
+    const curIdx = order.indexOf(sel.value || "public");
+    const nextVal = order[(curIdx + 1) % order.length];
+    sel.value = nextVal;
+    updateVisToggleUI();
+    update();
+  };
 }
 
 document.querySelectorAll(".side-nav-btn[data-tab]").forEach(b => {

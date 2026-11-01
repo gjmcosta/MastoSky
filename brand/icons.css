@@ -1,0 +1,36 @@
+/* MastoSky — ícones e barra de opções do compositor (sem caixas). Requer tokens.css. */
+.ico {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+.tool:hover { color: var(--text); background: var(--surface-2); }
+.tool[aria-pressed="true"] { color: var(--accent); }   /* opção activa: índigo, nunca dourado */
+.tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tool:disabled { opacity: 0.4; cursor: default; }
+@media (pointer: coarse) { .tool { min-width: 44px; height: 44px; } }
+
+/* Selector de redes: os nós ganham a cor de cada rede */
+.tool--network { --n1: var(--net-mastodon); --n2: var(--net-bluesky); }
