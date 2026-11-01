@@ -278,6 +278,12 @@ function ago(iso) {
   return new Date(iso).toLocaleDateString("pt-PT", {day: "numeric", month: "short"});
 }
 
+// Defesa em profundidade: só URLs http(s) chegam a href/src/window.open.
+function su(u) {
+  try { const p = new URL(u); return (p.protocol === "http:" || p.protocol === "https:") ? u : null; }
+  catch (_) { return null; }
+}
+
 function el(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -330,19 +336,19 @@ function renderMedia(mediaList) {
       v.controls = true;
       v.preload = "metadata";
       v.playsInline = true;
-      if (x.thumb) v.poster = x.thumb;
+      if (su(x.thumb)) v.poster = x.thumb;
       if (x.type === "gifv") {
         v.autoplay = true;
         v.loop = true;
         v.muted = true;
       }
-      attachVideo(v, x.url);
+      attachVideo(v, su(x.url));
       m.append(v);
     } else if (x.type === "external") {
       const a = el("a", "ext-card" + (x.thumb ? "" : " no-thumb"));
-      a.href = x.url; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.href = su(x.url) || "#"; a.target = "_blank"; a.rel = "noopener noreferrer";
       if (x.thumb) {
-        const img = el("img"); img.src = x.thumb; img.loading = "lazy"; a.append(img);
+        const img = el("img"); img.src = su(x.thumb) || ""; img.loading = "lazy"; a.append(img);
       } else {
         const ph = el("div", "ext-placeholder");
         ph.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
@@ -359,12 +365,12 @@ function renderMedia(mediaList) {
       m.append(a);
     } else {
       const img = el("img");
-      img.src = x.url || x.thumb;
+      img.src = su(x.url || x.thumb) || "";
       img.alt = x.alt || "";
       img.loading = "lazy";
       img.onclick = (e) => {
         e.stopPropagation();
-        window.open(x.url || x.thumb, "_blank");
+        { const u = su(x.url || x.thumb); if (u) window.open(u, "_blank", "noopener,noreferrer"); }
       };
       m.append(img);
     }
@@ -377,7 +383,7 @@ function renderQuote(q) {
   const card = el("div", "quote-card");
   const head = el("div", "quote-head");
   if (q.avatar) {
-    const av = el("img", "quote-av"); av.src = q.avatar; av.loading = "lazy";
+    const av = el("img", "quote-av"); av.src = su(q.avatar) || ""; av.loading = "lazy";
     head.append(av);
   }
   const who = el("div", "quote-who");
@@ -397,7 +403,7 @@ function renderQuote(q) {
   if (q.url) {
     card.onclick = (e) => {
       if (e.target.tagName !== "A" && e.target.tagName !== "BUTTON" && e.target.tagName !== "VIDEO" && e.target.tagName !== "IMG") {
-        window.open(q.url, "_blank");
+        { const u = su(q.url); if (u) window.open(u, "_blank", "noopener,noreferrer"); }
       }
     };
   }
@@ -408,12 +414,12 @@ function postCard(it, o = {}) {
   const p = el("article", "post " + it.network + (o.focus ? " focus" : ""));
   if (it.boosted_by) p.append(el("div", "boost", "Partilhado por " + it.boosted_by));
   const head = el("div", "head");
-  if (it.avatar) { const i = el("img"); i.src = it.avatar; i.alt = ""; i.loading = "lazy"; head.append(i); }
+  if (it.avatar) { const i = el("img"); i.src = su(it.avatar) || ""; i.alt = ""; i.loading = "lazy"; head.append(i); }
   else head.append(el("div", "ph"));
   const who = el("div", "who");
   who.append(el("b", null, it.name), el("span", null, it.handle + " · " + LABEL[it.network]));
   const when = el("a", "when", ago(it.time));
-  when.href = it.url; when.target = "_blank"; when.rel = "noopener noreferrer";
+  when.href = su(it.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
   head.append(who, netBadge(it.network), when);
   const body = el("div", "body");
   body.innerHTML = it.html; // já limpo no servidor
@@ -434,19 +440,19 @@ function postCard(it, o = {}) {
   const bR = el("button", "act-btn act-reply");
   bR.title = "Responder";
   bR.setAttribute("aria-label", "Responder");
-  bR.innerHTML = ICONS.reply + (it.replies ? '<span>' + it.replies + '</span>' : '');
+  bR.innerHTML = ICONS.reply + (it.replies ? '<span>' + Number(it.replies) + '</span>' : '');
   bR.onclick = () => startReply(it);
 
   const bB = el("button", "act-btn act-boost");
   bB.title = "Partilhar";
   bB.setAttribute("aria-label", "Partilhar");
-  bB.innerHTML = ICONS.boost + (it.boosts ? '<span>' + it.boosts + '</span>' : '');
+  bB.innerHTML = ICONS.boost + (it.boosts ? '<span>' + Number(it.boosts) + '</span>' : '');
   bB.onclick = () => act(it, "boost", bB);
 
   const bL = el("button", "act-btn act-like");
   bL.title = "Gostar";
   bL.setAttribute("aria-label", "Gostar");
-  bL.innerHTML = ICONS.like + (it.likes ? '<span>' + it.likes + '</span>' : '');
+  bL.innerHTML = ICONS.like + (it.likes ? '<span>' + Number(it.likes) + '</span>' : '');
   bL.onclick = () => act(it, "like", bL);
 
   acts.append(bR, bB, bL);
@@ -537,12 +543,12 @@ function renderNotifs() {
     const head = el("div", "head");
     const g = el("span", "glyph", GLYPH[n.kind] || "•"); g.setAttribute("aria-hidden", "true");
     head.append(g);
-    if (n.avatar) { const i = el("img"); i.src = n.avatar; i.alt = ""; i.loading = "lazy"; head.append(i); }
+    if (n.avatar) { const i = el("img"); i.src = su(n.avatar) || ""; i.alt = ""; i.loading = "lazy"; head.append(i); }
     else head.append(el("div", "ph"));
     const who = el("div", "who");
     who.append(el("b", null, n.name + " " + (VERB[n.kind] || VERB.other)), el("span", null, n.handle + " · " + LABEL[n.network]));
     const when = el("a", "when", ago(n.time));
-    when.href = n.url; when.target = "_blank"; when.rel = "noopener noreferrer";
+    when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
     head.append(who, netBadge(n.network), when);
     p.append(head);
     if (n.html) { const b = el("div", "body"); b.innerHTML = n.html; p.append(b); } // já limpo no servidor

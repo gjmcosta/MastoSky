@@ -1,4 +1,6 @@
 """Testes unitários dos parsers do MastoSky. Sem rede e sem config.json."""
+import os
+import stat
 import sys
 import unittest
 from pathlib import Path
@@ -159,6 +161,61 @@ class ItemTests(unittest.TestCase):
         self.assertTrue(self.KEYS <= set(it))
         self.assertEqual(it["ref"], {"id": "1"})
         self.assertEqual(it["media"][0]["type"], "image")
+
+
+class SafeUrlTests(unittest.TestCase):
+    BAD = ["javascript:alert(1)", "data:text/html,<script>1</script>", "//evil.example/x", "", None, 5, "https://"]
+
+    def test_safe_url(self):
+        for b in self.BAD:
+            self.assertIsNone(app.safe_url(b), b)
+        self.assertEqual(app.safe_url(" https://ok.pt/a "), "https://ok.pt/a")
+        self.assertEqual(app.safe_url("http://ok.pt"), "http://ok.pt")
+
+    def test_media_sanitised(self):
+        self.assertIsNone(app.safe_media({"type": "image", "url": "javascript:1", "thumb": None}))
+        self.assertIsNone(app.safe_media({"type": "external", "url": "data:x", "thumb": "https://t"}))
+        m = app.safe_media({"type": "image", "url": "javascript:1", "thumb": "https://t"})
+        self.assertEqual(m["url"], "https://t")
+        m = app.safe_media({"type": "external", "url": "https://e", "thumb": "javascript:1"})
+        self.assertIsNone(m["thumb"])
+
+    def test_masto_item_fields(self):
+        evil = "javascript:alert(1)"
+        st = {"id": "1", "account": {"display_name": "M", "username": "m", "acct": "m", "avatar": evil},
+              "content": "x", "created_at": "2026-01-01T00:00:00.000Z", "url": evil,
+              "media_attachments": [{"type": "image", "url": evil, "preview_url": evil}],
+              "card": {"url": evil, "image": evil}}
+        it = app.Masto({"instance": "https://x", "token": "t"}).item(st)
+        self.assertIsNone(it["avatar"])
+        self.assertIsNone(it["url"])
+        self.assertEqual(it["media"], [])
+
+    def test_bsky_item_fields(self):
+        evil = "javascript:alert(1)"
+        p = {"uri": "at://did:plc:x/app.bsky.feed.post/abc", "cid": "c",
+             "author": {"handle": "a.bsky.social", "avatar": evil},
+             "record": {"text": "x", "createdAt": "2026-01-01T00:00:00.000Z"},
+             "embed": {"$type": "app.bsky.embed.external#view",
+                       "external": {"uri": evil, "thumb": evil, "title": "t"}}}
+        it = app.Bsky({"handle": "h", "app_password": "p"}).item(p)
+        self.assertIsNone(it["avatar"])
+        self.assertEqual(it["media"], [])
+
+
+class ConfigPermsTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "permissões POSIX")
+    def test_write_config_is_0600(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "config.json"
+            path.write_text("{}")
+            os.chmod(path, 0o644)
+            app.write_config({"a": 1}, path)
+            self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
+            os.chmod(path, 0o666)
+            app.secure_config_perms(path)
+            self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
 
 
 if __name__ == "__main__":

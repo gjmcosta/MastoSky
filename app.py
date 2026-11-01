@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Timeline unificada Bluesky + Mastodon. Corre só no teu Mac (127.0.0.1)."""
-import base64, html, json, re, threading, urllib.error, urllib.parse, urllib.request, uuid
+import base64, html, json, os, re, stat, threading, urllib.error, urllib.parse, urllib.request, uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from html.parser import HTMLParser
@@ -11,8 +11,31 @@ DIR = Path(__file__).parent
 CFG_PATH = DIR / "config.json"
 
 
+def secure_config_perms(path=None):
+    """Garante permissões 0600 (só o dono lê/escreve). Silencioso onde não é suportado (Windows)."""
+    path = path or CFG_PATH
+    try:
+        if stat.S_IMODE(os.stat(path).st_mode) & 0o077:
+            os.chmod(path, 0o600)
+    except OSError:
+        pass
+
+
+def write_config(cfg, path=None):
+    """Grava o config com permissões 0600 desde a criação (sem janela em que fique legível por outros)."""
+    path = path or CFG_PATH
+    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(json.dumps(cfg, indent=2))
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass
+
+
 def load_cfg():
     if CFG_PATH.exists():
+        secure_config_perms()
         try:
             return json.loads(CFG_PATH.read_text())
         except Exception:
@@ -133,7 +156,42 @@ def plain(h):
     return html.unescape(re.sub(r"<[^>]+>", " ", clean(h)))
 
 
+def safe_url(u):
+    """Só devolve URLs http(s) absolutos; qualquer outra coisa (javascript:, data:, //x) dá None."""
+    if not isinstance(u, str):
+        return None
+    u = u.strip()
+    try:
+        p = urllib.parse.urlparse(u)
+    except ValueError:
+        return None
+    return u if p.scheme in ("http", "https") and p.netloc else None
+
+
+def safe_media(m):
+    """Sanitiza os URLs de um item de media; devolve None se ficar inutilizável."""
+    url, thumb = safe_url(m.get("url")), safe_url(m.get("thumb"))
+    if m.get("type") in ("image", "video", "gifv"):
+        url = url or thumb
+        if not url:
+            return None
+    elif m.get("type") == "external" and not url:
+        return None
+    out = dict(m)
+    out["url"], out["thumb"] = url, thumb
+    return out
+
+
+def safe_media_list(items):
+    return [x for x in (safe_media(m) for m in items) if x]
+
+
 def extract_bsky_embed(embed):
+    media, quote = _extract_bsky_embed(embed)
+    return safe_media_list(media), quote
+
+
+def _extract_bsky_embed(embed):
     media = []
     quote = None
     if not embed:
@@ -221,7 +279,7 @@ def parse_bsky_quote(rec):
         "network": "bluesky",
         "name": author.get("displayName") or handle,
         "handle": "@" + handle if handle else "",
-        "avatar": author.get("avatar"),
+        "avatar": safe_url(author.get("avatar")),
         "html": linkify(text) if text else "",
         "time": val.get("createdAt") or rec.get("createdAt") or rec.get("indexedAt"),
         "url": f"https://bsky.app/profile/{handle}/post/{rec.get('uri', '').split('/')[-1]}" if handle else None,
@@ -278,11 +336,11 @@ def parse_masto_quote(st):
         "network": "mastodon",
         "name": q_acc.get("display_name") or q_acc.get("username", ""),
         "handle": "@" + q_acc.get("acct", ""),
-        "avatar": q_acc.get("avatar"),
+        "avatar": safe_url(q_acc.get("avatar")),
         "html": q_html,
         "time": qs.get("created_at"),
-        "url": qs.get("url"),
-        "media": q_media
+        "url": safe_url(qs.get("url")),
+        "media": safe_media_list(q_media)
     }
 
 
@@ -345,7 +403,7 @@ class Bsky:
                 rt = {"name": None, "handle": None, "text": ""}
         return {
             "network": "bluesky", "name": a.get("displayName") or a["handle"], "handle": "@" + a["handle"],
-            "avatar": a.get("avatar"), "html": linkify(rec.get("text", "")),
+            "avatar": safe_url(a.get("avatar")), "html": linkify(rec.get("text", "")),
             "time": reason.get("indexedAt") or rec["createdAt"],
             "boosted_by": by.get("displayName") or by.get("handle"), "reply_to": rt,
             "media": media,
@@ -474,7 +532,7 @@ class Bsky:
                 text = subject["record"].get("text", "")
                 url = f"https://bsky.app/profile/{subject['author']['handle']}/post/{subject['uri'].split('/')[-1]}"
             out.append({"network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
-                        "handle": "@" + a["handle"], "avatar": a.get("avatar"),
+                        "handle": "@" + a["handle"], "avatar": safe_url(a.get("avatar")),
                         "html": linkify(text) if text else "", "time": n["indexedAt"], "url": url, "ref": ref})
         return out
 
@@ -543,13 +601,13 @@ class Masto:
             })
         return {
             "network": "mastodon", "name": a.get("display_name") or a["username"], "handle": "@" + a["acct"],
-            "avatar": a.get("avatar"), "html": cw + raw_html,
+            "avatar": safe_url(a.get("avatar")), "html": cw + raw_html,
             "time": st["created_at"],
             "boosted_by": (st["account"].get("display_name") or st["account"]["username"]) if st.get("reblog") else None,
-            "media": media,
+            "media": safe_media_list(media),
             "quote": quote,
             "replies": x.get("replies_count", 0), "boosts": x.get("reblogs_count", 0), "likes": x.get("favourites_count", 0),
-            "url": x.get("url"), "ref": {"id": x["id"]}, "reply_to": rt,
+            "url": safe_url(x.get("url")), "ref": {"id": x["id"]}, "reply_to": rt,
             "is_reply": bool(x.get("in_reply_to_id")),
         }
 
@@ -632,9 +690,9 @@ class Masto:
                 kind = "reply"
             cw = f"<strong>{html.escape(st['spoiler_text'])}</strong><br>" if st and st.get("spoiler_text") else ""
             out.append({"network": "mastodon", "kind": kind, "name": a.get("display_name") or a["username"],
-                        "handle": "@" + a["acct"], "avatar": a.get("avatar"),
+                        "handle": "@" + a["acct"], "avatar": safe_url(a.get("avatar")),
                         "html": (cw + clean(st.get("content"))) if st else "", "time": n["created_at"],
-                        "url": (st or {}).get("url") or a.get("url"),
+                        "url": safe_url((st or {}).get("url") or a.get("url")),
                         "ref": {"id": st["id"]} if st and kind in ("reply", "mention", "quote") else None})
         return out
 
@@ -796,7 +854,7 @@ class H(BaseHTTPRequestHandler):
                 return s.send(400, {"error": "Introduz dados de acesso válidos para pelo menos uma das redes."})
 
             try:
-                CFG_PATH.write_text(json.dumps(new_cfg, indent=2))
+                write_config(new_cfg)
                 CFG = new_cfg
                 CLIENTS = test_clients
                 return s.send(200, {"ok": True, "networks": list(CLIENTS)})
