@@ -445,43 +445,189 @@ body.view-deck .deck-container {
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
   overflow: hidden;
   scroll-snap-align: start;
+  transition: transform .15s, opacity .15s, box-shadow .15s;
+}
+.deck-col.dragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+.deck-col.drag-over-left {
+  box-shadow: -4px 0 0 0 var(--accent), 0 4px 16px rgba(0,0,0,0.1) !important;
+}
+.deck-col.drag-over-right {
+  box-shadow: 4px 0 0 0 var(--accent), 0 4px 16px rgba(0,0,0,0.1) !important;
 }
 .deck-col-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
+  padding: 8px 10px 8px 12px;
   background: color-mix(in srgb, var(--surface-2) 65%, transparent);
   border-bottom: 1px solid var(--line);
   font-weight: 700;
   font-size: 13.5px;
   flex-shrink: 0;
+  user-select: none;
+  gap: 6px;
+}
+.deck-col-head[draggable="true"] {
+  cursor: grab;
+}
+.deck-col-head[draggable="true"]:active {
+  cursor: grabbing;
+}
+.deck-col-head-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.deck-col-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  cursor: grab;
+  opacity: 0.45;
+  transition: opacity .15s, color .15s;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+.deck-col-grip:hover {
+  opacity: 1;
+  color: var(--ink);
 }
 .deck-col-title {
   display: flex;
   align-items: center;
   gap: 6px;
   color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .deck-col-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  flex-shrink: 0;
 }
 .deck-act-btn {
   background: transparent;
   border: 0;
   color: var(--muted);
   cursor: pointer;
-  padding: 4px 6px;
+  padding: 4px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: all .15s;
 }
-.deck-act-btn:hover {
+.deck-act-btn:hover:not(:disabled) {
   color: var(--ink);
   background: var(--surface-2);
+}
+.deck-act-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+.deck-act-btn.deck-close-btn:hover:not(:disabled) {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+}
+.deck-add-col-card {
+  flex: 0 0 240px;
+  width: 240px;
+  min-width: 240px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  position: relative;
+  background: color-mix(in srgb, var(--surface-1) 50%, transparent);
+  transition: border-color .2s, background .2s;
+}
+body:not(.view-deck) .deck-add-col-card {
+  display: none;
+}
+.deck-add-col-card:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.deck-add-col-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.deck-add-col-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  transform: scale(1.03);
+}
+.deck-add-col-menu {
+  position: absolute;
+  top: calc(50% + 30px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  padding: 8px;
+  min-width: 210px;
+  z-index: 50;
+}
+.deck-add-col-menu-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+  padding: 6px 10px 4px;
+  font-weight: 700;
+}
+.deck-add-col-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s, color .12s;
+}
+.deck-add-col-item:hover {
+  background: var(--surface-2);
+  color: var(--accent);
+}
+.deck-add-col-empty {
+  font-size: 12px;
+  color: var(--muted);
+  padding: 10px;
+  text-align: center;
 }
 .deck-col-body {
   flex: 1 1 auto;
@@ -711,6 +857,11 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-draft" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="9" x2="8" y2="9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-bookmark-fill" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="12 19 5 12 12 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="12 5 19 12 12 19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-drag-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5" fill="currentColor"/><circle cx="15" cy="6" r="1.5" fill="currentColor"/><circle cx="9" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/><circle cx="9" cy="18" r="1.5" fill="currentColor"/><circle cx="15" cy="18" r="1.5" fill="currentColor"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -878,10 +1029,16 @@ body:not(.view-deck) .deck-col-body {
   <div id="deckContainer" class="deck-container">
     <div class="deck-col deck-col-compose" id="colCompose" data-col="compose">
       <div class="deck-col-head">
-        <span class="deck-col-title" id="deckComposeTitle" data-i18n="header.col_compose_hub">Compor & Menu</span>
+        <div class="deck-col-head-left">
+          <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
+          <span class="deck-col-title" id="deckComposeTitle" data-i18n="header.col_compose_hub">Compor & Menu</span>
+        </div>
         <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('compose', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
+          <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('compose', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="refreshProfileView()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="$('colComposeBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+          <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('compose')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colComposeBody">
@@ -892,10 +1049,16 @@ body:not(.view-deck) .deck-col-body {
 
     <div class="deck-col" id="colTimeline" data-col="timeline">
       <div class="deck-col-head">
-        <span class="deck-col-title" data-i18n="header.col_timeline">Timeline</span>
+        <div class="deck-col-head-left">
+          <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
+          <span class="deck-col-title" data-i18n="header.col_timeline">Timeline</span>
+        </div>
         <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('timeline', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
+          <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('timeline', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="load()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="$('colTimelineBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+          <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('timeline')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colTimelineBody">
@@ -909,10 +1072,16 @@ body:not(.view-deck) .deck-col-body {
 
     <div class="deck-col" id="colExplore" data-col="explore">
       <div class="deck-col-head">
-        <span class="deck-col-title" data-i18n="header.col_explore">Em Alta</span>
+        <div class="deck-col-head-left">
+          <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
+          <span class="deck-col-title" data-i18n="header.col_explore">Em Alta</span>
+        </div>
         <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('explore', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
+          <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('explore', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="loadExplore()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="$('colExploreBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+          <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('explore')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colExploreBody">
@@ -926,10 +1095,16 @@ body:not(.view-deck) .deck-col-body {
 
     <div class="deck-col" id="colSearch" data-col="search">
       <div class="deck-col-head">
-        <span class="deck-col-title" data-i18n="header.col_search">Pesquisa</span>
+        <div class="deck-col-head-left">
+          <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
+          <span class="deck-col-title" data-i18n="header.col_search">Pesquisa</span>
+        </div>
         <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('search', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
+          <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('search', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="doSearch()" title="Atualizar pesquisa" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="$('colSearchBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+          <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('search')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colSearchBody">
@@ -983,10 +1158,16 @@ body:not(.view-deck) .deck-col-body {
 
     <div class="deck-col" id="colSaved" data-col="saved">
       <div class="deck-col-head">
-        <span class="deck-col-title" data-i18n="header.col_saved">Guardados</span>
+        <div class="deck-col-head-left">
+          <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
+          <span class="deck-col-title" data-i18n="header.col_saved">Guardados</span>
+        </div>
         <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('saved', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
+          <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('saved', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="renderSavedFeed()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="$('colSavedBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+          <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('saved')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colSavedBody">
@@ -1013,10 +1194,16 @@ body:not(.view-deck) .deck-col-body {
 
     <div class="deck-col" id="colNotifs" data-col="notifs">
       <div class="deck-col-head">
-        <span class="deck-col-title"><span data-i18n="header.col_notifs">Notificações</span> <span class="badge" id="deckNotifsBadge" hidden><span class="star-badge"></span><span id="deckBadgeCount"></span></span></span>
+        <div class="deck-col-head-left">
+          <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
+          <span class="deck-col-title"><span data-i18n="header.col_notifs">Notificações</span> <span class="badge" id="deckNotifsBadge" hidden><span class="star-badge"></span><span id="deckBadgeCount"></span></span></span>
+        </div>
         <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('notifs', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
+          <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('notifs', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="loadNotifs()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="$('colNotifsBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+          <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('notifs')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colNotifsBody">
@@ -1080,6 +1267,17 @@ body:not(.view-deck) .deck-col-body {
         <div id="threadProfile" hidden></div>
       </div>
     </div>
+
+    <div class="deck-add-col-card" id="deckAddColCard">
+      <button type="button" class="deck-add-col-btn" id="deckAddColBtn" onclick="toggleAddColMenu(event)" title="Adicionar coluna ao Deck" data-i18n-title="deck.add_col">
+        <svg class="ico" style="width:16px;height:16px"><use href="#i-plus"/></svg>
+        <span data-i18n="deck.add_col">Adicionar Coluna</span>
+      </button>
+      <div class="deck-add-col-menu" id="deckAddColMenu" hidden>
+        <div class="deck-add-col-menu-title" data-i18n="deck.add_col_title">Adicionar ao Deck</div>
+        <div id="deckAddColList" class="deck-add-col-list"></div>
+      </div>
+    </div>
   </div>
 
   <div id="setupOverlay" class="setup-overlay" hidden>
@@ -1112,7 +1310,8 @@ body:not(.view-deck) .deck-col-body {
           </select>
         </label>
         <div id="deckColsConfig" style="margin-top:10px;padding:10px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line)" hidden>
-          <div style="font-size:12.5px;font-weight:600;margin-bottom:8px" data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
+          <div style="font-size:12.5px;font-weight:600;margin-bottom:4px" data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px" data-i18n="setup.deck_col_order_tip">Podes arrastar as colunas ou usar as setas no cabeçalho do Deck para reordenar.</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px">
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Compor & Menu</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColTimeline"> <span data-i18n="setup.deck_col_timeline">Timeline</span></label>
@@ -1510,6 +1709,16 @@ const I18N = {
       refresh_all: "Atualizar todos os feeds",
       back_to_hub: "← Voltar ao menu"
     },
+    deck: {
+      move_left: "Mover coluna para a esquerda",
+      move_right: "Mover coluna para a direita",
+      close_col: "Fechar coluna",
+      add_col: "Adicionar Coluna",
+      add_col_title: "Adicionar ao Deck",
+      all_cols_open: "Todas as colunas estão abertas",
+      drag_tip: "Arrastar para reordenar",
+      err_min_one_col: "O Deck precisa de pelo menos uma coluna visível."
+    },
     setup: {
       title: "Configuração do MastoSky",
       desc: "Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.",
@@ -1526,6 +1735,7 @@ const I18N = {
       view_mode_single: "Coluna única (Timeline simples)",
       view_mode_deck: "Colunas múltiplas (Deck View)",
       deck_cols_label: "Colunas visíveis no Deck:",
+      deck_col_order_tip: "Podes arrastar as colunas ou usar as setas no cabeçalho do Deck para reordenar.",
       deck_col_compose: "Compor & Menu",
       deck_col_timeline: "Timeline (Feed unificado)",
       deck_col_explore: "Em Alta (Trending)",
@@ -1819,6 +2029,16 @@ const I18N = {
       refresh_all: "Refresh all feeds",
       back_to_hub: "← Back to menu"
     },
+    deck: {
+      move_left: "Move column left",
+      move_right: "Move column right",
+      close_col: "Close column",
+      add_col: "Add Column",
+      add_col_title: "Add to Deck",
+      all_cols_open: "All columns are open",
+      drag_tip: "Drag to reorder",
+      err_min_one_col: "The Deck needs at least one visible column."
+    },
     setup: {
       title: "MastoSky Settings",
       desc: "You can connect both networks or just one. Your credentials are saved locally and never leave your computer.",
@@ -1835,6 +2055,7 @@ const I18N = {
       view_mode_single: "Single column (Simple timeline)",
       view_mode_deck: "Multi-column (Deck View)",
       deck_cols_label: "Visible columns in Deck:",
+      deck_col_order_tip: "You can drag columns or use the arrows in the Deck header to reorder.",
       deck_col_compose: "Compose & Menu",
       deck_col_timeline: "Timeline (Unified feed)",
       deck_col_explore: "Trending (Explore)",
@@ -1872,7 +2093,16 @@ const I18N = {
 
 let currentLang = localStorage.getItem("mastosky_lang") || ((navigator.language && navigator.language.startsWith("pt")) ? "pt" : "en");
 let viewMode = localStorage.getItem("mastosky_view_mode") || "single";
-let deckColumns = JSON.parse(localStorage.getItem("mastosky_deck_columns") || '["compose","timeline","explore","notifs"]').filter(c => c !== "profile");
+const ALL_DECK_COLS = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+let deckColumns = (() => {
+  try {
+    const raw = JSON.parse(localStorage.getItem("mastosky_deck_columns") || '["compose","timeline","explore","notifs"]');
+    const filtered = Array.from(new Set(raw.filter(c => ALL_DECK_COLS.includes(c))));
+    return filtered.length ? filtered : ["compose", "timeline", "explore", "notifs"];
+  } catch (_) {
+    return ["compose", "timeline", "explore", "notifs"];
+  }
+})();
 
 function t(path, params) {
   const parts = path.split(".");
@@ -2017,12 +2247,214 @@ function handleScrollNav() {
 }
 window.addEventListener("scroll", handleScrollNav, {passive: true});
 
+const DECK_COL_INFO = {
+  compose: { titleKey: "header.col_compose_hub", defTitle: "Compor & Menu", icon: "#i-draft" },
+  timeline: { titleKey: "header.col_timeline", defTitle: "Timeline", icon: "#i-cross" },
+  explore: { titleKey: "header.col_explore", defTitle: "Em Alta", icon: "#i-poll" },
+  search: { titleKey: "header.col_search", defTitle: "Pesquisa", icon: "#i-search" },
+  saved: { titleKey: "header.col_saved", defTitle: "Guardados", icon: "#i-bookmark" },
+  notifs: { titleKey: "header.col_notifs", defTitle: "Notificações", icon: "#i-vis-public" }
+};
+
 function applyDeckColumnVisibility() {
   if (viewMode !== "deck") return;
-  const cols = ["compose", "timeline", "explore", "search", "saved", "notifs"];
-  cols.forEach(c => {
+  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+  allCols.forEach(c => {
     const el = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
-    if (el) el.hidden = !deckColumns.includes(c);
+    if (!el) return;
+    const idx = deckColumns.indexOf(c);
+    const isVis = idx !== -1;
+    el.hidden = !isVis;
+    if (isVis) {
+      el.style.order = idx;
+      const bL = el.querySelector(".deck-move-left");
+      const bR = el.querySelector(".deck-move-right");
+      if (bL) bL.disabled = idx === 0;
+      if (bR) bR.disabled = idx === deckColumns.length - 1;
+    }
+  });
+  const addCard = $("deckAddColCard");
+  if (addCard) {
+    addCard.style.order = 9999;
+    addCard.hidden = false;
+  }
+}
+
+function moveDeckColumn(colId, delta) {
+  const idx = deckColumns.indexOf(colId);
+  if (idx < 0) return;
+  const newIdx = idx + delta;
+  if (newIdx < 0 || newIdx >= deckColumns.length) return;
+
+  const item = deckColumns.splice(idx, 1)[0];
+  deckColumns.splice(newIdx, 0, item);
+  localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
+  applyDeckColumnVisibility();
+  syncDeckColsCheckboxes();
+
+  const el = $("col" + colId.charAt(0).toUpperCase() + colId.slice(1));
+  if (el) el.scrollIntoView({ behavior: "smooth", inline: "nearest" });
+}
+
+function closeDeckColumn(colId) {
+  if (deckColumns.length <= 1) {
+    const msg = $("msg");
+    if (msg) {
+      msg.className = "msg err";
+      msg.textContent = t("deck.err_min_one_col");
+      setTimeout(() => { if (msg.textContent === t("deck.err_min_one_col")) msg.textContent = ""; }, 2500);
+    }
+    return;
+  }
+  deckColumns = deckColumns.filter(c => c !== colId);
+  localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
+  applyDeckColumnVisibility();
+  syncDeckColsCheckboxes();
+}
+
+function addDeckColumn(colId) {
+  if (!deckColumns.includes(colId)) {
+    deckColumns.push(colId);
+    localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
+    applyDeckColumnVisibility();
+    syncDeckColsCheckboxes();
+  }
+  closeAddColMenu();
+  const el = $("col" + colId.charAt(0).toUpperCase() + colId.slice(1));
+  if (el) el.scrollIntoView({ behavior: "smooth", inline: "start" });
+}
+
+function reorderDeckColumn(draggedCol, targetCol, insertBefore) {
+  const fromIdx = deckColumns.indexOf(draggedCol);
+  if (fromIdx < 0) return;
+  deckColumns.splice(fromIdx, 1);
+
+  let toIdx = deckColumns.indexOf(targetCol);
+  if (toIdx < 0) toIdx = deckColumns.length;
+  if (!insertBefore) toIdx += 1;
+
+  deckColumns.splice(toIdx, 0, draggedCol);
+  localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
+  applyDeckColumnVisibility();
+  syncDeckColsCheckboxes();
+}
+
+function syncDeckColsCheckboxes() {
+  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+  colIds.forEach(c => {
+    const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
+    if (chk) chk.checked = deckColumns.includes(c);
+  });
+}
+
+function renderAddColMenu() {
+  const list = $("deckAddColList");
+  if (!list) return;
+  list.replaceChildren();
+
+  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs"];
+  const available = allCols.filter(c => !deckColumns.includes(c));
+
+  if (!available.length) {
+    const empty = el("div", "deck-add-col-empty", t("deck.all_cols_open"));
+    list.append(empty);
+    return;
+  }
+
+  available.forEach(colId => {
+    const info = DECK_COL_INFO[colId] || { defTitle: colId };
+    const btn = el("button", "deck-add-col-item");
+    btn.type = "button";
+    btn.innerHTML = `<svg class="ico" style="width:14px;height:14px"><use href="${info.icon || '#i-plus'}"/></svg> <span>${t(info.titleKey) || info.defTitle}</span>`;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      addDeckColumn(colId);
+    };
+    list.append(btn);
+  });
+}
+
+function toggleAddColMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = $("deckAddColMenu");
+  if (!menu) return;
+  const isHidden = menu.hidden;
+  if (isHidden) {
+    renderAddColMenu();
+    menu.hidden = false;
+  } else {
+    menu.hidden = true;
+  }
+}
+
+function closeAddColMenu() {
+  const menu = $("deckAddColMenu");
+  if (menu) menu.hidden = true;
+}
+
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#deckAddColCard")) {
+    closeAddColMenu();
+  }
+});
+
+function initDeckDragAndDrop() {
+  const container = $("deckContainer");
+  if (!container) return;
+
+  const cols = container.querySelectorAll(".deck-col:not(.deck-add-col-card):not(#colProfileSingle)");
+  cols.forEach(col => {
+    const head = col.querySelector(".deck-col-head");
+    if (!head) return;
+    head.setAttribute("draggable", "true");
+
+    head.ondragstart = (e) => {
+      if (e.target.closest(".deck-act-btn")) {
+        e.preventDefault();
+        return;
+      }
+      col.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", col.dataset.col);
+    };
+
+    head.ondragend = () => {
+      cols.forEach(c => c.classList.remove("dragging", "drag-over-left", "drag-over-right"));
+    };
+
+    col.ondragover = (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      const rect = col.getBoundingClientRect();
+      const mid = rect.left + rect.width / 2;
+      const isLeft = e.clientX < mid;
+      cols.forEach(c => {
+        if (c !== col) c.classList.remove("drag-over-left", "drag-over-right");
+      });
+      col.classList.toggle("drag-over-left", isLeft);
+      col.classList.toggle("drag-over-right", !isLeft);
+    };
+
+    col.ondragleave = (e) => {
+      if (!col.contains(e.relatedTarget)) {
+        col.classList.remove("drag-over-left", "drag-over-right");
+      }
+    };
+
+    col.ondrop = (e) => {
+      e.preventDefault();
+      const draggedCol = e.dataTransfer.getData("text/plain");
+      const targetCol = col.dataset.col;
+      cols.forEach(c => c.classList.remove("dragging", "drag-over-left", "drag-over-right"));
+
+      if (!draggedCol || !targetCol || draggedCol === targetCol) return;
+
+      const rect = col.getBoundingClientRect();
+      const mid = rect.left + rect.width / 2;
+      const insertBefore = e.clientX < mid;
+
+      reorderDeckColumn(draggedCol, targetCol, insertBefore);
+    };
   });
 }
 
@@ -5893,10 +6325,16 @@ deckColIds.forEach(c => {
   if (chk) {
     chk.checked = deckColumns.includes(c);
     chk.onchange = () => {
-      deckColumns = deckColIds.filter(id => {
-        const el = $("chkCol" + id.charAt(0).toUpperCase() + id.slice(1));
-        return el ? el.checked : true;
-      });
+      if (chk.checked) {
+        if (!deckColumns.includes(c)) deckColumns.push(c);
+      } else {
+        if (deckColumns.length <= 1) {
+          chk.checked = true;
+          alert(t("deck.err_min_one_col"));
+          return;
+        }
+        deckColumns = deckColumns.filter(id => id !== c);
+      }
       localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
       applyDeckColumnVisibility();
     };
@@ -6016,6 +6454,7 @@ applyViewMode(viewMode);
 updateDraftsBadge();
 checkAndRestoreAutoDraft();
 initSavedEvents();
+initDeckDragAndDrop();
 
 const validTabs = ["timeline", "explore", "search", "saved", "notifs", "profile"];
 const hashTab = (location.hash || "").replace("#", "");
