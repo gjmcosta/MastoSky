@@ -417,7 +417,15 @@ body.view-deck .deck-container {
   box-shadow: none;
 }
 .deck-col-compose textarea {
-  min-height: 110px;
+  min-height: 95px;
+}
+.compose-hub-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 14px 0 16px 0;
+}
+body.view-deck #colProfileSingle {
+  display: none !important;
 }
 .panel-section{background:color-mix(in srgb,var(--surface-2) 40%,var(--card));border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
 .panel-sec-title{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
@@ -616,9 +624,16 @@ body:not(.view-deck) .deck-col-body {
   <div id="deckContainer" class="deck-container">
     <div class="deck-col deck-col-compose" id="colCompose" data-col="compose">
       <div class="deck-col-head">
-        <span class="deck-col-title" data-i18n="header.col_compose">Novo post</span>
+        <span class="deck-col-title" id="deckComposeTitle" data-i18n="header.col_compose_hub">Compor & Menu</span>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn" onclick="refreshProfileView()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colComposeBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+        </div>
       </div>
-      <div class="deck-col-body" id="colComposeBody"></div>
+      <div class="deck-col-body" id="colComposeBody">
+        <div id="deckComposeWrap"></div>
+        <div class="compose-hub-divider" id="composeHubDivider" hidden></div>
+      </div>
     </div>
 
     <div class="deck-col" id="colTimeline" data-col="timeline">
@@ -672,15 +687,11 @@ body:not(.view-deck) .deck-col-body {
       </div>
     </div>
 
-    <div class="deck-col" id="colProfile" data-col="profile">
+    <div class="deck-col" id="colProfileSingle" data-col="profile">
       <div class="deck-col-head">
         <span class="deck-col-title" id="deckProfileTitle" data-i18n="panel.title">Menu & Perfil</span>
-        <div class="deck-col-actions">
-          <button type="button" class="deck-act-btn" onclick="refreshProfileView()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
-          <button type="button" class="deck-act-btn" onclick="$('colProfileBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
-        </div>
       </div>
-      <div class="deck-col-body" id="colProfileBody">
+      <div class="deck-col-body" id="colProfileSingleBody">
         <div id="pProfile" hidden>
           <div id="perrors"></div>
           
@@ -762,11 +773,10 @@ body:not(.view-deck) .deck-col-body {
         <div id="deckColsConfig" style="margin-top:10px;padding:10px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line)" hidden>
           <div style="font-size:12.5px;font-weight:600;margin-bottom:8px" data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px">
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Compositor</span></label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Compor & Menu</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColTimeline"> <span data-i18n="setup.deck_col_timeline">Timeline</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColExplore"> <span data-i18n="setup.deck_col_explore">Em Alta</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
           </div>
         </div>
       </div>
@@ -852,6 +862,7 @@ const I18N = {
       col_notifs: "Notificações",
       col_profile: "Perfil",
       col_compose: "Novo post",
+      col_compose_hub: "Compor & Menu",
       col_thread: "Conversa",
       col_user: "Perfil de utilizador"
     },
@@ -1025,7 +1036,7 @@ const I18N = {
       view_mode_single: "Coluna única (Timeline simples)",
       view_mode_deck: "Colunas múltiplas (Deck View)",
       deck_cols_label: "Colunas visíveis no Deck:",
-      deck_col_compose: "Compositor (Novo post)",
+      deck_col_compose: "Compor & Menu",
       deck_col_timeline: "Timeline (Feed unificado)",
       deck_col_explore: "Em Alta (Trending)",
       deck_col_notifs: "Notificações",
@@ -1062,6 +1073,7 @@ const I18N = {
       col_notifs: "Notifications",
       col_profile: "Profile",
       col_compose: "New post",
+      col_compose_hub: "Compose & Menu",
       col_thread: "Thread",
       col_user: "User profile"
     },
@@ -1235,7 +1247,7 @@ const I18N = {
       view_mode_single: "Single column (Simple timeline)",
       view_mode_deck: "Multi-column (Deck View)",
       deck_cols_label: "Visible columns in Deck:",
-      deck_col_compose: "Composer (New post)",
+      deck_col_compose: "Compose & Menu",
       deck_col_timeline: "Timeline (Unified feed)",
       deck_col_explore: "Trending (Explore)",
       deck_col_notifs: "Notifications",
@@ -1264,7 +1276,7 @@ const I18N = {
 
 let currentLang = localStorage.getItem("mastosky_lang") || ((navigator.language && navigator.language.startsWith("pt")) ? "pt" : "en");
 let viewMode = localStorage.getItem("mastosky_view_mode") || "single";
-let deckColumns = JSON.parse(localStorage.getItem("mastosky_deck_columns") || '["compose","timeline","explore","notifs","profile"]');
+let deckColumns = JSON.parse(localStorage.getItem("mastosky_deck_columns") || '["compose","timeline","explore","notifs"]').filter(c => c !== "profile");
 
 function t(path, params) {
   const parts = path.split(".");
@@ -1411,7 +1423,7 @@ window.addEventListener("scroll", handleScrollNav, {passive: true});
 
 function applyDeckColumnVisibility() {
   if (viewMode !== "deck") return;
-  const cols = ["compose", "timeline", "explore", "notifs", "profile"];
+  const cols = ["compose", "timeline", "explore", "notifs"];
   cols.forEach(c => {
     const el = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
     if (el) el.hidden = !deckColumns.includes(c);
@@ -1424,12 +1436,23 @@ function applyViewMode(mode) {
   document.body.classList.toggle("view-deck", mode === "deck");
 
   const comp = $("composeSection");
-  if (comp) {
-    if (mode === "deck") {
-      $("colComposeBody")?.appendChild(comp);
-    } else {
-      $("singleComposeWrap")?.appendChild(comp);
+  const prof = $("pProfile");
+  const thProf = $("threadProfile");
+  const divider = $("composeHubDivider");
+
+  if (mode === "deck") {
+    if (comp) $("deckComposeWrap")?.appendChild(comp);
+    if (prof) {
+      $("colComposeBody")?.appendChild(prof);
+      prof.hidden = false;
     }
+    if (thProf) $("colComposeBody")?.appendChild(thProf);
+    if (divider) divider.hidden = false;
+  } else {
+    if (comp) $("singleComposeWrap")?.appendChild(comp);
+    if (prof) $("colProfileSingleBody")?.appendChild(prof);
+    if (thProf) $("colProfileSingleBody")?.appendChild(thProf);
+    if (divider) divider.hidden = true;
   }
 
   const viewBtn = $("viewToggleBtn");
@@ -1449,7 +1472,6 @@ function applyViewMode(mode) {
     $("pTimeline").hidden = false;
     $("pExplore").hidden = false;
     $("pNotifs").hidden = false;
-    $("pProfile").hidden = false;
     if (!exploreItems.length) loadExplore();
     if (!notifs) loadNotifs();
     if (!profileLoaded) loadProfile();
@@ -2030,6 +2052,11 @@ function renderProfileAccountsList(profiles, errors) {
   }
 }
 
+function updateProfileTitle(title) {
+  if ($("deckProfileTitle")) $("deckProfileTitle").textContent = title || t("panel.title");
+  if ($("deckComposeTitle")) $("deckComposeTitle").textContent = title || t("header.col_compose_hub");
+}
+
 async function viewOwnAccount(net) {
   if (!profileData || !profileData[net]) return;
   activeProfileMode = "account";
@@ -2039,7 +2066,7 @@ async function viewOwnAccount(net) {
   if ($("panelHubView")) $("panelHubView").hidden = true;
   $("profileDetailView").hidden = false;
   $("profileBackBtn").textContent = t("profile.back_to_accounts");
-  if ($("deckProfileTitle")) $("deckProfileTitle").textContent = (profileData[net].name || LABEL[net]);
+  updateProfileTitle(profileData[net].name || LABEL[net]);
 
   const card = renderSingleProfileCard(profileData[net], true);
   $("profileActiveCard").replaceChildren(card);
@@ -2151,10 +2178,10 @@ async function openUserProfile(network, actor) {
       setTab("profile");
     }
   } else {
-    const colProf = $("colProfile");
+    const colProf = $("colCompose");
     if (colProf) {
       colProf.hidden = false;
-      colProf.scrollIntoView({behavior: "smooth", inline: "center"});
+      colProf.scrollIntoView({behavior: "smooth", inline: "start"});
     }
   }
 
@@ -2167,7 +2194,7 @@ async function openUserProfile(network, actor) {
   if ($("panelHubView")) $("panelHubView").hidden = true;
   $("profileDetailView").hidden = false;
   $("profileBackBtn").textContent = (previousTab && viewMode === "single") ? t("actions.back") : t("profile.back_to_profiles");
-  if ($("deckProfileTitle")) $("deckProfileTitle").textContent = actor;
+  updateProfileTitle(actor);
 
   $("profileActiveCard").replaceChildren(el("div", "empty", t("feed.loading_profile")));
   $("profileActiveFeed").replaceChildren();
@@ -2180,8 +2207,8 @@ async function openUserProfile(network, actor) {
       return;
     }
     const prof = profRes.profile;
-    if ($("deckProfileTitle") && prof && (prof.name || prof.handle)) {
-      $("deckProfileTitle").textContent = prof.name || prof.handle;
+    if (prof && (prof.name || prof.handle)) {
+      updateProfileTitle(prof.name || prof.handle);
     }
     $("profileActiveCard").replaceChildren(renderSingleProfileCard(prof, false));
 
@@ -2246,7 +2273,7 @@ function returnFromProfileDetail() {
     activeProfileMode = "hub";
     $("profileDetailView").hidden = true;
     $("panelHubView").hidden = false;
-    if ($("deckProfileTitle")) $("deckProfileTitle").textContent = t("panel.title");
+    updateProfileTitle(t("header.col_compose_hub"));
     setTab(pt);
     return;
   }
@@ -2255,7 +2282,7 @@ function returnFromProfileDetail() {
   activeProfileMode = "hub";
   $("profileDetailView").hidden = true;
   $("panelHubView").hidden = false;
-  if ($("deckProfileTitle")) $("deckProfileTitle").textContent = t("panel.title");
+  updateProfileTitle(t("header.col_compose_hub"));
 }
 
 function closeUserProfile() {
@@ -2288,10 +2315,11 @@ function setTab(newTab) {
       timeline: "colTimeline",
       explore: "colExplore",
       notifs: "colNotifs",
-      profile: "colProfile"
+      profile: "colCompose"
     };
     const colId = colMap[newTab];
     if (colId && $(colId)) {
+      $(colId).hidden = false;
       $(colId).scrollIntoView({behavior: "smooth", inline: "start"});
     }
   } else {
@@ -2335,10 +2363,10 @@ async function openThread(it, keep) {
     activeThreadColId = getActiveColId(it);
   }
   const colId = activeThreadColId || "timeline";
-  const capCol = colId.charAt(0).toUpperCase() + colId.slice(1);
+  const capCol = colId === "compose" ? "Profile" : (colId.charAt(0).toUpperCase() + colId.slice(1));
   const mainEl = $("p" + capCol);
   const threadEl = $("thread" + capCol);
-  const bodyEl = $("col" + capCol + "Body");
+  const bodyEl = $("col" + (colId === "compose" ? "Compose" : capCol) + "Body");
 
   if (!threadEl) return;
 
@@ -2351,6 +2379,10 @@ async function openThread(it, keep) {
     }
   }
 
+  if (colId === "compose") {
+    if ($("deckComposeWrap")) $("deckComposeWrap").hidden = true;
+    if ($("composeHubDivider")) $("composeHubDivider").hidden = true;
+  }
   if (mainEl) mainEl.hidden = true;
   threadEl.hidden = false;
 
@@ -2398,16 +2430,20 @@ async function openThread(it, keep) {
 }
 
 function closeColumnThread(colId) {
-  const capCol = colId.charAt(0).toUpperCase() + colId.slice(1);
+  const capCol = colId === "compose" ? "Profile" : (colId.charAt(0).toUpperCase() + colId.slice(1));
   const mainEl = $("p" + capCol);
   const threadEl = $("thread" + capCol);
-  const bodyEl = $("col" + capCol + "Body");
+  const bodyEl = $("col" + (colId === "compose" ? "Compose" : capCol) + "Body");
 
   if (threadEl) {
     threadEl.hidden = true;
     threadEl.replaceChildren();
   }
   if (mainEl) mainEl.hidden = false;
+  if (colId === "compose") {
+    if ($("deckComposeWrap")) $("deckComposeWrap").hidden = false;
+    if ($("composeHubDivider")) $("composeHubDivider").hidden = false;
+  }
   threadIt = null;
 
   const prevY = colScrolls[colId] || 0;
@@ -3623,7 +3659,7 @@ async function openSetup(mandatory = false) {
   if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
   if ($("cfgViewModeSelect")) $("cfgViewModeSelect").value = viewMode;
   if ($("deckColsConfig")) $("deckColsConfig").hidden = viewMode !== "deck";
-  const colIds = ["compose", "timeline", "explore", "notifs", "profile"];
+  const colIds = ["compose", "timeline", "explore", "notifs"];
   colIds.forEach(c => {
     const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
     if (chk) chk.checked = deckColumns.includes(c);
@@ -3704,7 +3740,7 @@ if ($("cfgViewModeSelect")) {
   $("cfgViewModeSelect").value = viewMode;
   $("cfgViewModeSelect").onchange = (e) => applyViewMode(e.target.value);
 }
-const deckColIds = ["compose", "timeline", "explore", "notifs", "profile"];
+const deckColIds = ["compose", "timeline", "explore", "notifs"];
 deckColIds.forEach(c => {
   const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
   if (chk) {
