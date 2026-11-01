@@ -30,8 +30,41 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none !important}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans)}
-main{max-width:640px;margin:0 auto;padding:20px 14px 60px}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--sans);position:relative;min-height:100vh}
+main{max-width:640px;margin:0 auto;padding:20px 14px 60px;position:relative;z-index:1}
+.cosmos-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.cosmos-glow{position:absolute;top:-120px;right:-100px;width:650px;height:650px;border-radius:50%;background:radial-gradient(circle,rgba(91,75,219,0.12) 0%,rgba(77,178,255,0.06) 45%,transparent 70%);filter:blur(40px)}
+@media (prefers-color-scheme:dark){
+  .cosmos-glow{background:radial-gradient(circle,rgba(91,75,219,0.22) 0%,rgba(77,178,255,0.12) 45%,transparent 70%)}
+}
+.cosmos-mammoth{position:absolute;top:-20px;right:-30px;width:520px;height:520px;background-repeat:no-repeat;background-position:top right;background-size:contain;background-image:url(/brand/logo-mark-light.svg);opacity:.05;transition:opacity .3s}
+@media (prefers-color-scheme:dark){
+  .cosmos-mammoth{background-image:url(/brand/logo-mark-dark.svg);opacity:.085}
+}
+.cosmos-stars{position:absolute;inset:0;background-image:
+  radial-gradient(1.5px 1.5px at 40px 60px, var(--ms-sky), transparent),
+  radial-gradient(1px 1px at 160px 120px, var(--ms-gold), transparent),
+  radial-gradient(1.5px 1.5px at 280px 240px, var(--ms-indigo), transparent),
+  radial-gradient(2px 2px at 420px 90px, var(--ms-sky), transparent),
+  radial-gradient(1px 1px at 580px 310px, #ffffff, transparent),
+  radial-gradient(1.5px 1.5px at 740px 150px, var(--ms-sky), transparent),
+  radial-gradient(1px 1px at 890px 280px, var(--ms-gold), transparent),
+  radial-gradient(2px 2px at 1020px 110px, var(--ms-indigo), transparent),
+  radial-gradient(1.5px 1.5px at 1160px 380px, var(--ms-sky), transparent);
+  background-repeat:repeat;background-size:1200px 600px;opacity:.28}
+@media (prefers-color-scheme:dark){
+  .cosmos-stars{opacity:.45}
+}
+.quote-box{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:var(--bg);position:relative}
+.quote-box-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;color:var(--muted);font-weight:600}
+.quote-box-card{font-size:13px;line-height:1.4}
+.quote-box-card .quote-who{font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.quote-box-card .quote-who span{color:var(--muted);font-weight:normal;font-size:12px}
+.quote-box-card .quote-snip{color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;opacity:.85}
+.boost-popover{position:fixed;z-index:1000;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,0.28);padding:4px;min-width:175px;display:flex;flex-direction:column;gap:2px;animation:popIn .12s ease-out}
+.boost-popover button{border:0;background:none;color:var(--ink);padding:8px 12px;border-radius:7px;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;text-align:left;width:100%;transition:background .15s}
+.boost-popover button:hover{background:var(--surface-2);color:var(--accent)}
+.boost-popover button svg{width:16px;height:16px;flex:none}
 header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 h1{font:600 18px var(--sans);margin:0}
 button{font:inherit;cursor:pointer}
@@ -186,6 +219,11 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 </style>
 </head>
 <body>
+<div class="cosmos-bg" aria-hidden="true">
+  <div class="cosmos-glow"></div>
+  <div class="cosmos-mammoth"></div>
+  <div class="cosmos-stars"></div>
+</div>
 <main>
   <header>
     <div style="display:flex;align-items:center;gap:10px">
@@ -215,6 +253,13 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
       <span class="cw-label">⚠️ Spoiler:</span>
       <input type="text" id="cwInput" placeholder="Aviso de conteúdo / Tema do spoiler (ex: Final da temporada)..." maxlength="100">
       <button type="button" class="rm-sm" id="cwCancel" title="Remover aviso">✕</button>
+    </div>
+    <div class="quote-box" id="quoteBox" hidden>
+      <div class="quote-box-head">
+        <span class="quote-box-label">💬 A citar publicação</span>
+        <button type="button" class="rm-sm" id="cancelQuote" title="Remover citação">✕</button>
+      </div>
+      <div class="quote-box-card" id="quoteCard"></div>
     </div>
     <textarea id="text" placeholder="O que queres dizer?" aria-label="Novo post"></textarea>
     <div class="poll-box" id="pollBox" hidden>
@@ -332,7 +377,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 const LIMITS = {bluesky: 300, mastodon: 500};
 const LABEL = {bluesky: "Bluesky", mastodon: "Mastodon"};
 const $ = id => document.getElementById(id);
-let networks = [], reply = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
+let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
 let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
 
 async function api(path, body) {
@@ -527,10 +572,13 @@ function postCard(it, o = {}) {
   bR.onclick = () => startReply(it);
 
   const bB = el("button", "act-btn act-boost" + (it.boosted ? " on" : ""));
-  bB.title = it.boosted ? "Desfazer partilha" : "Partilhar";
+  bB.title = "Republicar ou citar";
   bB.setAttribute("aria-label", bB.title);
   bB.innerHTML = ICONS.boost + (it.boosts ? '<span>' + Number(it.boosts) + '</span>' : '');
-  bB.onclick = () => act(it, "boost", bB);
+  bB.onclick = (e) => {
+    e.stopPropagation();
+    openBoostMenu(it, bB);
+  };
 
   const bL = el("button", "act-btn act-like" + (it.liked ? " on" : ""));
   bL.title = it.liked ? "Remover gosto" : "Gostar";
@@ -1262,7 +1310,7 @@ function update() {
   }
 
   const pollValid = !hasPoll || filledOpts.length >= 2;
-  const hasContent = lenText > 0 || images.length > 0 || (hasPoll && filledOpts.length >= 2);
+  const hasContent = lenText > 0 || images.length > 0 || (hasPoll && filledOpts.length >= 2) || Boolean(quote);
 
   const bskyActive = reply ? (reply.network === "bluesky") : t.includes("bluesky");
   const mastoActive = reply ? (reply.network === "mastodon") : t.includes("mastodon");
@@ -1279,6 +1327,99 @@ function update() {
   }
 
   $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !t.length;
+}
+
+function startQuote(it) {
+  quote = {
+    network: it.network,
+    ref: it.ref,
+    url: it.url,
+    name: it.name,
+    handle: it.handle,
+    text: it.text || "",
+    avatar: it.avatar || ""
+  };
+  renderQuoteBox();
+  const ta = $("text");
+  ta.focus();
+  ta.scrollIntoView({behavior: "smooth", block: "center"});
+  update();
+}
+
+function cancelQuote() {
+  quote = null;
+  renderQuoteBox();
+  update();
+}
+
+function renderQuoteBox() {
+  const box = $("quoteBox");
+  if (!quote) {
+    box.hidden = true;
+    $("quoteCard").innerHTML = "";
+    return;
+  }
+  box.hidden = false;
+  const qc = $("quoteCard");
+  qc.innerHTML = "";
+  const who = el("div", "quote-who");
+  const b = el("b", null, quote.name || quote.handle);
+  const s = el("span", null, " " + quote.handle + " · " + LABEL[quote.network]);
+  who.append(b, s);
+  const snip = el("div", "quote-snip", quote.text || "(Sem texto)");
+  qc.append(who, snip);
+}
+
+$("cancelQuote").onclick = cancelQuote;
+
+function closeBoostMenu() {
+  if (activeBoostMenu) {
+    activeBoostMenu.remove();
+    activeBoostMenu = null;
+  }
+}
+
+document.addEventListener("click", (e) => {
+  if (activeBoostMenu && !activeBoostMenu.contains(e.target)) {
+    closeBoostMenu();
+  }
+});
+window.addEventListener("scroll", closeBoostMenu, {passive: true});
+
+function openBoostMenu(it, btn) {
+  if (activeBoostMenu) {
+    const isSame = activeBoostMenu._btn === btn;
+    closeBoostMenu();
+    if (isSame) return;
+  }
+
+  const menu = el("div", "boost-popover");
+  menu._btn = btn;
+
+  const btnRepost = el("button", null);
+  btnRepost.innerHTML = ICONS.boost + " <span>" + (it.boosted ? "Desfazer republicação" : "Republicar") + "</span>";
+  btnRepost.onclick = (e) => {
+    e.stopPropagation();
+    closeBoostMenu();
+    act(it, "boost", btn);
+  };
+
+  const btnQuote = el("button", null);
+  btnQuote.innerHTML = '✏️ <span>Citar publicação</span>';
+  btnQuote.onclick = (e) => {
+    e.stopPropagation();
+    closeBoostMenu();
+    startQuote(it);
+  };
+
+  menu.append(btnRepost, btnQuote);
+  document.body.append(menu);
+
+  const rect = btn.getBoundingClientRect();
+  menu.style.top = (rect.bottom + 4) + "px";
+  menu.style.left = Math.max(10, Math.min(window.innerWidth - 185, rect.left - 10)) + "px";
+
+  activeBoostMenu = menu;
 }
 
 function startReply(it) {
@@ -1317,8 +1458,8 @@ $("send").onclick = async () => {
   const visibility = (mastoActive && $("mastoVisibility")) ? $("mastoVisibility").value : null;
 
   const body = reply
-    ? {text: $("text").value, reply, images, spoiler, poll, visibility}
-    : {text: $("text").value, targets: selected(), images, spoiler, poll, visibility};
+    ? {text: $("text").value, reply, images, spoiler, poll, visibility, quote}
+    : {text: $("text").value, targets: selected(), images, spoiler, poll, visibility, quote};
 
   const res = await api("/api/post", body);
   const bad = Object.entries(res).filter(([, v]) => v !== "ok");
@@ -1332,6 +1473,7 @@ $("send").onclick = async () => {
     hasCW = false; renderCW();
     hasPoll = false; pollOptions = ["", ""]; renderPoll();
     reply = null; $("replying").hidden = true;
+    quote = null; renderQuoteBox();
     setTimeout(load, 1200);
     if (profileLoaded) setTimeout(() => loadProfileFeed(false), 1200);
     if (!$("pThread").hidden && threadIt) setTimeout(() => openThread(threadIt, true), 1500);

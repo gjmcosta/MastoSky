@@ -758,7 +758,7 @@ class Bsky:
         r = self._authed(lambda jwt: http("POST", url, data=raw_bytes, token=jwt, headers={"Content-Type": mime}))
         return r["blob"]
 
-    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None):
+    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, quote=None):
         self._ensure()
         final_text = (text or "").strip()
         if poll and poll.get("options"):
@@ -804,15 +804,49 @@ class Bsky:
             rec["langs"] = [lang]
         if ref:
             rec["reply"] = {"root": ref["root"], "parent": {"uri": ref["uri"], "cid": ref["cid"]}}
+        
+        embed_imgs = []
         if images:
-            embed_imgs = []
             for img in images:
                 blob = self.upload_blob(img["bytes"], img.get("mime", "image/jpeg"))
                 item = {"alt": img.get("alt", "") or "", "image": blob}
                 if img.get("aspectRatio"):
                     item["aspectRatio"] = img["aspectRatio"]
                 embed_imgs.append(item)
+
+        if quote and quote.get("network") == "bluesky" and quote.get("ref", {}).get("uri"):
+            q_record = {
+                "$type": "app.bsky.embed.record",
+                "record": {"uri": quote["ref"]["uri"], "cid": quote["ref"]["cid"]}
+            }
+            if embed_imgs:
+                rec["embed"] = {
+                    "$type": "app.bsky.embed.recordWithMedia",
+                    "record": q_record,
+                    "media": {"$type": "app.bsky.embed.images", "images": embed_imgs}
+                }
+            else:
+                rec["embed"] = q_record
+        elif quote and quote.get("network") == "mastodon":
+            if not embed_imgs and quote.get("url"):
+                title = quote.get("name") or "Publicação no Mastodon"
+                if quote.get("handle"):
+                    title += f" ({quote['handle']})"
+                rec["embed"] = {
+                    "$type": "app.bsky.embed.external",
+                    "external": {
+                        "uri": quote["url"],
+                        "title": title,
+                        "description": (quote.get("text") or "")[:300]
+                    }
+                }
+            elif embed_imgs:
+                rec["embed"] = {"$type": "app.bsky.embed.images", "images": embed_imgs}
+                if quote.get("url") and quote["url"] not in rec["text"]:
+                    rec["text"] = (rec["text"] + "\n\n" + quote["url"]).strip()
+        elif embed_imgs:
             rec["embed"] = {"$type": "app.bsky.embed.images", "images": embed_imgs}
+
         self.call("POST", "com.atproto.repo.createRecord",
                {"repo": self.did, "collection": "app.bsky.feed.post", "record": rec})
 
@@ -1030,13 +1064,16 @@ class Masto:
                  headers={"Content-Type": ctype})
         return r["id"]
 
-    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, visibility=None):
+    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, visibility=None, quote=None):
         media_ids = []
         if images:
             for img in images:
                 mid = self.upload_media(img["bytes"], img.get("mime", "image/jpeg"), img.get("alt", ""))
                 media_ids.append(mid)
-        data = {"status": text or ""}
+        status_text = (text or "").strip()
+        if quote and quote.get("url") and quote["url"] not in status_text:
+            status_text = (status_text + "\n\n" + quote["url"]).strip()
+        data = {"status": status_text}
         if spoiler:
             data["spoiler_text"] = spoiler
         if lang:
@@ -1293,6 +1330,9 @@ class H(BaseHTTPRequestHandler):
             if visibility is not None:
                 if not isinstance(visibility, str) or visibility not in ("public", "unlisted", "private", "direct"):
                     return self.send(400, {"error": "Visibilidade inválida."})
+            quote = d.get("quote")
+            if quote is not None and not isinstance(quote, dict):
+                return self.send(400, {"error": "Citação inválida."})
             targets = [ref["network"]] if ref else d.get("targets", [])
             if (not isinstance(targets, list) or not targets
                     or not all(isinstance(t, str) for t in targets)):
@@ -1328,7 +1368,7 @@ class H(BaseHTTPRequestHandler):
                 })
             for t in targets:
                 try:
-                    kwargs = {"spoiler": spoiler, "poll": poll, "lang": lang}
+                    kwargs = {"spoiler": spoiler, "poll": poll, "lang": lang, "quote": quote}
                     if t == "mastodon" and visibility:
                         kwargs["visibility"] = visibility
                     CLIENTS[t].post(text, ref["ref"] if ref else None, parsed_images, **kwargs)

@@ -725,6 +725,58 @@ class FacetsAndRichtextTests(unittest.TestCase):
         self.assertEqual(calls[0][2].get("language"), "pt")
         self.assertEqual(calls[0][2].get("visibility"), "unlisted")
 
+    def test_bsky_post_native_quote(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+        calls = []
+        b.call = lambda m, n, d=None, p=None: calls.append((m, n, d, p)) or {}
+        quote = {
+            "network": "bluesky",
+            "ref": {"uri": "at://did:plc:bob/app.bsky.feed.post/123", "cid": "cid123"},
+            "url": "https://bsky.app/profile/bob/post/123"
+        }
+        b.post("Comentário sobre o post", quote=quote)
+        self.assertEqual(len(calls), 1)
+        rec = calls[0][2]["record"]
+        self.assertEqual(rec["embed"]["$type"], "app.bsky.embed.record")
+        self.assertEqual(rec["embed"]["record"]["uri"], "at://did:plc:bob/app.bsky.feed.post/123")
+
+    def test_bsky_post_cross_network_quote(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+        calls = []
+        b.call = lambda m, n, d=None, p=None: calls.append((m, n, d, p)) or {}
+        quote = {
+            "network": "mastodon",
+            "url": "https://masto.pt/@alice/999",
+            "text": "Post original do Mastodon",
+            "name": "Alice",
+            "handle": "@alice@masto.pt"
+        }
+        b.post("Vejam este post do Fediverse!", quote=quote)
+        self.assertEqual(len(calls), 1)
+        rec = calls[0][2]["record"]
+        self.assertEqual(rec["embed"]["$type"], "app.bsky.embed.external")
+        self.assertEqual(rec["embed"]["external"]["uri"], "https://masto.pt/@alice/999")
+        self.assertIn("Alice", rec["embed"]["external"]["title"])
+        self.assertIn("Post original", rec["embed"]["external"]["description"])
+
+    def test_masto_post_quote(self):
+        m = app.Masto({"instance": "https://m.pt", "token": "tok"})
+        calls = []
+        m.call = lambda mth, pth, data=None, p=None: calls.append((mth, pth, data, p)) or {}
+        quote = {
+            "network": "bluesky",
+            "url": "https://bsky.app/profile/bob.bsky.social/post/abc"
+        }
+        m.post("Muito interessante este post:", quote=quote)
+        self.assertEqual(len(calls), 1)
+        status = calls[0][2]["status"]
+        self.assertIn("Muito interessante este post:", status)
+        self.assertIn("https://bsky.app/profile/bob.bsky.social/post/abc", status)
+
 
 class ActionsTests(unittest.TestCase):
     def test_masto_item_and_act(self):
