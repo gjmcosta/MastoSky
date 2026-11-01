@@ -280,6 +280,153 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
   .side-nav-btn{width:38px;height:38px;border-radius:50%}
   .side-nav-divider,.side-nav-lang,.side-nav-top{display:none}
 }
+/* Deck View Styles */
+body.view-deck {
+  height: 100vh;
+  overflow: hidden;
+}
+body.view-deck main {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 100vh;
+  padding: 8px 16px 12px 16px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body.view-deck .top-nav-wrap {
+  position: static !important;
+  margin: 0 0 10px 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-bottom: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  flex-shrink: 0;
+}
+body.view-deck .top-nav-wrap .tabs {
+  display: none !important;
+}
+body.view-deck .side-nav-rail {
+  display: none !important;
+}
+body.view-deck #singleComposeWrap {
+  display: none !important;
+}
+body.view-deck .deck-container {
+  display: flex;
+  gap: 14px;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+  align-items: stretch;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.deck-col {
+  flex: 0 0 380px;
+  width: 380px;
+  max-width: 440px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+.deck-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--surface-2) 65%, transparent);
+  border-bottom: 1px solid var(--line);
+  font-weight: 700;
+  font-size: 13.5px;
+  flex-shrink: 0;
+}
+.deck-col-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+.deck-col-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.deck-act-btn {
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  transition: all .15s;
+}
+.deck-act-btn:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.deck-col-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 12px;
+  scrollbar-width: thin;
+}
+.deck-col-compose .compose {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+}
+.deck-col-compose textarea {
+  min-height: 110px;
+}
+.deck-col-detail {
+  flex: 0 0 420px;
+  width: 420px;
+  border-color: var(--accent);
+}
+
+/* Single View Mode default overrides */
+body:not(.view-deck) .deck-container {
+  display: block;
+}
+body:not(.view-deck) .deck-col {
+  display: contents;
+}
+body:not(.view-deck) .deck-col-head {
+  display: none;
+}
+body:not(.view-deck) .deck-col-compose {
+  display: none;
+}
+body:not(.view-deck) .deck-col-body {
+  overflow: visible;
+  padding: 0;
+  height: auto;
+}
+body:not(.view-deck) .deck-col-detail {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  body.view-deck .deck-col {
+    flex: 0 0 calc(100vw - 32px);
+    width: calc(100vw - 32px);
+    scroll-snap-align: center;
+  }
+}
 @media (prefers-reduced-motion:no-preference){button{transition:background .15s,color .15s}}
 </style>
 </head>
@@ -298,6 +445,8 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
   <symbol id="i-language" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.75"/><ellipse cx="12" cy="12" rx="3.8" ry="9" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M3 12 H21" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-cross" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7H9a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m8 21-4-4 4-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17h11a4 4 0 0 0 4-4v-2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-view-single" viewBox="0 0 24 24"><rect x="6" y="3.5" width="12" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="9" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><line x1="9" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-view-deck" viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.75"/><rect x="10.25" y="4" width="5.5" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.75"/><rect x="17.5" y="4" width="3.5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.75" opacity="0.6"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -345,6 +494,9 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
         </picture>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
+        <button class="ghost" id="viewToggleBtn" title="Mudar para vista em colunas" data-i18n-title="header.view_mode_single_title" aria-label="Mudar visualização" style="display:grid;place-items:center;padding:5px 8px">
+          <svg class="ico" id="viewToggleIcon" style="width:18px;height:18px"><use href="#i-view-deck"/></svg>
+        </button>
         <button class="ghost" id="langToggleBtn" title="Mudar idioma / Switch language" style="font-weight:600;font-size:12px;padding:5px 9px;display:inline-flex;align-items:center;gap:5px"><svg class="ico" style="width:16px;height:16px"><use href="#i-language"/></svg><span id="langToggleText">EN</span></button>
         <button class="ghost" id="settingsBtn" title="Definições / Contas" data-i18n-title="header.settings_title" aria-label="Definições"><svg class="ico" style="width:18px;height:18px"><use href="#i-settings"/></svg></button>
         <button class="ghost" id="refresh" data-i18n="header.refresh">Atualizar</button>
@@ -359,106 +511,173 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
     </nav>
   </div>
 
-  <section class="compose">
-    <div class="replying" id="replying" hidden>
-      <span id="replyingTo"></span><button id="cancelReply" data-i18n="composer.cancel_reply">Cancelar resposta</button>
-    </div>
-    <div class="cw-row" id="cwRow" hidden>
-      <span class="cw-label" style="display:inline-flex;align-items:center;gap:5px"><svg class="ico" style="width:16px;height:16px"><use href="#i-cw"/></svg> <span data-i18n="composer.spoiler_label">Spoiler:</span></span>
-      <input type="text" id="cwInput" placeholder="Aviso de conteúdo / Tema do spoiler (ex: Final da temporada)..." data-i18n-ph="composer.spoiler_ph" maxlength="100">
-      <button type="button" class="rm-sm" id="cwCancel" title="Remover aviso" data-i18n-title="composer.spoiler_rm">✕</button>
-    </div>
-    <div class="quote-box" id="quoteBox" hidden>
-      <div class="quote-box-head">
-        <span class="quote-box-label" style="display:inline-flex;align-items:center;gap:6px"><svg class="ico" style="width:16px;height:16px"><use href="#i-cross"/></svg> <span data-i18n="composer.quote_label">A citar publicação</span></span>
-        <button type="button" class="rm-sm" id="cancelQuote" title="Remover citação" data-i18n-title="composer.quote_rm">✕</button>
+  <div id="singleComposeWrap">
+    <section class="compose" id="composeSection">
+      <div class="replying" id="replying" hidden>
+        <span id="replyingTo"></span><button id="cancelReply" data-i18n="composer.cancel_reply">Cancelar resposta</button>
       </div>
-      <div class="quote-box-card" id="quoteCard"></div>
-    </div>
-    <textarea id="text" placeholder="O que queres dizer?" data-i18n-ph="composer.placeholder" aria-label="Novo post" data-i18n-aria="composer.new_post_aria"></textarea>
-    <div class="poll-box" id="pollBox" hidden>
-      <div class="poll-head">
-        <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px"><svg class="ico" style="width:16px;height:16px"><use href="#i-poll"/></svg> <span data-i18n="composer.poll_options_title">Opções da sondagem</span></span>
-        <button type="button" class="rm-sm" id="pollCancel" title="Remover sondagem" data-i18n-title="composer.poll_rm">✕</button>
+      <div class="cw-row" id="cwRow" hidden>
+        <span class="cw-label" style="display:inline-flex;align-items:center;gap:5px"><svg class="ico" style="width:16px;height:16px"><use href="#i-cw"/></svg> <span data-i18n="composer.spoiler_label">Spoiler:</span></span>
+        <input type="text" id="cwInput" placeholder="Aviso de conteúdo / Tema do spoiler (ex: Final da temporada)..." data-i18n-ph="composer.spoiler_ph" maxlength="100">
+        <button type="button" class="rm-sm" id="cwCancel" title="Remover aviso" data-i18n-title="composer.spoiler_rm">✕</button>
       </div>
-      <div class="poll-list" id="pollList"></div>
-      <div class="poll-foot">
-        <button type="button" class="ghost-sm" id="addOptionBtn" data-i18n="composer.poll_add_opt">+ Opção</button>
-        <label class="poll-dur"><span data-i18n="composer.poll_dur_label">Duração:</span>
-          <select id="pollDuration">
-            <option id="optDur1h" value="3600">1 hora</option>
-            <option id="optDur6h" value="21600">6 horas</option>
-            <option id="optDur1d" value="86400" selected>1 dia</option>
-            <option id="optDur3d" value="259200">3 dias</option>
-            <option id="optDur7d" value="604800">7 dias</option>
-          </select>
-        </label>
-      </div>
-    </div>
-    <div class="previews" id="previews" hidden></div>
-    <div class="bar">
-      <div class="bar-left">
-        <div class="compose-tools">
-          <label class="tool" id="attachLabel" title="Anexar imagens (máx. 4)" data-i18n-title="composer.attach_title" aria-label="Anexar imagens">
-            <svg class="ico"><use href="#i-image"/></svg>
-            <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
-          </label>
-          <button type="button" class="tool" id="pollBtn" title="Criar sondagem" data-i18n-title="composer.poll_title" aria-label="Criar sondagem" aria-pressed="false">
-            <svg class="ico"><use href="#i-poll"/></svg>
-          </button>
-          <button type="button" class="tool" id="cwBtn" title="Aviso de conteúdo / Spoiler" data-i18n-title="composer.spoiler_title" aria-label="Aviso de conteúdo / Spoiler" aria-pressed="false">
-            <svg class="ico"><use href="#i-cw"/></svg>
-          </button>
-          <button type="button" class="tool tool--network" id="netToggleBtn" title="Rede onde publicar" data-i18n-title="composer.net_target_title" aria-label="Rede onde publicar">
-            <svg class="ico" id="netToggleIcon"><use href="#i-net-both"/></svg>
-            <span id="netToggleText" class="tool-label">Ambas</span>
-          </button>
-          <button type="button" class="tool" id="visToggleBtn" title="Visibilidade no Mastodon" data-i18n-title="composer.vis_title" aria-label="Visibilidade no Mastodon" hidden>
-            <svg class="ico" id="visToggleIcon"><use href="#i-vis-public"/></svg>
-            <span id="visToggleText" class="tool-label">Público</span>
-          </button>
+      <div class="quote-box" id="quoteBox" hidden>
+        <div class="quote-box-head">
+          <span class="quote-box-label" style="display:inline-flex;align-items:center;gap:6px"><svg class="ico" style="width:16px;height:16px"><use href="#i-cross"/></svg> <span data-i18n="composer.quote_label">A citar publicação</span></span>
+          <button type="button" class="rm-sm" id="cancelQuote" title="Remover citação" data-i18n-title="composer.quote_rm">✕</button>
         </div>
-        <select id="targetSelect" hidden></select>
-        <select id="mastoVisibility" hidden>
-          <option id="optVisPub" value="public" selected>Público</option>
-          <option id="optVisUnl" value="unlisted">Não listado</option>
-          <option id="optVisPriv" value="private">Seguidores</option>
-          <option id="optVisDir" value="direct">Direta</option>
-        </select>
+        <div class="quote-box-card" id="quoteCard"></div>
       </div>
-      <div class="bar-right">
-        <span class="count" id="count"></span>
-        <button class="send" id="send" disabled data-i18n="composer.send">Publicar</button>
+      <textarea id="text" placeholder="O que queres dizer?" data-i18n-ph="composer.placeholder" aria-label="Novo post" data-i18n-aria="composer.new_post_aria"></textarea>
+      <div class="poll-box" id="pollBox" hidden>
+        <div class="poll-head">
+          <span style="display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px"><svg class="ico" style="width:16px;height:16px"><use href="#i-poll"/></svg> <span data-i18n="composer.poll_options_title">Opções da sondagem</span></span>
+          <button type="button" class="rm-sm" id="pollCancel" title="Remover sondagem" data-i18n-title="composer.poll_rm">✕</button>
+        </div>
+        <div class="poll-list" id="pollList"></div>
+        <div class="poll-foot">
+          <button type="button" class="ghost-sm" id="addOptionBtn" data-i18n="composer.poll_add_opt">+ Opção</button>
+          <label class="poll-dur"><span data-i18n="composer.poll_dur_label">Duração:</span>
+            <select id="pollDuration">
+              <option id="optDur1h" value="3600">1 hora</option>
+              <option id="optDur6h" value="21600">6 horas</option>
+              <option id="optDur1d" value="86400" selected>1 dia</option>
+              <option id="optDur3d" value="259200">3 dias</option>
+              <option id="optDur7d" value="604800">7 dias</option>
+            </select>
+          </label>
+        </div>
       </div>
-    </div>
-    <div class="bsky-note" id="bskyNote" style="font-size:12px;color:var(--muted);margin-top:6px" hidden data-i18n="composer.bsky_note">No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).</div>
-    <div class="msg" id="msg" role="status"></div>
-  </section>
+      <div class="previews" id="previews" hidden></div>
+      <div class="bar">
+        <div class="bar-left">
+          <div class="compose-tools">
+            <label class="tool" id="attachLabel" title="Anexar imagens (máx. 4)" data-i18n-title="composer.attach_title" aria-label="Anexar imagens">
+              <svg class="ico"><use href="#i-image"/></svg>
+              <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
+            </label>
+            <button type="button" class="tool" id="pollBtn" title="Criar sondagem" data-i18n-title="composer.poll_title" aria-label="Criar sondagem" aria-pressed="false">
+              <svg class="ico"><use href="#i-poll"/></svg>
+            </button>
+            <button type="button" class="tool" id="cwBtn" title="Aviso de conteúdo / Spoiler" data-i18n-title="composer.spoiler_title" aria-label="Aviso de conteúdo / Spoiler" aria-pressed="false">
+              <svg class="ico"><use href="#i-cw"/></svg>
+            </button>
+            <button type="button" class="tool tool--network" id="netToggleBtn" title="Rede onde publicar" data-i18n-title="composer.net_target_title" aria-label="Rede onde publicar">
+              <svg class="ico" id="netToggleIcon"><use href="#i-net-both"/></svg>
+              <span id="netToggleText" class="tool-label">Ambas</span>
+            </button>
+            <button type="button" class="tool" id="visToggleBtn" title="Visibilidade no Mastodon" data-i18n-title="composer.vis_title" aria-label="Visibilidade no Mastodon" hidden>
+              <svg class="ico" id="visToggleIcon"><use href="#i-vis-public"/></svg>
+              <span id="visToggleText" class="tool-label">Público</span>
+            </button>
+          </div>
+          <select id="targetSelect" hidden></select>
+          <select id="mastoVisibility" hidden>
+            <option id="optVisPub" value="public" selected>Público</option>
+            <option id="optVisUnl" value="unlisted">Não listado</option>
+            <option id="optVisPriv" value="private">Seguidores</option>
+            <option id="optVisDir" value="direct">Direta</option>
+          </select>
+        </div>
+        <div class="bar-right">
+          <span class="count" id="count"></span>
+          <button class="send" id="send" disabled data-i18n="composer.send">Publicar</button>
+        </div>
+      </div>
+      <div class="bsky-note" id="bskyNote" style="font-size:12px;color:var(--muted);margin-top:6px" hidden data-i18n="composer.bsky_note">No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).</div>
+      <div class="msg" id="msg" role="status"></div>
+    </section>
+  </div>
 
-  <div id="pTimeline">
-    <div id="errors"></div>
-    <div id="feed"></div>
-  </div>
-  <div id="pExplore" hidden>
-    <div id="eerrors"></div>
-    <div id="efeed"></div>
-  </div>
-  <div id="pNotifs" hidden>
-    <div id="nerrors"></div>
-    <div id="nfeed"></div>
-  </div>
-  <div id="pProfile" hidden>
-    <div id="perrors"></div>
-    <div id="profileCards" class="profile-cards"></div>
-    <div class="filter-pills" id="profileFilters" hidden>
-      <button class="pill active" data-net="all" id="pillAll" data-i18n="profile.both_pills">Ambos</button>
-      <button class="pill" data-net="bluesky" id="pillBsky">Bluesky</button>
-      <button class="pill" data-net="mastodon" id="pillMasto">Mastodon</button>
+  <div id="deckContainer" class="deck-container">
+    <div class="deck-col deck-col-compose" id="colCompose" data-col="compose">
+      <div class="deck-col-head">
+        <span class="deck-col-title" data-i18n="header.col_compose">Novo post</span>
+      </div>
+      <div class="deck-col-body" id="colComposeBody"></div>
     </div>
-    <div id="profileFeed"></div>
+
+    <div class="deck-col" id="colTimeline" data-col="timeline">
+      <div class="deck-col-head">
+        <span class="deck-col-title" data-i18n="header.col_timeline">Timeline</span>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn" onclick="load()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:15px;height:15px"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colTimelineBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:15px;height:15px"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      <div class="deck-col-body" id="colTimelineBody">
+        <div id="pTimeline">
+          <div id="errors"></div>
+          <div id="feed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="deck-col" id="colExplore" data-col="explore">
+      <div class="deck-col-head">
+        <span class="deck-col-title" data-i18n="header.col_explore">Em Alta</span>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn" onclick="loadExplore()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:15px;height:15px"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colExploreBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:15px;height:15px"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      <div class="deck-col-body" id="colExploreBody">
+        <div id="pExplore" hidden>
+          <div id="eerrors"></div>
+          <div id="efeed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="deck-col" id="colNotifs" data-col="notifs">
+      <div class="deck-col-head">
+        <span class="deck-col-title"><span data-i18n="header.col_notifs">Notificações</span> <span class="badge" id="deckNotifsBadge" hidden><span class="star-badge"></span><span id="deckBadgeCount"></span></span></span>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn" onclick="loadNotifs()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:15px;height:15px"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colNotifsBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:15px;height:15px"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      <div class="deck-col-body" id="colNotifsBody">
+        <div id="pNotifs" hidden>
+          <div id="nerrors"></div>
+          <div id="nfeed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="deck-col" id="colProfile" data-col="profile">
+      <div class="deck-col-head">
+        <span class="deck-col-title" data-i18n="header.col_profile">Perfil</span>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn" onclick="loadProfile(true)" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:15px;height:15px"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colProfileBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:15px;height:15px"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      <div class="deck-col-body" id="colProfileBody">
+        <div id="pProfile" hidden>
+          <div id="perrors"></div>
+          <div id="profileCards" class="profile-cards"></div>
+          <div class="filter-pills" id="profileFilters" hidden>
+            <button class="pill active" data-net="all" id="pillAll" data-i18n="profile.both_pills">Ambos</button>
+            <button class="pill" data-net="bluesky" id="pillBsky">Bluesky</button>
+            <button class="pill" data-net="mastodon" id="pillMasto">Mastodon</button>
+          </div>
+          <div id="profileFeed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="deck-col deck-col-detail" id="colDetail" hidden>
+      <div class="deck-col-head">
+        <span class="deck-col-title" id="deckDetailTitle" data-i18n="header.col_thread">Conversa</span>
+        <button type="button" class="deck-act-btn" onclick="closeDeckDetail()" title="Fechar" aria-label="Fechar">✕</button>
+      </div>
+      <div class="deck-col-body" id="colDetailBody">
+        <div id="pThread" hidden></div>
+        <div id="pUserProfile" hidden></div>
+      </div>
+    </div>
   </div>
-  <div id="pThread" hidden></div>
-  <div id="pUserProfile" hidden></div>
 
   <div id="setupOverlay" class="setup-overlay" hidden>
     <div class="setup-box">
@@ -483,6 +702,22 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
             <option id="optNavNone" value="none">Estático (Sem elementos fixos)</option>
           </select>
         </label>
+        <label style="display:block;margin-top:10px"><span data-i18n="setup.view_mode_label">Disposição da interface:</span>
+          <select id="cfgViewModeSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+            <option id="optViewSingle" value="single">Coluna única (Timeline simples)</option>
+            <option id="optViewDeck" value="deck">Colunas múltiplas (Deck View)</option>
+          </select>
+        </label>
+        <div id="deckColsConfig" style="margin-top:10px;padding:10px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line)" hidden>
+          <div style="font-size:12.5px;font-weight:600;margin-bottom:8px" data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px">
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Compositor</span></label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColTimeline"> <span data-i18n="setup.deck_col_timeline">Timeline</span></label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColExplore"> <span data-i18n="setup.deck_col_explore">Em Alta</span></label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
+          </div>
+        </div>
       </div>
 
       <div class="setup-section">
@@ -518,7 +753,7 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
   <div id="crossPostOverlay" class="setup-overlay" hidden>
     <div class="setup-box cross-post-box">
       <div class="setup-header">
-        <h2 data-i18n="cross_post.modal_title">🔀 Publicação Cruzada</h2>
+        <h2 data-i18n="cross_post.modal_title">Publicação Cruzada</h2>
         <button type="button" class="rm-sm" id="closeCrossPost" title="Fechar">✕</button>
       </div>
       <p class="setup-desc" id="crossPostDesc">Cria um repost/citação na rede de origem e partilha um cartão visual enriquecido na outra rede.</p>
@@ -546,7 +781,7 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
 
       <div class="setup-actions" style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
         <button type="button" class="ghost" id="cancelCrossPost" data-i18n="cross_post.cancel">Cancelar</button>
-        <button type="button" class="send" id="submitCrossPost" data-i18n="cross_post.submit">🔀 Publicar cruzado</button>
+        <button type="button" class="send" id="submitCrossPost" data-i18n="cross_post.submit">Publicar cruzado</button>
       </div>
     </div>
   </div>
@@ -558,7 +793,16 @@ const I18N = {
     header: {
       settings_title: "Definições / Contas",
       refresh: "Atualizar",
-      lang_switch_title: "Mudar idioma / Switch language"
+      lang_switch_title: "Mudar idioma / Switch language",
+      view_mode_single_title: "Mudar para vista em colunas (Deck View)",
+      view_mode_deck_title: "Mudar para vista de coluna única",
+      col_timeline: "Timeline",
+      col_explore: "Em Alta",
+      col_notifs: "Notificações",
+      col_profile: "Perfil",
+      col_compose: "Novo post",
+      col_thread: "Conversa",
+      col_user: "Perfil de utilizador"
     },
     tabs: {
       timeline: "Timeline",
@@ -713,6 +957,16 @@ const I18N = {
       nav_mode_sidebar: "Barra lateral flutuante (Recomendado)",
       nav_mode_sticky: "Cabeçalho fixo no topo",
       nav_mode_none: "Estático (Sem elementos fixos)",
+      view_mode_title: "Modo de Visualização",
+      view_mode_label: "Disposição da interface:",
+      view_mode_single: "Coluna única (Timeline simples)",
+      view_mode_deck: "Colunas múltiplas (Deck View)",
+      deck_cols_label: "Colunas visíveis no Deck:",
+      deck_col_compose: "Compositor (Novo post)",
+      deck_col_timeline: "Timeline (Feed unificado)",
+      deck_col_explore: "Em Alta (Trending)",
+      deck_col_notifs: "Notificações",
+      deck_col_profile: "Perfil",
       active_session: "Sessão ativa",
       bsky_pass_label: "Palavra-passe da aplicação (*App Password*):",
       bsky_help: "Gera em bsky.app > Definições > Privacidade e Segurança > Palavras-passe da aplicação.",
@@ -737,7 +991,16 @@ const I18N = {
     header: {
       settings_title: "Settings / Accounts",
       refresh: "Refresh",
-      lang_switch_title: "Switch language / Mudar idioma"
+      lang_switch_title: "Switch language / Mudar idioma",
+      view_mode_single_title: "Switch to multi-column Deck View",
+      view_mode_deck_title: "Switch to single column view",
+      col_timeline: "Timeline",
+      col_explore: "Trending",
+      col_notifs: "Notifications",
+      col_profile: "Profile",
+      col_compose: "New post",
+      col_thread: "Thread",
+      col_user: "User profile"
     },
     tabs: {
       timeline: "Timeline",
@@ -892,6 +1155,16 @@ const I18N = {
       nav_mode_sidebar: "Floating sidebar (Recommended)",
       nav_mode_sticky: "Sticky top header",
       nav_mode_none: "Static (No fixed elements)",
+      view_mode_title: "View Mode",
+      view_mode_label: "Interface layout:",
+      view_mode_single: "Single column (Simple timeline)",
+      view_mode_deck: "Multi-column (Deck View)",
+      deck_cols_label: "Visible columns in Deck:",
+      deck_col_compose: "Composer (New post)",
+      deck_col_timeline: "Timeline (Unified feed)",
+      deck_col_explore: "Trending (Explore)",
+      deck_col_notifs: "Notifications",
+      deck_col_profile: "Profile",
       active_session: "Active session",
       bsky_pass_label: "App Password:",
       bsky_help: "Generate at bsky.app > Settings > Privacy and Security > App Passwords.",
@@ -915,6 +1188,8 @@ const I18N = {
 };
 
 let currentLang = localStorage.getItem("mastosky_lang") || ((navigator.language && navigator.language.startsWith("pt")) ? "pt" : "en");
+let viewMode = localStorage.getItem("mastosky_view_mode") || "single";
+let deckColumns = JSON.parse(localStorage.getItem("mastosky_deck_columns") || '["compose","timeline","explore","notifs","profile"]');
 
 function t(path, params) {
   const parts = path.split(".");
@@ -986,6 +1261,18 @@ function applyI18n() {
   if ($("optNavSticky")) $("optNavSticky").textContent = t("setup.nav_mode_sticky");
   if ($("optNavNone")) $("optNavNone").textContent = t("setup.nav_mode_none");
 
+  if ($("optViewSingle")) $("optViewSingle").textContent = t("setup.view_mode_single");
+  if ($("optViewDeck")) $("optViewDeck").textContent = t("setup.view_mode_deck");
+
+  const viewBtn = $("viewToggleBtn");
+  const viewIco = $("viewToggleIcon");
+  if (viewBtn && viewIco) {
+    const isDeck = viewMode === "deck";
+    viewIco.querySelector("use").setAttribute("href", isDeck ? "#i-view-single" : "#i-view-deck");
+    viewBtn.title = isDeck ? t("header.view_mode_deck_title") : t("header.view_mode_single_title");
+    viewBtn.setAttribute("aria-label", viewBtn.title);
+  }
+
   const cfgLang = $("cfgLangSelect");
   if (cfgLang && cfgLang.value !== currentLang) {
     cfgLang.value = currentLang;
@@ -1046,6 +1333,66 @@ function handleScrollNav() {
   lastScrollY = curY;
 }
 window.addEventListener("scroll", handleScrollNav, {passive: true});
+
+function applyDeckColumnVisibility() {
+  if (viewMode !== "deck") return;
+  const cols = ["compose", "timeline", "explore", "notifs", "profile"];
+  cols.forEach(c => {
+    const el = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
+    if (el) el.hidden = !deckColumns.includes(c);
+  });
+}
+
+function applyViewMode(mode) {
+  viewMode = mode;
+  localStorage.setItem("mastosky_view_mode", mode);
+  document.body.classList.toggle("view-deck", mode === "deck");
+
+  const comp = $("composeSection");
+  if (comp) {
+    if (mode === "deck") {
+      $("colComposeBody")?.appendChild(comp);
+    } else {
+      $("singleComposeWrap")?.appendChild(comp);
+    }
+  }
+
+  const viewBtn = $("viewToggleBtn");
+  const viewIco = $("viewToggleIcon");
+  if (viewBtn && viewIco) {
+    const isDeck = mode === "deck";
+    viewIco.querySelector("use").setAttribute("href", isDeck ? "#i-view-single" : "#i-view-deck");
+    viewBtn.title = isDeck ? t("header.view_mode_deck_title") : t("header.view_mode_single_title");
+    viewBtn.setAttribute("aria-label", viewBtn.title);
+  }
+
+  const sel = $("cfgViewModeSelect");
+  if (sel && sel.value !== mode) sel.value = mode;
+  if ($("deckColsConfig")) $("deckColsConfig").hidden = mode !== "deck";
+
+  if (mode === "deck") {
+    $("pTimeline").hidden = false;
+    $("pExplore").hidden = false;
+    $("pNotifs").hidden = false;
+    $("pProfile").hidden = false;
+    if (!exploreItems.length) loadExplore();
+    if (!notifs) loadNotifs();
+    if (!profileLoaded) loadProfile();
+    applyDeckColumnVisibility();
+  } else {
+    setTab(tab);
+  }
+}
+
+function closeDeckDetail() {
+  const cd = $("colDetail");
+  if (cd) cd.hidden = true;
+  $("pThread").hidden = true;
+  $("pUserProfile").hidden = true;
+  threadIt = null;
+  userProfileActor = null;
+  userProfileNetwork = null;
+}
 let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
 let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
 
@@ -1513,6 +1860,8 @@ function updateBadge() {
   if ($("badgeCount")) $("badgeCount").textContent = n > 99 ? "99+" : n;
   if ($("sideBadge")) $("sideBadge").hidden = !n;
   if ($("sideBadgeCount")) $("sideBadgeCount").textContent = n > 99 ? "99+" : n;
+  if ($("deckNotifsBadge")) $("deckNotifsBadge").hidden = !n;
+  if ($("deckBadgeCount")) $("deckBadgeCount").textContent = n > 99 ? "99+" : n;
 }
 
 async function loadProfile(keep = false) {
@@ -1693,12 +2042,25 @@ document.querySelectorAll("#profileFilters .pill").forEach(p => {
 
 function setTab(newTab) {
   tab = newTab;
-  $("pTimeline").hidden = newTab !== "timeline";
-  $("pExplore").hidden = newTab !== "explore";
-  $("pNotifs").hidden = newTab !== "notifs";
-  $("pProfile").hidden = newTab !== "profile";
-  $("pThread").hidden = true;
-  $("pUserProfile").hidden = true;
+  if (viewMode === "deck") {
+    const colMap = {
+      timeline: "colTimeline",
+      explore: "colExplore",
+      notifs: "colNotifs",
+      profile: "colProfile"
+    };
+    const colId = colMap[newTab];
+    if (colId && $(colId)) {
+      $(colId).scrollIntoView({behavior: "smooth", inline: "start"});
+    }
+  } else {
+    $("pTimeline").hidden = newTab !== "timeline";
+    $("pExplore").hidden = newTab !== "explore";
+    $("pNotifs").hidden = newTab !== "notifs";
+    $("pProfile").hidden = newTab !== "profile";
+    $("pThread").hidden = true;
+    $("pUserProfile").hidden = true;
+  }
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === newTab));
   document.querySelectorAll(".side-nav-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === newTab));
   if (newTab === "notifs") localStorage.setItem("notifSeen", new Date().toISOString());
@@ -1716,10 +2078,24 @@ async function openThread(it, keep) {
   const box = $("pThread"), y = window.scrollY;
   if (box.hidden) threadScroll = y;
   threadIt = it;
-  $("pTimeline").hidden = true; $("pExplore").hidden = true; $("pNotifs").hidden = true; $("pProfile").hidden = true; $("pUserProfile").hidden = true; box.hidden = false;
+  if (viewMode === "deck") {
+    $("colDetail").hidden = false;
+    if ($("deckDetailTitle")) $("deckDetailTitle").textContent = t("header.col_thread");
+    $("pUserProfile").hidden = true;
+    box.hidden = false;
+  } else {
+    $("pTimeline").hidden = true; $("pExplore").hidden = true; $("pNotifs").hidden = true; $("pProfile").hidden = true; $("pUserProfile").hidden = true; box.hidden = false;
+  }
   const back = el("button", "ghost back", t("actions.back"));
   back.onclick = closeThread;
-  if (!keep) { box.replaceChildren(back, el("div", "empty", t("feed.loading_thread"))); window.scrollTo(0, 0); }
+  if (!keep) {
+    box.replaceChildren(back, el("div", "empty", t("feed.loading_thread")));
+    if (viewMode === "deck") {
+      $("colDetail").scrollIntoView({behavior: "smooth", inline: "end"});
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }
   let d;
   try { d = await api("/api/thread", {network: it.network, ref: it.ref}); }
   catch (e) { d = {error: t("feed.error_server")}; }
@@ -1739,14 +2115,21 @@ async function openThread(it, keep) {
     return w;
   };
   box.append(d.replies.length ? kids(d.replies, 0) : el("div", "empty", t("feed.empty_replies")));
-  if (keep) window.scrollTo(0, y);
-  else if (d.ancestors.length) focus.scrollIntoView();
+  if (keep) {
+    if (viewMode !== "deck") window.scrollTo(0, y);
+  } else if (d.ancestors.length) {
+    focus.scrollIntoView();
+  }
 }
 
 function closeThread() {
-  threadIt = null;
-  setTab(tab);
-  window.scrollTo(0, threadScroll);
+  if (viewMode === "deck") {
+    closeDeckDetail();
+  } else {
+    threadIt = null;
+    setTab(tab);
+    window.scrollTo(0, threadScroll);
+  }
 }
 
 let userProfileActor = null, userProfileNetwork = null, userProfileScroll = 0, userProfileCursor = null, userProfileItems = [];
@@ -1760,18 +2143,29 @@ async function openUserProfile(network, actor) {
   userProfileCursor = null;
   userProfileItems = [];
 
-  $("pTimeline").hidden = true;
-  $("pExplore").hidden = true;
-  $("pNotifs").hidden = true;
-  $("pProfile").hidden = true;
-  $("pThread").hidden = true;
-  box.hidden = false;
+  if (viewMode === "deck") {
+    $("colDetail").hidden = false;
+    if ($("deckDetailTitle")) $("deckDetailTitle").textContent = t("header.col_user");
+    $("pThread").hidden = true;
+    box.hidden = false;
+  } else {
+    $("pTimeline").hidden = true;
+    $("pExplore").hidden = true;
+    $("pNotifs").hidden = true;
+    $("pProfile").hidden = true;
+    $("pThread").hidden = true;
+    box.hidden = false;
+  }
 
   const back = el("button", "ghost back", t("actions.back"));
   back.onclick = closeUserProfile;
   const loading = el("div", "empty", t("feed.loading_profile"));
   box.replaceChildren(back, loading);
-  window.scrollTo(0, 0);
+  if (viewMode === "deck") {
+    $("colDetail").scrollIntoView({behavior: "smooth", inline: "end"});
+  } else {
+    window.scrollTo(0, 0);
+  }
 
   try {
     const profRes = await api("/api/user_profile?network=" + encodeURIComponent(network) + "&actor=" + encodeURIComponent(actor));
@@ -1798,10 +2192,14 @@ async function openUserProfile(network, actor) {
 }
 
 function closeUserProfile() {
-  userProfileActor = null;
-  $("pUserProfile").hidden = true;
-  setTab(tab);
-  window.scrollTo(0, userProfileScroll);
+  if (viewMode === "deck") {
+    closeDeckDetail();
+  } else {
+    userProfileActor = null;
+    $("pUserProfile").hidden = true;
+    setTab(tab);
+    window.scrollTo(0, userProfileScroll);
+  }
 }
 
 async function loadUserFeed(feedWrap, isMore = false) {
@@ -3058,6 +3456,13 @@ async function openSetup(mandatory = false) {
   $("setupMsg").textContent = "";
   $("setupMsg").className = "msg";
   if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
+  if ($("cfgViewModeSelect")) $("cfgViewModeSelect").value = viewMode;
+  if ($("deckColsConfig")) $("deckColsConfig").hidden = viewMode !== "deck";
+  const colIds = ["compose", "timeline", "explore", "notifs", "profile"];
+  colIds.forEach(c => {
+    const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
+    if (chk) chk.checked = deckColumns.includes(c);
+  });
   try {
     const s = await api("/api/status");
     if (s.bluesky && s.bluesky.handle) $("cfgBskyHandle").value = s.bluesky.handle;
@@ -3129,6 +3534,26 @@ if ($("cfgNavModeSelect")) {
   $("cfgNavModeSelect").value = navMode;
   $("cfgNavModeSelect").onchange = (e) => setNavMode(e.target.value);
 }
+if ($("viewToggleBtn")) $("viewToggleBtn").onclick = () => applyViewMode(viewMode === "deck" ? "single" : "deck");
+if ($("cfgViewModeSelect")) {
+  $("cfgViewModeSelect").value = viewMode;
+  $("cfgViewModeSelect").onchange = (e) => applyViewMode(e.target.value);
+}
+const deckColIds = ["compose", "timeline", "explore", "notifs", "profile"];
+deckColIds.forEach(c => {
+  const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
+  if (chk) {
+    chk.checked = deckColumns.includes(c);
+    chk.onchange = () => {
+      deckColumns = deckColIds.filter(id => {
+        const el = $("chkCol" + id.charAt(0).toUpperCase() + id.slice(1));
+        return el ? el.checked : true;
+      });
+      localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
+      applyDeckColumnVisibility();
+    };
+  }
+});
 
 if ($("netToggleBtn")) {
   $("netToggleBtn").onclick = () => {
@@ -3180,6 +3605,7 @@ if ($("sideScrollTopBtn")) $("sideScrollTopBtn").onclick = () => {
 
 setNavMode(navMode);
 applyI18n();
+applyViewMode(viewMode);
 
 const initTab = location.hash === "#notifs" ? "notifs" : (location.hash === "#explore" ? "explore" : (location.hash === "#profile" ? "profile" : "timeline"));
 setTab(initTab);

@@ -1423,6 +1423,20 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("function applyI18n()", html)
         self.assertIn("function setLang(", html)
 
+    def test_index_contains_deck_view_elements(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn('id="viewToggleBtn"', html)
+        self.assertIn('id="cfgViewModeSelect"', html)
+        self.assertIn('id="deckContainer"', html)
+        self.assertIn('id="colDetail"', html)
+        self.assertIn('id="colCompose"', html)
+        self.assertIn("function applyViewMode(", html)
+        self.assertIn("function applyDeckColumnVisibility(", html)
+        self.assertIn("function closeDeckDetail(", html)
+        self.assertIn("view_mode_single", html)
+        self.assertIn("view_mode_deck", html)
+
 
 if __name__ == "__main__":
     unittest.main()
