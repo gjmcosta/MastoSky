@@ -1076,7 +1076,7 @@ CLIENTS = init_clients(CFG)
 # 'unsafe-inline' necessário porque a UI é um único ficheiro com <script>/<style> inline.
 # connect-src/worker-src https:/blob: são exigidos pelo hls.js (playlists e segmentos de vídeo do Bluesky).
 CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
-       "img-src https: data: blob:; media-src https: blob:; connect-src 'self' https:; worker-src blob:; "
+       "img-src 'self' https: data: blob:; media-src https: blob:; connect-src 'self' https:; worker-src blob:; "
        "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 
 
@@ -1111,6 +1111,16 @@ class H(BaseHTTPRequestHandler):
             return s.send(200, (DIR / "index.html").read_bytes(), "text/html")
         if path == "/vendor/hls.min.js":
             return s.send(200, (DIR / "vendor" / "hls.min.js").read_bytes(), "application/javascript")
+        if path.startswith("/brand/"):
+            rel = path[7:]
+            target = (DIR / "brand" / rel).resolve()
+            if target.is_file() and str(target).startswith(str((DIR / "brand").resolve())):
+                mime = "image/svg+xml" if path.endswith(".svg") else ("text/css" if path.endswith(".css") else "application/octet-stream")
+                return s.send(200, target.read_bytes(), mime)
+        if path in ("/favicon.ico", "/favicon.svg"):
+            fav = DIR / "brand" / "favicon.svg"
+            if fav.is_file():
+                return s.send(200, fav.read_bytes(), "image/svg+xml")
         if path == "/api/status":
             return s.send(200, {
                 "configured": bool(CLIENTS),

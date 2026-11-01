@@ -2,7 +2,11 @@
   <b>English</b> | <a href="README.pt.md">Português</a>
 </p>
 
-# MastoSky 🌌🐘
+<p align="center">
+  <img src="brand/social-card.svg" alt="MastoSky" width="600">
+</p>
+
+# MastoSky
 
 > **A minimalist, unified, local-first client for Bluesky and Mastodon.**  
 > One single browser tab to read, reply, boost/repost, and cross-publish across both networks simultaneously. Zero external dependencies, no telemetry, no intermediaries.
@@ -90,6 +94,7 @@ MastoSky/
 ├── MastoSky.bat        # 1-Click launcher for Windows
 ├── app.py              # Local HTTP server and API clients (ATProto / ActivityPub)
 ├── index.html          # Complete single-page UI (vanilla HTML, CSS, JavaScript)
+├── brand/              # Visual identity, tokens and vector assets (see brand/BRAND.md)
 ├── config.example.json # Configuration template
 ├── .gitignore          # Security guard preventing credentials from being committed
 ├── README.md           # Documentation (English)

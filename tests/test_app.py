@@ -1,4 +1,5 @@
 """Testes unitários dos parsers do MastoSky. Sem rede e sem config.json."""
+import io
 import json
 import os
 import stat
@@ -948,8 +949,39 @@ class CustomEmojiTests(unittest.TestCase):
         self.assertIn('<img class="emoji" src="https://m.pt/cat.png"', item["html"])
 
 
+class BrandServingTests(unittest.TestCase):
+    def _make_handler(self, path):
+        h = object.__new__(app.H)
+        h.path = path
+        h.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+        h.wfile = io.BytesIO()
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        return h
 
+    def test_serve_favicon(self):
+        h = self._make_handler("/favicon.svg")
+        h.do_GET()
+        code = [v for k, v in h.sent if k == "code"][0]
+        ct = [v for k, v in h.sent if k == "Content-Type"][0]
+        self.assertEqual(code, 200)
+        self.assertIn("image/svg+xml", ct)
 
+    def test_serve_brand_asset(self):
+        h = self._make_handler("/brand/tokens.css")
+        h.do_GET()
+        code = [v for k, v in h.sent if k == "code"][0]
+        ct = [v for k, v in h.sent if k == "Content-Type"][0]
+        self.assertEqual(code, 200)
+        self.assertIn("text/css", ct)
+
+    def test_brand_path_traversal_blocked(self):
+        h = self._make_handler("/brand/../config.example.json")
+        h.do_GET()
+        code = [v for k, v in h.sent if k == "code"][0]
+        self.assertEqual(code, 404)
 
 
 if __name__ == "__main__":

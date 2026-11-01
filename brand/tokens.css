@@ -1,0 +1,51 @@
+/* MastoSky — tokens de marca. Sem dependências: variáveis CSS puras. */
+:root {
+  /* Paleta base */
+  --ms-night: #0B1020;
+  --ms-indigo: #5B4BDB;
+  --ms-sky: #4DB2FF;
+  --ms-gold: #FFD66B;
+  --ms-mist: #EEF0FF;
+
+  /* Tema claro (por omissão) */
+  --bg: #F7F8FF;
+  --surface: #FFFFFF;
+  --surface-2: #EEF0FF;
+  --border: #D5D9F2;
+  --text: #0B1020;
+  --text-muted: #555C85;
+  --accent: #5B4BDB;
+  --accent-contrast: #FFFFFF;
+  --star: #F0B400;          /* estrela dourada em fundo claro */
+  --net-bluesky: #0A78D6;
+  --net-mastodon: #5B4BDB;
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0B1020;
+    --surface: #121936;
+    --surface-2: #1A2247;
+    --border: #2A3366;
+    --text: #EEF0FF;
+    --text-muted: #A9B0D6;
+    --accent: #9AA0FF;      /* índigo mais claro: contraste AA em fundo escuro */
+    --accent-contrast: #0B1020;
+    --star: #FFD66B;
+    --net-bluesky: #4DB2FF;
+    --net-mastodon: #9AA0FF;
+  }
+}
+
+/* Estrela de identidade / notificação por ler.
+   Regra: o dourado aparece com parcimónia (ver BRAND.md). */
+.star-badge {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background: var(--star);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  vertical-align: -0.12em;
+}

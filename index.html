@@ -3,17 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Timeline unificada</title>
+<title>MastoSky</title>
+<link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
 <script src="/vendor/hls.min.js"></script>
 <style>
 :root{
-  --bg:#EEF0F4; --card:#fff; --ink:#1B1E28; --muted:#6A7080; --line:#DDE0E8;
-  --bsky:#1083FE; --masto:#6364FF; --danger:#C0392B;
+  --ms-night:#0B1020; --ms-indigo:#5B4BDB; --ms-sky:#4DB2FF; --ms-gold:#FFD66B; --ms-mist:#EEF0FF;
+  --bg:#F7F8FF; --card:#FFFFFF; --surface-2:#EEF0FF; --line:#D5D9F2;
+  --ink:#0B1020; --muted:#555C85; --accent:#5B4BDB; --star:#F0B400;
+  --bsky:#0A78D6; --masto:#5B4BDB; --danger:#D32F2F;
   --serif:Charter,"Iowan Old Style",Georgia,serif;
-  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){
-  :root{--bg:#14161C;--card:#1D2029;--ink:#E7E9EF;--muted:#9097A8;--line:#2D313D;--bsky:#4DA3FF;--masto:#8F90FF;--danger:#FF7B6B}
+  :root{
+    --bg:#0B1020; --card:#121936; --surface-2:#1A2247; --line:#2A3366;
+    --ink:#EEF0FF; --muted:#A9B0D6; --accent:#9AA0FF; --star:#FFD66B;
+    --bsky:#4DB2FF; --masto:#9AA0FF; --danger:#FF7B6B;
+  }
+}
+.star-badge{
+  display:inline-block; width:0.9em; height:0.9em; background:var(--star);
+  clip-path:polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  vertical-align:-0.1em; flex:none;
 }
 *{box-sizing:border-box}
 [hidden]{display:none !important}
@@ -69,8 +82,8 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .head{display:flex;gap:10px;align-items:center;margin-bottom:6px}
 .head img,.head .ph{width:38px;height:38px;border-radius:50%;background:var(--line);flex:none}
 .who{min-width:0;flex:1}
-.who b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.who span{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who b{display:flex;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.who span{display:block;color:var(--muted);font:12.5px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .when{color:var(--muted);font-size:13px;text-decoration:none}
 .body{font:16.5px/1.5 var(--serif);overflow-wrap:anywhere}
 .body a{color:var(--c)}
@@ -113,7 +126,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
 .tab{background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 14px;margin-bottom:-1px;font-weight:600}
 .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
-.badge{display:inline-block;min-width:18px;padding:0 6px;border-radius:9px;background:var(--danger);color:#fff;font-size:12px;line-height:18px;text-align:center;margin-left:4px}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:600;margin-left:4px}
 .notif .head{margin-bottom:4px}
 .notif .who b{white-space:normal}
 .notif .head img,.notif .head .ph{width:30px;height:30px}
@@ -150,7 +163,12 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 <body>
 <main>
   <header>
-    <h1>Timeline unificada</h1>
+    <div style="display:flex;align-items:center;gap:10px">
+      <picture>
+        <source srcset="/brand/logo-lockup-dark.svg" media="(prefers-color-scheme: dark)">
+        <img src="/brand/logo-lockup-light.svg" alt="MastoSky" height="32" style="display:block">
+      </picture>
+    </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="ghost" id="settingsBtn" title="Definições / Contas">⚙️</button>
       <button class="ghost" id="refresh">Atualizar</button>
@@ -160,7 +178,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
   <nav class="tabs" role="tablist">
     <button class="tab" role="tab" data-tab="timeline">Timeline</button>
     <button class="tab" role="tab" data-tab="explore">Em Alta</button>
-    <button class="tab" role="tab" data-tab="notifs">Notificações <span class="badge" id="badge" hidden></span></button>
+    <button class="tab" role="tab" data-tab="notifs">Notificações <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span></button>
   </nav>
 
   <section class="compose">
@@ -238,7 +256,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
       <p class="setup-desc">Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.</p>
 
       <div class="setup-section">
-        <div class="setup-sec-title">🦋 Bluesky</div>
+        <div class="setup-sec-title"><span>🦋 Bluesky</span><span id="cfgBskyActive" class="star-badge" title="Sessão ativa" hidden></span></div>
         <label>Handle:
           <input type="text" id="cfgBskyHandle" placeholder="ex: o-teu-nome.bsky.social" autocomplete="off">
         </label>
@@ -249,7 +267,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
       </div>
 
       <div class="setup-section">
-        <div class="setup-sec-title">🐘 Mastodon</div>
+        <div class="setup-sec-title"><span>🐘 Mastodon</span><span id="cfgMastoActive" class="star-badge" title="Sessão ativa" hidden></span></div>
         <label>Instância:
           <input type="text" id="cfgMastoInst" placeholder="ex: https://masto.pt" autocomplete="off">
         </label>
@@ -433,6 +451,12 @@ function postCard(it, o = {}) {
   const bItName = el("b");
   if (it.name_html) bItName.innerHTML = it.name_html;
   else bItName.textContent = it.name;
+  if (it.is_own) {
+    const star = el("span", "star-badge");
+    star.title = "A tua publicação";
+    star.style.marginLeft = "5px";
+    bItName.append(star);
+  }
   who.append(bItName, el("span", null, it.handle + " · " + LABEL[it.network]));
   const when = el("a", "when", ago(it.time));
   when.href = su(it.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
@@ -685,7 +709,7 @@ function renderNotifs() {
 function updateBadge() {
   const n = tab === "notifs" ? 0 : (notifs || []).filter(x => x.time > seenBefore).length;
   $("badge").hidden = !n;
-  $("badge").textContent = n > 99 ? "99+" : n;
+  if ($("badgeCount")) $("badgeCount").textContent = n > 99 ? "99+" : n;
 }
 
 function setTab(t) {
@@ -1163,6 +1187,8 @@ async function openSetup(mandatory = false) {
     const s = await api("/api/status");
     if (s.bluesky && s.bluesky.handle) $("cfgBskyHandle").value = s.bluesky.handle;
     if (s.mastodon && s.mastodon.instance) $("cfgMastoInst").value = s.mastodon.instance;
+    if ($("cfgBskyActive")) $("cfgBskyActive").hidden = !s.bluesky?.configured;
+    if ($("cfgMastoActive")) $("cfgMastoActive").hidden = !s.mastodon?.configured;
   } catch (_) {}
 }
 
