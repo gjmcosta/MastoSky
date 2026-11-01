@@ -720,18 +720,22 @@ class Bsky:
         for emb in p.get("embeds") or []:
             if emb not in embed_sources:
                 embed_sources.append(emb)
-        if rec.get("embed") and rec.get("embed") not in embed_sources:
-            embed_sources.append(rec.get("embed"))
         for emb in embed_sources:
             m_list, q_obj = extract_bsky_embed(emb, did=a.get("did"))
             media.extend(m_list)
             if q_obj and not quote:
                 quote = q_obj
-        dedup_media, seen_urls = [], set()
+        if not media and rec.get("embed"):
+            m_list, q_obj = extract_bsky_embed(rec.get("embed"), did=a.get("did"))
+            media.extend(m_list)
+            if q_obj and not quote:
+                quote = q_obj
+        dedup_media, seen_keys = [], set()
         for m in media:
-            u = m.get("url") or m.get("thumb")
-            if u not in seen_urls:
-                seen_urls.add(u)
+            u = m.get("url") or m.get("thumb") or ""
+            key = u.split("/plain/")[-1].split("@")[0] if "/plain/" in u else u
+            if key and key not in seen_keys:
+                seen_keys.add(key)
                 dedup_media.append(m)
         media = dedup_media
         reason = reason or {}
@@ -1036,17 +1040,18 @@ class Bsky:
                 ref = {"uri": n["uri"], "cid": n["cid"], "root": {"uri": root["uri"], "cid": root["cid"]}}
                 url = f"https://bsky.app/profile/{a['handle']}/post/{n['uri'].split('/')[-1]}"
                 target_did = a.get("did") or (n.get("uri").replace("at://", "").split("/")[0] if n.get("uri") else None)
-                embed_sources = []
                 if n_post:
+                    embed_sources = []
                     if n_post.get("embed"): embed_sources.append(n_post.get("embed"))
                     for emb in n_post.get("embeds") or []:
                         if emb not in embed_sources: embed_sources.append(emb)
-                    trec = n_post.get("record") or {}
-                    if trec.get("embed") and trec.get("embed") not in embed_sources: embed_sources.append(trec.get("embed"))
-                if rec.get("embed") and rec.get("embed") not in embed_sources:
-                    embed_sources.append(rec.get("embed"))
-                for emb in embed_sources:
-                    m_list, q_obj = extract_bsky_embed(emb, did=target_did)
+                    for emb in embed_sources:
+                        m_list, q_obj = extract_bsky_embed(emb, did=target_did)
+                        media.extend(m_list)
+                        if q_obj and not quote:
+                            quote = q_obj
+                if not media and rec.get("embed"):
+                    m_list, q_obj = extract_bsky_embed(rec.get("embed"), did=target_did)
                     media.extend(m_list)
                     if q_obj and not quote:
                         quote = q_obj
@@ -1060,18 +1065,27 @@ class Bsky:
                 if subject.get("embed"): embed_sources.append(subject.get("embed"))
                 for emb in subject.get("embeds") or []:
                     if emb not in embed_sources: embed_sources.append(emb)
-                if srec.get("embed") and srec.get("embed") not in embed_sources:
-                    embed_sources.append(srec.get("embed"))
-                for emb in srec.get("embeds") or []:
-                    if emb not in embed_sources: embed_sources.append(emb)
 
                 for emb in embed_sources:
                     m_list, q_obj = extract_bsky_embed(emb, did=subj_did)
                     media.extend(m_list)
                     if q_obj and not quote:
                         quote = q_obj
+
+                if not media:
+                    rec_sources = []
+                    if srec.get("embed"): rec_sources.append(srec.get("embed"))
+                    for emb in srec.get("embeds") or []:
+                        if emb not in rec_sources: rec_sources.append(emb)
+                    for emb in rec_sources:
+                        m_list, q_obj = extract_bsky_embed(emb, did=subj_did)
+                        media.extend(m_list)
+                        if q_obj and not quote:
+                            quote = q_obj
+
                 if not text and not media and not quote:
-                    for emb in embed_sources:
+                    all_sources = embed_sources or [srec.get("embed")]
+                    for emb in all_sources:
                         stype = emb.get("$type", "") if isinstance(emb, dict) else ""
                         if "images" in stype:
                             text = "📷 [Imagem]"
@@ -1089,11 +1103,12 @@ class Bsky:
                 text = "(Publicação indisponível)"
 
             if media:
-                dedup_m, seen_m = [], set()
+                dedup_m, seen_keys = [], set()
                 for m in media:
-                    u = m.get("url") or m.get("thumb")
-                    if u and u not in seen_m:
-                        seen_m.add(u)
+                    u = m.get("url") or m.get("thumb") or ""
+                    key = u.split("/plain/")[-1].split("@")[0] if "/plain/" in u else u
+                    if key and key not in seen_keys:
+                        seen_keys.add(key)
                         dedup_m.append(m)
                 media = dedup_m
                 if text in ("📷 [Imagem]", "🎬 [Vídeo]", "💬 [Citação]"):

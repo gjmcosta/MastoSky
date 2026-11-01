@@ -1018,6 +1018,37 @@ class FacetsAndRichtextTests(unittest.TestCase):
         # Garante que não é exibido o texto "📷 [Imagem]" quando a media foi extraída com sucesso:
         self.assertEqual(notifs[0]["html"], "")
 
+    def test_bsky_item_no_duplicate_media(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        # Post que contém tanto a view hidratada como o embed bruto no registo:
+        p = {
+            "uri": "at://did:plc:me/app.bsky.feed.post/123",
+            "cid": "cid123",
+            "author": {"handle": "me.bsky.social", "did": "did:plc:me"},
+            "record": {
+                "text": "Post com fotos",
+                "createdAt": "2026-01-01T00:00:00Z",
+                "embed": {
+                    "$type": "app.bsky.embed.images",
+                    "images": [
+                        {"image": {"ref": {"$link": "bafk1"}}, "alt": "Foto 1"},
+                        {"image": {"ref": {"$link": "bafk2"}}, "alt": "Foto 2"}
+                    ]
+                }
+            },
+            "embed": {
+                "$type": "app.bsky.embed.images#view",
+                "images": [
+                    {"thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:me/bafk1@jpeg", "fullsize": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:me/bafk1@jpeg", "alt": "Foto 1"},
+                    {"thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:me/bafk2@jpeg", "fullsize": "https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:me/bafk2@jpeg", "alt": "Foto 2"}
+                ]
+            }
+        }
+        item = b.item(p)
+        # Deve ter exatamente 2 imagens, sem duplicar para 4:
+        self.assertEqual(len(item["media"]), 2)
+
     def test_masto_notification_with_media_and_card(self):
         m = app.Masto({"instance": "https://mastodon.social", "token": "tok"})
         raw_notifs = [
