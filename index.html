@@ -462,6 +462,148 @@ body:not(.view-deck) .deck-col-body {
   }
 }
 @media (prefers-reduced-motion:no-preference){button{transition:background .15s,color .15s}}
+
+/* Lightbox Modal */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(6, 9, 20, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: popIn .15s ease-out;
+}
+.lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  cursor: zoom-out;
+}
+.lightbox-container {
+  position: relative;
+  z-index: 1;
+  max-width: 94vw;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.lightbox-container > * {
+  pointer-events: auto;
+}
+.lightbox-close {
+  position: absolute;
+  top: -46px;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(18, 25, 54, 0.85);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all .15s ease;
+}
+.lightbox-close:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.08);
+}
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(18, 25, 54, 0.85);
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all .15s ease;
+  user-select: none;
+  z-index: 2;
+}
+.lightbox-nav:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-50%) scale(1.1);
+}
+.lightbox-prev {
+  left: -56px;
+}
+.lightbox-next {
+  right: -56px;
+}
+@media (max-width: 768px) {
+  .lightbox-prev { left: 8px; }
+  .lightbox-next { right: 8px; }
+  .lightbox-close { top: -40px; right: 0; }
+}
+.lightbox-img-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  max-height: 80vh;
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  user-select: none;
+}
+.lightbox-caption {
+  margin-top: 12px;
+  padding: 6px 16px;
+  background: rgba(18, 25, 54, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  color: #EEF0FF;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 85vw;
+}
+.lightbox-counter {
+  font-weight: 700;
+  color: var(--star);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.lightbox-alt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 50vw;
+  color: #A9B0D6;
+}
+.lightbox-link {
+  color: var(--ms-sky);
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-left: auto;
+}
+.lightbox-link:hover {
+  text-decoration: underline;
+}
 </style>
 </head>
 <body>
@@ -846,6 +988,23 @@ body:not(.view-deck) .deck-col-body {
       </div>
     </div>
   </div>
+
+  <div id="imageLightbox" class="lightbox-overlay" hidden role="dialog" aria-modal="true" aria-label="Pré-visualização de imagem">
+    <div class="lightbox-backdrop" onclick="closeImageLightbox()"></div>
+    <div class="lightbox-container">
+      <button type="button" class="lightbox-close" id="lightboxCloseBtn" onclick="closeImageLightbox()" title="Fechar (Esc)" data-i18n-title="lightbox.close" aria-label="Fechar">✕</button>
+      <button type="button" class="lightbox-nav lightbox-prev" id="lightboxPrevBtn" onclick="prevLightboxImage()" title="Anterior (←)" data-i18n-title="lightbox.prev" aria-label="Anterior" hidden>‹</button>
+      <button type="button" class="lightbox-nav lightbox-next" id="lightboxNextBtn" onclick="nextLightboxImage()" title="Seguinte (→)" data-i18n-title="lightbox.next" aria-label="Seguinte" hidden>›</button>
+      <div class="lightbox-img-wrap">
+        <img id="lightboxImg" class="lightbox-img" src="" alt="">
+      </div>
+      <div class="lightbox-caption" id="lightboxCaption">
+        <span class="lightbox-counter" id="lightboxCount" hidden></span>
+        <span class="lightbox-alt" id="lightboxAltText"></span>
+        <a id="lightboxOriginalLink" href="#" target="_blank" rel="noopener noreferrer" class="lightbox-link" data-i18n="lightbox.open_original">Abrir original ↗</a>
+      </div>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -1059,6 +1218,12 @@ const I18N = {
       now: "agora",
       min: "min",
       h: "h"
+    },
+    lightbox: {
+      open_original: "Abrir original ↗",
+      close: "Fechar (Esc)",
+      prev: "Anterior (←)",
+      next: "Seguinte (→)"
     }
   },
   en: {
@@ -1270,6 +1435,12 @@ const I18N = {
       now: "now",
       min: "m",
       h: "h"
+    },
+    lightbox: {
+      open_original: "Open original ↗",
+      close: "Close (Esc)",
+      prev: "Previous (←)",
+      next: "Next (→)"
     }
   }
 };
@@ -1553,9 +1724,100 @@ function attachVideo(v, src) {
   }
 }
 
+let lightboxImages = [];
+let lightboxCurrentIndex = 0;
+
+function openImageLightbox(items, startIndex = 0) {
+  if (!items) return;
+  if (typeof items === "string") {
+    lightboxImages = [{ url: items, alt: "" }];
+    lightboxCurrentIndex = 0;
+  } else if (Array.isArray(items)) {
+    lightboxImages = items.map(m => ({
+      url: su(m.url || m.thumb) || "",
+      alt: m.alt || ""
+    })).filter(m => Boolean(m.url));
+    lightboxCurrentIndex = Math.max(0, Math.min(startIndex, lightboxImages.length - 1));
+  } else {
+    return;
+  }
+  if (!lightboxImages.length) return;
+
+  renderLightboxSlide();
+  const overlay = $("imageLightbox");
+  if (overlay) {
+    overlay.hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+}
+
+function renderLightboxSlide() {
+  const cur = lightboxImages[lightboxCurrentIndex];
+  if (!cur) return;
+  const img = $("lightboxImg");
+  const origLink = $("lightboxOriginalLink");
+  const altText = $("lightboxAltText");
+  const prevBtn = $("lightboxPrevBtn");
+  const nextBtn = $("lightboxNextBtn");
+  const countEl = $("lightboxCount");
+
+  if (img) {
+    img.src = cur.url;
+    img.alt = cur.alt || "";
+  }
+  if (origLink) {
+    origLink.href = cur.url;
+  }
+  if (altText) {
+    altText.textContent = cur.alt || "";
+    altText.hidden = !cur.alt;
+  }
+  if (countEl) {
+    countEl.textContent = lightboxImages.length > 1 ? `${lightboxCurrentIndex + 1} / ${lightboxImages.length}` : "";
+    countEl.hidden = lightboxImages.length <= 1;
+  }
+  if (prevBtn) prevBtn.hidden = lightboxImages.length <= 1;
+  if (nextBtn) nextBtn.hidden = lightboxImages.length <= 1;
+}
+
+function prevLightboxImage() {
+  if (lightboxImages.length <= 1) return;
+  lightboxCurrentIndex = (lightboxCurrentIndex - 1 + lightboxImages.length) % lightboxImages.length;
+  renderLightboxSlide();
+}
+
+function nextLightboxImage() {
+  if (lightboxImages.length <= 1) return;
+  lightboxCurrentIndex = (lightboxCurrentIndex + 1) % lightboxImages.length;
+  renderLightboxSlide();
+}
+
+function closeImageLightbox() {
+  const overlay = $("imageLightbox");
+  const img = $("lightboxImg");
+  if (overlay) overlay.hidden = true;
+  if (img) img.src = "";
+  lightboxImages = [];
+  document.body.style.overflow = "";
+}
+
+window.addEventListener("keydown", (e) => {
+  const overlay = $("imageLightbox");
+  if (!overlay || overlay.hidden) return;
+  if (e.key === "Escape") {
+    closeImageLightbox();
+  } else if (e.key === "ArrowLeft") {
+    prevLightboxImage();
+  } else if (e.key === "ArrowRight") {
+    nextLightboxImage();
+  }
+});
+
 function renderMedia(mediaList) {
   if (!mediaList || !mediaList.length) return null;
   const m = el("div", "media");
+  const imgList = mediaList.filter(x => x && x.type !== "video" && x.type !== "gifv" && x.type !== "external");
+
   for (const x of mediaList) {
     if (x.type === "video" || x.type === "gifv") {
       const v = el("video", "post-video");
@@ -1591,12 +1853,15 @@ function renderMedia(mediaList) {
       m.append(a);
     } else {
       const img = el("img");
-      img.src = su(x.url || x.thumb) || "";
+      const fullUrl = su(x.url || x.thumb) || "";
+      img.src = fullUrl;
       img.alt = x.alt || "";
       img.loading = "lazy";
+      img.style.cursor = "zoom-in";
+      const idx = imgList.indexOf(x);
       img.onclick = (e) => {
         e.stopPropagation();
-        { const u = su(x.url || x.thumb); if (u) window.open(u, "_blank", "noopener,noreferrer"); }
+        openImageLightbox(imgList, idx >= 0 ? idx : 0);
       };
       m.append(img);
     }
@@ -2563,7 +2828,7 @@ function selected() {
 async function processImage(file) {
   if (file.type === "image/gif") {
     if (file.size > 1000000) {
-      throw new Error("O GIF \"" + file.name + "\" excede o limite de 1 MB.");
+      throw new Error("O GIF \"" + (file.name || "imagem") + "\" excede o limite de 1 MB.");
     }
     return new Promise((res, rej) => {
       const r = new FileReader();
@@ -2646,13 +2911,20 @@ function renderPreviews() {
   });
 }
 
-$("mediaInput").onchange = async (e) => {
-  const files = Array.from(e.target.files);
-  e.target.value = "";
-  if (!files.length) return;
+async function handleImageFiles(files) {
+  if (!files || !files.length) return;
+  if (poll) {
+    $("msg").className = "msg err";
+    $("msg").textContent = t("composer.attach_disabled_poll");
+    return;
+  }
   const remaining = 4 - images.length;
-  if (remaining <= 0) return;
-  const toProcess = files.slice(0, remaining);
+  if (remaining <= 0) {
+    $("msg").className = "msg err";
+    $("msg").textContent = t("composer.attach_disabled_max");
+    return;
+  }
+  const toProcess = Array.from(files).slice(0, remaining);
   $("msg").className = "msg";
   $("msg").textContent = t("composer.img_processing");
   try {
@@ -2667,7 +2939,61 @@ $("mediaInput").onchange = async (e) => {
   }
   renderPreviews();
   update();
+}
+
+async function handlePasteEvent(e) {
+  const cd = e.clipboardData || window.clipboardData;
+  if (!cd) return;
+
+  const files = [];
+  if (cd.items) {
+    for (const it of cd.items) {
+      if (it.type && it.type.startsWith("image/")) {
+        const f = it.getAsFile();
+        if (f) files.push(f);
+      }
+    }
+  }
+  if (!files.length && cd.files && cd.files.length) {
+    for (const f of cd.files) {
+      if (f.type && f.type.startsWith("image/")) {
+        files.push(f);
+      }
+    }
+  }
+
+  if (files.length > 0) {
+    e.preventDefault();
+    await handleImageFiles(files);
+  }
+}
+
+$("mediaInput").onchange = async (e) => {
+  const files = Array.from(e.target.files);
+  e.target.value = "";
+  await handleImageFiles(files);
 };
+
+if ($("text")) $("text").addEventListener("paste", handlePasteEvent);
+if ($("composeSection")) {
+  $("composeSection").addEventListener("paste", (e) => {
+    if (e.target !== $("text")) handlePasteEvent(e);
+  });
+  $("composeSection").addEventListener("dragover", (e) => {
+    if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")) {
+      e.preventDefault();
+    }
+  });
+  $("composeSection").addEventListener("drop", async (e) => {
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      const imgFiles = Array.from(e.dataTransfer.files).filter(f => f.type && f.type.startsWith("image/"));
+      if (imgFiles.length) {
+        e.preventDefault();
+        await handleImageFiles(imgFiles);
+      }
+    }
+  });
+}
 
 function renderCW() {
   const row = $("cwRow");
