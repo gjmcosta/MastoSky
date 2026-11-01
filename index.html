@@ -1523,21 +1523,21 @@ document.querySelectorAll("#profileFilters .pill").forEach(p => {
   p.onclick = () => setProfileFilter(p.dataset.net);
 });
 
-function setTab(t) {
-  tab = t;
-  $("pTimeline").hidden = t !== "timeline";
-  $("pExplore").hidden = t !== "explore";
-  $("pNotifs").hidden = t !== "notifs";
-  $("pProfile").hidden = t !== "profile";
+function setTab(newTab) {
+  tab = newTab;
+  $("pTimeline").hidden = newTab !== "timeline";
+  $("pExplore").hidden = newTab !== "explore";
+  $("pNotifs").hidden = newTab !== "notifs";
+  $("pProfile").hidden = newTab !== "profile";
   $("pThread").hidden = true;
   $("pUserProfile").hidden = true;
-  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
-  if (t === "notifs") localStorage.setItem("notifSeen", new Date().toISOString());
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === newTab));
+  if (newTab === "notifs") localStorage.setItem("notifSeen", new Date().toISOString());
   else seenBefore = localStorage.getItem("notifSeen") || seenBefore;
-  if (t === "explore" && !exploreItems.length) loadExplore();
-  if (t === "profile" && !profileLoaded) loadProfile();
+  if (newTab === "explore" && !exploreItems.length) loadExplore();
+  if (newTab === "profile" && !profileLoaded) loadProfile();
   renderNotifs(); updateBadge();
-  history.replaceState(null, "", "#" + t);
+  history.replaceState(null, "", "#" + newTab);
 }
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
 
@@ -1941,7 +1941,7 @@ $("addOptionBtn").onclick = () => {
 $("pollDuration").onchange = update;
 
 function update() {
-  const t = selected();
+  const targets = selected();
   const text = $("text").value;
   const lenText = [...text].length;
 
@@ -1958,8 +1958,8 @@ function update() {
     }
   }
 
-  const limit = t.length ? Math.min(...t.map(n => LIMITS[n])) : 300;
-  const effectiveLen = (t.includes("bluesky") ? lenText + extraBskyLen : lenText);
+  const limit = targets.length ? Math.min(...targets.map(n => LIMITS[n])) : 300;
+  const effectiveLen = (targets.includes("bluesky") ? lenText + extraBskyLen : lenText);
 
   $("count").textContent = effectiveLen + " / " + limit;
   $("count").classList.toggle("over", effectiveLen > limit);
@@ -1990,8 +1990,8 @@ function update() {
   const pollValid = !hasPoll || filledOpts.length >= 2;
   const hasContent = lenText > 0 || images.length > 0 || (hasPoll && filledOpts.length >= 2) || Boolean(quote);
 
-  const bskyActive = reply ? (reply.network === "bluesky") : t.includes("bluesky");
-  const mastoActive = reply ? (reply.network === "mastodon") : t.includes("mastodon");
+  const bskyActive = reply ? (reply.network === "bluesky") : targets.includes("bluesky");
+  const mastoActive = reply ? (reply.network === "mastodon") : targets.includes("mastodon");
   const noteEl = $("bskyNote");
   if (noteEl) {
     noteEl.hidden = !(bskyActive && (hasCW || hasPoll));
@@ -2004,7 +2004,7 @@ function update() {
     $("targetSelect").hidden = Boolean(reply) || networks.length <= 1;
   }
 
-  $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !t.length;
+  $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !targets.length;
 }
 
 function startQuote(it, onlyNative = false) {
