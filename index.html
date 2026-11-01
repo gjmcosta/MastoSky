@@ -402,11 +402,13 @@ body.view-deck .deck-container {
 .deck-col-compose textarea {
   min-height: 110px;
 }
-.deck-col-detail {
-  flex: 0 0 420px;
-  width: 420px;
-  border-color: var(--accent);
-}
+.panel-section{background:color-mix(in srgb,var(--surface-2) 40%,var(--card));border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.panel-sec-title{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.panel-action-btn{width:100%;display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--ink);font:13px var(--sans);font-weight:500;cursor:pointer;margin-bottom:8px;text-align:left;transition:all .15s ease}
+.panel-action-btn:last-child{margin-bottom:0}
+.panel-action-btn:hover{border-color:var(--accent);background:color-mix(in srgb,var(--surface-2) 75%,var(--card));transform:translateY(-1px)}
+.panel-action-btn .ico{width:16px;height:16px;color:var(--muted);flex-shrink:0}
+.panel-action-btn:hover .ico{color:var(--accent)}
 
 /* Single View Mode default overrides */
 body:not(.view-deck) .deck-container {
@@ -425,9 +427,6 @@ body:not(.view-deck) .deck-col-body {
   overflow: visible;
   padding: 0;
   height: auto;
-}
-body:not(.view-deck) .deck-col-detail {
-  display: block;
 }
 
 @media (max-width: 768px) {
@@ -618,6 +617,7 @@ body:not(.view-deck) .deck-col-detail {
           <div id="errors"></div>
           <div id="feed"></div>
         </div>
+        <div id="threadTimeline" hidden></div>
       </div>
     </div>
 
@@ -634,6 +634,7 @@ body:not(.view-deck) .deck-col-detail {
           <div id="eerrors"></div>
           <div id="efeed"></div>
         </div>
+        <div id="threadExplore" hidden></div>
       </div>
     </div>
 
@@ -650,12 +651,13 @@ body:not(.view-deck) .deck-col-detail {
           <div id="nerrors"></div>
           <div id="nfeed"></div>
         </div>
+        <div id="threadNotifs" hidden></div>
       </div>
     </div>
 
     <div class="deck-col" id="colProfile" data-col="profile">
       <div class="deck-col-head">
-        <span class="deck-col-title" id="deckProfileTitle" data-i18n="header.col_profile">Perfil</span>
+        <span class="deck-col-title" id="deckProfileTitle" data-i18n="panel.title">Menu & Perfil</span>
         <div class="deck-col-actions">
           <button type="button" class="deck-act-btn" onclick="refreshProfileView()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="$('colProfileBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
@@ -664,28 +666,49 @@ body:not(.view-deck) .deck-col-detail {
       <div class="deck-col-body" id="colProfileBody">
         <div id="pProfile" hidden>
           <div id="perrors"></div>
-          <div id="profileHubView">
-            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="profile.accounts_title">Contas associadas</div>
-            <div id="profileAccountsList"></div>
+          
+          <div id="panelHubView">
+            <div class="panel-section">
+              <div class="panel-sec-title">
+                <svg class="ico" style="width:14px;height:14px"><use href="#i-net-both"/></svg>
+                <span data-i18n="panel.accounts">As tuas contas</span>
+              </div>
+              <div id="profileAccountsList"></div>
+            </div>
+
+            <div class="panel-section">
+              <div class="panel-sec-title">
+                <svg class="ico" style="width:14px;height:14px"><use href="#i-settings"/></svg>
+                <span data-i18n="panel.quick_settings">Definições & Ações</span>
+              </div>
+              <button type="button" class="panel-action-btn" onclick="openSetup(false)">
+                <svg class="ico"><use href="#i-settings"/></svg>
+                <span data-i18n="header.settings_title">Definições / Contas</span>
+              </button>
+              <button type="button" class="panel-action-btn" onclick="setLang(currentLang === 'pt' ? 'en' : 'pt')">
+                <svg class="ico"><use href="#i-language"/></svg>
+                <span data-i18n="panel.switch_lang">Mudar idioma / Switch language</span>
+              </button>
+              <button type="button" class="panel-action-btn" onclick="applyViewMode(viewMode === 'deck' ? 'single' : 'deck')">
+                <svg class="ico"><use href="#i-view-deck"/></svg>
+                <span data-i18n="panel.toggle_view">Alternar modo de vista (Deck / Single)</span>
+              </button>
+              <button type="button" class="panel-action-btn" onclick="refreshAllFeeds()">
+                <svg class="ico"><use href="#i-refresh"/></svg>
+                <span data-i18n="panel.refresh_all">Atualizar todos os feeds</span>
+              </button>
+            </div>
           </div>
+
           <div id="profileDetailView" hidden>
             <div class="profile-back-bar" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
-              <button type="button" class="ghost back" id="profileBackBtn" onclick="returnFromProfileDetail()">← Voltar</button>
+              <button type="button" class="ghost back" id="profileBackBtn" onclick="returnFromProfileDetail()">← Voltar ao menu</button>
             </div>
             <div id="profileActiveCard"></div>
             <div id="profileActiveFeed"></div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="deck-col deck-col-detail" id="colDetail" hidden>
-      <div class="deck-col-head">
-        <span class="deck-col-title" id="deckDetailTitle" data-i18n="header.col_thread">Conversa</span>
-        <button type="button" class="deck-act-btn" onclick="closeDeckDetail()" title="Fechar" aria-label="Fechar">✕</button>
-      </div>
-      <div class="deck-col-body" id="colDetailBody">
-        <div id="pThread" hidden></div>
+        <div id="threadProfile" hidden></div>
       </div>
     </div>
   </div>
@@ -960,6 +983,15 @@ const I18N = {
       followers_stat: "seguidores",
       load_more_posts: "Carregar mais publicações"
     },
+    panel: {
+      title: "Menu & Perfil",
+      accounts: "As tuas contas",
+      quick_settings: "Definições & Ações",
+      switch_lang: "Mudar idioma / Switch language",
+      toggle_view: "Alternar modo de vista (Deck / Single)",
+      refresh_all: "Atualizar todos os feeds",
+      back_to_hub: "← Voltar ao menu"
+    },
     setup: {
       title: "Configuração do MastoSky",
       desc: "Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.",
@@ -1160,6 +1192,15 @@ const I18N = {
       following_stat: "following",
       followers_stat: "followers",
       load_more_posts: "Load more posts"
+    },
+    panel: {
+      title: "Menu & Profile",
+      accounts: "Your accounts",
+      quick_settings: "Settings & Actions",
+      switch_lang: "Switch language / Mudar idioma",
+      toggle_view: "Toggle view mode (Deck / Single)",
+      refresh_all: "Refresh all feeds",
+      back_to_hub: "← Back to menu"
     },
     setup: {
       title: "MastoSky Settings",
@@ -2150,31 +2191,34 @@ async function loadAuthorFeed(feedWrap, isMore = false) {
 }
 
 function returnFromProfileDetail() {
-  if (activeProfileMode === "user") {
-    if (viewMode === "single" && previousTab && previousTab !== "profile") {
-      const pt = previousTab;
-      previousTab = null;
-      activeProfileActor = null;
-      activeProfileMode = "hub";
-      $("profileDetailView").hidden = true;
-      $("profileHubView").hidden = false;
-      setTab(pt);
-      return;
-    }
+  if (activeProfileMode === "user" && viewMode === "single" && previousTab && previousTab !== "profile") {
+    const pt = previousTab;
+    previousTab = null;
     activeProfileActor = null;
     activeProfileMode = "hub";
     $("profileDetailView").hidden = true;
-    $("profileHubView").hidden = false;
-  } else if (activeProfileMode === "account") {
-    activeProfileNet = null;
-    activeProfileMode = "hub";
-    $("profileDetailView").hidden = true;
-    $("profileHubView").hidden = false;
+    $("panelHubView").hidden = false;
+    if ($("deckProfileTitle")) $("deckProfileTitle").textContent = t("panel.title");
+    setTab(pt);
+    return;
   }
+  activeProfileActor = null;
+  activeProfileNet = null;
+  activeProfileMode = "hub";
+  $("profileDetailView").hidden = true;
+  $("panelHubView").hidden = false;
+  if ($("deckProfileTitle")) $("deckProfileTitle").textContent = t("panel.title");
 }
 
 function closeUserProfile() {
   returnFromProfileDetail();
+}
+
+function refreshAllFeeds() {
+  load();
+  loadNotifs();
+  loadExplore();
+  refreshProfileView();
 }
 
 function refreshProfileView() {
@@ -2207,8 +2251,10 @@ function setTab(newTab) {
     $("pExplore").hidden = newTab !== "explore";
     $("pNotifs").hidden = newTab !== "notifs";
     $("pProfile").hidden = newTab !== "profile";
-    $("pThread").hidden = true;
-    $("pUserProfile").hidden = true;
+    ["Timeline", "Explore", "Notifs", "Profile"].forEach(c => {
+      const th = $("thread" + c);
+      if (th) { th.hidden = true; th.replaceChildren(); }
+    });
   }
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === newTab));
   document.querySelectorAll(".side-nav-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === newTab));
@@ -2221,65 +2267,114 @@ function setTab(newTab) {
 }
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
 
-let threadIt = null, threadScroll = 0;
+let threadIt = null;
+let activeThreadColId = "timeline";
+let colScrolls = {};
+
+function getActiveColId(it) {
+  if (viewMode === "single") return tab || "timeline";
+  const el = window.event?.target;
+  if (el) {
+    const col = el.closest(".deck-col");
+    if (col && col.dataset.col) return col.dataset.col;
+  }
+  return tab || "timeline";
+}
 
 async function openThread(it, keep) {
-  const box = $("pThread"), y = window.scrollY;
-  if (box.hidden) threadScroll = y;
   threadIt = it;
-  if (viewMode === "deck") {
-    $("colDetail").hidden = false;
-    if ($("deckDetailTitle")) $("deckDetailTitle").textContent = t("header.col_thread");
-    $("pUserProfile").hidden = true;
-    box.hidden = false;
-  } else {
-    $("pTimeline").hidden = true; $("pExplore").hidden = true; $("pNotifs").hidden = true; $("pProfile").hidden = true; $("pUserProfile").hidden = true; box.hidden = false;
-  }
-  const back = el("button", "ghost back", t("actions.back"));
-  back.onclick = closeThread;
   if (!keep) {
-    box.replaceChildren(back, el("div", "empty", t("feed.loading_thread")));
-    if (viewMode === "deck") {
-      $("colDetail").scrollIntoView({behavior: "smooth", inline: "end"});
-    } else {
+    activeThreadColId = getActiveColId(it);
+  }
+  const colId = activeThreadColId || "timeline";
+  const capCol = colId.charAt(0).toUpperCase() + colId.slice(1);
+  const mainEl = $("p" + capCol);
+  const threadEl = $("thread" + capCol);
+  const bodyEl = $("col" + capCol + "Body");
+
+  if (!threadEl) return;
+
+  if (!keep) {
+    colScrolls[colId] = (viewMode === "single" ? window.scrollY : (bodyEl ? bodyEl.scrollTop : 0));
+    if (viewMode === "single") {
       window.scrollTo(0, 0);
+    } else if (bodyEl) {
+      bodyEl.scrollTo({top: 0, behavior: "smooth"});
     }
   }
+
+  if (mainEl) mainEl.hidden = true;
+  threadEl.hidden = false;
+
+  const back = el("button", "ghost back", t("actions.back"));
+  back.onclick = () => closeColumnThread(colId);
+
+  if (!keep) {
+    threadEl.replaceChildren(back, el("div", "empty", t("feed.loading_thread")));
+  }
+
   let d;
-  try { d = await api("/api/thread", {network: it.network, ref: it.ref}); }
-  catch (e) { d = {error: t("feed.error_server")}; }
-  if (threadIt !== it) return; // entretanto saíste desta conversa
-  box.replaceChildren(back);
-  if (d.error) { box.append(el("div", "banner", LABEL[it.network] + ": " + d.error)); return; }
-  if (d.ancestors.length) {
+  try {
+    d = await api("/api/thread", {network: it.network, ref: it.ref});
+  } catch (e) {
+    d = {error: t("feed.error_server")};
+  }
+
+  if (threadIt !== it) return;
+
+  threadEl.replaceChildren(back);
+  if (d.error) {
+    threadEl.append(el("div", "banner", LABEL[it.network] + ": " + d.error));
+    return;
+  }
+  if (d.ancestors && d.ancestors.length) {
     const chain = el("div", "chain");
     d.ancestors.forEach(a => chain.append(postCard(a)));
-    box.append(chain);
+    threadEl.append(chain);
   }
   const focus = postCard(d.focus, {focus: true});
-  box.append(focus);
+  threadEl.append(focus);
   const kids = (list, depth) => {
     const w = el("div", depth < 4 ? "kids" : "kids flat");
-    list.forEach(r => { w.append(postCard(r)); if (r.children && r.children.length) w.append(kids(r.children, depth + 1)); });
+    list.forEach(r => {
+      w.append(postCard(r));
+      if (r.children && r.children.length) w.append(kids(r.children, depth + 1));
+    });
     return w;
   };
-  box.append(d.replies.length ? kids(d.replies, 0) : el("div", "empty", t("feed.empty_replies")));
-  if (keep) {
-    if (viewMode !== "deck") window.scrollTo(0, y);
-  } else if (d.ancestors.length) {
-    focus.scrollIntoView();
+  threadEl.append(d.replies && d.replies.length ? kids(d.replies, 0) : el("div", "empty", t("feed.empty_replies")));
+
+  if (!keep && d.ancestors && d.ancestors.length) {
+    focus.scrollIntoView({behavior: "smooth", block: "nearest"});
+  }
+}
+
+function closeColumnThread(colId) {
+  const capCol = colId.charAt(0).toUpperCase() + colId.slice(1);
+  const mainEl = $("p" + capCol);
+  const threadEl = $("thread" + capCol);
+  const bodyEl = $("col" + capCol + "Body");
+
+  if (threadEl) {
+    threadEl.hidden = true;
+    threadEl.replaceChildren();
+  }
+  if (mainEl) mainEl.hidden = false;
+  threadIt = null;
+
+  const prevY = colScrolls[colId] || 0;
+  if (viewMode === "single") {
+    window.scrollTo(0, prevY);
+  } else if (bodyEl) {
+    bodyEl.scrollTo({top: prevY, behavior: "smooth"});
   }
 }
 
 function closeThread() {
-  if (viewMode === "deck") {
-    closeDeckDetail();
-  } else {
-    threadIt = null;
-    setTab(tab);
-    window.scrollTo(0, threadScroll);
-  }
+  if (activeThreadColId) closeColumnThread(activeThreadColId);
 }
+
+function closeDeckDetail() {}
 
 function updateNetToggleUI() {
   const btn = $("netToggleBtn");
@@ -3388,7 +3483,7 @@ $("send").onclick = async () => {
     quote = null; renderQuoteBox();
     setTimeout(load, 1200);
     if (profileLoaded) setTimeout(() => loadProfileFeed(false), 1200);
-    if (!$("pThread").hidden && threadIt) setTimeout(() => openThread(threadIt, true), 1500);
+    if (threadIt) setTimeout(() => openThread(threadIt, true), 1500);
   }
   update();
 };
