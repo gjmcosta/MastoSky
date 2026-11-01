@@ -191,10 +191,15 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .tab{background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 14px;margin-bottom:-1px;font-weight:600}
 .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
 .badge{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:600;margin-left:4px}
-.notif .head{margin-bottom:4px}
-.notif .who b{white-space:normal;display:block}
-.notif-action{font-weight:normal;color:var(--ink);margin-left:5px}
-.notif .head img,.notif .head .ph{width:30px;height:30px}
+.notif .head{margin-bottom:6px;display:flex;align-items:flex-start;gap:10px}
+.notif .who{min-width:0;flex:1;font-family:var(--sans)}
+.notif .who b{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;font-family:var(--sans);font-size:14px;line-height:1.35;white-space:normal}
+.notif .who b span{font-family:var(--sans)}
+.notif .notif-author{font-weight:700;color:var(--ink);font-family:var(--sans);font-size:14px;display:inline}
+.notif .notif-author:hover{text-decoration:underline}
+.notif .notif-action{font-weight:400;color:var(--muted);font-family:var(--sans);font-size:13.5px;display:inline;margin-left:0}
+.notif .notif-meta{display:block;color:var(--muted);font:12px/1.4 var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.notif .head img,.notif .head .ph{width:32px;height:32px;border-radius:50%}
 .net{width:22px;height:22px;border-radius:6px;background:var(--c);display:grid;place-items:center;flex:none}
 .net svg{width:14px;height:14px}
 .glyph{width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,var(--glyph-c,var(--c)) 14%,transparent);color:var(--glyph-c,var(--c));border:1px solid color-mix(in srgb,var(--glyph-c,var(--c)) 24%,transparent);display:grid;place-items:center;flex:none;box-sizing:border-box;transition:transform .15s ease,background .15s ease}
@@ -209,7 +214,8 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .glyph.kind-update{--glyph-c:#64748b}
 .glyph.kind-status{--glyph-c:var(--c)}
 .notif:hover .glyph{transform:scale(1.08);background:color-mix(in srgb,var(--glyph-c,var(--c)) 22%,transparent)}
-.notif .body{color:var(--muted);font-size:15px}
+.notif .body{color:var(--ink);font:14px/1.5 var(--sans);margin-top:6px;word-break:break-word}
+.notif .body a{color:var(--c)}
 .notif.fresh{background:color-mix(in srgb,var(--c) 9%,var(--card))}
 .back{margin-bottom:12px}
 .chain{border-left:2px solid var(--line);margin:0 0 10px 12px;padding-left:10px}
@@ -1898,7 +1904,7 @@ function renderNotifs() {
     }
     const who = el("div", "who");
     const bNName = el("b");
-    const sNameWrap = el("span", "author-link");
+    const sNameWrap = el("span", "author-link notif-author");
     sNameWrap.title = t("post.view_profile", {name: n.name || n.handle});
     sNameWrap.onclick = onNotifProfile;
     if (n.name_html) {
@@ -1908,12 +1914,18 @@ function renderNotifs() {
     }
     const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
     bNName.append(sNameWrap, sVerb);
-    who.append(bNName, el("span", null, n.handle + " · " + LABEL[n.network]));
+    const sMeta = el("span", "notif-meta", n.handle + " · " + LABEL[n.network]);
+    who.append(bNName, sMeta);
     const when = el("a", "when", ago(n.time));
     when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
     head.append(who, netBadge(n.network), when);
     p.append(head);
-    if (n.html) { const b = el("div", "body"); b.innerHTML = n.html; p.append(b); } // já limpo no servidor
+    const hasMedia = n.media && n.media.length;
+    if (n.html && (!hasMedia || !n.html.includes("📷 [Imagem]"))) {
+      const b = el("div", "body");
+      b.innerHTML = n.html;
+      p.append(b);
+    }
     const m = renderMedia(n.media);
     if (m) p.append(m);
     if (n.quote) p.append(renderQuote(n.quote));

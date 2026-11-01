@@ -959,6 +959,65 @@ class FacetsAndRichtextTests(unittest.TestCase):
         self.assertEqual(notifs[1]["media"][0]["url"], "https://example.com/article")
         self.assertEqual(notifs[1]["media"][0]["title"], "Exemplo")
 
+    def test_bsky_notification_with_raw_blob_images(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+
+        def mock_call(m, nsid, d=None, params=None):
+            if nsid == "app.bsky.notification.listNotifications":
+                return {
+                    "notifications": [
+                        {
+                            "uri": "at://did:plc:ocaodanado/app.bsky.feed.like/like99",
+                            "cid": "cid99",
+                            "author": {"handle": "ocaodanado.bsky.social", "displayName": "O Cão Danado"},
+                            "reason": "like",
+                            "record": {
+                                "$type": "app.bsky.feed.like",
+                                "subject": {"uri": "at://did:plc:me/app.bsky.feed.post/post_blob"}
+                            },
+                            "indexedAt": "2026-01-01T02:00:00Z"
+                        }
+                    ]
+                }
+            elif nsid == "app.bsky.feed.getPosts":
+                return {
+                    "posts": [
+                        {
+                            "uri": "at://did:plc:me/app.bsky.feed.post/post_blob",
+                            "author": {"handle": "me.bsky.social", "did": "did:plc:me"},
+                            "record": {
+                                "text": "",
+                                "embed": {
+                                    "$type": "app.bsky.embed.images",
+                                    "images": [
+                                        {
+                                            "alt": "Foto de cao",
+                                            "image": {
+                                                "$type": "blob",
+                                                "ref": {"$link": "bafkreia123456789"},
+                                                "mimeType": "image/jpeg"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            return {}
+
+        b.call = mock_call
+        notifs, _ = b.notifications()
+        self.assertEqual(len(notifs), 1)
+        self.assertEqual(len(notifs[0]["media"]), 1)
+        self.assertEqual(notifs[0]["media"][0]["type"], "image")
+        self.assertIn("bafkreia123456789", notifs[0]["media"][0]["url"])
+        self.assertIn("did:plc:me", notifs[0]["media"][0]["url"])
+        # Garante que não é exibido o texto "📷 [Imagem]" quando a media foi extraída com sucesso:
+        self.assertEqual(notifs[0]["html"], "")
+
     def test_masto_notification_with_media_and_card(self):
         m = app.Masto({"instance": "https://mastodon.social", "token": "tok"})
         raw_notifs = [

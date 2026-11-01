@@ -400,12 +400,12 @@ def proxy_fetch_image(url_str):
         return data, ctype if ctype.startswith("image/") else "image/jpeg"
 
 
-def extract_bsky_embed(embed):
-    media, quote = _extract_bsky_embed(embed)
+def extract_bsky_embed(embed, did=None):
+    media, quote = _extract_bsky_embed(embed, did=did)
     return safe_media_list(media), quote
 
 
-def _extract_bsky_embed(embed):
+def _extract_bsky_embed(embed, did=None):
     media = []
     quote = None
     if not embed:
@@ -416,6 +416,22 @@ def _extract_bsky_embed(embed):
         for i in embed.get("images", []):
             u = i.get("fullsize") or i.get("thumb") or (i.get("url") if isinstance(i.get("url"), str) else None)
             t = i.get("thumb") or i.get("fullsize") or u
+            if not u and not t:
+                img_obj = i.get("image")
+                cid = None
+                if isinstance(img_obj, dict):
+                    ref = img_obj.get("ref")
+                    if isinstance(ref, dict):
+                        cid = ref.get("$link")
+                    elif isinstance(ref, str):
+                        cid = ref
+                    if not cid and img_obj.get("cid"):
+                        cid = img_obj.get("cid")
+                elif isinstance(i.get("cid"), str):
+                    cid = i.get("cid")
+                if cid and did:
+                    u = f"https://cdn.bsky.app/img/feed_fullsize/plain/{did}/{cid}@jpeg"
+                    t = f"https://cdn.bsky.app/img/feed_thumbnail/plain/{did}/{cid}@jpeg"
             if u or t:
                 media.append({
                     "type": "image",
@@ -424,16 +440,33 @@ def _extract_bsky_embed(embed):
                     "alt": i.get("alt", "")
                 })
     elif etype in ("app.bsky.embed.video#view", "app.bsky.embed.video"):
+        url = embed.get("playlist") or (embed.get("url") if isinstance(embed.get("url"), str) else None)
+        thumb = embed.get("thumbnail") or (embed.get("thumb") if isinstance(embed.get("thumb"), str) else None)
+        if not url:
+            v_obj = embed.get("video")
+            cid = None
+            if isinstance(v_obj, dict):
+                ref = v_obj.get("ref")
+                cid = ref.get("$link") if isinstance(ref, dict) else (ref if isinstance(ref, str) else None)
+            if cid and did:
+                url = f"https://video.bsky.app/watch/{did}/{cid}/playlist.m3u8"
+                if not thumb:
+                    thumb = f"https://video.bsky.app/watch/{did}/{cid}/thumbnail.jpg"
         media.append({
             "type": "video",
-            "url": embed.get("playlist") or (embed.get("url") if isinstance(embed.get("url"), str) else None),
-            "thumb": embed.get("thumbnail") or (embed.get("thumb") if isinstance(embed.get("thumb"), str) else None),
+            "url": url,
+            "thumb": thumb,
             "alt": embed.get("alt", "")
         })
     elif etype in ("app.bsky.embed.external#view", "app.bsky.embed.external"):
         ext = embed.get("external") or {}
         thumb = ext.get("thumb")
         thumb_url = thumb if isinstance(thumb, str) else None
+        if not thumb_url and isinstance(thumb, dict):
+            ref = thumb.get("ref")
+            cid = ref.get("$link") if isinstance(ref, dict) else (ref if isinstance(ref, str) else None)
+            if cid and did:
+                thumb_url = f"https://cdn.bsky.app/img/feed_thumbnail/plain/{did}/{cid}@jpeg"
         if thumb_url or ext.get("uri"):
             media.append({
                 "type": "external",
@@ -443,7 +476,7 @@ def _extract_bsky_embed(embed):
                 "description": ext.get("description", "")
             })
     elif etype in ("app.bsky.embed.recordWithMedia#view", "app.bsky.embed.recordWithMedia"):
-        m_list, _ = extract_bsky_embed(embed.get("media"))
+        m_list, _ = extract_bsky_embed(embed.get("media"), did=did)
         media.extend(m_list)
         rec_obj = embed.get("record")
         quote = parse_bsky_quote(rec_obj)
@@ -490,8 +523,9 @@ def parse_bsky_quote(rec):
     emb_list = rec.get("embeds") or []
     if not emb_list and rec.get("embed"):
         emb_list = [rec.get("embed")]
+    q_did = author.get("did")
     for emb in emb_list:
-        m_list, _ = extract_bsky_embed(emb)
+        m_list, _ = extract_bsky_embed(emb, did=q_did)
         q_media.extend(m_list)
     text = val.get("text") or rec.get("text", "")
     facets = val.get("facets") or rec.get("facets")
@@ -686,8 +720,10 @@ class Bsky:
         for emb in p.get("embeds") or []:
             if emb not in embed_sources:
                 embed_sources.append(emb)
+        if rec.get("embed") and rec.get("embed") not in embed_sources:
+            embed_sources.append(rec.get("embed"))
         for emb in embed_sources:
-            m_list, q_obj = extract_bsky_embed(emb)
+            m_list, q_obj = extract_bsky_embed(emb, did=a.get("did"))
             media.extend(m_list)
             if q_obj and not quote:
                 quote = q_obj
@@ -999,14 +1035,18 @@ class Bsky:
                 root = rec.get("reply", {}).get("root") or {"uri": n["uri"], "cid": n["cid"]}
                 ref = {"uri": n["uri"], "cid": n["cid"], "root": {"uri": root["uri"], "cid": root["cid"]}}
                 url = f"https://bsky.app/profile/{a['handle']}/post/{n['uri'].split('/')[-1]}"
-                target_post = n_post
-                if target_post:
-                    m_list, q_obj = extract_bsky_embed(target_post.get("embed"))
-                    media.extend(m_list)
-                    if q_obj and not quote:
-                        quote = q_obj
-                elif rec.get("embed"):
-                    m_list, q_obj = extract_bsky_embed(rec.get("embed"))
+                target_did = a.get("did") or (n.get("uri").replace("at://", "").split("/")[0] if n.get("uri") else None)
+                embed_sources = []
+                if n_post:
+                    if n_post.get("embed"): embed_sources.append(n_post.get("embed"))
+                    for emb in n_post.get("embeds") or []:
+                        if emb not in embed_sources: embed_sources.append(emb)
+                    trec = n_post.get("record") or {}
+                    if trec.get("embed") and trec.get("embed") not in embed_sources: embed_sources.append(trec.get("embed"))
+                if rec.get("embed") and rec.get("embed") not in embed_sources:
+                    embed_sources.append(rec.get("embed"))
+                for emb in embed_sources:
+                    m_list, q_obj = extract_bsky_embed(emb, did=target_did)
                     media.extend(m_list)
                     if q_obj and not quote:
                         quote = q_obj
@@ -1015,24 +1055,49 @@ class Bsky:
                 text = srec.get("text", "")
                 facets = srec.get("facets")
                 url = f"https://bsky.app/profile/{subject['author']['handle']}/post/{subject['uri'].split('/')[-1]}"
-                m_list, q_obj = extract_bsky_embed(subject.get("embed"))
-                media.extend(m_list)
-                if q_obj and not quote:
-                    quote = q_obj
+                subj_did = (subject.get("author") or {}).get("did") or (subj_uri.replace("at://", "").split("/")[0] if subj_uri else None)
+                embed_sources = []
+                if subject.get("embed"): embed_sources.append(subject.get("embed"))
+                for emb in subject.get("embeds") or []:
+                    if emb not in embed_sources: embed_sources.append(emb)
+                if srec.get("embed") and srec.get("embed") not in embed_sources:
+                    embed_sources.append(srec.get("embed"))
+                for emb in srec.get("embeds") or []:
+                    if emb not in embed_sources: embed_sources.append(emb)
+
+                for emb in embed_sources:
+                    m_list, q_obj = extract_bsky_embed(emb, did=subj_did)
+                    media.extend(m_list)
+                    if q_obj and not quote:
+                        quote = q_obj
                 if not text and not media and not quote:
-                    semb = subject.get("embed") or {}
-                    stype = semb.get("$type", "")
-                    if "images" in stype:
-                        text = "📷 [Imagem]"
-                    elif "video" in stype:
-                        text = "🎬 [Vídeo]"
-                    elif "record" in stype:
-                        text = "💬 [Citação]"
+                    for emb in embed_sources:
+                        stype = emb.get("$type", "") if isinstance(emb, dict) else ""
+                        if "images" in stype:
+                            text = "📷 [Imagem]"
+                            break
+                        elif "video" in stype:
+                            text = "🎬 [Vídeo]"
+                            break
+                        elif "record" in stype:
+                            text = "💬 [Citação]"
+                            break
             elif subj_uri and kind in ("like", "like_repost", "boost", "boost_repost"):
                 post_id = subj_uri.split("/")[-1]
                 author_part = subj_uri.replace("at://", "").split("/")[0]
                 url = f"https://bsky.app/profile/{author_part}/post/{post_id}"
                 text = "(Publicação indisponível)"
+
+            if media:
+                dedup_m, seen_m = [], set()
+                for m in media:
+                    u = m.get("url") or m.get("thumb")
+                    if u and u not in seen_m:
+                        seen_m.add(u)
+                        dedup_m.append(m)
+                media = dedup_m
+                if text in ("📷 [Imagem]", "🎬 [Vídeo]", "💬 [Citação]"):
+                    text = ""
             out.append({"network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
                         "handle": "@" + a["handle"], "author_id": a.get("did") or a["handle"],
                         "author_handle": a["handle"], "avatar": safe_url(a.get("avatar")),
