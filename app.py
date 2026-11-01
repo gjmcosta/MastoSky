@@ -625,21 +625,24 @@ class Masto:
     def __init__(s, c):
         s.base, s.token = c["instance"].rstrip("/"), c["token"]
         s.cache = {}  # posts "pai" já obtidos
+        s.cache_lock = threading.Lock()  # a cache é usada por várias threads em paralelo
 
     def call(s, method, path, data=None, params=None):
         url = s.base + path + ("?" + urllib.parse.urlencode(params) if params else "")
         return http(method, url, data, s.token)
 
     def parent(s, sid):
-        if sid in s.cache:
-            return s.cache[sid]
+        with s.cache_lock:
+            if sid in s.cache:
+                return s.cache[sid]
         try:
             p = s.call("GET", f"/api/v1/statuses/{sid}")
         except Exception:
             return None
-        if len(s.cache) > 500:
-            s.cache.clear()
-        s.cache[sid] = p
+        with s.cache_lock:
+            if len(s.cache) > 500:
+                s.cache.clear()
+            s.cache[sid] = p
         return p
 
     def reply_info(s, p):

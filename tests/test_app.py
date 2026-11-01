@@ -493,5 +493,59 @@ class ParseTimeTests(unittest.TestCase):
         self.assertEqual(it["time"], "2026-01-02T00:00:00Z")
 
 
+class ThreadSafetyTests(unittest.TestCase):
+    def test_concurrent_requests_login_once(self):
+        import threading
+        import time as _time
+        from unittest import mock
+        calls = []
+
+        def fake(method, url, data=None, token=None, headers=None):
+            calls.append(url.rsplit(".", 1)[-1])
+            if url.endswith("createSession"):
+                _time.sleep(0.05)  # alarga a janela de corrida
+                return {"accessJwt": "a", "refreshJwt": "r", "did": "did:plc:me"}
+            return {"ok": True}
+        c = app.Bsky({"handle": "h", "app_password": "p"})
+        with mock.patch("app.http", side_effect=fake):
+            ts = [threading.Thread(target=c.call, args=("GET", "x")) for _ in range(8)]
+            [t.start() for t in ts]
+            [t.join() for t in ts]
+        self.assertEqual(calls.count("createSession"), 1)
+
+    def test_concurrent_renew_refreshes_once(self):
+        import threading
+        import time as _time
+        from unittest import mock
+        calls = []
+
+        def fake(method, url, data=None, token=None, headers=None):
+            calls.append(url.rsplit(".", 1)[-1])
+            if url.endswith("refreshSession"):
+                _time.sleep(0.05)
+                return {"accessJwt": "new", "refreshJwt": "r2", "did": "did:plc:me"}
+            if token == "old":
+                raise app.ApiError('400: {"error":"ExpiredToken"}', status=400)
+            return {"ok": True}
+        c = app.Bsky({"handle": "h", "app_password": "p"})
+        c.jwt, c.refresh_jwt, c.did = "old", "r1", "did:plc:me"
+        with mock.patch("app.http", side_effect=fake):
+            ts = [threading.Thread(target=c.call, args=("GET", "x")) for _ in range(8)]
+            [t.start() for t in ts]
+            [t.join() for t in ts]
+        self.assertEqual(calls.count("refreshSession"), 1)
+        self.assertNotIn("createSession", calls)
+
+    def test_masto_parent_cache_concurrent(self):
+        import threading
+        from unittest import mock
+        m = app.Masto({"instance": "https://x.pt", "token": "t"})
+        with mock.patch.object(app.Masto, "call", side_effect=lambda *a, **k: {"id": "1"}):
+            ts = [threading.Thread(target=m.parent, args=(str(i % 700),)) for i in range(1400)]
+            [t.start() for t in ts]
+            [t.join() for t in ts]
+        self.assertLessEqual(len(m.cache), 501)
+
+
 if __name__ == "__main__":
     unittest.main()
