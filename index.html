@@ -491,17 +491,71 @@ function postCard(it, o = {}) {
   return p;
 }
 
+let timelineCursors = {}, exploreCursors = {}, notifsCursors = {};
+
+function dedupSort(existing, incoming, sortDesc = true) {
+  const seen = new Set();
+  const all = [];
+  for (const it of existing.concat(incoming)) {
+    const key = it.url || (it.network + ":" + (it.ref ? JSON.stringify(it.ref) : "") + ":" + (it.time || ""));
+    if (!seen.has(key)) {
+      seen.add(key);
+      all.push(it);
+    }
+  }
+  if (sortDesc) {
+    all.sort((a, b) => {
+      const ta = a.time ? new Date(a.time).getTime() : 0;
+      const tb = b.time ? new Date(b.time).getTime() : 0;
+      return tb - ta;
+    });
+  }
+  return all;
+}
+
+function renderLoadMore(container, cursors, onLoadMore) {
+  const hasMore = cursors && (cursors.bluesky || cursors.mastodon);
+  if (!hasMore) return;
+  const wrap = el("div", "more-wrap");
+  wrap.style.textAlign = "center";
+  wrap.style.padding = "20px 0";
+  const btn = el("button", "ghost", "Carregar mais");
+  btn.onclick = async () => {
+    btn.disabled = true;
+    btn.textContent = "A carregar...";
+    try {
+      await onLoadMore();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Carregar mais";
+    }
+  };
+  wrap.append(btn);
+  container.append(wrap);
+}
+
 function render() {
   const feed = $("feed");
   feed.replaceChildren();
   if (!items.length) feed.append(el("div", "empty", "Sem posts para mostrar."));
   for (const it of items) feed.append(postCard(it));
+  renderLoadMore(feed, timelineCursors, loadMoreTimeline);
+}
+
+async function loadMoreTimeline() {
+  const q = new URLSearchParams();
+  if (timelineCursors.bluesky) q.set("cursor_bluesky", timelineCursors.bluesky);
+  if (timelineCursors.mastodon) q.set("cursor_mastodon", timelineCursors.mastodon);
+  const d = await api("/api/timeline?" + q.toString());
+  timelineCursors = d.cursors || {};
+  items = dedupSort(items, d.items || []);
+  render();
 }
 
 async function load() {
   try {
     const d = await api("/api/timeline");
-    items = d.items; networks = d.networks;
+    items = d.items; networks = d.networks; timelineCursors = d.cursors || {};
     if (!networks || networks.length === 0) {
       openSetup(true);
       return;
@@ -513,10 +567,20 @@ async function load() {
   }
 }
 
+async function loadMoreExplore() {
+  const q = new URLSearchParams();
+  if (exploreCursors.bluesky) q.set("cursor_bluesky", exploreCursors.bluesky);
+  if (exploreCursors.mastodon) q.set("cursor_mastodon", exploreCursors.mastodon);
+  const d = await api("/api/explore?" + q.toString());
+  exploreCursors = d.cursors || {};
+  exploreItems = dedupSort(exploreItems, d.items || [], false);
+  renderExplore();
+}
+
 async function loadExplore() {
   try {
     const d = await api("/api/explore");
-    exploreItems = d.items;
+    exploreItems = d.items; exploreCursors = d.cursors || {};
     $("eerrors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
     renderExplore();
   } catch (e) {
@@ -529,6 +593,7 @@ function renderExplore() {
   feed.replaceChildren();
   if (!exploreItems.length) feed.append(el("div", "empty", "Sem posts em alta para mostrar."));
   for (const it of exploreItems) feed.append(postCard(it));
+  renderLoadMore(feed, exploreCursors, loadMoreExplore);
 }
 
 const VERB = {like: "gostou do teu post", boost: "partilhou o teu post", follow: "começou a seguir-te",
@@ -539,10 +604,20 @@ const GLYPH = {like: "♥", boost: "⇄", follow: "+", follow_request: "+", repl
 let seenBefore = localStorage.getItem("notifSeen");
 if (!seenBefore) { seenBefore = new Date().toISOString(); localStorage.setItem("notifSeen", seenBefore); }
 
+async function loadMoreNotifs() {
+  const q = new URLSearchParams();
+  if (notifsCursors.bluesky) q.set("cursor_bluesky", notifsCursors.bluesky);
+  if (notifsCursors.mastodon) q.set("cursor_mastodon", notifsCursors.mastodon);
+  const d = await api("/api/notifications?" + q.toString());
+  notifsCursors = d.cursors || {};
+  notifs = dedupSort(notifs, d.items || []);
+  renderNotifs();
+}
+
 async function loadNotifs() {
   try {
     const d = await api("/api/notifications");
-    notifs = d.items;
+    notifs = d.items; notifsCursors = d.cursors || {};
     $("nerrors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
     renderNotifs();
   } catch (e) {
@@ -590,6 +665,7 @@ function renderNotifs() {
     }
     box.append(p);
   }
+  renderLoadMore(box, notifsCursors, loadMoreNotifs);
 }
 
 function updateBadge() {

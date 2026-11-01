@@ -852,6 +852,63 @@ class ActionsTests(unittest.TestCase):
         self.assertEqual(bsky_calls[-1][2]["rkey"], "my_post_key")
 
 
+class PaginationTests(unittest.TestCase):
+    def test_bsky_timeline_cursor(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.jwt = "jwt"
+        calls = []
+        def fake_call(m, n, d=None, params=None):
+            calls.append(params)
+            return {"feed": [], "cursor": "next_b_cursor"}
+
+        b.call = fake_call
+        items, nxt = b.timeline(cursor="c1")
+        self.assertEqual(calls[0]["cursor"], "c1")
+        self.assertEqual(nxt, "next_b_cursor")
+
+    def test_masto_timeline_cursor(self):
+        m = app.Masto({"instance": "https://m.pt", "token": "tok"})
+        calls = []
+        def fake_call(mth, pth, data=None, params=None):
+            calls.append(params)
+            return [{"id": "999", "account": {"id": "1", "username": "u", "acct": "u"}, "content": "x"}]
+
+        m.call = fake_call
+        items, nxt = m.timeline(cursor="m1")
+        self.assertEqual(calls[0]["max_id"], "m1")
+        self.assertEqual(nxt, "999")
+
+    def test_get_timeline_with_cursors(self):
+        import io
+        from unittest import mock
+        bsky_mock = mock.Mock()
+        bsky_mock.name = "bluesky"
+        bsky_mock.timeline.return_value = ([{"time": "2026-01-01T00:00:00Z", "network": "bluesky"}], "b_next")
+
+        masto_mock = mock.Mock()
+        masto_mock.name = "mastodon"
+        masto_mock.timeline.return_value = ([{"time": "2026-01-02T00:00:00Z", "network": "mastodon"}], "m_next")
+
+        with mock.patch.dict(app.CLIENTS, {"bluesky": bsky_mock, "mastodon": masto_mock}, clear=True):
+            h = object.__new__(app.H)
+            h.path = "/api/timeline?cursor_bluesky=b_cur&cursor_mastodon=m_cur"
+            h.headers = {"Host": "127.0.0.1:%d" % app.PORT}
+            h.wfile = io.BytesIO()
+            h.sent = []
+            h.send_response = lambda code: h.sent.append(("code", code))
+            h.send_header = lambda k, v: h.sent.append((k, v))
+            h.end_headers = lambda: None
+            h.do_GET()
+
+            code = [v for k, v in h.sent if k == "code"][0]
+            self.assertEqual(code, 200)
+            res = json.loads(h.wfile.getvalue().decode())
+            self.assertEqual(res["cursors"], {"bluesky": "b_next", "mastodon": "m_next"})
+            bsky_mock.timeline.assert_called_with(cursor="b_cur")
+            masto_mock.timeline.assert_called_with(cursor="m_cur")
+
+
+
 
 
 if __name__ == "__main__":

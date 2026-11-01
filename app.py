@@ -653,14 +653,22 @@ class Bsky:
             "is_reply": bool(rec.get("reply")),
         }
 
-    def timeline(s):
-        feed = s.call("GET", "app.bsky.feed.getTimeline", params={"limit": 40})["feed"]
-        return [s.item(it["post"], it.get("reason"), it.get("reply")) for it in feed]
+    def timeline(s, cursor=None):
+        params = {"limit": 40}
+        if cursor:
+            params["cursor"] = cursor
+        r = s.call("GET", "app.bsky.feed.getTimeline", params=params)
+        feed = r.get("feed", [])
+        return [s.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
 
-    def explore(s):
+    def explore(s, cursor=None):
         feed_uri = "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot"
-        feed = s.call("GET", "app.bsky.feed.getFeed", params={"feed": feed_uri, "limit": 40})["feed"]
-        return [s.item(it["post"], it.get("reason"), it.get("reply")) for it in feed]
+        params = {"feed": feed_uri, "limit": 40}
+        if cursor:
+            params["cursor"] = cursor
+        r = s.call("GET", "app.bsky.feed.getFeed", params=params)
+        feed = r.get("feed", [])
+        return [s.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
 
     def thread(s, ref):
         ok = "app.bsky.feed.defs#threadViewPost"
@@ -771,16 +779,21 @@ class Bsky:
         else:
             raise ApiError(f"Ação desconhecida: {action}")
 
-    def notifications(s):
+    def notifications(s, cursor=None):
         kinds = {"like": "like", "like-via-repost": "like", "repost": "boost", "repost-via-repost": "boost",
                  "follow": "follow", "mention": "mention", "reply": "reply", "quote": "quote"}
-        ns = s.call("GET", "app.bsky.notification.listNotifications", params={"limit": 40})["notifications"]
+        params = {"limit": 40}
+        if cursor:
+            params["cursor"] = cursor
+        r = s.call("GET", "app.bsky.notification.listNotifications", params=params)
+        ns = r.get("notifications", [])
+        next_cursor = r.get("cursor")
         subjects = sorted({n["reasonSubject"] for n in ns
                            if n.get("reasonSubject") and kinds.get(n["reason"]) in ("like", "boost")})
         posts = {}
         for i in range(0, len(subjects), 25):
-            r = s.call("GET", "app.bsky.feed.getPosts", params=[("uris", u) for u in subjects[i:i + 25]])
-            for p in r.get("posts", []):
+            res = s.call("GET", "app.bsky.feed.getPosts", params=[("uris", u) for u in subjects[i:i + 25]])
+            for p in res.get("posts", []):
                 posts[p["uri"]] = p
         out = []
         for n in ns:
@@ -802,7 +815,7 @@ class Bsky:
             out.append({"network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
                         "handle": "@" + a["handle"], "avatar": safe_url(a.get("avatar")),
                         "html": render_bsky_text(text, facets) if text else "", "time": n["indexedAt"], "url": url, "ref": ref})
-        return out
+        return out, next_cursor
 
 
 class Masto:
@@ -896,25 +909,33 @@ class Masto:
             "is_reply": bool(x.get("in_reply_to_id")),
         }
 
-    def timeline(s):
-        sts = s.call("GET", "/api/v1/timelines/home", params={"limit": 40})
+    def timeline(s, cursor=None):
+        params = {"limit": 40}
+        if cursor:
+            params["max_id"] = cursor
+        sts = s.call("GET", "/api/v1/timelines/home", params=params)
         parents = {x["id"]: x for x in (st.get("reblog") or st for st in sts)}
         need = list({x["in_reply_to_id"] for x in parents.values() if x.get("in_reply_to_id")} - set(parents))
         with ThreadPoolExecutor(max_workers=6) as ex:
             for sid, par in zip(need, ex.map(s.parent, need)):
                 if par:
                     parents[sid] = par
-        return [s.item(st, parents) for st in sts]
+        next_cursor = str(sts[-1]["id"]) if sts else None
+        return [s.item(st, parents) for st in sts], next_cursor
 
-    def explore(s):
-        sts = s.call("GET", "/api/v1/trends/statuses", params={"limit": 40})
+    def explore(s, cursor=None):
+        params = {"limit": 40}
+        if cursor:
+            params["max_id"] = cursor
+        sts = s.call("GET", "/api/v1/trends/statuses", params=params)
         parents = {x["id"]: x for x in (st.get("reblog") or st for st in sts)}
         need = list({x["in_reply_to_id"] for x in parents.values() if x.get("in_reply_to_id")} - set(parents))
         with ThreadPoolExecutor(max_workers=6) as ex:
             for sid, par in zip(need, ex.map(s.parent, need)):
                 if par:
                     parents[sid] = par
-        return [s.item(st, parents) for st in sts]
+        next_cursor = str(sts[-1]["id"]) if sts else None
+        return [s.item(st, parents) for st in sts], next_cursor
 
     def thread(s, ref):
         st = s.call("GET", f"/api/v1/statuses/{ref['id']}")
@@ -978,22 +999,27 @@ class Masto:
             raise ApiError(f"Ação desconhecida: {action}")
         return s.call("POST", endpoints[action])
 
-    def notifications(s):
+    def notifications(s, cursor=None):
         kinds = {"favourite": "like", "reblog": "boost", "follow": "follow", "follow_request": "follow_request",
                  "mention": "mention", "quote": "quote", "status": "status", "update": "update", "poll": "poll"}
+        params = {"limit": 40}
+        if cursor:
+            params["max_id"] = cursor
+        raw = s.call("GET", "/api/v1/notifications", params=params)
+        next_cursor = str(raw[-1]["id"]) if raw else None
         out = []
-        for n in s.call("GET", "/api/v1/notifications", params={"limit": 40}):
+        for n in raw:
             a, st = n["account"], n.get("status")
             kind = kinds.get(n["type"], "other")
             if kind == "mention" and st and st.get("in_reply_to_id"):
                 kind = "reply"
             cw = f"<strong>{html.escape(st['spoiler_text'])}</strong><br>" if st and st.get("spoiler_text") else ""
-            out.append({"network": "mastodon", "kind": kind, "name": a.get("display_name") or a["username"],
-                        "handle": "@" + a["acct"], "avatar": safe_url(a.get("avatar")),
-                        "html": (cw + clean(st.get("content"))) if st else "", "time": n["created_at"],
+            out.append({"network": "mastodon", "kind": kind, "name": a.get("display_name") or a.get("username", ""),
+                        "handle": "@" + a.get("acct", ""), "avatar": safe_url(a.get("avatar")),
+                        "html": (cw + clean(st.get("content"))) if st else "", "time": n.get("created_at"),
                         "url": safe_url((st or {}).get("url") or a.get("url")),
                         "ref": {"id": st["id"]} if st and kind in ("reply", "mention", "quote") else None})
-        return out
+        return out, next_cursor
 
 
 def init_clients(cfg):
@@ -1038,13 +1064,15 @@ class H(BaseHTTPRequestHandler):
         s.wfile.write(b)
 
     def do_GET(s):
+        parsed = urllib.parse.urlparse(s.path)
+        path = parsed.path
         if not s.allowed():
             return s.send(403, {"error": "forbidden"})
-        if s.path == "/":
+        if path == "/":
             return s.send(200, (DIR / "index.html").read_bytes(), "text/html")
-        if s.path == "/vendor/hls.min.js":
+        if path == "/vendor/hls.min.js":
             return s.send(200, (DIR / "vendor" / "hls.min.js").read_bytes(), "application/javascript")
-        if s.path == "/api/status":
+        if path == "/api/status":
             return s.send(200, {
                 "configured": bool(CLIENTS),
                 "networks": list(CLIENTS),
@@ -1057,20 +1085,33 @@ class H(BaseHTTPRequestHandler):
                     "instance": CFG.get("mastodon", {}).get("instance", "")
                 }
             })
-        if s.path in ("/api/timeline", "/api/notifications", "/api/explore"):
+        if path in ("/api/timeline", "/api/notifications", "/api/explore"):
             if not CLIENTS:
-                return s.send(200, {"items": [], "errors": {}, "networks": []})
-            what = s.path.rsplit("/", 1)[1]
-            network_items, errors = {}, {}
+                return s.send(200, {"items": [], "errors": {}, "networks": [], "cursors": {}})
+            what = path.rsplit("/", 1)[1]
+            qs = urllib.parse.parse_qs(parsed.query)
+            cursors_in = {
+                "bluesky": qs.get("cursor_bluesky", [None])[0],
+                "mastodon": qs.get("cursor_mastodon", [None])[0]
+            }
+            network_items, errors, next_cursors = {}, {}, {}
 
             def get(c):
                 try:
-                    return c.name, getattr(c, what)(), None
+                    c_cursor = cursors_in.get(c.name)
+                    res = getattr(c, what)(cursor=c_cursor)
+                    if isinstance(res, tuple):
+                        its, nxt = res
+                    else:
+                        its, nxt = res, None
+                    return c.name, its, nxt, None
                 except Exception as e:
-                    return c.name, [], str(e)
+                    return c.name, [], None, str(e)
             with ThreadPoolExecutor() as ex:
-                for name, its, err in ex.map(get, CLIENTS.values()):
+                for name, its, nxt, err in ex.map(get, CLIENTS.values()):
                     network_items[name] = its
+                    if nxt:
+                        next_cursors[name] = nxt
                     if err:
                         errors[name] = err
             if what == "explore":
@@ -1087,7 +1128,7 @@ class H(BaseHTTPRequestHandler):
                 for its in network_items.values():
                     items += its
                 items = sort_items(items)
-            return s.send(200, {"items": items, "errors": errors, "networks": list(CLIENTS)})
+            return s.send(200, {"items": items, "errors": errors, "networks": list(CLIENTS), "cursors": next_cursors})
         s.send(404, {"error": "not found"})
 
     def do_POST(s):
