@@ -450,15 +450,15 @@ function postCard(it, o = {}) {
   bR.innerHTML = ICONS.reply + (it.replies ? '<span>' + Number(it.replies) + '</span>' : '');
   bR.onclick = () => startReply(it);
 
-  const bB = el("button", "act-btn act-boost");
-  bB.title = "Partilhar";
-  bB.setAttribute("aria-label", "Partilhar");
+  const bB = el("button", "act-btn act-boost" + (it.boosted ? " on" : ""));
+  bB.title = it.boosted ? "Desfazer partilha" : "Partilhar";
+  bB.setAttribute("aria-label", bB.title);
   bB.innerHTML = ICONS.boost + (it.boosts ? '<span>' + Number(it.boosts) + '</span>' : '');
   bB.onclick = () => act(it, "boost", bB);
 
-  const bL = el("button", "act-btn act-like");
-  bL.title = "Gostar";
-  bL.setAttribute("aria-label", "Gostar");
+  const bL = el("button", "act-btn act-like" + (it.liked ? " on" : ""));
+  bL.title = it.liked ? "Remover gosto" : "Gostar";
+  bL.setAttribute("aria-label", bL.title);
   bL.innerHTML = ICONS.like + (it.likes ? '<span>' + Number(it.likes) + '</span>' : '');
   bL.onclick = () => act(it, "like", bL);
 
@@ -974,22 +974,63 @@ $("send").onclick = async () => {
   update();
 };
 
-async function act(it, action, btn) {
-  const r = await api("/api/action", {network: it.network, action, ref: it.ref});
-  if (r.ok) {
-    btn.classList.add("on");
-    const span = btn.querySelector("span");
-    if (span) {
-      const cur = parseInt(span.textContent, 10) || 0;
-      span.textContent = cur + 1;
+async function act(it, type, btn) {
+  btn.disabled = true;
+  const isCurrentlyOn = type === "like" ? Boolean(it.liked) : Boolean(it.boosted);
+  const action = isCurrentlyOn ? (type === "like" ? "unlike" : "unboost") : type;
+
+  try {
+    const r = await api("/api/action", {network: it.network, action, ref: it.ref});
+    if (r.ok) {
+      if (type === "like") {
+        it.liked = !isCurrentlyOn;
+        it.likes = Math.max(0, (it.likes || 0) + (it.liked ? 1 : -1));
+        if (it.network === "bluesky") {
+          it.ref = it.ref || {};
+          if (it.liked && r.uri) {
+            it.ref.like_uri = r.uri;
+          } else if (!it.liked) {
+            delete it.ref.like_uri;
+          }
+        }
+        btn.classList.toggle("on", it.liked);
+        btn.title = it.liked ? "Remover gosto" : "Gostar";
+        btn.setAttribute("aria-label", btn.title);
+        const span = btn.querySelector("span");
+        if (it.likes > 0) {
+          if (span) span.textContent = it.likes;
+          else btn.append(el("span", null, String(it.likes)));
+        } else if (span) {
+          span.remove();
+        }
+      } else if (type === "boost") {
+        it.boosted = !isCurrentlyOn;
+        it.boosts = Math.max(0, (it.boosts || 0) + (it.boosted ? 1 : -1));
+        if (it.network === "bluesky") {
+          it.ref = it.ref || {};
+          if (it.boosted && r.uri) {
+            it.ref.repost_uri = r.uri;
+          } else if (!it.boosted) {
+            delete it.ref.repost_uri;
+          }
+        }
+        btn.classList.toggle("on", it.boosted);
+        btn.title = it.boosted ? "Desfazer partilha" : "Partilhar";
+        btn.setAttribute("aria-label", btn.title);
+        const span = btn.querySelector("span");
+        if (it.boosts > 0) {
+          if (span) span.textContent = it.boosts;
+          else btn.append(el("span", null, String(it.boosts)));
+        } else if (span) {
+          span.remove();
+        }
+      }
     } else {
-      const s = el("span", null, "1");
-      btn.append(s);
+      $("msg").className = "msg err";
+      $("msg").textContent = "Falhou: " + (r.error || "erro desconhecido");
     }
-    btn.title = action === "like" ? "Gostaste" : "Partilhado";
-  } else {
-    $("msg").className = "msg err";
-    $("msg").textContent = "Falhou: " + r.error;
+  } finally {
+    btn.disabled = false;
   }
 }
 

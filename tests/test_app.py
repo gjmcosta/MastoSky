@@ -724,6 +724,85 @@ class FacetsAndRichtextTests(unittest.TestCase):
         self.assertEqual(calls[0][2].get("visibility"), "unlisted")
 
 
+class ActionsTests(unittest.TestCase):
+    def test_masto_item_and_act(self):
+        m = app.Masto({"instance": "https://m.pt", "token": "tok"})
+        st = {
+            "id": "100", "account": {"username": "alice", "acct": "alice"},
+            "content": "<p>oi</p>", "created_at": "2026-01-01T00:00:00Z",
+            "favourited": True, "reblogged": False
+        }
+        item = m.item(st)
+        self.assertTrue(item["liked"])
+        self.assertFalse(item["boosted"])
+        self.assertEqual(item["ref"], {"id": "100"})
+
+        calls = []
+        m.call = lambda mth, pth, d=None, p=None: calls.append((mth, pth)) or {}
+
+        m.act("like", {"id": "100"})
+        m.act("unlike", {"id": "100"})
+        m.act("boost", {"id": "100"})
+        m.act("unboost", {"id": "100"})
+
+        self.assertEqual(calls, [
+            ("POST", "/api/v1/statuses/100/favourite"),
+            ("POST", "/api/v1/statuses/100/unfavourite"),
+            ("POST", "/api/v1/statuses/100/reblog"),
+            ("POST", "/api/v1/statuses/100/unreblog")
+        ])
+
+    def test_bsky_item_and_act(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+
+        p = {
+            "uri": "at://did:plc:author/app.bsky.feed.post/post1",
+            "cid": "cid1",
+            "author": {"handle": "alice.bsky.social"},
+            "record": {"text": "ola", "createdAt": "2026-01-01T00:00:00Z"},
+            "viewer": {
+                "like": "at://did:plc:me/app.bsky.feed.like/like123",
+                "repost": "at://did:plc:me/app.bsky.feed.repost/repost456"
+            }
+        }
+        item = b.item(p)
+        self.assertTrue(item["liked"])
+        self.assertTrue(item["boosted"])
+        self.assertEqual(item["ref"]["like_uri"], "at://did:plc:me/app.bsky.feed.like/like123")
+        self.assertEqual(item["ref"]["repost_uri"], "at://did:plc:me/app.bsky.feed.repost/repost456")
+
+        calls = []
+        def fake_call(m, n, d=None, p=None):
+            calls.append((m, n, d))
+            if n == "com.atproto.repo.createRecord":
+                return {"uri": "at://did:plc:me/app.bsky.feed.like/newlike789"}
+            return {}
+
+        b.call = fake_call
+
+        res_like = b.act("like", item["ref"])
+        self.assertEqual(res_like["uri"], "at://did:plc:me/app.bsky.feed.like/newlike789")
+        self.assertEqual(calls[-1][1], "com.atproto.repo.createRecord")
+        self.assertEqual(calls[-1][2]["collection"], "app.bsky.feed.like")
+
+        b.act("unlike", item["ref"])
+        self.assertEqual(calls[-1][1], "com.atproto.repo.deleteRecord")
+        self.assertEqual(calls[-1][2]["rkey"], "like123")
+        self.assertEqual(calls[-1][2]["collection"], "app.bsky.feed.like")
+
+        b.act("boost", item["ref"])
+        self.assertEqual(calls[-1][1], "com.atproto.repo.createRecord")
+        self.assertEqual(calls[-1][2]["collection"], "app.bsky.feed.repost")
+
+        b.act("unboost", item["ref"])
+        self.assertEqual(calls[-1][1], "com.atproto.repo.deleteRecord")
+        self.assertEqual(calls[-1][2]["rkey"], "repost456")
+        self.assertEqual(calls[-1][2]["collection"], "app.bsky.feed.repost")
+
+
+
 
 if __name__ == "__main__":
     unittest.main()

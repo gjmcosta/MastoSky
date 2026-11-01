@@ -630,6 +630,14 @@ class Bsky:
                       "handle": "@" + par["author"]["handle"], "text": preview(par["record"].get("text", ""))}
             else:
                 rt = {"name": None, "handle": None, "text": ""}
+        viewer = p.get("viewer") or {}
+        like_uri = viewer.get("like")
+        repost_uri = viewer.get("repost")
+        ref_obj = {"uri": p["uri"], "cid": p["cid"], "root": {"uri": root["uri"], "cid": root["cid"]}}
+        if like_uri:
+            ref_obj["like_uri"] = like_uri
+        if repost_uri:
+            ref_obj["repost_uri"] = repost_uri
         return {
             "network": "bluesky", "name": a.get("displayName") or a["handle"], "handle": "@" + a["handle"],
             "avatar": safe_url(a.get("avatar")), "html": render_bsky_text(rec.get("text", ""), rec.get("facets")),
@@ -638,8 +646,9 @@ class Bsky:
             "media": media,
             "quote": quote,
             "replies": p.get("replyCount", 0), "boosts": p.get("repostCount", 0), "likes": p.get("likeCount", 0),
+            "liked": bool(like_uri), "boosted": bool(repost_uri),
             "url": f"https://bsky.app/profile/{a['handle']}/post/{p['uri'].split('/')[-1]}",
-            "ref": {"uri": p["uri"], "cid": p["cid"], "root": {"uri": root["uri"], "cid": root["cid"]}},
+            "ref": ref_obj,
             "is_reply": bool(rec.get("reply")),
         }
 
@@ -738,10 +747,21 @@ class Bsky:
 
     def act(s, action, ref):
         s._ensure()
-        col = {"like": "app.bsky.feed.like", "boost": "app.bsky.feed.repost"}[action]
-        s.call("POST", "com.atproto.repo.createRecord", {
-            "repo": s.did, "collection": col,
-            "record": {"$type": col, "subject": {"uri": ref["uri"], "cid": ref["cid"]}, "createdAt": now_iso()}})
+        if action in ("like", "boost"):
+            col = {"like": "app.bsky.feed.like", "boost": "app.bsky.feed.repost"}[action]
+            return s.call("POST", "com.atproto.repo.createRecord", {
+                "repo": s.did, "collection": col,
+                "record": {"$type": col, "subject": {"uri": ref["uri"], "cid": ref["cid"]}, "createdAt": now_iso()}})
+        elif action in ("unlike", "unboost"):
+            col = {"unlike": "app.bsky.feed.like", "unboost": "app.bsky.feed.repost"}[action]
+            target_uri = ref.get("like_uri" if action == "unlike" else "repost_uri") or ref.get("uri")
+            if not target_uri:
+                raise ApiError("URI do registo a remover não fornecido.")
+            rkey = target_uri.split("/")[-1]
+            return s.call("POST", "com.atproto.repo.deleteRecord", {
+                "repo": s.did, "collection": col, "rkey": rkey})
+        else:
+            raise ApiError(f"Ação desconhecida: {action}")
 
     def notifications(s):
         kinds = {"like": "like", "like-via-repost": "like", "repost": "boost", "repost-via-repost": "boost",
@@ -850,6 +870,7 @@ class Masto:
             "media": safe_media_list(media),
             "quote": quote,
             "replies": x.get("replies_count", 0), "boosts": x.get("reblogs_count", 0), "likes": x.get("favourites_count", 0),
+            "liked": bool(x.get("favourited")), "boosted": bool(x.get("reblogged")),
             "url": safe_url(x.get("url")), "ref": {"id": x["id"]}, "reply_to": rt,
             "is_reply": bool(x.get("in_reply_to_id")),
         }
@@ -924,7 +945,15 @@ class Masto:
         s.call("POST", "/api/v1/statuses", data)
 
     def act(s, action, ref):
-        s.call("POST", f"/api/v1/statuses/{ref['id']}/" + {"like": "favourite", "boost": "reblog"}[action])
+        endpoints = {
+            "like": f"/api/v1/statuses/{ref['id']}/favourite",
+            "unlike": f"/api/v1/statuses/{ref['id']}/unfavourite",
+            "boost": f"/api/v1/statuses/{ref['id']}/reblog",
+            "unboost": f"/api/v1/statuses/{ref['id']}/unreblog",
+        }
+        if action not in endpoints:
+            raise ApiError(f"Ação desconhecida: {action}")
+        return s.call("POST", endpoints[action])
 
     def notifications(s):
         kinds = {"favourite": "like", "reblog": "boost", "follow": "follow", "follow_request": "follow_request",
@@ -1147,8 +1176,11 @@ class H(BaseHTTPRequestHandler):
                 return s.send(200, {"error": str(e)})
         if s.path == "/api/action":
             try:
-                CLIENTS[d["network"]].act(d["action"], d["ref"])
-                return s.send(200, {"ok": True})
+                res = CLIENTS[d["network"]].act(d["action"], d["ref"])
+                out = {"ok": True}
+                if isinstance(res, dict) and "uri" in res:
+                    out["uri"] = res["uri"]
+                return s.send(200, out)
             except Exception as e:
                 return s.send(200, {"ok": False, "error": str(e)})
         if s.path == "/api/setup":
