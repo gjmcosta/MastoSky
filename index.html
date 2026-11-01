@@ -197,7 +197,18 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif .head img,.notif .head .ph{width:30px;height:30px}
 .net{width:22px;height:22px;border-radius:6px;background:var(--c);display:grid;place-items:center;flex:none}
 .net svg{width:14px;height:14px}
-.glyph{width:26px;height:26px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;font-size:14px;flex:none}
+.glyph{width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,var(--glyph-c,var(--c)) 14%,transparent);color:var(--glyph-c,var(--c));border:1px solid color-mix(in srgb,var(--glyph-c,var(--c)) 24%,transparent);display:grid;place-items:center;flex:none;box-sizing:border-box;transition:transform .15s ease,background .15s ease}
+.glyph svg{width:15px;height:15px;display:block}
+.glyph.kind-like,.glyph.kind-like_repost{--glyph-c:#f43f5e}
+.glyph.kind-boost,.glyph.kind-boost_repost{--glyph-c:#10b981}
+.glyph.kind-reply{--glyph-c:#0085ff}
+.glyph.kind-mention{--glyph-c:#6364ff}
+.glyph.kind-follow,.glyph.kind-follow_request{--glyph-c:#06b6d4}
+.glyph.kind-quote{--glyph-c:#f59e0b}
+.glyph.kind-poll{--glyph-c:#8b5cf6}
+.glyph.kind-update{--glyph-c:#64748b}
+.glyph.kind-status{--glyph-c:var(--c)}
+.notif:hover .glyph{transform:scale(1.08);background:color-mix(in srgb,var(--glyph-c,var(--c)) 22%,transparent)}
 .notif .body{color:var(--muted);font-size:15px}
 .notif.fresh{background:color-mix(in srgb,var(--c) 9%,var(--card))}
 .back{margin-bottom:12px}
@@ -1812,8 +1823,22 @@ function renderExplore() {
   renderLoadMore(feed, exploreCursors, loadMoreExplore);
 }
 
-const GLYPH = {like: "♥", like_repost: "♥", boost: "⇄", boost_repost: "⇄", follow: "+", follow_request: "+", reply: "↩", mention: "@", quote: "❝",
-  status: "•", update: "✎", poll: "▤", other: "•"};
+const NOTIF_ICONS = {
+  like: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  like_repost: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  boost: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2 4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11v-1a4 4 0 0 1 4-4h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m7 22-4-4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v1a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  boost_repost: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2 4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11v-1a4 4 0 0 1 4-4h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m7 22-4-4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v1a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  reply: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 17 4 12 9 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 18v-2a4 4 0 0 0-4-4H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  mention: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  follow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8.5" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/><line x1="20" y1="8" x2="20" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="11" x2="17" y2="11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  follow_request: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8.5" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/><line x1="20" y1="8" x2="20" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="11" x2="17" y2="11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  quote: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  poll: '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  update: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  status: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  other: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.73 21a2 2 0 0 1-3.46 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+const GLYPH = NOTIF_ICONS;
 let seenBefore = localStorage.getItem("notifSeen");
 if (!seenBefore) { seenBefore = new Date().toISOString(); localStorage.setItem("notifSeen", seenBefore); }
 
@@ -1851,7 +1876,10 @@ function renderNotifs() {
   for (const n of notifs) {
     const p = el("article", "post notif " + n.network + (n.time > seenBefore ? " fresh" : ""));
     const head = el("div", "head");
-    const g = el("span", "glyph", GLYPH[n.kind] || "•"); g.setAttribute("aria-hidden", "true");
+    const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
+    g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
+    g.title = t("notifs." + (n.kind || "other"));
+    g.setAttribute("aria-hidden", "true");
     head.append(g);
     const onNotifProfile = (e) => {
       e.stopPropagation();
