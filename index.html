@@ -2818,6 +2818,19 @@ function renderMedia(mediaList) {
 
 function renderQuote(q) {
   if (!q) return null;
+  if (!q.ref && q.url) {
+    if (q.network === "bluesky" || (!q.network && q.url.includes("bsky.app"))) {
+      const m = q.url.match(/bsky\.app\/profile\/([^/?#]+)\/post\/([^/?#]+)/);
+      if (m) {
+        q.ref = { uri: "at://" + m[1] + "/app.bsky.feed.post/" + m[2] };
+      }
+    } else if (q.network === "mastodon" || (!q.network && !q.url.includes("bsky.app"))) {
+      const m = q.url.match(/\/(\d+)(?:[/?#]|$)/);
+      if (m) {
+        q.ref = { id: m[1] };
+      }
+    }
+  }
   const card = el("div", "quote-card");
   card.title = t("actions.view_thread");
   const head = el("div", "quote-head");
@@ -2875,13 +2888,8 @@ function renderQuote(q) {
   }
   card.onclick = (e) => {
     if (e.target.closest("a, button, video, img, input, textarea")) return;
-    if (q.ref) {
-      e.stopPropagation();
-      openThread(q);
-    } else if (q.url) {
-      const u = su(q.url);
-      if (u) window.open(u, "_blank", "noopener,noreferrer");
-    }
+    e.stopPropagation();
+    openThread(q);
   };
   return card;
 }
@@ -4039,7 +4047,9 @@ async function openThread(it, keep) {
 
   let d;
   try {
-    d = await api("/api/thread", {network: it.network, ref: it.ref});
+    const net = it.network || (it.url && it.url.includes("bsky.app") ? "bluesky" : "mastodon");
+    const ref = it.ref || (it.url ? {url: it.url} : {});
+    d = await api("/api/thread", {network: net, ref: ref});
   } catch (e) {
     d = {error: t("feed.error_server")};
   }

@@ -946,9 +946,20 @@ class Bsky:
         return [self.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
 
     def thread(self, ref):
+        uri = None
+        if isinstance(ref, str):
+            uri = ref
+        elif isinstance(ref, dict):
+            uri = ref.get("uri") or ref.get("url")
+        if uri and "bsky.app/profile/" in str(uri):
+            m = re.search(r"bsky\.app/profile/([^/?#]+)/post/([^/?#]+)", str(uri))
+            if m:
+                uri = f"at://{m.group(1)}/app.bsky.feed.post/{m.group(2)}"
+        if not uri:
+            raise RuntimeError("Referência de post inválida para Bluesky.")
         ok = "app.bsky.feed.defs#threadViewPost"
         r = self.call("GET", "app.bsky.feed.getPostThread",
-                   params={"uri": ref["uri"], "depth": 8, "parentHeight": 30})["thread"]
+                   params={"uri": uri, "depth": 8, "parentHeight": 30})["thread"]
         if r.get("$type") != ok:
             raise RuntimeError("Post não disponível (apagado ou bloqueado).")
         ancestors, n = [], r.get("parent")
@@ -1515,8 +1526,19 @@ class Masto:
         return {"posts": posts, "actors": actors, "hashtags": hashtags}
 
     def thread(self, ref):
-        st = self.call("GET", f"/api/v1/statuses/{ref['id']}")
-        c = self.call("GET", f"/api/v1/statuses/{ref['id']}/context")
+        status_id = None
+        if isinstance(ref, (str, int)):
+            status_id = str(ref)
+        elif isinstance(ref, dict):
+            status_id = ref.get("id") or ref.get("url")
+        if status_id and "/" in str(status_id):
+            m = re.search(r"/(\d+)(?:[/?#]|$)", str(status_id))
+            if m:
+                status_id = m.group(1)
+        if not status_id:
+            raise RuntimeError("Referência de post inválida para Mastodon.")
+        st = self.call("GET", f"/api/v1/statuses/{status_id}")
+        c = self.call("GET", f"/api/v1/statuses/{status_id}/context")
         nodes = {}
         for d in c["descendants"]:
             i = self.item(d)
