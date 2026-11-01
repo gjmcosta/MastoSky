@@ -1414,6 +1414,15 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("max-age", cache)
         self.assertEqual(h.wfile.getvalue(), fake_bytes)
 
+    def test_index_contains_i18n_elements(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn('id="langToggleBtn"', html)
+        self.assertIn('id="cfgLangSelect"', html)
+        self.assertIn("const I18N =", html)
+        self.assertIn("function applyI18n()", html)
+        self.assertIn("function setLang(", html)
+
 
 if __name__ == "__main__":
     unittest.main()

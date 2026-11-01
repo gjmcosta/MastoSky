@@ -264,50 +264,51 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
       </picture>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="ghost" id="settingsBtn" title="Definições / Contas">⚙️</button>
-      <button class="ghost" id="refresh">Atualizar</button>
+      <button class="ghost" id="langToggleBtn" title="Mudar idioma / Switch language" style="font-weight:600;font-size:12px;padding:5px 9px">EN</button>
+      <button class="ghost" id="settingsBtn" title="Definições / Contas" data-i18n-title="header.settings_title">⚙️</button>
+      <button class="ghost" id="refresh" data-i18n="header.refresh">Atualizar</button>
     </div>
   </header>
 
   <nav class="tabs" role="tablist">
-    <button class="tab" role="tab" data-tab="timeline">Timeline</button>
-    <button class="tab" role="tab" data-tab="explore">Em Alta</button>
-    <button class="tab" role="tab" data-tab="notifs">Notificações <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span></button>
-    <button class="tab" role="tab" data-tab="profile">Perfil</button>
+    <button class="tab" role="tab" data-tab="timeline" data-i18n="tabs.timeline">Timeline</button>
+    <button class="tab" role="tab" data-tab="explore" data-i18n="tabs.explore">Em Alta</button>
+    <button class="tab" role="tab" data-tab="notifs"><span data-i18n="tabs.notifs">Notificações</span> <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span></button>
+    <button class="tab" role="tab" data-tab="profile" data-i18n="tabs.profile">Perfil</button>
   </nav>
 
   <section class="compose">
     <div class="replying" id="replying" hidden>
-      <span id="replyingTo"></span><button id="cancelReply">Cancelar resposta</button>
+      <span id="replyingTo"></span><button id="cancelReply" data-i18n="composer.cancel_reply">Cancelar resposta</button>
     </div>
     <div class="cw-row" id="cwRow" hidden>
-      <span class="cw-label">⚠️ Spoiler:</span>
-      <input type="text" id="cwInput" placeholder="Aviso de conteúdo / Tema do spoiler (ex: Final da temporada)..." maxlength="100">
-      <button type="button" class="rm-sm" id="cwCancel" title="Remover aviso">✕</button>
+      <span class="cw-label" data-i18n="composer.spoiler_label">⚠️ Spoiler:</span>
+      <input type="text" id="cwInput" placeholder="Aviso de conteúdo / Tema do spoiler (ex: Final da temporada)..." data-i18n-ph="composer.spoiler_ph" maxlength="100">
+      <button type="button" class="rm-sm" id="cwCancel" title="Remover aviso" data-i18n-title="composer.spoiler_rm">✕</button>
     </div>
     <div class="quote-box" id="quoteBox" hidden>
       <div class="quote-box-head">
-        <span class="quote-box-label">💬 A citar publicação</span>
-        <button type="button" class="rm-sm" id="cancelQuote" title="Remover citação">✕</button>
+        <span class="quote-box-label" data-i18n="composer.quote_label">💬 A citar publicação</span>
+        <button type="button" class="rm-sm" id="cancelQuote" title="Remover citação" data-i18n-title="composer.quote_rm">✕</button>
       </div>
       <div class="quote-box-card" id="quoteCard"></div>
     </div>
-    <textarea id="text" placeholder="O que queres dizer?" aria-label="Novo post"></textarea>
+    <textarea id="text" placeholder="O que queres dizer?" data-i18n-ph="composer.placeholder" aria-label="Novo post" data-i18n-aria="composer.new_post_aria"></textarea>
     <div class="poll-box" id="pollBox" hidden>
       <div class="poll-head">
-        <span style="font-weight:600;font-size:13px">📊 Opções da sondagem</span>
-        <button type="button" class="rm-sm" id="pollCancel" title="Remover sondagem">✕</button>
+        <span style="font-weight:600;font-size:13px" data-i18n="composer.poll_options_title">📊 Opções da sondagem</span>
+        <button type="button" class="rm-sm" id="pollCancel" title="Remover sondagem" data-i18n-title="composer.poll_rm">✕</button>
       </div>
       <div class="poll-list" id="pollList"></div>
       <div class="poll-foot">
-        <button type="button" class="ghost-sm" id="addOptionBtn">+ Opção</button>
-        <label class="poll-dur">Duração:
+        <button type="button" class="ghost-sm" id="addOptionBtn" data-i18n="composer.poll_add_opt">+ Opção</button>
+        <label class="poll-dur"><span data-i18n="composer.poll_dur_label">Duração:</span>
           <select id="pollDuration">
-            <option value="3600">1 hora</option>
-            <option value="21600">6 horas</option>
-            <option value="86400" selected>1 dia</option>
-            <option value="259200">3 dias</option>
-            <option value="604800">7 dias</option>
+            <option id="optDur1h" value="3600">1 hora</option>
+            <option id="optDur6h" value="21600">6 horas</option>
+            <option id="optDur1d" value="86400" selected>1 dia</option>
+            <option id="optDur3d" value="259200">3 dias</option>
+            <option id="optDur7d" value="604800">7 dias</option>
           </select>
         </label>
       </div>
@@ -316,28 +317,28 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
     <div class="bar">
       <div class="bar-left">
         <div class="compose-tools">
-          <label class="tool-btn" id="attachLabel" title="Anexar imagens (máx. 4)">
-            📷 Imagem <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
+          <label class="tool-btn" id="attachLabel" title="Anexar imagens (máx. 4)" data-i18n-title="composer.attach_title">
+            <span data-i18n="composer.attach_img">📷 Imagem</span> <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
           </label>
-          <button type="button" class="tool-btn" id="pollBtn" title="Criar sondagem">📊 Sondagem</button>
-          <button type="button" class="tool-btn" id="cwBtn" title="Aviso de conteúdo / Spoiler">⚠️ Spoiler</button>
+          <button type="button" class="tool-btn" id="pollBtn" title="Criar sondagem" data-i18n="composer.poll_btn" data-i18n-title="composer.poll_title">📊 Sondagem</button>
+          <button type="button" class="tool-btn" id="cwBtn" title="Aviso de conteúdo / Spoiler" data-i18n="composer.spoiler_btn" data-i18n-title="composer.spoiler_title">⚠️ Spoiler</button>
         </div>
         <div class="compose-selects">
           <select id="targetSelect" class="compose-select" title="Redes onde publicar"></select>
           <select id="mastoVisibility" class="compose-select" title="Visibilidade no Mastodon" hidden>
-            <option value="public" selected>🌐 Público</option>
-            <option value="unlisted">🔓 Não listado</option>
-            <option value="private">🔒 Seguidores</option>
-            <option value="direct">✉️ Direta</option>
+            <option id="optVisPub" value="public" selected>🌐 Público</option>
+            <option id="optVisUnl" value="unlisted">🔓 Não listado</option>
+            <option id="optVisPriv" value="private">🔒 Seguidores</option>
+            <option id="optVisDir" value="direct">✉️ Direta</option>
           </select>
         </div>
       </div>
       <div class="bar-right">
         <span class="count" id="count"></span>
-        <button class="send" id="send" disabled>Publicar</button>
+        <button class="send" id="send" disabled data-i18n="composer.send">Publicar</button>
       </div>
     </div>
-    <div class="bsky-note" id="bskyNote" style="font-size:12px;color:var(--muted);margin-top:6px" hidden>ℹ️ No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).</div>
+    <div class="bsky-note" id="bskyNote" style="font-size:12px;color:var(--muted);margin-top:6px" hidden data-i18n="composer.bsky_note">ℹ️ No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).</div>
     <div class="msg" id="msg" role="status"></div>
   </section>
 
@@ -357,7 +358,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
     <div id="perrors"></div>
     <div id="profileCards" class="profile-cards"></div>
     <div class="filter-pills" id="profileFilters" hidden>
-      <button class="pill active" data-net="all">✨ Ambos</button>
+      <button class="pill active" data-net="all" id="pillAll" data-i18n="profile.both_pills">✨ Ambos</button>
       <button class="pill" data-net="bluesky" id="pillBsky">🦋 Bluesky</button>
       <button class="pill" data-net="mastodon" id="pillMasto">🐘 Mastodon</button>
     </div>
@@ -369,37 +370,47 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
   <div id="setupOverlay" class="setup-overlay" hidden>
     <div class="setup-box">
       <div class="setup-header">
-        <h2>⚙️ Configuração do MastoSky</h2>
+        <h2 data-i18n="setup.title">⚙️ Configuração do MastoSky</h2>
         <button type="button" class="rm-sm" id="closeSetup" title="Fechar">✕</button>
       </div>
-      <p class="setup-desc">Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.</p>
+      <p class="setup-desc" data-i18n="setup.desc">Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.</p>
 
       <div class="setup-section">
-        <div class="setup-sec-title"><span>🦋 Bluesky</span><span id="cfgBskyActive" class="star-badge" title="Sessão ativa" hidden></span></div>
+        <div class="setup-sec-title"><span data-i18n="setup.lang_title">🌐 Idioma / Language</span></div>
+        <label><span data-i18n="setup.lang_label">Idioma da interface:</span>
+          <select id="cfgLangSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+            <option value="pt">Português (PT)</option>
+            <option value="en">English (EN)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="setup-section">
+        <div class="setup-sec-title"><span>🦋 Bluesky</span><span id="cfgBskyActive" class="star-badge" title="Sessão ativa" data-i18n-title="setup.active_session" hidden></span></div>
         <label>Handle:
           <input type="text" id="cfgBskyHandle" placeholder="ex: o-teu-nome.bsky.social" autocomplete="off">
         </label>
-        <label>Palavra-passe da aplicação (*App Password*):
+        <label><span data-i18n="setup.bsky_pass_label">Palavra-passe da aplicação (*App Password*):</span>
           <input type="password" id="cfgBskyPass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off">
         </label>
-        <small class="setup-help">Gera em bsky.app &gt; Definições &gt; Privacidade e Segurança &gt; Palavras-passe da aplicação.</small>
+        <small class="setup-help" data-i18n="setup.bsky_help">Gera em bsky.app &gt; Definições &gt; Privacidade e Segurança &gt; Palavras-passe da aplicação.</small>
       </div>
 
       <div class="setup-section">
-        <div class="setup-sec-title"><span>🐘 Mastodon</span><span id="cfgMastoActive" class="star-badge" title="Sessão ativa" hidden></span></div>
-        <label>Instância:
+        <div class="setup-sec-title"><span>🐘 Mastodon</span><span id="cfgMastoActive" class="star-badge" title="Sessão ativa" data-i18n-title="setup.active_session" hidden></span></div>
+        <label><span data-i18n="setup.masto_inst_label">Instância:</span>
           <input type="text" id="cfgMastoInst" placeholder="ex: https://masto.pt" autocomplete="off">
         </label>
-        <label>Token de acesso:
+        <label><span data-i18n="setup.masto_token_label">Token de acesso:</span>
           <input type="password" id="cfgMastoToken" placeholder="O teu access token" autocomplete="off">
         </label>
-        <small class="setup-help">Gera na tua instância em Preferências &gt; Desenvolvimento &gt; Nova aplicação. Marca apenas os âmbitos: read:statuses, read:notifications, write:statuses, write:media, write:favourites.</small>
+        <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt; Desenvolvimento &gt; Nova aplicação. Marca apenas os âmbitos: read:statuses, read:notifications, write:statuses, write:media, write:favourites.</small>
       </div>
 
       <div id="setupMsg" class="msg"></div>
 
       <div class="setup-actions">
-        <button class="send" id="saveSetupBtn">Guardar e Iniciar</button>
+        <button class="send" id="saveSetupBtn" data-i18n="setup.save_btn">Guardar e Iniciar</button>
       </div>
     </div>
   </div>
@@ -407,7 +418,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
   <div id="crossPostOverlay" class="setup-overlay" hidden>
     <div class="setup-box cross-post-box">
       <div class="setup-header">
-        <h2>🔀 Publicação Cruzada</h2>
+        <h2 data-i18n="cross_post.modal_title">🔀 Publicação Cruzada</h2>
         <button type="button" class="rm-sm" id="closeCrossPost" title="Fechar">✕</button>
       </div>
       <p class="setup-desc" id="crossPostDesc">Cria um repost/citação na rede de origem e partilha um cartão visual enriquecido na outra rede.</p>
@@ -418,7 +429,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
       </div>
 
       <div class="cross-theme-row">
-        <span style="font-size:12px;font-weight:600;color:var(--muted)">Estilo do cartão:</span>
+        <span style="font-size:12px;font-weight:600;color:var(--muted)" data-i18n="cross_post.card_style">Estilo do cartão:</span>
         <div class="theme-swatches" id="crossSwatches">
           <button type="button" class="swatch active" data-theme="cosmic" style="background:linear-gradient(135deg,#0B1020,#231C5C)" title="Cósmico"></button>
           <button type="button" class="swatch" data-theme="night" style="background:#0B1020" title="Noite"></button>
@@ -428,20 +439,444 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
       </div>
 
       <div style="margin-top:10px">
-        <textarea id="crossComment" placeholder="Escreve um comentário / citação (opcional)..." style="width:100%;min-height:65px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--ink);font:14px var(--sans);resize:vertical;box-sizing:border-box"></textarea>
+        <textarea id="crossComment" placeholder="Escreve um comentário / citação (opcional)..." data-i18n-ph="cross_post.comment_ph" style="width:100%;min-height:65px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--ink);font:14px var(--sans);resize:vertical;box-sizing:border-box"></textarea>
       </div>
 
       <div id="crossPostMsg" class="msg"></div>
 
       <div class="setup-actions" style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
-        <button type="button" class="ghost" id="cancelCrossPost">Cancelar</button>
-        <button type="button" class="send" id="submitCrossPost">🔀 Publicar cruzado</button>
+        <button type="button" class="ghost" id="cancelCrossPost" data-i18n="cross_post.cancel">Cancelar</button>
+        <button type="button" class="send" id="submitCrossPost" data-i18n="cross_post.submit">🔀 Publicar cruzado</button>
       </div>
     </div>
   </div>
 </main>
 
 <script>
+const I18N = {
+  pt: {
+    header: {
+      settings_title: "Definições / Contas",
+      refresh: "Atualizar",
+      lang_switch_title: "Mudar idioma / Switch language"
+    },
+    tabs: {
+      timeline: "Timeline",
+      explore: "Em Alta",
+      notifs: "Notificações",
+      profile: "Perfil"
+    },
+    composer: {
+      placeholder: "O que queres dizer?",
+      new_post_aria: "Novo post",
+      replying_to: "A responder a {name} no {net}",
+      cancel_reply: "Cancelar resposta",
+      spoiler_label: "⚠️ Spoiler:",
+      spoiler_ph: "Aviso de conteúdo / Tema do spoiler (ex: Final da temporada)...",
+      spoiler_rm: "Remover aviso",
+      quote_label: "💬 A citar publicação",
+      quote_rm: "Remover citação",
+      no_text: "(Sem texto)",
+      poll_options_title: "📊 Opções da sondagem",
+      poll_rm: "Remover sondagem",
+      poll_add_opt: "+ Opção",
+      poll_opt_ph: "Opção {n}",
+      poll_dur_label: "Duração:",
+      poll_dur_1h: "1 hora",
+      poll_dur_6h: "6 horas",
+      poll_dur_1d: "1 dia",
+      poll_dur_3d: "3 dias",
+      poll_dur_7d: "7 dias",
+      attach_img: "📷 Imagem",
+      attach_title: "Anexar imagens (máx. 4)",
+      poll_btn: "📊 Sondagem",
+      poll_title: "Criar sondagem",
+      poll_remove_opt: "Remover opção",
+      poll_disabled_img: "Não é possível ter imagens e sondagem no mesmo post.",
+      spoiler_btn: "⚠️ Spoiler",
+      spoiler_title: "Aviso de conteúdo / Spoiler",
+      target_all: "🌐 Ambas as redes (Crosspost)",
+      target_only_bsky: "🦋 Apenas Bluesky",
+      target_only_masto: "🐘 Apenas Mastodon",
+      vis_public: "🌐 Público",
+      vis_unlisted: "🔓 Não listado",
+      vis_private: "🔒 Seguidores",
+      vis_direct: "✉️ Direta",
+      send: "Publicar",
+      bsky_note: "ℹ️ No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).",
+      posted: "Publicado.",
+      post_failed: "Falhou: {err}",
+      success: "Publicado com sucesso!",
+      delete_success: "Publicação eliminada com sucesso.",
+      delete_failed: "Falhou ao apagar: {err}",
+      img_remove: "Remover imagem",
+      img_alt_ph: "Descrição (alt text)...",
+      img_processing: "A processar imagens...",
+      img_err: "Erro ao processar imagem.",
+      attach_disabled_poll: "Não é possível ter sondagem e imagens no mesmo post.",
+      attach_disabled_max: "Máximo de 4 imagens."
+    },
+    actions: {
+      reply: "Responder",
+      share: "Partilhar",
+      like: "Gostar",
+      liked: "Remover gosto",
+      delete: "Eliminar",
+      view_thread: "Ver conversa",
+      confirm_delete: "Tens a certeza que queres eliminar esta publicação?",
+      load_more: "Carregar mais",
+      loading: "A carregar...",
+      back: "← Voltar"
+    },
+    share_menu: {
+      out_net: "Partilhar noutra rede",
+      cross_post: "Publicação cruzada ({net})",
+      in_net: "Nesta rede ({net})",
+      repost: "Republicação",
+      undo_repost: "Desfazer republicação",
+      quote: "Citação"
+    },
+    cross_post: {
+      modal_title: "🔀 Publicação Cruzada",
+      modal_desc: "Cria um repost/citação no {origin} e publica o cartão visual com link no {dest}.",
+      card_style: "Estilo do cartão:",
+      comment_ph: "Escreve um comentário / citação (opcional)...",
+      cancel: "Cancelar",
+      submit: "🔀 Publicar nas duas redes",
+      submitting: "A publicar nas duas redes...",
+      success: "Publicação cruzada efetuada com sucesso!",
+      retry: "Tentar novamente",
+      failed: "Falhou: {err}",
+      cant_generate: "Não foi possível gerar a imagem do cartão.",
+      branding_tagline: "· Cliente unificado Bluesky & Mastodon",
+      orig_link_label: "🔗 Post original no {net}: {url}"
+    },
+    feed: {
+      empty_timeline: "Ainda não há posts para mostrar. Segue mais contas ou adiciona a outra rede!",
+      empty_explore: "Sem posts em alta para mostrar.",
+      empty_notifs: "Sem notificações por agora.",
+      empty_profile: "Ainda não tens publicações para mostrar.",
+      empty_user_profile: "Sem publicações para mostrar.",
+      empty_replies: "Ainda sem respostas.",
+      loading_thread: "A carregar conversa…",
+      loading_profile: "A carregar perfil…",
+      loading_posts: "A carregar publicações…",
+      error_server: "Não consegui falar com o servidor local.",
+      error_loading_posts: "Erro ao carregar publicações: {err}",
+      error_loading_profile: "Erro ao carregar perfil: {err}"
+    },
+    post: {
+      shared_by: "Partilhado por {name}",
+      view_profile: "Ver perfil de {name}",
+      attach_alt: "Anexo"
+    },
+    notifs: {
+      like: "gostou do teu post",
+      like_repost: "gostou da tua republicação",
+      boost: "partilhou o teu post",
+      boost_repost: "republicou a tua republicação",
+      follow: "começou a seguir-te",
+      follow_request: "pediu para te seguir",
+      reply: "respondeu-te",
+      mention: "mencionou-te",
+      quote: "citou o teu post",
+      status: "publicou um post",
+      update: "editou um post",
+      poll: "– uma sondagem terminou",
+      other: "enviou-te uma notificação"
+    },
+    profile: {
+      both_pills: "✨ Ambos",
+      your_account: "A tua conta",
+      view_on_web: "Ver na web ↗",
+      posts_stat: "posts",
+      following_stat: "a seguir",
+      followers_stat: "seguidores",
+      load_more_posts: "Carregar mais publicações"
+    },
+    setup: {
+      title: "⚙️ Configuração do MastoSky",
+      desc: "Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.",
+      lang_title: "🌐 Idioma / Language",
+      lang_label: "Idioma da interface:",
+      active_session: "Sessão ativa",
+      bsky_pass_label: "Palavra-passe da aplicação (*App Password*):",
+      bsky_help: "Gera em bsky.app > Definições > Privacidade e Segurança > Palavras-passe da aplicação.",
+      masto_inst_label: "Instância:",
+      masto_token_label: "Token de acesso:",
+      masto_help: "Gera na tua instância em Preferências > Desenvolvimento > Nova aplicação. Marca apenas os âmbitos: read:statuses, read:notifications, write:statuses, write:media, write:favourites.",
+      save_btn: "Guardar e Iniciar",
+      saving_btn: "A verificar...",
+      err_fill: "Preenche as credenciais de pelo menos uma rede.",
+      saving_msg: "A validar e a guardar...",
+      success: "Guardado com sucesso!",
+      err_save: "Erro: {err}",
+      err_server: "Erro de ligação ao servidor local."
+    },
+    time: {
+      now: "agora",
+      min: "min",
+      h: "h"
+    }
+  },
+  en: {
+    header: {
+      settings_title: "Settings / Accounts",
+      refresh: "Refresh",
+      lang_switch_title: "Switch language / Mudar idioma"
+    },
+    tabs: {
+      timeline: "Timeline",
+      explore: "Trending",
+      notifs: "Notifications",
+      profile: "Profile"
+    },
+    composer: {
+      placeholder: "What's on your mind?",
+      new_post_aria: "New post",
+      replying_to: "Replying to {name} on {net}",
+      cancel_reply: "Cancel reply",
+      spoiler_label: "⚠️ Spoiler:",
+      spoiler_ph: "Content warning / Spoiler topic (e.g., Season finale)...",
+      spoiler_rm: "Remove warning",
+      quote_label: "💬 Quoting post",
+      quote_rm: "Remove quote",
+      no_text: "(No text)",
+      poll_options_title: "📊 Poll options",
+      poll_rm: "Remove poll",
+      poll_add_opt: "+ Option",
+      poll_opt_ph: "Option {n}",
+      poll_dur_label: "Duration:",
+      poll_dur_1h: "1 hour",
+      poll_dur_6h: "6 hours",
+      poll_dur_1d: "1 day",
+      poll_dur_3d: "3 days",
+      poll_dur_7d: "7 days",
+      attach_img: "📷 Image",
+      attach_title: "Attach images (max. 4)",
+      poll_btn: "📊 Poll",
+      poll_title: "Create poll",
+      poll_remove_opt: "Remove option",
+      poll_disabled_img: "Cannot have both images and a poll in the same post.",
+      spoiler_btn: "⚠️ Spoiler",
+      spoiler_title: "Content warning / Spoiler",
+      target_all: "🌐 Both networks (Crosspost)",
+      target_only_bsky: "🦋 Bluesky only",
+      target_only_masto: "🐘 Mastodon only",
+      vis_public: "🌐 Public",
+      vis_unlisted: "🔓 Unlisted",
+      vis_private: "🔒 Followers",
+      vis_direct: "✉️ Direct",
+      send: "Publish",
+      bsky_note: "ℹ️ On Bluesky, content warnings are prepended as text prefixes and polls as formatted text (they are native on Mastodon).",
+      posted: "Published.",
+      post_failed: "Failed: {err}",
+      success: "Published successfully!",
+      delete_success: "Post deleted successfully.",
+      delete_failed: "Failed to delete: {err}",
+      img_remove: "Remove image",
+      img_alt_ph: "Description (alt text)...",
+      img_processing: "Processing images...",
+      img_err: "Error processing image.",
+      attach_disabled_poll: "Cannot have both a poll and images in the same post.",
+      attach_disabled_max: "Maximum 4 images."
+    },
+    actions: {
+      reply: "Reply",
+      share: "Share",
+      like: "Like",
+      liked: "Unlike",
+      delete: "Delete",
+      view_thread: "View thread",
+      confirm_delete: "Are you sure you want to delete this post?",
+      load_more: "Load more",
+      loading: "Loading...",
+      back: "← Back"
+    },
+    share_menu: {
+      out_net: "Share to other network",
+      cross_post: "Cross-post ({net})",
+      in_net: "On this network ({net})",
+      repost: "Repost",
+      undo_repost: "Undo repost",
+      quote: "Quote"
+    },
+    cross_post: {
+      modal_title: "🔀 Cross-Posting",
+      modal_desc: "Quotes/reposts on {origin} and shares an enriched visual card with link on {dest}.",
+      card_style: "Card style:",
+      comment_ph: "Write a comment / quote (optional)...",
+      cancel: "Cancel",
+      submit: "🔀 Publish to both networks",
+      submitting: "Publishing to both networks...",
+      success: "Cross-posted successfully!",
+      retry: "Try again",
+      failed: "Failed: {err}",
+      cant_generate: "Could not generate card image.",
+      branding_tagline: "· Unified client for Bluesky & Mastodon",
+      orig_link_label: "🔗 Original post on {net}: {url}"
+    },
+    feed: {
+      empty_timeline: "No posts yet. Follow more accounts or connect the other network!",
+      empty_explore: "No trending posts to show.",
+      empty_notifs: "No notifications yet.",
+      empty_profile: "You don't have any posts yet.",
+      empty_user_profile: "No posts to show.",
+      empty_replies: "No replies yet.",
+      loading_thread: "Loading thread…",
+      loading_profile: "Loading profile…",
+      loading_posts: "Loading posts…",
+      error_server: "Could not communicate with local server.",
+      error_loading_posts: "Error loading posts: {err}",
+      error_loading_profile: "Error loading profile: {err}"
+    },
+    post: {
+      shared_by: "Shared by {name}",
+      view_profile: "View profile of {name}",
+      attach_alt: "Attachment"
+    },
+    notifs: {
+      like: "liked your post",
+      like_repost: "liked your repost",
+      boost: "shared your post",
+      boost_repost: "reposted your repost",
+      follow: "followed you",
+      follow_request: "requested to follow you",
+      reply: "replied to you",
+      mention: "mentioned you",
+      quote: "quoted your post",
+      status: "published a post",
+      update: "edited a post",
+      poll: "– a poll ended",
+      other: "sent you a notification"
+    },
+    profile: {
+      both_pills: "✨ Both",
+      your_account: "Your account",
+      view_on_web: "View on web ↗",
+      posts_stat: "posts",
+      following_stat: "following",
+      followers_stat: "followers",
+      load_more_posts: "Load more posts"
+    },
+    setup: {
+      title: "⚙️ MastoSky Settings",
+      desc: "You can connect both networks or just one. Your credentials are saved locally and never leave your computer.",
+      lang_title: "🌐 Language / Idioma",
+      lang_label: "Interface language:",
+      active_session: "Active session",
+      bsky_pass_label: "App Password:",
+      bsky_help: "Generate at bsky.app > Settings > Privacy and Security > App Passwords.",
+      masto_inst_label: "Instance:",
+      masto_token_label: "Access token:",
+      masto_help: "Generate in your instance Preferences > Development > New Application. Check only scopes: read:statuses, read:notifications, write:statuses, write:media, write:favourites.",
+      save_btn: "Save and Start",
+      saving_btn: "Checking...",
+      err_fill: "Fill in credentials for at least one network.",
+      saving_msg: "Validating and saving...",
+      success: "Saved successfully!",
+      err_save: "Error: {err}",
+      err_server: "Error connecting to local server."
+    },
+    time: {
+      now: "now",
+      min: "m",
+      h: "h"
+    }
+  }
+};
+
+let currentLang = localStorage.getItem("mastosky_lang") || ((navigator.language && navigator.language.startsWith("pt")) ? "pt" : "en");
+
+function t(path, params) {
+  const parts = path.split(".");
+  let cur = I18N[currentLang] || I18N.pt;
+  for (const p of parts) {
+    if (cur && typeof cur === "object") cur = cur[p];
+    else { cur = undefined; break; }
+  }
+  if (cur === undefined) {
+    cur = I18N.pt;
+    for (const p of parts) {
+      if (cur && typeof cur === "object") cur = cur[p];
+      else { cur = undefined; break; }
+    }
+  }
+  let str = (typeof cur === "string") ? cur : path;
+  if (params && typeof params === "object") {
+    for (const [k, v] of Object.entries(params)) {
+      str = str.replace(new RegExp(`\\{${k}\\}`, "g"), v != null ? v : "");
+    }
+  }
+  return str;
+}
+
+function applyI18n() {
+  document.documentElement.lang = (currentLang === "pt" ? "pt-PT" : "en");
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (key) el.textContent = t(key);
+  });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    const key = el.getAttribute("data-i18n-ph");
+    if (key) el.placeholder = t(key);
+  });
+  document.querySelectorAll("[data-i18n-title]").forEach(el => {
+    const key = el.getAttribute("data-i18n-title");
+    if (key) el.title = t(key);
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+    const key = el.getAttribute("data-i18n-aria");
+    if (key) el.setAttribute("aria-label", t(key));
+  });
+
+  if ($("optDur1h")) $("optDur1h").textContent = t("composer.poll_dur_1h");
+  if ($("optDur6h")) $("optDur6h").textContent = t("composer.poll_dur_6h");
+  if ($("optDur1d")) $("optDur1d").textContent = t("composer.poll_dur_1d");
+  if ($("optDur3d")) $("optDur3d").textContent = t("composer.poll_dur_3d");
+  if ($("optDur7d")) $("optDur7d").textContent = t("composer.poll_dur_7d");
+
+  if ($("optVisPub")) $("optVisPub").textContent = t("composer.vis_public");
+  if ($("optVisUnl")) $("optVisUnl").textContent = t("composer.vis_unlisted");
+  if ($("optVisPriv")) $("optVisPriv").textContent = t("composer.vis_private");
+  if ($("optVisDir")) $("optVisDir").textContent = t("composer.vis_direct");
+
+  const langBtn = $("langToggleBtn");
+  if (langBtn) {
+    langBtn.textContent = currentLang === "pt" ? "EN" : "PT";
+    langBtn.title = t("header.lang_switch_title");
+  }
+
+  const cfgLang = $("cfgLangSelect");
+  if (cfgLang && cfgLang.value !== currentLang) {
+    cfgLang.value = currentLang;
+  }
+
+  buildTargets();
+
+  const pillAll = $("pillAll");
+  if (pillAll) pillAll.textContent = t("profile.both_pills");
+
+  if (reply && $("replyingTo")) {
+    $("replyingTo").textContent = t("composer.replying_to", {name: reply.name || "", net: LABEL[reply.network]});
+  }
+}
+
+function setLang(newLang) {
+  if (newLang !== "pt" && newLang !== "en") return;
+  currentLang = newLang;
+  localStorage.setItem("mastosky_lang", newLang);
+  applyI18n();
+
+  if (tab === "timeline") renderTimeline();
+  else if (tab === "explore") renderExplore();
+  else if (tab === "notifs") renderNotifs();
+  else if (tab === "profile") {
+    if (profileData) renderProfile(profileData);
+    renderProfileFeed();
+  }
+}
+
 const LIMITS = {bluesky: 300, mastodon: 500};
 const LABEL = {bluesky: "Bluesky", mastodon: "Mastodon"};
 const $ = id => document.getElementById(id);
@@ -455,10 +890,10 @@ async function api(path, body) {
 
 function ago(iso) {
   const s = (Date.now() - new Date(iso)) / 1000;
-  if (s < 60) return "agora";
-  if (s < 3600) return Math.floor(s / 60) + " min";
-  if (s < 86400) return Math.floor(s / 3600) + " h";
-  return new Date(iso).toLocaleDateString("pt-PT", {day: "numeric", month: "short"});
+  if (s < 60) return t("time.now");
+  if (s < 3600) return Math.floor(s / 60) + " " + t("time.min");
+  if (s < 86400) return Math.floor(s / 3600) + " " + t("time.h");
+  return new Date(iso).toLocaleDateString(currentLang === "pt" ? "pt-PT" : "en-US", {day: "numeric", month: "short"});
 }
 
 // Defesa em profundidade: só URLs http(s) chegam a href/src/window.open.
@@ -599,7 +1034,7 @@ function renderQuote(q) {
 
 function postCard(it, o = {}) {
   const p = el("article", "post " + it.network + (o.focus ? " focus" : ""));
-  if (it.boosted_by) p.append(el("div", "boost", "Partilhado por " + it.boosted_by));
+  if (it.boosted_by) p.append(el("div", "boost", t("post.shared_by", {name: it.boosted_by})));
   const head = el("div", "head");
   const onProfile = (e) => {
     e.stopPropagation();
@@ -610,7 +1045,7 @@ function postCard(it, o = {}) {
     i.src = su(it.avatar) || "";
     i.alt = "";
     i.loading = "lazy";
-    i.title = "Ver perfil de " + (it.name || it.handle);
+    i.title = t("post.view_profile", {name: it.name || it.handle});
     i.onclick = onProfile;
     head.append(i);
   } else {
@@ -620,11 +1055,11 @@ function postCard(it, o = {}) {
   const bItName = el("b", "author-link");
   if (it.name_html) bItName.innerHTML = it.name_html;
   else bItName.textContent = it.name;
-  bItName.title = "Ver perfil de " + (it.name || it.handle);
+  bItName.title = t("post.view_profile", {name: it.name || it.handle});
   bItName.onclick = onProfile;
   if (it.is_own) {
     const star = el("span", "star-badge");
-    star.title = "A tua publicação";
+    star.title = t("profile.your_account");
     star.style.marginLeft = "5px";
     bItName.append(star);
   }
@@ -637,8 +1072,8 @@ function postCard(it, o = {}) {
   p.append(head);
   if (it.reply_to && !o.focus) {
     const r = el("button", "replyto"), rt = it.reply_to;
-    r.title = "Ver conversa";
-    r.append(el("b", null, "↩ Em resposta a " + (rt.name || "uma publicação que não está disponível")));
+    r.title = t("actions.view_thread");
+    r.append(el("b", null, "↩ " + t("composer.replying_to", {name: rt.name || "...", net: LABEL[it.network]})));
     if (rt.text) r.append(el("span", "pv", rt.text));
     r.onclick = () => openThread(it);
     p.append(r);
@@ -649,13 +1084,13 @@ function postCard(it, o = {}) {
   if (it.quote) p.append(renderQuote(it.quote));
   const acts = el("div", "acts");
   const bR = el("button", "act-btn act-reply");
-  bR.title = "Responder";
-  bR.setAttribute("aria-label", "Responder");
+  bR.title = t("actions.reply");
+  bR.setAttribute("aria-label", t("actions.reply"));
   bR.innerHTML = ICONS.reply + (it.replies ? '<span>' + Number(it.replies) + '</span>' : '');
   bR.onclick = () => startReply(it);
 
   const bB = el("button", "act-btn act-boost" + (it.boosted ? " on" : ""));
-  bB.title = "Republicar ou citar";
+  bB.title = t("actions.share");
   bB.setAttribute("aria-label", bB.title);
   bB.innerHTML = ICONS.boost + (it.boosts ? '<span>' + Number(it.boosts) + '</span>' : '');
   bB.onclick = (e) => {
@@ -664,7 +1099,7 @@ function postCard(it, o = {}) {
   };
 
   const bL = el("button", "act-btn act-like" + (it.liked ? " on" : ""));
-  bL.title = it.liked ? "Remover gosto" : "Gostar";
+  bL.title = it.liked ? t("actions.liked") : t("actions.like");
   bL.setAttribute("aria-label", bL.title);
   bL.innerHTML = ICONS.like + (it.likes ? '<span>' + Number(it.likes) + '</span>' : '');
   bL.onclick = () => act(it, "like", bL);
@@ -673,8 +1108,8 @@ function postCard(it, o = {}) {
 
   if (it.is_own) {
     const bD = el("button", "act-btn act-del");
-    bD.title = "Apagar publicação";
-    bD.setAttribute("aria-label", "Apagar publicação");
+    bD.title = t("actions.delete");
+    bD.setAttribute("aria-label", t("actions.delete"));
     bD.innerHTML = ICONS.trash;
     bD.onclick = () => deletePost(it, p);
     acts.append(bD);
@@ -686,8 +1121,8 @@ function postCard(it, o = {}) {
 
   if (!o.focus && isConversation) {
     const bT = el("button", "act-btn act-thread");
-    bT.title = "Ver conversa" + (hasReplies ? " (" + it.replies + " respostas)" : "");
-    bT.setAttribute("aria-label", "Ver conversa");
+    bT.title = t("actions.view_thread") + (hasReplies ? " (" + it.replies + ")" : "");
+    bT.setAttribute("aria-label", t("actions.view_thread"));
     bT.innerHTML = ICONS.thread;
     bT.onclick = () => openThread(it);
     acts.append(bT);
@@ -742,7 +1177,7 @@ function renderLoadMore(container, cursors, onLoadMore) {
 function render() {
   const feed = $("feed");
   feed.replaceChildren();
-  if (!items.length) feed.append(el("div", "empty", "Sem posts para mostrar."));
+  if (!items.length) feed.append(el("div", "empty", t("feed.empty_timeline")));
   for (const it of items) feed.append(postCard(it));
   renderLoadMore(feed, timelineCursors, loadMoreTimeline);
 }
@@ -768,7 +1203,7 @@ async function load() {
     $("errors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
     buildTargets(); render(); update();
   } catch (e) {
-    $("errors").replaceChildren(el("div", "banner", "Não consegui falar com o servidor local."));
+    $("errors").replaceChildren(el("div", "banner", t("feed.error_server")));
   }
 }
 
@@ -789,22 +1224,18 @@ async function loadExplore() {
     $("eerrors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
     renderExplore();
   } catch (e) {
-    $("eerrors").replaceChildren(el("div", "banner", "Não consegui falar com o servidor local."));
+    $("eerrors").replaceChildren(el("div", "banner", t("feed.error_server")));
   }
 }
 
 function renderExplore() {
   const feed = $("efeed");
   feed.replaceChildren();
-  if (!exploreItems.length) feed.append(el("div", "empty", "Sem posts em alta para mostrar."));
+  if (!exploreItems.length) feed.append(el("div", "empty", t("feed.empty_explore")));
   for (const it of exploreItems) feed.append(postCard(it));
   renderLoadMore(feed, exploreCursors, loadMoreExplore);
 }
 
-const VERB = {like: "gostou do teu post", like_repost: "gostou da tua republicação",
-  boost: "partilhou o teu post", boost_repost: "republicou a tua republicação", follow: "começou a seguir-te",
-  follow_request: "pediu para te seguir", reply: "respondeu-te", mention: "mencionou-te", quote: "citou o teu post",
-  status: "publicou um post", update: "editou um post", poll: "– uma sondagem terminou", other: "enviou-te uma notificação"};
 const GLYPH = {like: "♥", like_repost: "♥", boost: "⇄", boost_repost: "⇄", follow: "+", follow_request: "+", reply: "↩", mention: "@", quote: "❝",
   status: "•", update: "✎", poll: "▤", other: "•"};
 let seenBefore = localStorage.getItem("notifSeen");
@@ -827,7 +1258,7 @@ async function loadNotifs() {
     $("nerrors").replaceChildren(...Object.entries(d.errors).map(([n, e]) => el("div", "banner", LABEL[n] + ": " + e)));
     renderNotifs();
   } catch (e) {
-    $("nerrors").replaceChildren(el("div", "banner", "Não consegui falar com o servidor local."));
+    $("nerrors").replaceChildren(el("div", "banner", t("feed.error_server")));
   }
   updateBadge();
 }
@@ -836,7 +1267,7 @@ function renderNotifs() {
   const box = $("nfeed");
   if (notifs === null) return;
   box.replaceChildren();
-  if (!notifs.length) box.append(el("div", "empty", "Sem notificações."));
+  if (!notifs.length) box.append(el("div", "empty", t("feed.empty_notifs")));
   for (const n of notifs) {
     const p = el("article", "post notif " + n.network + (n.time > seenBefore ? " fresh" : ""));
     const head = el("div", "head");
@@ -851,7 +1282,7 @@ function renderNotifs() {
       i.src = su(n.avatar) || "";
       i.alt = "";
       i.loading = "lazy";
-      i.title = "Ver perfil de " + (n.name || n.handle);
+      i.title = t("post.view_profile", {name: n.name || n.handle});
       i.onclick = onNotifProfile;
       head.append(i);
     } else {
@@ -860,14 +1291,14 @@ function renderNotifs() {
     const who = el("div", "who");
     const bNName = el("b");
     const sNameWrap = el("span", "author-link");
-    sNameWrap.title = "Ver perfil de " + (n.name || n.handle);
+    sNameWrap.title = t("post.view_profile", {name: n.name || n.handle});
     sNameWrap.onclick = onNotifProfile;
     if (n.name_html) {
       sNameWrap.innerHTML = n.name_html;
     } else {
       sNameWrap.textContent = n.name;
     }
-    const sVerb = el("span", "notif-action", (VERB[n.kind] || VERB.other));
+    const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
     bNName.append(sNameWrap, sVerb);
     who.append(bNName, el("span", null, n.handle + " · " + LABEL[n.network]));
     const when = el("a", "when", ago(n.time));
@@ -878,15 +1309,15 @@ function renderNotifs() {
     if (n.ref) {
       const acts = el("div", "acts");
       const r = el("button", "act-btn act-reply");
-      r.title = "Responder";
-      r.setAttribute("aria-label", "Responder");
+      r.title = t("actions.reply");
+      r.setAttribute("aria-label", t("actions.reply"));
       r.innerHTML = ICONS.reply;
       r.onclick = () => startReply(n);
       acts.append(r);
       if (n.kind === "reply" || n.kind === "mention" || n.kind === "quote") {
         const c = el("button", "act-btn act-thread");
-        c.title = "Ver conversa";
-        c.setAttribute("aria-label", "Ver conversa");
+        c.title = t("actions.view_thread");
+        c.setAttribute("aria-label", t("actions.view_thread"));
         c.innerHTML = ICONS.thread;
         c.onclick = () => openThread(n);
         acts.append(c);
@@ -957,7 +1388,7 @@ function renderProfileFeed() {
   feed.replaceChildren();
   const visible = profileFilter === "all" ? profileItems : profileItems.filter(it => it.network === profileFilter);
   if (!visible.length) {
-    feed.append(el("div", "empty", "Ainda não tens publicações para mostrar."));
+    feed.append(el("div", "empty", t("feed.empty_profile")));
   } else {
     for (const it of visible) feed.append(postCard(it));
   }
@@ -996,10 +1427,10 @@ function renderSingleProfileCard(p, isOwn = false) {
 
   if (isOwn) {
     const star = el("span", "star-badge");
-    star.title = "A tua conta";
+    star.title = t("profile.your_account");
     nameRow.append(star);
   } else if (p.url) {
-    const linkExt = el("a", "ghost", "Ver na web ↗");
+    const linkExt = el("a", "ghost", t("profile.view_on_web"));
     linkExt.href = su(p.url) || "#";
     linkExt.target = "_blank";
     linkExt.rel = "noopener noreferrer";
@@ -1021,11 +1452,11 @@ function renderSingleProfileCard(p, isOwn = false) {
 
   const stats = el("div", "profile-stats");
   const sPosts = el("span");
-  sPosts.innerHTML = `<b>${p.posts_count != null ? p.posts_count : 0}</b> posts`;
+  sPosts.innerHTML = `<b>${p.posts_count != null ? p.posts_count : 0}</b> ` + t("profile.posts_stat");
   const sFollowing = el("span");
-  sFollowing.innerHTML = `<b>${p.following != null ? p.following : 0}</b> a seguir`;
+  sFollowing.innerHTML = `<b>${p.following != null ? p.following : 0}</b> ` + t("profile.following_stat");
   const sFollowers = el("span");
-  sFollowers.innerHTML = `<b>${p.followers != null ? p.followers : 0}</b> seguidores`;
+  sFollowers.innerHTML = `<b>${p.followers != null ? p.followers : 0}</b> ` + t("profile.followers_stat");
   stats.append(sPosts, sFollowing, sFollowers);
   info.append(stats);
 
@@ -1044,7 +1475,7 @@ function renderProfileCards(profiles, errors) {
   }
   const nets = Object.keys(profiles);
   if (!nets.length) {
-    container.append(el("div", "empty", "Nenhuma conta configurada."));
+    container.append(el("div", "empty", t("feed.empty_profile")));
     $("profileFilters").hidden = true;
     return;
   }
@@ -1105,12 +1536,12 @@ async function openThread(it, keep) {
   if (box.hidden) threadScroll = y;
   threadIt = it;
   $("pTimeline").hidden = true; $("pExplore").hidden = true; $("pNotifs").hidden = true; $("pProfile").hidden = true; $("pUserProfile").hidden = true; box.hidden = false;
-  const back = el("button", "ghost back", "← Voltar");
+  const back = el("button", "ghost back", t("actions.back"));
   back.onclick = closeThread;
-  if (!keep) { box.replaceChildren(back, el("div", "empty", "A carregar conversa…")); window.scrollTo(0, 0); }
+  if (!keep) { box.replaceChildren(back, el("div", "empty", t("feed.loading_thread"))); window.scrollTo(0, 0); }
   let d;
   try { d = await api("/api/thread", {network: it.network, ref: it.ref}); }
-  catch (e) { d = {error: "Não consegui falar com o servidor local."}; }
+  catch (e) { d = {error: t("feed.error_server")}; }
   if (threadIt !== it) return; // entretanto saíste desta conversa
   box.replaceChildren(back);
   if (d.error) { box.append(el("div", "banner", LABEL[it.network] + ": " + d.error)); return; }
@@ -1126,7 +1557,7 @@ async function openThread(it, keep) {
     list.forEach(r => { w.append(postCard(r)); if (r.children && r.children.length) w.append(kids(r.children, depth + 1)); });
     return w;
   };
-  box.append(d.replies.length ? kids(d.replies, 0) : el("div", "empty", "Ainda sem respostas."));
+  box.append(d.replies.length ? kids(d.replies, 0) : el("div", "empty", t("feed.empty_replies")));
   if (keep) window.scrollTo(0, y);
   else if (d.ancestors.length) focus.scrollIntoView();
 }
@@ -1155,9 +1586,9 @@ async function openUserProfile(network, actor) {
   $("pThread").hidden = true;
   box.hidden = false;
 
-  const back = el("button", "ghost back", "← Voltar");
+  const back = el("button", "ghost back", t("actions.back"));
   back.onclick = closeUserProfile;
-  const loading = el("div", "empty", "A carregar perfil…");
+  const loading = el("div", "empty", t("feed.loading_profile"));
   box.replaceChildren(back, loading);
   window.scrollTo(0, 0);
 
@@ -1174,13 +1605,13 @@ async function openUserProfile(network, actor) {
     box.append(card);
 
     const feedWrap = el("div", "user-profile-feed");
-    feedWrap.append(el("div", "empty", "A carregar publicações…"));
+    feedWrap.append(el("div", "empty", t("feed.loading_posts")));
     box.append(feedWrap);
 
     await loadUserFeed(feedWrap);
   } catch (err) {
     if (userProfileActor === actor) {
-      box.replaceChildren(back, el("div", "banner", "Erro ao carregar perfil: " + err.message));
+      box.replaceChildren(back, el("div", "banner", t("feed.error_loading_profile", {err: err.message})));
     }
   }
 }
@@ -1225,7 +1656,7 @@ async function loadUserFeed(feedWrap, isMore = false) {
     }
 
     if (!userProfileItems.length) {
-      feedWrap.append(el("div", "empty", "Sem publicações para mostrar."));
+      feedWrap.append(el("div", "empty", t("feed.empty_user_profile")));
     } else {
       for (const it of newItems) {
         feedWrap.append(postCard(it));
@@ -1234,10 +1665,10 @@ async function loadUserFeed(feedWrap, isMore = false) {
         const wrap = el("div", "more-wrap");
         wrap.style.textAlign = "center";
         wrap.style.padding = "20px 0";
-        const btn = el("button", "ghost", "Carregar mais publicações");
+        const btn = el("button", "ghost", t("profile.load_more_posts"));
         btn.onclick = async () => {
           btn.disabled = true;
-          btn.textContent = "A carregar...";
+          btn.textContent = t("actions.loading");
           await loadUserFeed(feedWrap, true);
         };
         wrap.append(btn);
@@ -1245,7 +1676,7 @@ async function loadUserFeed(feedWrap, isMore = false) {
       }
     }
   } catch (err) {
-    feedWrap.append(el("div", "banner", "Erro ao carregar publicações: " + err.message));
+    feedWrap.append(el("div", "banner", t("feed.error_loading_posts", {err: err.message})));
   }
 }
 
@@ -1256,11 +1687,12 @@ function buildTargets() {
   sel.replaceChildren();
   if (networks.length > 1) {
     sel.hidden = Boolean(reply);
-    const optAll = el("option", null, "🌐 Ambas as redes (Crosspost)");
+    const optAll = el("option", null, t("composer.target_all"));
     optAll.value = "all";
     sel.append(optAll);
     for (const n of networks) {
-      const opt = el("option", null, (n === "bluesky" ? "🦋 Apenas Bluesky" : "🐘 Apenas Mastodon"));
+      const label = n === "bluesky" ? t("composer.target_only_bsky") : t("composer.target_only_masto");
+      const opt = el("option", null, label);
       opt.value = n;
       sel.append(opt);
     }
@@ -1271,10 +1703,11 @@ function buildTargets() {
     }
   } else if (networks.length === 1) {
     sel.hidden = true;
-    const opt = el("option", null, (networks[0] === "bluesky" ? "🦋 " : "🐘 ") + LABEL[networks[0]]);
-    opt.value = networks[0];
+    const n = networks[0];
+    const opt = el("option", null, (n === "bluesky" ? "🦋 " : "🐘 ") + LABEL[n]);
+    opt.value = n;
     sel.append(opt);
-    sel.value = networks[0];
+    sel.value = n;
   } else {
     sel.hidden = true;
   }
@@ -1359,7 +1792,7 @@ function renderPreviews() {
     const card = el("div", "prev-card");
     const thumb = el("img"); thumb.src = img.data; thumb.alt = "";
     const rm = el("button", "rm", "✕");
-    rm.title = "Remover imagem";
+    rm.title = t("composer.img_remove");
     rm.onclick = () => {
       images.splice(idx, 1);
       renderPreviews();
@@ -1367,7 +1800,7 @@ function renderPreviews() {
     };
     const inp = el("input");
     inp.type = "text";
-    inp.placeholder = "Descrição (alt text)...";
+    inp.placeholder = t("composer.img_alt_ph");
     inp.value = img.alt || "";
     inp.oninput = () => { img.alt = inp.value; };
     card.append(thumb, inp, rm);
@@ -1383,7 +1816,7 @@ $("mediaInput").onchange = async (e) => {
   if (remaining <= 0) return;
   const toProcess = files.slice(0, remaining);
   $("msg").className = "msg";
-  $("msg").textContent = "A processar imagens...";
+  $("msg").textContent = t("composer.img_processing");
   try {
     for (const f of toProcess) {
       const proc = await processImage(f);
@@ -1392,7 +1825,7 @@ $("mediaInput").onchange = async (e) => {
     $("msg").textContent = "";
   } catch (err) {
     $("msg").className = "msg err";
-    $("msg").textContent = err.message || "Erro ao processar imagem.";
+    $("msg").textContent = err.message || t("composer.img_err");
   }
   renderPreviews();
   update();
@@ -1440,7 +1873,7 @@ function renderPoll() {
     const row = el("div", "poll-opt-row");
     const inp = el("input");
     inp.type = "text";
-    inp.placeholder = "Opção " + (idx + 1);
+    inp.placeholder = t("composer.poll_opt_ph", {n: idx + 1});
     inp.value = opt;
     inp.maxLength = 50;
     inp.oninput = (e) => {
@@ -1451,7 +1884,7 @@ function renderPoll() {
     if (pollOptions.length > 2) {
       const rm = el("button", "rm-sm", "✕");
       rm.type = "button";
-      rm.title = "Remover opção";
+      rm.title = t("composer.poll_remove_opt");
       rm.onclick = () => {
         pollOptions.splice(idx, 1);
         renderPoll();
@@ -1522,21 +1955,21 @@ function update() {
   // Exclusividade mútua entre Sondagem e Imagens
   if (images.length > 0) {
     $("pollBtn").setAttribute("disabled", "true");
-    $("pollBtn").title = "Não é possível ter imagens e sondagem no mesmo post.";
+    $("pollBtn").title = t("composer.poll_disabled_img");
   } else {
     $("pollBtn").removeAttribute("disabled");
-    $("pollBtn").title = "Criar sondagem";
+    $("pollBtn").title = t("composer.poll_title");
   }
 
   if (hasPoll) {
     $("attachLabel").setAttribute("disabled", "true");
-    $("attachLabel").title = "Não é possível ter sondagem e imagens no mesmo post.";
+    $("attachLabel").title = t("composer.attach_disabled_poll");
   } else if (images.length >= 4) {
     $("attachLabel").setAttribute("disabled", "true");
-    $("attachLabel").title = "Máximo de 4 imagens.";
+    $("attachLabel").title = t("composer.attach_disabled_max");
   } else {
     $("attachLabel").removeAttribute("disabled");
-    $("attachLabel").title = "Anexar imagens (máx. 4)";
+    $("attachLabel").title = t("composer.attach_title");
   }
   if ($("attachLabel")) {
     $("attachLabel").classList.toggle("on", images.length > 0);
@@ -1608,7 +2041,7 @@ function renderQuoteBox() {
   const b = el("b", null, quote.name || quote.handle);
   const s = el("span", null, " " + quote.handle + " · " + LABEL[quote.network]);
   who.append(b, s);
-  const snip = el("div", "quote-snip", quote.text || "(Sem texto)");
+  const snip = el("div", "quote-snip", quote.text || t("composer.no_text"));
   qc.append(who, snip);
 }
 
@@ -1641,9 +2074,9 @@ function openBoostMenu(it, btn) {
   // Secção: Partilhar noutra rede
   const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
   if (networks.length > 1 && networks.includes(otherNet)) {
-    const secOut = el("div", "boost-header", "Partilhar noutra rede");
+    const secOut = el("div", "boost-header", t("share_menu.out_net"));
     const btnCross = el("button", "boost-btn-cross");
-    btnCross.innerHTML = '🔀 <span>Publicação cruzada (' + LABEL[otherNet] + ')</span>';
+    btnCross.innerHTML = '🔀 <span>' + t("share_menu.cross_post", {net: LABEL[otherNet]}) + '</span>';
     btnCross.onclick = (e) => {
       e.stopPropagation();
       closeBoostMenu();
@@ -1653,9 +2086,9 @@ function openBoostMenu(it, btn) {
   }
 
   // Secção: Nesta rede
-  const secIn = el("div", "boost-header", "Nesta rede (" + LABEL[it.network] + ")");
+  const secIn = el("div", "boost-header", t("share_menu.in_net", {net: LABEL[it.network]}));
   const btnRepost = el("button", null);
-  btnRepost.innerHTML = ICONS.boost + " <span>" + (it.boosted ? "Desfazer republicação" : "Republicar") + "</span>";
+  btnRepost.innerHTML = ICONS.boost + " <span>" + (it.boosted ? t("share_menu.undo_repost") : t("share_menu.repost")) + "</span>";
   btnRepost.onclick = (e) => {
     e.stopPropagation();
     closeBoostMenu();
@@ -1663,7 +2096,7 @@ function openBoostMenu(it, btn) {
   };
 
   const btnQuote = el("button", null);
-  btnQuote.innerHTML = '💬 <span>Citação</span>';
+  btnQuote.innerHTML = '💬 <span>' + t("share_menu.quote") + '</span>';
   btnQuote.onclick = (e) => {
     e.stopPropagation();
     closeBoostMenu();
@@ -2044,7 +2477,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   } else {
     ctx.fillStyle = "#FFFFFF";
     ctx.font = "30px/1.45 system-ui, -apple-system, sans-serif";
-    wrapCanvasText(ctx, postTxt || "(Sem texto)", contentLeft, contentTop + 28, availW, 44, 13);
+    wrapCanvasText(ctx, postTxt || t("composer.no_text"), contentLeft, contentTop + 28, availW, 44, 13);
   }
 
   // 7. Rodapé de métricas no cartão
@@ -2076,7 +2509,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
 
   ctx.fillStyle = "#8E96C8";
   ctx.font = "18px system-ui, sans-serif";
-  ctx.fillText("· Cliente unificado Bluesky & Mastodon", starX + 125, footY);
+  ctx.fillText(t("cross_post.branding_tagline"), starX + 125, footY);
 
   if (it.url) {
     ctx.fillStyle = "#4DB2FF";
@@ -2105,10 +2538,10 @@ function openCrossPostModal(it) {
   $("crossPostMsg").textContent = "";
   $("crossComment").value = "";
   $("submitCrossPost").disabled = false;
-  $("submitCrossPost").textContent = "🔀 Publicar nas duas redes";
+  $("submitCrossPost").textContent = t("cross_post.submit");
 
   const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
-  $("crossPostDesc").textContent = `Cita/reposta no ${LABEL[it.network]} e publica o cartão visual com link no ${LABEL[otherNet]}.`;
+  $("crossPostDesc").textContent = t("cross_post.modal_desc", {origin: LABEL[it.network], dest: LABEL[otherNet]});
 
   document.querySelectorAll("#crossSwatches .swatch").forEach(s => {
     s.classList.toggle("active", s.dataset.theme === crossPostTheme);
@@ -2143,14 +2576,14 @@ $("submitCrossPost").onclick = async () => {
   const msg = $("crossPostMsg");
 
   btn.disabled = true;
-  btn.textContent = "A publicar nas duas redes...";
+  btn.textContent = t("cross_post.submitting");
   msg.className = "msg";
   msg.textContent = "";
 
   try {
     const dataUrl = $("crossCanvas").toDataURL("image/jpeg", 0.92);
     if (!dataUrl || dataUrl === "data:,") {
-      throw new Error("Não foi possível gerar a imagem do cartão.");
+      throw new Error(t("cross_post.cant_generate"));
     }
 
     // 1. Ação na rede de origem do post (it.network)
@@ -2181,16 +2614,15 @@ $("submitCrossPost").onclick = async () => {
     }
 
     // 2. Ação na outra rede (otherNet) com o cartão visual e link canónico
-    const destText = comment
-      ? (comment + "\n\n🔗 Post original no " + LABEL[it.network] + ": " + it.url)
-      : ("🔗 Post original no " + LABEL[it.network] + ": " + it.url);
+    const linkStr = t("cross_post.orig_link_label", {net: LABEL[it.network], url: it.url});
+    const destText = comment ? (comment + "\n\n" + linkStr) : linkStr;
 
     const destPromise = api("/api/post", {
       text: destText,
       targets: [otherNet],
       images: [{
         data: dataUrl,
-        alt: "Citação visual de post no " + LABEL[it.network] + " por " + it.name
+        alt: t("cross_post.modal_title") + " - " + LABEL[it.network] + " - " + (it.name || it.handle)
       }]
     });
 
@@ -2220,27 +2652,27 @@ $("submitCrossPost").onclick = async () => {
 
     if (errors.length) {
       msg.className = "msg err";
-      msg.textContent = "Falhou: " + errors.join("; ");
+      msg.textContent = t("cross_post.failed", {err: errors.join("; ")});
       btn.disabled = false;
-      btn.textContent = "Tentar novamente";
+      btn.textContent = t("cross_post.retry");
     } else {
       closeCrossPostModal();
       $("msg").className = "msg";
-      $("msg").textContent = "Publicação cruzada efetuada com sucesso!";
+      $("msg").textContent = t("cross_post.success");
       setTimeout(load, 1200);
     }
   } catch (err) {
     msg.className = "msg err";
-    msg.textContent = "Erro: " + err.message;
+    msg.textContent = t("cross_post.failed", {err: err.message});
     btn.disabled = false;
-    btn.textContent = "Tentar novamente";
+    btn.textContent = t("cross_post.retry");
   }
 };
 
 function startReply(it) {
-  reply = {network: it.network, ref: it.ref};
+  reply = {network: it.network, ref: it.ref, name: it.name};
   $("replying").hidden = false;
-  $("replyingTo").textContent = "A responder a " + it.name + " no " + LABEL[it.network];
+  $("replyingTo").textContent = t("composer.replying_to", {name: it.name, net: LABEL[it.network]});
   if ($("targetSelect")) $("targetSelect").hidden = true;
   $("text").focus(); update();
 }
@@ -2273,17 +2705,17 @@ $("send").onclick = async () => {
   const visibility = (mastoActive && $("mastoVisibility")) ? $("mastoVisibility").value : null;
 
   const body = reply
-    ? {text: $("text").value, reply, images, spoiler, poll, visibility, quote}
-    : {text: $("text").value, targets: selected(), images, spoiler, poll, visibility, quote};
+    ? {text: $("text").value, reply, images, spoiler, poll, visibility, quote, lang: currentLang}
+    : {text: $("text").value, targets: selected(), images, spoiler, poll, visibility, quote, lang: currentLang};
 
   const res = await api("/api/post", body);
   const bad = Object.entries(res).filter(([, v]) => v !== "ok");
   const msg = $("msg");
   if (bad.length) {
     msg.className = "msg err";
-    msg.textContent = "Falhou: " + bad.map(([n, v]) => LABEL[n] + " (" + v + ")").join("; ");
+    msg.textContent = t("composer.post_failed", {err: bad.map(([n, v]) => LABEL[n] + " (" + v + ")").join("; ")});
   } else {
-    msg.className = "msg"; msg.textContent = "Publicado.";
+    msg.className = "msg"; msg.textContent = t("composer.posted");
     $("text").value = ""; images = []; renderPreviews();
     hasCW = false; renderCW();
     hasPoll = false; pollOptions = ["", ""]; renderPoll();
@@ -2316,7 +2748,7 @@ async function act(it, type, btn) {
           }
         }
         btn.classList.toggle("on", it.liked);
-        btn.title = it.liked ? "Remover gosto" : "Gostar";
+        btn.title = it.liked ? t("actions.liked") : t("actions.like");
         btn.setAttribute("aria-label", btn.title);
         const span = btn.querySelector("span");
         if (it.likes > 0) {
@@ -2337,7 +2769,7 @@ async function act(it, type, btn) {
           }
         }
         btn.classList.toggle("on", it.boosted);
-        btn.title = it.boosted ? "Desfazer partilha" : "Partilhar";
+        btn.title = it.boosted ? t("share_menu.undo_repost") : t("share_menu.repost");
         btn.setAttribute("aria-label", btn.title);
         const span = btn.querySelector("span");
         if (it.boosts > 0) {
@@ -2349,7 +2781,7 @@ async function act(it, type, btn) {
       }
     } else {
       $("msg").className = "msg err";
-      $("msg").textContent = "Falhou: " + (r.error || "erro desconhecido");
+      $("msg").textContent = t("composer.post_failed", {err: r.error || "erro"});
     }
   } finally {
     btn.disabled = false;
@@ -2357,17 +2789,17 @@ async function act(it, type, btn) {
 }
 
 async function deletePost(it, postEl) {
-  if (!confirm("Tens a certeza de que queres apagar esta publicação?")) return;
+  if (!confirm(t("actions.confirm_delete"))) return;
   try {
     const r = await api("/api/action", {network: it.network, action: "delete", ref: it.ref});
     if (r.ok) {
       postEl.remove();
       $("msg").className = "msg";
-      $("msg").textContent = "Publicação apagada.";
-      setTimeout(() => { if ($("msg").textContent === "Publicação apagada.") $("msg").textContent = ""; }, 3000);
+      $("msg").textContent = t("composer.delete_success");
+      setTimeout(() => { if ($("msg").textContent === t("composer.delete_success")) $("msg").textContent = ""; }, 3000);
     } else {
       $("msg").className = "msg err";
-      $("msg").textContent = "Falhou ao apagar: " + (r.error || "erro desconhecido");
+      $("msg").textContent = t("composer.delete_failed", {err: r.error || "erro"});
     }
   } catch (err) {
     $("msg").className = "msg err";
@@ -2404,7 +2836,7 @@ $("saveSetupBtn").onclick = async () => {
 
   if (!bskyHandle && !bskyPass && !mastoInst && !mastoToken) {
     $("setupMsg").className = "msg err";
-    $("setupMsg").textContent = "Preenche as credenciais de pelo menos uma rede.";
+    $("setupMsg").textContent = t("setup.err_fill");
     return;
   }
 
@@ -2418,12 +2850,12 @@ $("saveSetupBtn").onclick = async () => {
 
   $("saveSetupBtn").disabled = true;
   $("setupMsg").className = "msg";
-  $("setupMsg").textContent = "A validar e a guardar...";
+  $("setupMsg").textContent = t("setup.saving_msg");
 
   try {
     const res = await api("/api/setup", payload);
     if (res.ok) {
-      $("setupMsg").textContent = "Guardado com sucesso!";
+      $("setupMsg").textContent = t("setup.success");
       setTimeout(() => {
         closeSetup();
         $("saveSetupBtn").disabled = false;
@@ -2433,14 +2865,21 @@ $("saveSetupBtn").onclick = async () => {
     } else {
       $("saveSetupBtn").disabled = false;
       $("setupMsg").className = "msg err";
-      $("setupMsg").textContent = "Erro: " + (res.error || "Não foi possível guardar.");
+      $("setupMsg").textContent = t("setup.err_save", {err: res.error || "unknown"});
     }
   } catch (e) {
     $("saveSetupBtn").disabled = false;
     $("setupMsg").className = "msg err";
-    $("setupMsg").textContent = "Erro de ligação ao servidor local.";
+    $("setupMsg").textContent = t("setup.err_server");
   }
 };
+
+if ($("langToggleBtn")) $("langToggleBtn").onclick = () => setLang(currentLang === "pt" ? "en" : "pt");
+if ($("cfgLangSelect")) {
+  $("cfgLangSelect").value = currentLang;
+  $("cfgLangSelect").onchange = (e) => setLang(e.target.value);
+}
+applyI18n();
 
 const initTab = location.hash === "#notifs" ? "notifs" : (location.hash === "#explore" ? "explore" : (location.hash === "#profile" ? "profile" : "timeline"));
 setTab(initTab);
