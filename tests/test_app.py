@@ -394,5 +394,67 @@ class HttpErrorTests(unittest.TestCase):
         self.assertIn("Sem ligação a bsky.social", str(cm.exception))
 
 
+class BskySessionTests(unittest.TestCase):
+    def _client(self):
+        return app.Bsky({"handle": "h.bsky.social", "app_password": "pw"})
+
+    def _fake_http(self, calls, refresh_ok=True, expire_first=True):
+        state = {"expired": expire_first}
+
+        def fake(method, url, data=None, token=None, headers=None):
+            calls.append((url.rsplit("/", 1)[-1].rsplit(".", 1)[-1], token))
+            if url.endswith("createSession"):
+                return {"accessJwt": "access-%d" % len(calls), "refreshJwt": "refresh-1", "did": "did:plc:me"}
+            if url.endswith("refreshSession"):
+                if not refresh_ok:
+                    raise app.ApiError("400: bad refresh", status=400)
+                return {"accessJwt": "renewed", "refreshJwt": "refresh-2", "did": "did:plc:me"}
+            if state["expired"] and token != "renewed" and not token.startswith("access-new"):
+                state["expired"] = False
+                raise app.ApiError('400: {"error":"ExpiredToken"}', status=400)
+            return {"ok": True, "token": token}
+        return fake
+
+    def test_refresh_used_instead_of_create_session(self):
+        from unittest import mock
+        calls = []
+        c = self._client()
+        with mock.patch("app.http", side_effect=self._fake_http(calls)):
+            r = c.call("GET", "app.bsky.feed.getTimeline")
+        names = [n for n, _ in calls]
+        self.assertEqual(names, ["createSession", "getTimeline", "refreshSession", "getTimeline"])
+        self.assertEqual(names.count("createSession"), 1)
+        self.assertEqual(calls[2][1], "refresh-1")  # refreshJwt usado como bearer
+        self.assertEqual(r["token"], "renewed")
+        self.assertEqual(c.refresh_jwt, "refresh-2")
+
+    def test_falls_back_to_create_session_if_refresh_fails(self):
+        from unittest import mock
+        calls = []
+        c = self._client()
+        with mock.patch("app.http", side_effect=self._fake_http(calls, refresh_ok=False)):
+            c.call("GET", "app.bsky.feed.getTimeline")
+        names = [n for n, _ in calls]
+        self.assertEqual(names, ["createSession", "getTimeline", "refreshSession", "createSession", "getTimeline"])
+
+    def test_upload_blob_also_renews(self):
+        from unittest import mock
+        calls = []
+        c = self._client()
+        fake = self._fake_http(calls)
+        with mock.patch("app.http", side_effect=lambda *a, **k: dict(fake(*a, **k), blob={"ref": "b"})):
+            self.assertEqual(c.upload_blob(b"x", "image/png"), {"ref": "b"})
+        self.assertIn("refreshSession", [n for n, _ in calls])
+
+    def test_non_auth_errors_propagate(self):
+        from unittest import mock
+        c = self._client()
+        c.jwt, c.did = "tok", "did:plc:me"
+        with mock.patch("app.http", side_effect=app.ApiError("500: boom", status=500)) as h:
+            with self.assertRaises(app.ApiError):
+                c.call("GET", "x")
+        self.assertEqual(h.call_count, 1)
+
+
 if __name__ == "__main__":
     unittest.main()

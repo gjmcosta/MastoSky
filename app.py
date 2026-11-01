@@ -380,26 +380,56 @@ class Bsky:
     name = "bluesky"
 
     def __init__(s, c):
-        s.c, s.jwt, s.did = c, None, None
+        s.c, s.jwt, s.refresh_jwt, s.did = c, None, None, None
         s.host = c.get("service", "https://bsky.social")
+        s.lock = threading.RLock()  # protege login/refresh em pedidos concorrentes
 
     def login(s):
-        r = http("POST", s.host + "/xrpc/com.atproto.server.createSession",
-                 {"identifier": s.c["handle"], "password": s.c["app_password"]})
-        s.jwt, s.did = r["accessJwt"], r["did"]
+        with s.lock:
+            r = http("POST", s.host + "/xrpc/com.atproto.server.createSession",
+                     {"identifier": s.c["handle"], "password": s.c["app_password"]})
+            s.jwt, s.refresh_jwt, s.did = r["accessJwt"], r.get("refreshJwt"), r["did"]
+
+    def _ensure(s):
+        with s.lock:
+            if not s.jwt:
+                s.login()
+
+    def _renew(s, failed_jwt):
+        """Renova a sessão: primeiro refreshSession; só se falhar volta a createSession."""
+        with s.lock:
+            if s.jwt != failed_jwt:  # outro pedido já renovou entretanto
+                return
+            if s.refresh_jwt:
+                try:
+                    r = http("POST", s.host + "/xrpc/com.atproto.server.refreshSession", token=s.refresh_jwt)
+                    s.jwt, s.refresh_jwt = r["accessJwt"], r.get("refreshJwt") or s.refresh_jwt
+                    s.did = r.get("did") or s.did
+                    return
+                except (RuntimeError, KeyError):
+                    pass
+            s.jwt = None
+            s.login()
+
+    @staticmethod
+    def _expired(e):
+        return "ExpiredToken" in str(e) or str(e).startswith("401")
+
+    def _authed(s, fn):
+        """Executa fn(jwt); se o token expirou, renova a sessão e repete uma vez."""
+        s._ensure()
+        jwt = s.jwt
+        try:
+            return fn(jwt)
+        except RuntimeError as e:
+            if not s._expired(e):
+                raise
+            s._renew(jwt)
+            return fn(s.jwt)
 
     def call(s, method, nsid, data=None, params=None):
         url = f"{s.host}/xrpc/{nsid}" + ("?" + urllib.parse.urlencode(params) if params else "")
-        for attempt in (0, 1):
-            if not s.jwt:
-                s.login()
-            try:
-                return http(method, url, data, s.jwt)
-            except RuntimeError as e:
-                if attempt == 0 and ("ExpiredToken" in str(e) or str(e).startswith("401")):
-                    s.jwt = None
-                    continue
-                raise
+        return s._authed(lambda jwt: http(method, url, data, jwt))
 
     def item(s, p, reason=None, reply=None):
         a, rec = p["author"], p["record"]
@@ -478,21 +508,11 @@ class Bsky:
 
     def upload_blob(s, raw_bytes, mime="image/jpeg"):
         url = f"{s.host}/xrpc/com.atproto.repo.uploadBlob"
-        for attempt in (0, 1):
-            if not s.jwt:
-                s.login()
-            try:
-                r = http("POST", url, data=raw_bytes, token=s.jwt, headers={"Content-Type": mime})
-                return r["blob"]
-            except RuntimeError as e:
-                if attempt == 0 and ("ExpiredToken" in str(e) or str(e).startswith("401")):
-                    s.jwt = None
-                    continue
-                raise
+        r = s._authed(lambda jwt: http("POST", url, data=raw_bytes, token=jwt, headers={"Content-Type": mime}))
+        return r["blob"]
 
     def post(s, text, ref=None, images=None, spoiler=None, poll=None):
-        if not s.jwt:
-            s.login()
+        s._ensure()
         final_text = (text or "").strip()
         if poll and poll.get("options"):
             opts = [o.strip() for o in poll["options"] if o.strip()]
@@ -531,8 +551,7 @@ class Bsky:
                {"repo": s.did, "collection": "app.bsky.feed.post", "record": rec})
 
     def act(s, action, ref):
-        if not s.jwt:
-            s.login()
+        s._ensure()
         col = {"like": "app.bsky.feed.like", "boost": "app.bsky.feed.repost"}[action]
         s.call("POST", "com.atproto.repo.createRecord", {
             "repo": s.did, "collection": col,
