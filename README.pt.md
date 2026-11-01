@@ -18,8 +18,8 @@
 * **💬 Citações Ricas (*Quote Posts*):** Suporte nativo a publicações citadas de ambas as redes, com identificação do autor original, texto e imagens.
 * **🎬 Leitor de Vídeo Integrado:** Suporte transparente para streaming adaptativo HLS (`.m3u8` do Bluesky) e ficheiros de vídeo/animações (`.mp4` e `gifv` do Mastodon).
 * **🖼️ Suporte a Imagens e Cartões de Links:** Pré-visualização de imagens sem cortes forçados, zoom em tamanho original e cartões de link com domínio.
-* **📊 Sondagens:** Cria sondagens com opções personalizadas e duração ajustável.
-* **⚠️ Avisos de Conteúdo (*Content Warning* / Spoiler):** Marca spoilers ou avisos sensíveis que são respeitados e integrados com as regras nativas de ambas as plataformas.
+* **📊 Sondagens:** Cria sondagens com opções personalizadas e duração ajustável (nativas no Mastodon; formatadas como texto claro com opções no Bluesky).
+* **⚠️ Avisos de Conteúdo (*Content Warning* / Spoiler):** Marca spoilers ou avisos sensíveis (texto de aviso nativo no Mastodon; prefixo claro `⚠️ [CW: ...]` no Bluesky).
 * **🧵 Conversas e Fios:** Explora discussões completas em árvore com o botão de conversa.
 * **🌗 Modo Claro e Escuro:** Respeita automaticamente o tema do teu sistema operativo.
 

@@ -679,6 +679,20 @@ class FacetsAndRichtextTests(unittest.TestCase):
         # Check handle cache works
         self.assertEqual(b._handle_cache.get("bob.bsky.social"), "did:plc:bob")
 
+    def test_bsky_post_spoiler_no_self_label(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+
+        calls = []
+        b.call = lambda m, n, d=None, p=None: calls.append((m, n, d, p)) or {}
+        b.post("Mensagem secreta", spoiler="Alerta de spoiler")
+
+        self.assertEqual(len(calls), 1)
+        rec = calls[0][2]["record"]
+        self.assertIn("⚠️ [CW: Alerta de spoiler]\n\nMensagem secreta", rec["text"])
+        self.assertNotIn("labels", rec)
+
 
 
 if __name__ == "__main__":

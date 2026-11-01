@@ -720,8 +720,6 @@ class Bsky:
         rec = {"$type": "app.bsky.feed.post", "text": final_text, "createdAt": now_iso()}
         if clean_facets:
             rec["facets"] = clean_facets
-        if spoiler:
-            rec["labels"] = {"$type": "com.atproto.label.defs#selfLabels", "values": [{"val": "spoiler"}]}
         if ref:
             rec["reply"] = {"root": ref["root"], "parent": {"uri": ref["uri"], "cid": ref["cid"]}}
         if images:

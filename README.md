@@ -18,8 +18,8 @@
 * **💬 Native Quote Posts:** Rich rendering of quoted posts from both networks with quoted author avatars, text, and embedded media.
 * **🎬 Integrated Video Player:** Transparent HTML5 playback for both adaptive HLS streams (`.m3u8` from Bluesky) and direct video / animated files (`.mp4` and `gifv` from Mastodon).
 * **🖼️ Media Galleries & Link Previews:** Uncropped image previews with full-size zoom on click, plus compact external link cards with domain labels.
-* **📊 Interactive Polls:** Create cross-network polls with customizable options and expiration periods.
-* **⚠️ Content Warnings (CW / Spoilers):** Seamless spoiler labels that translate to native Mastodon CWs and Bluesky content labels.
+* **📊 Interactive Polls:** Create polls with customizable options and expiration periods (native on Mastodon; formatted as clean text with voting options on Bluesky).
+* **⚠️ Content Warnings (CW / Spoilers):** Add content warnings to sensitive posts (native spoiler text on Mastodon; clear `⚠️ [CW: ...]` text prefix on Bluesky).
 * **🧵 Conversation Threads:** Expand and follow complete conversation trees directly inline.
 * **🌗 Dark & Light Themes:** Automatically matches your operating system's color scheme.
 

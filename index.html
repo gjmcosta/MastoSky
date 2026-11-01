@@ -203,6 +203,7 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
       <span class="count" id="count"></span>
       <button class="send" id="send" disabled>Publicar</button>
     </div>
+    <div class="bsky-note" id="bskyNote" style="font-size:12px;color:var(--muted);margin-top:6px" hidden>ℹ️ No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).</div>
     <div class="msg" id="msg" role="status"></div>
   </section>
 
@@ -901,6 +902,12 @@ function update() {
 
   const pollValid = !hasPoll || filledOpts.length >= 2;
   const hasContent = lenText > 0 || images.length > 0 || (hasPoll && filledOpts.length >= 2);
+
+  const bskyActive = reply ? (reply.network === "bluesky") : t.includes("bluesky");
+  const noteEl = $("bskyNote");
+  if (noteEl) {
+    noteEl.hidden = !(bskyActive && (hasCW || hasPoll));
+  }
 
   $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !t.length;
   $("targets").style.display = reply ? "none" : "flex";
