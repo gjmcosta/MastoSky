@@ -709,6 +709,13 @@ def init_clients(cfg):
 CLIENTS = init_clients(CFG)
 
 
+# 'unsafe-inline' necessário porque a UI é um único ficheiro com <script>/<style> inline.
+# connect-src/worker-src https:/blob: são exigidos pelo hls.js (playlists e segmentos de vídeo do Bluesky).
+CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+       "img-src https: data: blob:; media-src https: blob:; connect-src 'self' https:; worker-src blob:; "
+       "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+
+
 class H(BaseHTTPRequestHandler):
     def log_message(s, *a):
         pass
@@ -724,6 +731,10 @@ class H(BaseHTTPRequestHandler):
         s.send_response(code)
         s.send_header("Content-Type", ctype + "; charset=utf-8")
         s.send_header("Content-Length", str(len(b)))
+        s.send_header("X-Content-Type-Options", "nosniff")
+        s.send_header("Referrer-Policy", "no-referrer")
+        s.send_header("X-Frame-Options", "DENY")
+        s.send_header("Content-Security-Policy", CSP)
         s.end_headers()
         s.wfile.write(b)
 
@@ -732,6 +743,8 @@ class H(BaseHTTPRequestHandler):
             return s.send(403, {"error": "forbidden"})
         if s.path == "/":
             return s.send(200, (DIR / "index.html").read_bytes(), "text/html")
+        if s.path == "/vendor/hls.min.js":
+            return s.send(200, (DIR / "vendor" / "hls.min.js").read_bytes(), "application/javascript")
         if s.path == "/api/status":
             return s.send(200, {
                 "configured": bool(CLIENTS),

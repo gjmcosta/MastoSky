@@ -17,3 +17,4 @@ echo ""
 
 # Executa o servidor Python
 python3 app.py
+

@@ -218,5 +218,41 @@ class ConfigPermsTests(unittest.TestCase):
             self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
 
 
+class SecurityHeadersTests(unittest.TestCase):
+    def _handler(self, host, origin=None):
+        import io
+        h = object.__new__(app.H)
+        h.headers = {"Host": host}
+        if origin:
+            h.headers["Origin"] = origin
+        h.sent = []
+        h.wfile = io.BytesIO()
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        return h
+
+    def test_send_adds_security_headers(self):
+        h = self._handler("127.0.0.1:%d" % app.PORT)
+        h.send(200, {"ok": True})
+        names = dict(h.sent)
+        self.assertEqual(names["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(names["Referrer-Policy"], "no-referrer")
+        self.assertEqual(names["X-Frame-Options"], "DENY")
+        self.assertIn("frame-ancestors 'none'", names["Content-Security-Policy"])
+        self.assertNotIn("0.0.0.0", names["Content-Security-Policy"])
+
+    def test_allowed_checks_host_and_origin(self):
+        p = app.PORT
+        self.assertTrue(self._handler("127.0.0.1:%d" % p).allowed())
+        self.assertTrue(self._handler("localhost:%d" % p, "http://localhost:%d" % p).allowed())
+        self.assertFalse(self._handler("evil.example").allowed())
+        self.assertFalse(self._handler("127.0.0.1:%d" % p, "http://evil.example").allowed())
+
+    def test_hls_is_vendored(self):
+        self.assertTrue((app.DIR / "vendor" / "hls.min.js").exists())
+        self.assertNotIn("cdn.jsdelivr", (app.DIR / "index.html").read_text())
+
+
 if __name__ == "__main__":
     unittest.main()
