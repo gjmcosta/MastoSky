@@ -112,11 +112,15 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .ghost-sm[disabled]{opacity:.35;pointer-events:none}
 .poll-dur{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .poll-dur select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px}
-.previews{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
-.prev-card{position:relative;display:flex;flex-direction:column;gap:5px;width:130px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px}
-.prev-card img{width:100%;height:85px;object-fit:cover;border-radius:4px}
-.prev-card input{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:4px;padding:3px 6px;font-size:11.5px;width:100%}
-.prev-card .rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--card);border:0;display:grid;place-items:center;font-size:11px;line-height:1;cursor:pointer}
+.previews{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px;padding:8px;background:rgba(255,255,255,0.02);border:1px dashed var(--line);border-radius:10px}
+.prev-card{position:relative;display:flex;flex-direction:column;gap:6px;width:130px;background:var(--surface-1);border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 2px 6px rgba(0,0,0,0.18);transition:border-color .15s}
+.prev-card:hover{border-color:var(--accent)}
+.prev-card img{width:100%;height:85px;object-fit:cover;border-radius:5px;background:#000;display:block}
+.prev-card input{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;padding:4px 6px;font-size:11.5px;width:100%;outline:none}
+.prev-card input:focus{border-color:var(--accent)}
+.prev-card .rm{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--danger, #e53935);color:#fff;border:2px solid var(--card);display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;cursor:pointer;transition:transform .1s}
+.prev-card .rm:hover{transform:scale(1.1)}
+.compose.drag-over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,var(--card))}
 .compose-tools{display:flex;gap:4px;align-items:center}
 .ico{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .tool{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:36px;height:36px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--muted);font:inherit;cursor:pointer;transition:color .15s,background-color .15s,transform .1s}
@@ -1082,6 +1086,7 @@ const I18N = {
       success: "Publicado com sucesso!",
       delete_success: "Publicação eliminada com sucesso.",
       delete_failed: "Falhou ao apagar: {err}",
+      img_view: "Ver imagem",
       img_remove: "Remover imagem",
       img_alt_ph: "Descrição (alt text)...",
       img_processing: "A processar imagens...",
@@ -1299,6 +1304,7 @@ const I18N = {
       success: "Published successfully!",
       delete_success: "Post deleted successfully.",
       delete_failed: "Failed to delete: {err}",
+      img_view: "View image",
       img_remove: "Remove image",
       img_alt_ph: "Description (alt text)...",
       img_processing: "Processing images...",
@@ -2898,7 +2904,13 @@ function renderPreviews() {
   }
   images.forEach((img, idx) => {
     const card = el("div", "prev-card");
-    const thumb = el("img"); thumb.src = img.data; thumb.alt = "";
+    const thumb = el("img");
+    thumb.src = img.data;
+    thumb.alt = "";
+    thumb.style.cursor = "zoom-in";
+    thumb.title = t("composer.img_view");
+    thumb.onclick = () => openImageLightbox([img.data], 0);
+
     const rm = el("button", "rm", "✕");
     rm.title = t("composer.img_remove");
     rm.onclick = () => {
@@ -2954,7 +2966,27 @@ function isImageCandidate(f) {
   return Boolean(f.size && f.size > 0);
 }
 
-async function extractImageFiles(cd) {
+function dataUriToBlob(dataUri) {
+  try {
+    const parts = dataUri.split(",");
+    if (parts.length < 2) return null;
+    const meta = parts[0];
+    const base64 = parts[1];
+    const mimeMatch = meta.match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : "image/png";
+    const binary = atob(base64);
+    const len = binary.length;
+    const u8arr = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      u8arr[i] = binary.charCodeAt(i);
+    }
+    return new Blob([u8arr], { type: mime });
+  } catch (_) {
+    return null;
+  }
+}
+
+function extractImageFilesSync(cd) {
   if (!cd) return [];
   const files = [];
 
@@ -2983,16 +3015,15 @@ async function extractImageFiles(cd) {
     }
   }
 
-  // 3. Fallback: verificar se HTML contém imagem embutida (data URI)
+  // 3. Fallback síncrono: verificar se HTML contém imagem base64 (data URI)
   if (!files.length) {
     try {
       const html = cd.getData("text/html");
       if (html) {
-        const m = html.match(/<img[^>]+src=["'](data:image\/[^"']+)["']/i);
-        if (m) {
-          const res = await fetch(m[1]);
-          const blob = await res.blob();
-          files.push(blob);
+        const m = html.match(/<img[^>]+src=["'](data:image\/([^;]+);base64,[a-zA-Z0-9+/=]+)["']/i);
+        if (m && m[1]) {
+          const b = dataUriToBlob(m[1]);
+          if (b && b.size > 0) files.push(b);
         }
       }
     } catch (_) {}
@@ -3001,15 +3032,55 @@ async function extractImageFiles(cd) {
   return files;
 }
 
-async function handlePasteEvent(e) {
+function handlePasteEvent(e) {
   const cd = e.clipboardData || window.clipboardData;
   if (!cd) return;
 
-  const files = await extractImageFiles(cd);
+  const files = extractImageFilesSync(cd);
   if (files.length > 0) {
+    // Intercetar imediatamente e sincronamente antes que o browser descarte a clipboard
     e.preventDefault();
-    await handleImageFiles(files);
+    e.stopPropagation();
+    handleImageFiles(files);
+    return;
   }
+
+  // Fallback para quando o utilizador copia uma imagem da web (HTML com tag <img> remota)
+  try {
+    const html = cd.getData("text/html");
+    const plain = (cd.getData("text/plain") || "").trim();
+    if (html && (!plain || plain.startsWith("http") || plain.length < 120)) {
+      const mUrl = html.match(/<img[^>]+src=["'](https?:\/\/[^"']+)["']/i);
+      if (mUrl && mUrl[1]) {
+        e.preventDefault();
+        e.stopPropagation();
+        $("msg").className = "msg";
+        $("msg").textContent = t("composer.img_processing");
+        fetch("/api/proxy_image?url=" + encodeURIComponent(mUrl[1]))
+          .then(res => {
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.blob();
+          })
+          .then(blob => {
+            if (blob && blob.size > 0) {
+              handleImageFiles([blob]);
+            } else {
+              throw new Error("Imagem vazia");
+            }
+          })
+          .catch(() => {
+            if ($("text") && !$("text").value.includes(mUrl[1])) {
+              const start = $("text").selectionStart || $("text").value.length;
+              const val = $("text").value;
+              $("text").value = val.slice(0, start) + (val ? " " : "") + mUrl[1] + val.slice(start);
+              update();
+            }
+            $("msg").textContent = "";
+          });
+        return;
+      }
+    }
+  } catch (_) {}
 }
 
 $("mediaInput").onchange = async (e) => {
@@ -3026,9 +3097,14 @@ if ($("composeSection")) {
   $("composeSection").addEventListener("dragover", (e) => {
     if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")) {
       e.preventDefault();
+      $("composeSection").classList.add("drag-over");
     }
   });
+  $("composeSection").addEventListener("dragleave", () => {
+    $("composeSection").classList.remove("drag-over");
+  });
   $("composeSection").addEventListener("drop", async (e) => {
+    $("composeSection").classList.remove("drag-over");
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
       const imgFiles = Array.from(e.dataTransfer.files).filter(f => isImageCandidate(f));
       if (imgFiles.length) {
@@ -3040,19 +3116,15 @@ if ($("composeSection")) {
 }
 
 // Ouvir paste global no documento quando o utilizador está na janela do compositor
-document.addEventListener("paste", async (e) => {
+document.addEventListener("paste", (e) => {
   const active = document.activeElement;
   if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA") && active.id !== "text") {
     return; // Não intercetar inputs fora do compositor (ex: definições ou pesquisa)
   }
-  if (e.target === $("text")) return; // Já tratado pelo listener específico
-  const cd = e.clipboardData || window.clipboardData;
-  if (!cd) return;
-  const files = await extractImageFiles(cd);
-  if (files.length > 0) {
-    e.preventDefault();
-    await handleImageFiles(files);
+  if (e.target === $("text") || e.target?.closest?.("#composeSection")) {
+    return; // Já tratado pelos listeners dedicados acima
   }
+  handlePasteEvent(e);
 });
 
 function renderCW() {
@@ -3429,7 +3501,7 @@ function drawRoundedImage(ctx, img, x, y, w, h, r = 16) {
   ctx.restore();
 }
 
-function drawMediaFallback(ctx, x, y, w, h, r = 16) {
+function drawMediaFallback(ctx, x, y, w, h, r = 16, label = "🖼️ Imagem") {
   ctx.save();
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, r);
@@ -3439,10 +3511,11 @@ function drawMediaFallback(ctx, x, y, w, h, r = 16) {
   ctx.lineWidth = 1;
   ctx.stroke();
   ctx.fillStyle = "#9AA0D6";
-  ctx.font = "24px system-ui, sans-serif";
+  ctx.font = "20px system-ui, -apple-system, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("🖼️ Imagem", x + w / 2, y + h / 2);
+  const displayLabel = label.length > 42 ? label.slice(0, 39) + "..." : label;
+  ctx.fillText(displayLabel, x + w / 2, y + h / 2);
   ctx.restore();
 }
 
@@ -3452,14 +3525,36 @@ async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH) {
   const radius = 18;
 
   const loadedImgs = await Promise.all(
-    mediaList.slice(0, count).map(m => loadImgSafe(m.url || m.thumb))
+    mediaList.slice(0, count).map(m => {
+      const src = (m.type === "external") ? m.thumb : (m.url || m.thumb);
+      return loadImgSafe(src);
+    })
   );
 
   if (count === 1) {
+    const m0 = mediaList[0];
     if (loadedImgs[0]) {
       drawRoundedImage(ctx, loadedImgs[0], boxX, boxY, boxW, boxH, radius);
+      if (m0.type === "external") {
+        const barH = 52;
+        const barY = boxY + boxH - barH;
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, radius);
+        ctx.clip();
+        ctx.fillStyle = "rgba(10, 14, 28, 0.88)";
+        ctx.fillRect(boxX, barY, boxW, barH);
+        ctx.fillStyle = "#EEF0FF";
+        ctx.font = "bold 16px system-ui, -apple-system, sans-serif";
+        ctx.textBaseline = "middle";
+        const domain = (m0.url || "").replace(/^https?:\/\//, "").split("/")[0];
+        let label = domain;
+        if (m0.title) label = domain ? `${domain} · ${m0.title}` : m0.title;
+        ctx.fillText(label.length > 55 ? label.slice(0, 52) + "..." : label, boxX + 18, barY + barH / 2);
+        ctx.restore();
+      }
     } else {
-      drawMediaFallback(ctx, boxX, boxY, boxW, boxH, radius);
+      drawMediaFallback(ctx, boxX, boxY, boxW, boxH, radius, m0.type === "external" ? (m0.title || "🔗 Link") : "🖼️ Imagem");
     }
   } else if (count === 2) {
     const wEach = (boxW - gap) / 2;
@@ -3674,7 +3769,11 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   ctx.stroke();
 
   // 6. Conteúdo do post (Texto e/ou Media)
-  const mediaList = (it.media || []).filter(m => m && (m.url || m.thumb));
+  const mediaList = (it.media || []).filter(m => {
+    if (!m) return false;
+    if (m.type === "external") return Boolean(m.thumb);
+    return Boolean(m.url || m.thumb);
+  });
   const hasMedia = mediaList.length > 0;
 
   let postTxt = (it.text || "").trim();
