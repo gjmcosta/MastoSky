@@ -1,0 +1,14 @@
+[Unit]
+Description=MastoSky - Local-first unified client for Bluesky and Mastodon
+After=network.target
+
+[Service]
+Type=simple
+# Ajusta o WorkingDirectory se o repositório estiver noutra localização
+WorkingDirectory=%h/MastoSky
+ExecStart=/usr/bin/python3 app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

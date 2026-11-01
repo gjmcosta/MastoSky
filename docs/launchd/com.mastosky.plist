@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.mastosky.app</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>app.py</string>
+    </array>
+    <!-- Substitui /Users/SEU_UTILIZADOR/MastoSky pelo caminho real do teu repositório -->
+    <key>WorkingDirectory</key>
+    <string>/Users/USER/MastoSky</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/mastosky.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/mastosky.err</string>
+</dict>
+</plist>

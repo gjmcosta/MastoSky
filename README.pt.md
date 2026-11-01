@@ -105,12 +105,28 @@ MastoSky/
 ├── app.py              # Servidor HTTP local e clientes de API (ATProto / ActivityPub)
 ├── index.html          # Interface de utilizador completa (HTML, CSS e JavaScript vanilla)
 ├── brand/              # Identidade visual, tokens e ficheiros SVG (ver brand/BRAND.md)
+├── docs/               # Serviços em segundo plano (launchd, systemd) e documentação
 ├── config.example.json # Modelo de configuração de exemplo
+├── CONTRIBUTING.md     # Guia para quem quiser contribuir com código
 ├── .gitignore          # Bloqueio de segurança para credenciais e ficheiros temporários
 ├── README.md           # Documentação (Inglês)
 ├── README.pt.md        # Documentação (Português)
 └── LICENSE             # Licença MIT
 ```
+
+---
+
+## 🔄 Arranque em Segundo Plano
+
+Queres que o MastoSky inicie automaticamente ao ligar o computador? Encontras ficheiros de serviço prontos a usar em [`docs/`](docs/README.md):
+* **macOS:** [`docs/launchd/com.mastosky.plist`](docs/launchd/com.mastosky.plist)
+* **Linux:** [`docs/systemd/mastosky.service`](docs/systemd/mastosky.service)
+
+---
+
+## 🤝 Contribuir
+
+Contribuições são muito bem-vindas! Consulta o [CONTRIBUTING.md](CONTRIBUTING.md) para conheceres os nossos princípios: zero dependências externas, isolamento estrito em localhost (`127.0.0.1`) e testes unitários obrigatórios.
 
 ---
 

@@ -105,12 +105,28 @@ MastoSky/
 ├── app.py              # Local HTTP server and API clients (ATProto / ActivityPub)
 ├── index.html          # Complete single-page UI (vanilla HTML, CSS, JavaScript)
 ├── brand/              # Visual identity, tokens and vector assets (see brand/BRAND.md)
+├── docs/               # Background services (launchd, systemd) and extra docs
 ├── config.example.json # Configuration template
+├── CONTRIBUTING.md     # Guidelines for contributors
 ├── .gitignore          # Security guard preventing credentials from being committed
 ├── README.md           # Documentation (English)
 ├── README.pt.md        # Documentation (Português)
 └── LICENSE             # MIT License
 ```
+
+---
+
+## 🔄 Running in the Background
+
+Want MastoSky to start automatically on system startup? Check out the ready-to-use service templates in [`docs/`](docs/README.md):
+* **macOS:** [`docs/launchd/com.mastosky.plist`](docs/launchd/com.mastosky.plist)
+* **Linux:** [`docs/systemd/mastosky.service`](docs/systemd/mastosky.service)
+
+---
+
+## 🤝 Contributing
+
+Contributions are warmly welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for our principles: zero runtime dependencies, strict localhost isolation (`127.0.0.1`), and mandatory unit tests.
 
 ---
 
