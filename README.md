@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="brand/social-card.svg" alt="MastoSky" width="600">
+  <img src="brand/social-card-en.svg" alt="MastoSky" width="600">
 </p>
 
 # MastoSky

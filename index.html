@@ -43,17 +43,29 @@ main{max-width:640px;margin:0 auto;padding:20px 14px 60px;position:relative;z-in
 }
 .cosmos-stars{position:absolute;inset:0;background-image:
   radial-gradient(1.5px 1.5px at 40px 60px, var(--ms-sky), transparent),
-  radial-gradient(1px 1px at 160px 120px, var(--ms-gold), transparent),
+  radial-gradient(1px 1px at 100px 180px, #ffffff, transparent),
+  radial-gradient(1.2px 1.2px at 160px 120px, var(--ms-gold), transparent),
+  radial-gradient(1.8px 1.8px at 220px 40px, var(--ms-sky), transparent),
   radial-gradient(1.5px 1.5px at 280px 240px, var(--ms-indigo), transparent),
+  radial-gradient(1px 1px at 340px 160px, #ffffff, transparent),
   radial-gradient(2px 2px at 420px 90px, var(--ms-sky), transparent),
+  radial-gradient(1.2px 1.2px at 480px 210px, var(--ms-gold), transparent),
   radial-gradient(1px 1px at 580px 310px, #ffffff, transparent),
+  radial-gradient(2px 2px at 640px 70px, var(--ms-indigo), transparent),
   radial-gradient(1.5px 1.5px at 740px 150px, var(--ms-sky), transparent),
-  radial-gradient(1px 1px at 890px 280px, var(--ms-gold), transparent),
+  radial-gradient(1px 1px at 800px 50px, #ffffff, transparent),
+  radial-gradient(1.2px 1.2px at 890px 280px, var(--ms-gold), transparent),
+  radial-gradient(1.8px 1.8px at 950px 180px, var(--ms-sky), transparent),
   radial-gradient(2px 2px at 1020px 110px, var(--ms-indigo), transparent),
-  radial-gradient(1.5px 1.5px at 1160px 380px, var(--ms-sky), transparent);
-  background-repeat:repeat;background-size:1200px 600px;opacity:.28}
+  radial-gradient(1px 1px at 1080px 260px, #ffffff, transparent),
+  radial-gradient(1.5px 1.5px at 1160px 380px, var(--ms-sky), transparent),
+  radial-gradient(1.2px 1.2px at 70px 330px, var(--ms-gold), transparent),
+  radial-gradient(1.8px 1.8px at 450px 380px, var(--ms-sky), transparent),
+  radial-gradient(1px 1px at 780px 340px, #ffffff, transparent),
+  radial-gradient(2px 2px at 910px 420px, var(--ms-indigo), transparent);
+  background-repeat:repeat;background-size:1200px 500px;opacity:.32}
 @media (prefers-color-scheme:dark){
-  .cosmos-stars{opacity:.45}
+  .cosmos-stars{opacity:.48}
 }
 .quote-box{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:var(--bg);position:relative}
 .quote-box-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;color:var(--muted);font-weight:600}
@@ -61,10 +73,22 @@ main{max-width:640px;margin:0 auto;padding:20px 14px 60px;position:relative;z-in
 .quote-box-card .quote-who{font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;margin-bottom:3px}
 .quote-box-card .quote-who span{color:var(--muted);font-weight:normal;font-size:12px}
 .quote-box-card .quote-snip{color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;opacity:.85}
-.boost-popover{position:fixed;z-index:1000;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,0.28);padding:4px;min-width:175px;display:flex;flex-direction:column;gap:2px;animation:popIn .12s ease-out}
+.boost-popover{position:fixed;z-index:1000;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,0.28);padding:4px;min-width:185px;display:flex;flex-direction:column;gap:2px;animation:popIn .12s ease-out}
+.boost-header{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 10px 2px}
+.boost-divider{height:1px;background:var(--line);margin:3px 0}
 .boost-popover button{border:0;background:none;color:var(--ink);padding:8px 12px;border-radius:7px;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;text-align:left;width:100%;transition:background .15s}
 .boost-popover button:hover{background:var(--surface-2);color:var(--accent)}
+.boost-popover button.boost-btn-cross{color:var(--accent);font-weight:600}
+.boost-popover button.boost-btn-cross:hover{background:var(--surface-2);color:var(--accent)}
 .boost-popover button svg{width:16px;height:16px;flex:none}
+.cross-post-box{max-width:540px;width:100%}
+.cross-preview-wrap{width:100%;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0B1020;display:grid;place-items:center;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,0.2)}
+.cross-img-preview{width:100%;height:auto;max-height:360px;object-fit:contain;display:block}
+.cross-theme-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.theme-swatches{display:flex;gap:8px;align-items:center}
+.swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;outline:none;transition:transform .15s,border-color .15s}
+.swatch:hover{transform:scale(1.15)}
+.swatch.active{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
 header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
 h1{font:600 18px var(--sans);margin:0}
 button{font:inherit;cursor:pointer}
@@ -376,6 +400,42 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 
       <div class="setup-actions">
         <button class="send" id="saveSetupBtn">Guardar e Iniciar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="crossPostOverlay" class="setup-overlay" hidden>
+    <div class="setup-box cross-post-box">
+      <div class="setup-header">
+        <h2>🔀 Publicação Cruzada</h2>
+        <button type="button" class="rm-sm" id="closeCrossPost" title="Fechar">✕</button>
+      </div>
+      <p class="setup-desc" id="crossPostDesc">Cria um repost/citação na rede de origem e partilha um cartão visual enriquecido na outra rede.</p>
+
+      <div class="cross-preview-wrap">
+        <canvas id="crossCanvas" width="1080" height="960" style="display:none"></canvas>
+        <img id="crossImgPreview" class="cross-img-preview" alt="Pré-visualização do cartão">
+      </div>
+
+      <div class="cross-theme-row">
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">Estilo do cartão:</span>
+        <div class="theme-swatches" id="crossSwatches">
+          <button type="button" class="swatch active" data-theme="cosmic" style="background:linear-gradient(135deg,#0B1020,#231C5C)" title="Cósmico"></button>
+          <button type="button" class="swatch" data-theme="night" style="background:#0B1020" title="Noite"></button>
+          <button type="button" class="swatch" data-theme="aurora" style="background:linear-gradient(135deg,#0B1020,#084B7A)" title="Aurora"></button>
+          <button type="button" class="swatch" data-theme="gold" style="background:linear-gradient(135deg,#1F172E,#523A0B)" title="Ouro"></button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px">
+        <textarea id="crossComment" placeholder="Escreve um comentário / citação (opcional)..." style="width:100%;min-height:65px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--ink);font:14px var(--sans);resize:vertical;box-sizing:border-box"></textarea>
+      </div>
+
+      <div id="crossPostMsg" class="msg"></div>
+
+      <div class="setup-actions" style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+        <button type="button" class="ghost" id="cancelCrossPost">Cancelar</button>
+        <button type="button" class="send" id="submitCrossPost">🔀 Publicar cruzado</button>
       </div>
     </div>
   </div>
@@ -1501,7 +1561,7 @@ function update() {
   $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !t.length;
 }
 
-function startQuote(it) {
+function startQuote(it, onlyNative = false) {
   let txt = (it.text || "").trim();
   if (!txt && it.html) {
     const tmp = document.createElement("div");
@@ -1518,6 +1578,9 @@ function startQuote(it) {
     avatar: it.avatar || ""
   };
   renderQuoteBox();
+  if (onlyNative && $("targetSelect")) {
+    $("targetSelect").value = it.network;
+  }
   const ta = $("text");
   ta.focus();
   ta.scrollIntoView({behavior: "smooth", block: "center"});
@@ -1574,6 +1637,22 @@ function openBoostMenu(it, btn) {
   const menu = el("div", "boost-popover");
   menu._btn = btn;
 
+  // Secção: Partilhar noutra rede
+  const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
+  if (networks.length > 1 && networks.includes(otherNet)) {
+    const secOut = el("div", "boost-header", "Partilhar noutra rede");
+    const btnCross = el("button", "boost-btn-cross");
+    btnCross.innerHTML = '🔀 <span>Publicação cruzada (' + LABEL[otherNet] + ')</span>';
+    btnCross.onclick = (e) => {
+      e.stopPropagation();
+      closeBoostMenu();
+      openCrossPostModal(it);
+    };
+    menu.append(secOut, btnCross, el("div", "boost-divider"));
+  }
+
+  // Secção: Nesta rede
+  const secIn = el("div", "boost-header", "Nesta rede (" + LABEL[it.network] + ")");
   const btnRepost = el("button", null);
   btnRepost.innerHTML = ICONS.boost + " <span>" + (it.boosted ? "Desfazer republicação" : "Republicar") + "</span>";
   btnRepost.onclick = (e) => {
@@ -1583,22 +1662,396 @@ function openBoostMenu(it, btn) {
   };
 
   const btnQuote = el("button", null);
-  btnQuote.innerHTML = '✏️ <span>Citar publicação</span>';
+  btnQuote.innerHTML = '💬 <span>Citação</span>';
   btnQuote.onclick = (e) => {
     e.stopPropagation();
     closeBoostMenu();
-    startQuote(it);
+    startQuote(it, true);
   };
 
-  menu.append(btnRepost, btnQuote);
+  menu.append(secIn, btnRepost, btnQuote);
   document.body.append(menu);
 
   const rect = btn.getBoundingClientRect();
   menu.style.top = (rect.bottom + 4) + "px";
-  menu.style.left = Math.max(10, Math.min(window.innerWidth - 185, rect.left - 10)) + "px";
+  menu.style.left = Math.max(10, Math.min(window.innerWidth - 225, rect.left - 10)) + "px";
 
   activeBoostMenu = menu;
 }
+
+let crossPostTarget = null;
+let crossPostTheme = "cosmic";
+
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 12) {
+  const words = text.split(/\s+/);
+  let line = "";
+  let lineCount = 0;
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + (line ? " " : "") + words[n];
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && n > 0) {
+      ctx.fillText(line, x, y);
+      line = words[n];
+      y += lineHeight;
+      lineCount++;
+      if (lineCount >= maxLines - 1 && n < words.length - 1) {
+        line += " …";
+        break;
+      }
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, x, y);
+  return y + lineHeight;
+}
+
+function loadImgSafe(url) {
+  return new Promise((resolve) => {
+    if (!url) return resolve(null);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+async function renderCrossCanvas(it, theme = "cosmic") {
+  const canvas = $("crossCanvas");
+  const ctx = canvas.getContext("2d");
+  const W = 1080;
+  const H = 960;
+  canvas.width = W;
+  canvas.height = H;
+
+  // 1. Fundo do canvas com gradiente
+  let grad;
+  if (theme === "night") {
+    grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, "#080C18");
+    grad.addColorStop(1, "#121936");
+  } else if (theme === "aurora") {
+    grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, "#0B1020");
+    grad.addColorStop(0.5, "#0A3D66");
+    grad.addColorStop(1, "#1C1448");
+  } else if (theme === "gold") {
+    grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, "#191228");
+    grad.addColorStop(0.6, "#3D2B0F");
+    grad.addColorStop(1, "#0B1020");
+  } else {
+    // cosmic (padrão MastoSky)
+    grad = ctx.createRadialGradient(W * 0.75, H * 0.25, 60, W * 0.5, H * 0.5, W * 0.85);
+    grad.addColorStop(0, "#2F1E72");
+    grad.addColorStop(0.45, "#151B47");
+    grad.addColorStop(1, "#080C1A");
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. Estrelas cósmicas no fundo
+  const starCoords = [
+    [100, 110, 2, "rgba(77,178,255,0.7)"],
+    [240, 70, 3, "rgba(255,214,107,0.85)"],
+    [380, 180, 1.5, "rgba(255,255,255,0.6)"],
+    [850, 120, 3.5, "rgba(77,178,255,0.9)"],
+    [980, 80, 2, "rgba(255,214,107,0.7)"],
+    [150, 840, 2, "rgba(255,255,255,0.6)"],
+    [940, 820, 2.5, "rgba(77,178,255,0.7)"],
+    [70, 480, 1.5, "rgba(255,214,107,0.6)"],
+    [1010, 440, 2, "rgba(255,255,255,0.7)"],
+    [890, 580, 1.5, "rgba(77,178,255,0.6)"]
+  ];
+  for (const [sx, sy, sr, sc] of starCoords) {
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fillStyle = sc;
+    ctx.fill();
+  }
+
+  // 3. Cartão central
+  const cardX = 90;
+  const cardY = 100;
+  const cardW = 900;
+  const cardH = 720;
+  const radius = 26;
+
+  // Sombra do cartão
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 35;
+  ctx.shadowOffsetY = 16;
+  ctx.beginPath();
+  ctx.roundRect(cardX, cardY, cardW, cardH, radius);
+  ctx.fillStyle = "#121936";
+  ctx.fill();
+  ctx.restore();
+
+  // Borda do cartão
+  ctx.beginPath();
+  ctx.roundRect(cardX, cardY, cardW, cardH, radius);
+  ctx.strokeStyle = "rgba(255,255,255,0.14)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 4. Cabeçalho do post dentro do cartão (Avatar, Nome, Handle, Badge)
+  const avX = cardX + 45;
+  const avY = cardY + 45;
+  const avR = 36;
+
+  const avImg = await loadImgSafe(it.avatar);
+  if (avImg) {
+    try {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(avX + avR, avY + avR, avR, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(avImg, avX, avY, avR * 2, avR * 2);
+      ctx.restore();
+    } catch (_) {
+      // Fallback em caso de taint
+      ctx.beginPath();
+      ctx.arc(avX + avR, avY + avR, avR, 0, Math.PI * 2);
+      ctx.fillStyle = it.network === "bluesky" ? "#0A78D6" : "#5B4BDB";
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 28px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText((it.name || "U")[0].toUpperCase(), avX + avR, avY + avR);
+    }
+  } else {
+    ctx.beginPath();
+    ctx.arc(avX + avR, avY + avR, avR, 0, Math.PI * 2);
+    ctx.fillStyle = it.network === "bluesky" ? "#0A78D6" : "#5B4BDB";
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 28px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText((it.name || "U")[0].toUpperCase(), avX + avR, avY + avR);
+  }
+  ctx.textAlign = "start";
+  ctx.textBaseline = "alphabetic";
+
+  // Nome e handle
+  const textLeft = avX + avR * 2 + 20;
+  ctx.fillStyle = "#EEF0FF";
+  ctx.font = "bold 30px system-ui, sans-serif";
+  ctx.fillText(it.name || it.handle, textLeft, avY + 32);
+
+  ctx.fillStyle = "#9AA0D6";
+  ctx.font = "22px ui-monospace, monospace";
+  ctx.fillText(it.handle + " · " + LABEL[it.network] + (it.time ? " · " + ago(it.time) : ""), textLeft, avY + 62);
+
+  // Distintivo da rede
+  const badgeNetX = cardX + cardW - 145;
+  const badgeNetY = avY + 12;
+  ctx.fillStyle = it.network === "bluesky" ? "rgba(10,120,214,0.3)" : "rgba(91,75,219,0.3)";
+  ctx.beginPath();
+  ctx.roundRect(badgeNetX, badgeNetY, 100, 34, 10);
+  ctx.fill();
+  ctx.fillStyle = it.network === "bluesky" ? "#4DB2FF" : "#9AA0FF";
+  ctx.font = "bold 16px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(it.network === "bluesky" ? "Bluesky" : "Mastodon", badgeNetX + 50, badgeNetY + 23);
+  ctx.textAlign = "start";
+
+  // 5. Linha divisória
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cardX + 45, avY + avR * 2 + 25);
+  ctx.lineTo(cardX + cardW - 45, avY + avR * 2 + 25);
+  ctx.stroke();
+
+  // 6. Texto do post
+  let postTxt = it.text || "";
+  if (!postTxt && it.html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = it.html;
+    postTxt = tmp.textContent || "";
+  }
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "28px/1.45 system-ui, -apple-system, sans-serif";
+  const textTop = avY + avR * 2 + 70;
+  wrapCanvasText(ctx, postTxt || "(Sem texto)", cardX + 45, textTop, cardW - 90, 42, 9);
+
+  // 7. Rodapé de métricas no cartão
+  const metricsY = cardY + cardH - 30;
+  ctx.fillStyle = "#7D85B2";
+  ctx.font = "20px system-ui, sans-serif";
+  const metricsStr = `💬 ${Number(it.replies || 0)}   🔄 ${Number(it.boosts || 0)}   ❤️ ${Number(it.likes || 0)}`;
+  ctx.fillText(metricsStr, cardX + 45, metricsY);
+
+  // 8. Rodapé fora do cartão (Branding MastoSky)
+  const footY = H - 55;
+  ctx.fillStyle = "#FFD66B";
+  ctx.beginPath();
+  const starX = cardX + 12;
+  const starY = footY - 8;
+  ctx.moveTo(starX, starY - 9);
+  ctx.lineTo(starX + 3, starY - 3);
+  ctx.lineTo(starX + 9, starY);
+  ctx.lineTo(starX + 3, starY + 3);
+  ctx.lineTo(starX, starY + 9);
+  ctx.lineTo(starX - 3, starY + 3);
+  ctx.lineTo(starX - 9, starY);
+  ctx.lineTo(starX - 3, starY - 3);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#EEF0FF";
+  ctx.font = "bold 22px system-ui, sans-serif";
+  ctx.fillText("MastoSky", starX + 18, footY);
+
+  ctx.fillStyle = "#8E96C8";
+  ctx.font = "18px system-ui, sans-serif";
+  ctx.fillText("· Cliente unificado Bluesky & Mastodon", starX + 125, footY);
+
+  if (it.url) {
+    ctx.fillStyle = "#4DB2FF";
+    ctx.font = "17px ui-monospace, monospace";
+    ctx.textAlign = "right";
+    const shortUrl = it.url.replace(/^https?:\/\//, "");
+    ctx.fillText(shortUrl.length > 40 ? shortUrl.slice(0, 38) + "..." : shortUrl, cardX + cardW, footY);
+    ctx.textAlign = "start";
+  }
+
+  let dataUrl = "";
+  try {
+    dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+  } catch (_) {
+    // Se ainda houver problema com avatar externo, redesenhar sem avatar externo
+    avImg.crossOrigin = "";
+  }
+  $("crossImgPreview").src = dataUrl;
+  return dataUrl;
+}
+
+function openCrossPostModal(it) {
+  crossPostTarget = it;
+  crossPostTheme = "cosmic";
+  const overlay = $("crossPostOverlay");
+  overlay.hidden = false;
+  $("crossPostMsg").textContent = "";
+  $("crossComment").value = "";
+  $("submitCrossPost").disabled = false;
+  $("submitCrossPost").textContent = "🔀 Publicar nas duas redes";
+
+  const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
+  $("crossPostDesc").textContent = `Cita/reposta no ${LABEL[it.network]} e publica o cartão visual com link no ${LABEL[otherNet]}.`;
+
+  document.querySelectorAll("#crossSwatches .swatch").forEach(s => {
+    s.classList.toggle("active", s.dataset.theme === crossPostTheme);
+  });
+
+  renderCrossCanvas(it, crossPostTheme);
+}
+
+function closeCrossPostModal() {
+  $("crossPostOverlay").hidden = true;
+  crossPostTarget = null;
+}
+
+$("closeCrossPost").onclick = closeCrossPostModal;
+$("cancelCrossPost").onclick = closeCrossPostModal;
+
+document.querySelectorAll("#crossSwatches .swatch").forEach(s => {
+  s.onclick = () => {
+    document.querySelectorAll("#crossSwatches .swatch").forEach(x => x.classList.remove("active"));
+    s.classList.add("active");
+    crossPostTheme = s.dataset.theme;
+    if (crossPostTarget) renderCrossCanvas(crossPostTarget, crossPostTheme);
+  };
+});
+
+$("submitCrossPost").onclick = async () => {
+  if (!crossPostTarget) return;
+  const it = crossPostTarget;
+  const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
+  const comment = $("crossComment").value.trim();
+  const btn = $("submitCrossPost");
+  const msg = $("crossPostMsg");
+
+  btn.disabled = true;
+  btn.textContent = "A publicar nas duas redes...";
+  msg.className = "msg";
+  msg.textContent = "";
+
+  try {
+    const dataUrl = $("crossCanvas").toDataURL("image/jpeg", 0.92);
+
+    // 1. Ação na rede de origem do post (it.network)
+    let originPromise;
+    if (comment) {
+      originPromise = api("/api/post", {
+        text: comment,
+        targets: [it.network],
+        quote: {
+          network: it.network,
+          ref: it.ref,
+          url: it.url,
+          name: it.name,
+          handle: it.handle,
+          text: it.text
+        }
+      });
+    } else {
+      originPromise = api("/api/action", {
+        network: it.network,
+        action: "boost",
+        ref: it.ref
+      });
+    }
+
+    // 2. Ação na outra rede (otherNet) com o cartão visual e link canónico
+    const destText = comment
+      ? (comment + "\n\n🔗 Post original no " + LABEL[it.network] + ": " + it.url)
+      : ("🔗 Post original no " + LABEL[it.network] + ": " + it.url);
+
+    const destPromise = api("/api/post", {
+      text: destText,
+      targets: [otherNet],
+      images: [{
+        data: dataUrl,
+        alt: "Citação visual de post no " + LABEL[it.network] + " por " + it.name
+      }]
+    });
+
+    const [resOrigin, resDest] = await Promise.all([originPromise, destPromise]);
+
+    const errors = [];
+    if (resOrigin && resOrigin.error) errors.push(LABEL[it.network] + ": " + resOrigin.error);
+    if (resOrigin && Object.values(resOrigin).some(v => v !== "ok" && typeof v === "string")) {
+      errors.push(LABEL[it.network] + " falhou");
+    }
+    if (resDest && resDest.error) errors.push(LABEL[otherNet] + ": " + resDest.error);
+    if (resDest && Object.values(resDest).some(v => v !== "ok" && typeof v === "string")) {
+      errors.push(LABEL[otherNet] + " falhou");
+    }
+
+    if (errors.length) {
+      msg.className = "msg err";
+      msg.textContent = "Falhou: " + errors.join("; ");
+      btn.disabled = false;
+      btn.textContent = "Tentar novamente";
+    } else {
+      closeCrossPostModal();
+      $("msg").className = "msg";
+      $("msg").textContent = "Publicação cruzada efetuada com sucesso!";
+      setTimeout(load, 1200);
+    }
+  } catch (err) {
+    msg.className = "msg err";
+    msg.textContent = "Erro: " + err.message;
+    btn.disabled = false;
+    btn.textContent = "Tentar novamente";
+  }
+};
 
 function startReply(it) {
   reply = {network: it.network, ref: it.ref};
