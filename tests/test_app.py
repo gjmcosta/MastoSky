@@ -882,6 +882,132 @@ class FacetsAndRichtextTests(unittest.TestCase):
         self.assertIn("Eu votei neste homem", notifs[0]["html"])
         self.assertEqual(notifs[0]["url"], "https://bsky.app/profile/jocandi.bsky.social/post/3mzaiad2oz422")
 
+    def test_bsky_notification_with_image_and_external_embed(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+
+        def mock_call(m, nsid, d=None, params=None):
+            if nsid == "app.bsky.notification.listNotifications":
+                return {
+                    "notifications": [
+                        {
+                            "uri": "at://did:plc:user1/app.bsky.feed.like/1",
+                            "cid": "cid1",
+                            "author": {"handle": "user1.bsky.social", "displayName": "User One"},
+                            "reason": "like",
+                            "record": {
+                                "$type": "app.bsky.feed.like",
+                                "subject": {"uri": "at://did:plc:me/app.bsky.feed.post/imgpost"}
+                            },
+                            "indexedAt": "2026-01-01T00:00:00Z"
+                        },
+                        {
+                            "uri": "at://did:plc:user2/app.bsky.feed.post/reply1",
+                            "cid": "cid2",
+                            "author": {"handle": "user2.bsky.social", "displayName": "User Two"},
+                            "reason": "reply",
+                            "record": {
+                                "$type": "app.bsky.feed.post",
+                                "text": "Olha este link",
+                                "reply": {"root": {"uri": "at://did:plc:me/app.bsky.feed.post/myroot", "cid": "croot"}},
+                                "embed": {
+                                    "$type": "app.bsky.embed.external#view",
+                                    "external": {
+                                        "uri": "https://example.com/article",
+                                        "title": "Exemplo",
+                                        "description": "Descricao",
+                                        "thumb": "https://cdn.example.com/thumb.jpg"
+                                    }
+                                }
+                            },
+                            "indexedAt": "2026-01-01T01:00:00Z"
+                        }
+                    ],
+                    "cursor": "c3"
+                }
+            elif nsid == "app.bsky.feed.getPosts":
+                return {
+                    "posts": [
+                        {
+                            "uri": "at://did:plc:me/app.bsky.feed.post/imgpost",
+                            "author": {"handle": "me.bsky.social"},
+                            "record": {"text": ""},
+                            "embed": {
+                                "$type": "app.bsky.embed.images#view",
+                                "images": [
+                                    {"fullsize": "https://cdn.bsky.app/img/full.jpg", "thumb": "https://cdn.bsky.app/img/thumb.jpg", "alt": "Foto bonita"}
+                                ]
+                            }
+                        }
+                    ]
+                }
+            return {}
+
+        b.call = mock_call
+        notifs, _ = b.notifications()
+        self.assertEqual(len(notifs), 2)
+        # Notificação 1 (like num post com imagem sem texto):
+        self.assertEqual(len(notifs[0]["media"]), 1)
+        self.assertEqual(notifs[0]["media"][0]["type"], "image")
+        self.assertEqual(notifs[0]["media"][0]["url"], "https://cdn.bsky.app/img/full.jpg")
+        self.assertNotIn("📷 [Imagem]", notifs[0]["html"])  # Media visual fornecida diretamente
+
+        # Notificação 2 (reply com embed externo):
+        self.assertEqual(len(notifs[1]["media"]), 1)
+        self.assertEqual(notifs[1]["media"][0]["type"], "external")
+        self.assertEqual(notifs[1]["media"][0]["url"], "https://example.com/article")
+        self.assertEqual(notifs[1]["media"][0]["title"], "Exemplo")
+
+    def test_masto_notification_with_media_and_card(self):
+        m = app.Masto({"instance": "https://mastodon.social", "token": "tok"})
+        raw_notifs = [
+            {
+                "id": "1001",
+                "type": "favourite",
+                "created_at": "2026-01-01T12:00:00Z",
+                "account": {"id": 1, "username": "alice", "acct": "alice@mastodon.social", "display_name": "Alice"},
+                "status": {
+                    "id": "999",
+                    "content": "<p>Vejam isto com link e anexo</p>",
+                    "url": "https://mastodon.social/@alice/999",
+                    "media_attachments": [
+                        {"type": "image", "url": "https://files.mastodon.social/media1.png", "preview_url": "https://files.mastodon.social/media1_thumb.png", "description": "Screenshot"}
+                    ]
+                }
+            },
+            {
+                "id": "1002",
+                "type": "favourite",
+                "created_at": "2026-01-01T13:00:00Z",
+                "account": {"id": 2, "username": "bob", "acct": "bob@mastodon.social", "display_name": "Bob"},
+                "status": {
+                    "id": "998",
+                    "content": "<p>Link externo</p>",
+                    "url": "https://mastodon.social/@bob/998",
+                    "card": {
+                        "url": "https://news.ycombinator.com",
+                        "title": "Hacker News",
+                        "description": "Tech news",
+                        "image": "https://files.mastodon.social/hn.png"
+                    }
+                }
+            }
+        ]
+        m.call = lambda method, path, params=None: raw_notifs
+        notifs, cursor = m.notifications()
+        self.assertEqual(len(notifs), 2)
+        self.assertEqual(cursor, "1002")
+        # Item 1: tem imagem
+        self.assertEqual(len(notifs[0]["media"]), 1)
+        self.assertEqual(notifs[0]["media"][0]["type"], "image")
+        self.assertEqual(notifs[0]["media"][0]["url"], "https://files.mastodon.social/media1.png")
+        # Item 2: tem card externo
+        self.assertEqual(len(notifs[1]["media"]), 1)
+        self.assertEqual(notifs[1]["media"][0]["type"], "external")
+        self.assertEqual(notifs[1]["media"][0]["url"], "https://news.ycombinator.com")
+        self.assertEqual(notifs[1]["media"][0]["title"], "Hacker News")
+
 
 
 class ActionsTests(unittest.TestCase):

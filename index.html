@@ -1886,6 +1886,9 @@ function renderNotifs() {
     head.append(who, netBadge(n.network), when);
     p.append(head);
     if (n.html) { const b = el("div", "body"); b.innerHTML = n.html; p.append(b); } // já limpo no servidor
+    const m = renderMedia(n.media);
+    if (m) p.append(m);
+    if (n.quote) p.append(renderQuote(n.quote));
     if (n.ref) {
       const acts = el("div", "acts");
       const r = el("button", "act-btn act-reply");
@@ -1993,9 +1996,10 @@ async function viewOwnAccount(net) {
   activeProfileNet = net;
   activeProfileActor = null;
 
-  $("profileHubView").hidden = true;
+  if ($("panelHubView")) $("panelHubView").hidden = true;
   $("profileDetailView").hidden = false;
   $("profileBackBtn").textContent = t("profile.back_to_accounts");
+  if ($("deckProfileTitle")) $("deckProfileTitle").textContent = (profileData[net].name || LABEL[net]);
 
   const card = renderSingleProfileCard(profileData[net], true);
   $("profileActiveCard").replaceChildren(card);
@@ -2120,9 +2124,10 @@ async function openUserProfile(network, actor) {
   userProfileCursor = null;
 
   $("pProfile").hidden = false;
-  $("profileHubView").hidden = true;
+  if ($("panelHubView")) $("panelHubView").hidden = true;
   $("profileDetailView").hidden = false;
   $("profileBackBtn").textContent = (previousTab && viewMode === "single") ? t("actions.back") : t("profile.back_to_profiles");
+  if ($("deckProfileTitle")) $("deckProfileTitle").textContent = actor;
 
   $("profileActiveCard").replaceChildren(el("div", "empty", t("feed.loading_profile")));
   $("profileActiveFeed").replaceChildren();
@@ -2135,6 +2140,9 @@ async function openUserProfile(network, actor) {
       return;
     }
     const prof = profRes.profile;
+    if ($("deckProfileTitle") && prof && (prof.name || prof.handle)) {
+      $("deckProfileTitle").textContent = prof.name || prof.handle;
+    }
     $("profileActiveCard").replaceChildren(renderSingleProfileCard(prof, false));
 
     const feedWrap = $("profileActiveFeed");

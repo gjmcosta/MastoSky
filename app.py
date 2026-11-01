@@ -412,37 +412,42 @@ def _extract_bsky_embed(embed):
         return media, quote
     etype = embed.get("$type", "")
 
-    if etype == "app.bsky.embed.images#view":
+    if etype in ("app.bsky.embed.images#view", "app.bsky.embed.images"):
         for i in embed.get("images", []):
-            media.append({
-                "type": "image",
-                "url": i.get("fullsize") or i.get("thumb"),
-                "thumb": i.get("thumb") or i.get("fullsize"),
-                "alt": i.get("alt", "")
-            })
-    elif etype == "app.bsky.embed.video#view":
+            u = i.get("fullsize") or i.get("thumb") or (i.get("url") if isinstance(i.get("url"), str) else None)
+            t = i.get("thumb") or i.get("fullsize") or u
+            if u or t:
+                media.append({
+                    "type": "image",
+                    "url": u,
+                    "thumb": t,
+                    "alt": i.get("alt", "")
+                })
+    elif etype in ("app.bsky.embed.video#view", "app.bsky.embed.video"):
         media.append({
             "type": "video",
-            "url": embed.get("playlist"),
-            "thumb": embed.get("thumbnail"),
+            "url": embed.get("playlist") or (embed.get("url") if isinstance(embed.get("url"), str) else None),
+            "thumb": embed.get("thumbnail") or (embed.get("thumb") if isinstance(embed.get("thumb"), str) else None),
             "alt": embed.get("alt", "")
         })
-    elif etype == "app.bsky.embed.external#view":
+    elif etype in ("app.bsky.embed.external#view", "app.bsky.embed.external"):
         ext = embed.get("external") or {}
-        if ext.get("thumb") or ext.get("uri"):
+        thumb = ext.get("thumb")
+        thumb_url = thumb if isinstance(thumb, str) else None
+        if thumb_url or ext.get("uri"):
             media.append({
                 "type": "external",
                 "url": ext.get("uri"),
-                "thumb": ext.get("thumb"),
+                "thumb": thumb_url,
                 "title": ext.get("title", ""),
                 "description": ext.get("description", "")
             })
-    elif etype == "app.bsky.embed.recordWithMedia#view":
+    elif etype in ("app.bsky.embed.recordWithMedia#view", "app.bsky.embed.recordWithMedia"):
         m_list, _ = extract_bsky_embed(embed.get("media"))
         media.extend(m_list)
         rec_obj = embed.get("record")
         quote = parse_bsky_quote(rec_obj)
-    elif etype == "app.bsky.embed.record#view":
+    elif etype in ("app.bsky.embed.record#view", "app.bsky.embed.record"):
         rec_obj = embed.get("record")
         quote = parse_bsky_quote(rec_obj)
 
@@ -953,8 +958,16 @@ class Bsky:
                     return s_uri
             return notif.get("reasonSubject")
 
-        subjects = sorted({get_subj_uri(n) for n in ns
-                           if get_subj_uri(n) and ("/app.bsky.feed.post/" in get_subj_uri(n))})
+        subj_set = set()
+        for n in ns:
+            su = get_subj_uri(n)
+            if su and "/app.bsky.feed.post/" in su:
+                subj_set.add(su)
+            n_uri = n.get("uri")
+            if n_uri and "/app.bsky.feed.post/" in n_uri:
+                subj_set.add(n_uri)
+
+        subjects = sorted(subj_set)
         posts = {}
         for i in range(0, len(subjects), 25):
             res = self.call("GET", "app.bsky.feed.getPosts", params=[("uris", u) for u in subjects[i:i + 25]])
@@ -975,20 +988,38 @@ class Bsky:
             a = n["author"]
             subj_uri = get_subj_uri(n)
             subject = posts.get(subj_uri) if subj_uri else None
+            n_post = posts.get(n.get("uri")) if n.get("uri") else None
             ref, text, facets, url = None, "", None, f"https://bsky.app/profile/{a['handle']}"
+            media, quote = [], None
+
             if kind in ("reply", "mention", "quote"):
-                rec = n["record"]
+                rec = n.get("record") or {}
                 text = rec.get("text", "")
                 facets = rec.get("facets")
                 root = rec.get("reply", {}).get("root") or {"uri": n["uri"], "cid": n["cid"]}
                 ref = {"uri": n["uri"], "cid": n["cid"], "root": {"uri": root["uri"], "cid": root["cid"]}}
                 url = f"https://bsky.app/profile/{a['handle']}/post/{n['uri'].split('/')[-1]}"
+                target_post = n_post
+                if target_post:
+                    m_list, q_obj = extract_bsky_embed(target_post.get("embed"))
+                    media.extend(m_list)
+                    if q_obj and not quote:
+                        quote = q_obj
+                elif rec.get("embed"):
+                    m_list, q_obj = extract_bsky_embed(rec.get("embed"))
+                    media.extend(m_list)
+                    if q_obj and not quote:
+                        quote = q_obj
             elif subject:
                 srec = subject.get("record") or {}
                 text = srec.get("text", "")
                 facets = srec.get("facets")
                 url = f"https://bsky.app/profile/{subject['author']['handle']}/post/{subject['uri'].split('/')[-1]}"
-                if not text:
+                m_list, q_obj = extract_bsky_embed(subject.get("embed"))
+                media.extend(m_list)
+                if q_obj and not quote:
+                    quote = q_obj
+                if not text and not media and not quote:
                     semb = subject.get("embed") or {}
                     stype = semb.get("$type", "")
                     if "images" in stype:
@@ -1005,7 +1036,8 @@ class Bsky:
             out.append({"network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
                         "handle": "@" + a["handle"], "author_id": a.get("did") or a["handle"],
                         "author_handle": a["handle"], "avatar": safe_url(a.get("avatar")),
-                        "html": render_bsky_text(text, facets) if text else "", "time": n["indexedAt"], "url": url, "ref": ref})
+                        "html": render_bsky_text(text, facets) if text else "", "time": n["indexedAt"], "url": url, "ref": ref,
+                        "media": safe_media_list(media), "quote": quote})
         return out, next_cursor
 
 
@@ -1241,6 +1273,8 @@ class Masto:
                 kind = "reply"
             cw = f"<strong>{html.escape(st['spoiler_text'])}</strong><br>" if st and st.get("spoiler_text") else ""
             notif_html = render_custom_emojis(cw + clean(st.get("content")), st.get("emojis")) if st else ""
+            st_media = extract_masto_media(st, allow_card=True) if st else []
+            st_quote = parse_masto_quote(st) if st else None
             a_emojis = a.get("emojis")
             a_name = a.get("display_name") or a.get("username", "")
             a_name_html = render_custom_emojis(html.escape(a_name), a_emojis) if a_emojis else None
@@ -1250,7 +1284,9 @@ class Masto:
                 "author_handle": a.get("acct") or a.get("username", ""), "avatar": safe_url(a.get("avatar")),
                 "html": notif_html, "time": n.get("created_at"),
                 "url": safe_url((st or {}).get("url") or a.get("url")),
-                "ref": {"id": st["id"]} if st and kind in ("reply", "mention", "quote") else None
+                "ref": {"id": st["id"]} if st and kind in ("reply", "mention", "quote") else None,
+                "media": safe_media_list(st_media),
+                "quote": st_quote
             }
             if a_name_html:
                 notif_item["name_html"] = a_name_html
