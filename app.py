@@ -897,8 +897,20 @@ class Bsky:
         r = self.call("GET", "app.bsky.notification.listNotifications", params=params)
         ns = r.get("notifications", [])
         next_cursor = r.get("cursor")
-        subjects = sorted({n["reasonSubject"] for n in ns
-                           if n.get("reasonSubject") and kinds.get(n["reason"]) in ("like", "boost")})
+        def get_subj_uri(notif):
+            if notif.get("reasonSubject"):
+                return notif["reasonSubject"]
+            rec = notif.get("record")
+            if isinstance(rec, dict):
+                s = rec.get("subject")
+                if isinstance(s, dict):
+                    return s.get("uri")
+                if isinstance(s, str):
+                    return s
+            return None
+
+        subjects = sorted({get_subj_uri(n) for n in ns
+                           if get_subj_uri(n) and kinds.get(n["reason"]) in ("like", "boost")})
         posts = {}
         for i in range(0, len(subjects), 25):
             res = self.call("GET", "app.bsky.feed.getPosts", params=[("uris", u) for u in subjects[i:i + 25]])
@@ -907,7 +919,8 @@ class Bsky:
         out = []
         for n in ns:
             kind, a = kinds.get(n["reason"], "other"), n["author"]
-            subject = posts.get(n.get("reasonSubject"))
+            subj_uri = get_subj_uri(n)
+            subject = posts.get(subj_uri) if subj_uri else None
             ref, text, facets, url = None, "", None, f"https://bsky.app/profile/{a['handle']}"
             if kind in ("reply", "mention", "quote"):
                 rec = n["record"]
@@ -921,6 +934,19 @@ class Bsky:
                 text = srec.get("text", "")
                 facets = srec.get("facets")
                 url = f"https://bsky.app/profile/{subject['author']['handle']}/post/{subject['uri'].split('/')[-1]}"
+                if not text:
+                    semb = subject.get("embed") or {}
+                    stype = semb.get("$type", "")
+                    if "images" in stype:
+                        text = "📷 [Imagem]"
+                    elif "video" in stype:
+                        text = "🎬 [Vídeo]"
+                    elif "record" in stype:
+                        text = "💬 [Citação]"
+            elif subj_uri and kind in ("like", "boost"):
+                post_id = subj_uri.split("/")[-1]
+                url = f"https://bsky.app/profile/{a['handle']}/post/{post_id}"
+                text = "(Publicação indisponível)"
             out.append({"network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
                         "handle": "@" + a["handle"], "author_id": a.get("did") or a["handle"],
                         "author_handle": a["handle"], "avatar": safe_url(a.get("avatar")),

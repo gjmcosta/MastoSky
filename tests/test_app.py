@@ -787,6 +787,48 @@ class FacetsAndRichtextTests(unittest.TestCase):
         self.assertIn("Muito interessante este post:", status)
         self.assertIn("https://bsky.app/profile/bob.bsky.social/post/abc", status)
 
+    def test_bsky_notification_subject_fallback_and_preview(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+
+        def mock_call(m, nsid, d=None, params=None):
+            if nsid == "app.bsky.notification.listNotifications":
+                return {
+                    "notifications": [
+                        {
+                            "uri": "at://did:plc:user1/app.bsky.feed.like/1",
+                            "cid": "cid1",
+                            "author": {"handle": "user1.bsky.social", "displayName": "User One"},
+                            "reason": "like",
+                            # reasonSubject omitido deliberadamente
+                            "record": {
+                                "$type": "app.bsky.feed.like",
+                                "subject": {"uri": "at://did:plc:me/app.bsky.feed.post/post1"}
+                            },
+                            "indexedAt": "2026-01-01T00:00:00Z"
+                        }
+                    ],
+                    "cursor": "c1"
+                }
+            elif nsid == "app.bsky.feed.getPosts":
+                return {
+                    "posts": [
+                        {
+                            "uri": "at://did:plc:me/app.bsky.feed.post/post1",
+                            "author": {"handle": "me.bsky.social"},
+                            "record": {"text": "Texto do meu post original"}
+                        }
+                    ]
+                }
+            return {}
+
+        b.call = mock_call
+        notifs, cursor = b.notifications()
+        self.assertEqual(len(notifs), 1)
+        self.assertEqual(cursor, "c1")
+        self.assertIn("Texto do meu post original", notifs[0]["html"])
+
 
 class ActionsTests(unittest.TestCase):
     def test_masto_item_and_act(self):
