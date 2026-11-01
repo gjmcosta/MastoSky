@@ -248,6 +248,16 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .head img.author-link:hover{transform:scale(1.08);box-shadow:0 0 0 2px var(--accent);text-decoration:none}
 .profile-card.single{margin-bottom:16px;cursor:default}
 .profile-card.single:hover{border-color:var(--line)}
+.profile-account-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.profile-account-item:hover{border-color:var(--accent);background:color-mix(in srgb,var(--surface-2) 35%,var(--card));transform:translateY(-1px)}
+.profile-acc-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--line);background:var(--surface-2)}
+.profile-acc-info{flex:1 1 auto;min-width:0}
+.profile-acc-name-row{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.profile-acc-name{font-weight:700;font-size:14.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-acc-handle{font:12px var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-acc-stats{font-size:11.5px;color:var(--muted);margin-top:3px}
+.profile-acc-arrow{color:var(--muted);font-size:16px;margin-left:6px;display:flex;align-items:center;transition:transform .15s}
+.profile-account-item:hover .profile-acc-arrow{transform:translateX(3px);color:var(--accent)}
 .top-nav-wrap{transition:background .2s}
 body.nav-sticky .top-nav-wrap{position:sticky;top:0;z-index:100;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);margin:-20px -14px 14px -14px;padding:14px 14px 4px 14px;border-bottom:1px solid var(--line)}
 body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
@@ -447,6 +457,8 @@ body:not(.view-deck) .deck-col-detail {
   <symbol id="i-cross" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7H9a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m8 21-4-4 4-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17h11a4 4 0 0 0 4-4v-2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-view-single" viewBox="0 0 24 24"><rect x="6" y="3.5" width="12" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="9" y1="8" x2="15" y2="8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><line x1="9" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-view-deck" viewBox="0 0 24 24"><rect x="3" y="4" width="5.5" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.75"/><rect x="10.25" y="4" width="5.5" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.75"/><rect x="17.5" y="4" width="3.5" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.75" opacity="0.6"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.4L3 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="3 21 3 16 8 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12a9 9 0 0 1 15.5-6.4L21 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="21 3 21 8 16 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><polyline points="5 12 12 5 19 12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -473,14 +485,10 @@ body:not(.view-deck) .deck-col-detail {
     <button type="button" class="side-nav-btn side-nav-compose" id="sideComposeBtn" title="Novo post" data-i18n-title="nav.new_post" aria-label="Novo post">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
     </button>
-    <button type="button" class="side-nav-btn" id="sideRefreshBtn" title="Atualizar" data-i18n-title="header.refresh" aria-label="Atualizar">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-    </button>
+    <button type="button" class="side-nav-btn" id="sideRefreshBtn" title="Atualizar" data-i18n-title="header.refresh" aria-label="Atualizar"><svg class="ico"><use href="#i-refresh"/></svg></button>
     <button type="button" class="side-nav-btn" id="sideSettingsBtn" title="Definições" data-i18n-title="header.settings_title" aria-label="Definições"><svg class="ico"><use href="#i-settings"/></svg></button>
     <button type="button" class="side-nav-btn side-nav-lang" id="sideLangBtn" title="Mudar idioma" data-i18n-title="header.lang_switch_title"><svg class="ico"><use href="#i-language"/></svg></button>
-    <button type="button" class="side-nav-btn side-nav-top" id="sideScrollTopBtn" title="Ir para o topo" data-i18n-title="nav.scroll_top" aria-label="Ir para o topo">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>
-    </button>
+    <button type="button" class="side-nav-btn side-nav-top" id="sideScrollTopBtn" title="Ir para o topo" data-i18n-title="nav.scroll_top" aria-label="Ir para o topo"><svg class="ico"><use href="#i-arrow-up"/></svg></button>
   </div>
 </nav>
 
@@ -601,8 +609,8 @@ body:not(.view-deck) .deck-col-detail {
       <div class="deck-col-head">
         <span class="deck-col-title" data-i18n="header.col_timeline">Timeline</span>
         <div class="deck-col-actions">
-          <button type="button" class="deck-act-btn" onclick="load()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:15px;height:15px"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <button type="button" class="deck-act-btn" onclick="$('colTimelineBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:15px;height:15px"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="load()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colTimelineBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colTimelineBody">
@@ -617,8 +625,8 @@ body:not(.view-deck) .deck-col-detail {
       <div class="deck-col-head">
         <span class="deck-col-title" data-i18n="header.col_explore">Em Alta</span>
         <div class="deck-col-actions">
-          <button type="button" class="deck-act-btn" onclick="loadExplore()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:15px;height:15px"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <button type="button" class="deck-act-btn" onclick="$('colExploreBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:15px;height:15px"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="loadExplore()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colExploreBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colExploreBody">
@@ -633,8 +641,8 @@ body:not(.view-deck) .deck-col-detail {
       <div class="deck-col-head">
         <span class="deck-col-title"><span data-i18n="header.col_notifs">Notificações</span> <span class="badge" id="deckNotifsBadge" hidden><span class="star-badge"></span><span id="deckBadgeCount"></span></span></span>
         <div class="deck-col-actions">
-          <button type="button" class="deck-act-btn" onclick="loadNotifs()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:15px;height:15px"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <button type="button" class="deck-act-btn" onclick="$('colNotifsBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:15px;height:15px"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="loadNotifs()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colNotifsBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colNotifsBody">
@@ -647,22 +655,26 @@ body:not(.view-deck) .deck-col-detail {
 
     <div class="deck-col" id="colProfile" data-col="profile">
       <div class="deck-col-head">
-        <span class="deck-col-title" data-i18n="header.col_profile">Perfil</span>
+        <span class="deck-col-title" id="deckProfileTitle" data-i18n="header.col_profile">Perfil</span>
         <div class="deck-col-actions">
-          <button type="button" class="deck-act-btn" onclick="loadProfile(true)" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:15px;height:15px"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <button type="button" class="deck-act-btn" onclick="$('colProfileBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:15px;height:15px"><polyline points="18 15 12 9 6 15" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="refreshProfileView()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colProfileBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
         </div>
       </div>
       <div class="deck-col-body" id="colProfileBody">
         <div id="pProfile" hidden>
           <div id="perrors"></div>
-          <div id="profileCards" class="profile-cards"></div>
-          <div class="filter-pills" id="profileFilters" hidden>
-            <button class="pill active" data-net="all" id="pillAll" data-i18n="profile.both_pills">Ambos</button>
-            <button class="pill" data-net="bluesky" id="pillBsky">Bluesky</button>
-            <button class="pill" data-net="mastodon" id="pillMasto">Mastodon</button>
+          <div id="profileHubView">
+            <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px" data-i18n="profile.accounts_title">Contas associadas</div>
+            <div id="profileAccountsList"></div>
           </div>
-          <div id="profileFeed"></div>
+          <div id="profileDetailView" hidden>
+            <div class="profile-back-bar" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+              <button type="button" class="ghost back" id="profileBackBtn" onclick="returnFromProfileDetail()">← Voltar</button>
+            </div>
+            <div id="profileActiveCard"></div>
+            <div id="profileActiveFeed"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -674,7 +686,6 @@ body:not(.view-deck) .deck-col-detail {
       </div>
       <div class="deck-col-body" id="colDetailBody">
         <div id="pThread" hidden></div>
-        <div id="pUserProfile" hidden></div>
       </div>
     </div>
   </div>
@@ -938,6 +949,9 @@ const I18N = {
       other: "enviou-te uma notificação"
     },
     profile: {
+      accounts_title: "Contas associadas",
+      back_to_accounts: "← Todas as contas",
+      back_to_profiles: "← Voltar ao meu perfil",
       both_pills: "Ambos",
       your_account: "A tua conta",
       view_on_web: "Ver na web ↗",
@@ -1136,6 +1150,9 @@ const I18N = {
       other: "sent you a notification"
     },
     profile: {
+      accounts_title: "Connected accounts",
+      back_to_accounts: "← All accounts",
+      back_to_profiles: "← Back to my profile",
       both_pills: "Both",
       your_account: "Your account",
       view_on_web: "View on web ↗",
@@ -1388,10 +1405,7 @@ function closeDeckDetail() {
   const cd = $("colDetail");
   if (cd) cd.hidden = true;
   $("pThread").hidden = true;
-  $("pUserProfile").hidden = true;
   threadIt = null;
-  userProfileActor = null;
-  userProfileNetwork = null;
 }
 let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
 let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
@@ -1864,64 +1878,114 @@ function updateBadge() {
   if ($("deckBadgeCount")) $("deckBadgeCount").textContent = n > 99 ? "99+" : n;
 }
 
+let activeProfileMode = "hub";
+let activeProfileNet = null;
+let activeProfileActor = null;
+let previousTab = null;
+let userProfileCursor = null;
+let userProfileItems = [];
+
 async function loadProfile(keep = false) {
   profileLoaded = true;
   $("perrors").replaceChildren();
   if (!keep) {
-    $("profileCards").replaceChildren(el("div", "empty", "A carregar perfil..."));
-    $("profileFeed").replaceChildren();
+    if ($("profileAccountsList")) $("profileAccountsList").replaceChildren(el("div", "empty", t("feed.loading_profile")));
   }
   try {
     const d = await api("/api/profile");
     profileData = d.profiles || {};
-    renderProfileCards(profileData, d.errors || {});
+    renderProfileAccountsList(profileData, d.errors || {});
   } catch (e) {
     $("perrors").replaceChildren(el("div", "banner", "Erro ao carregar perfil: " + e.message));
   }
-  await loadProfileFeed(false);
 }
 
-async function loadProfileFeed(isMore = false) {
-  if (!isMore) {
-    profileItems = [];
-    profileCursors = {};
+function renderProfileAccountsList(profiles, errors) {
+  const container = $("profileAccountsList");
+  if (!container) return;
+  container.replaceChildren();
+  if (errors) {
+    for (const [net, err] of Object.entries(errors)) {
+      if (err) $("perrors").append(el("div", "banner", LABEL[net] + ": " + err));
+    }
   }
+  const nets = Object.keys(profiles || {});
+  if (!nets.length) {
+    container.append(el("div", "empty", t("feed.empty_profile")));
+    return;
+  }
+
+  for (const net of ["bluesky", "mastodon"]) {
+    const p = profiles[net];
+    if (!p) continue;
+    const item = el("div", "profile-account-item");
+    item.onclick = () => viewOwnAccount(net);
+
+    const av = p.avatar ? el("img", "profile-acc-avatar") : el("div", "profile-acc-avatar ph");
+    if (p.avatar) {
+      av.src = su(p.avatar) || "";
+      av.alt = p.name || "";
+      av.loading = "lazy";
+    }
+
+    const info = el("div", "profile-acc-info");
+    const nameRow = el("div", "profile-acc-name-row");
+    const name = el("span", "profile-acc-name", p.name || p.handle);
+    const star = el("span", "star-badge");
+    star.title = t("profile.your_account");
+    nameRow.append(name, star, netBadge(net));
+
+    const handle = el("div", "profile-acc-handle", p.handle);
+    const stats = el("div", "profile-acc-stats");
+    stats.textContent = `${p.followers != null ? p.followers : 0} ${t("profile.followers_stat")} · ${p.following != null ? p.following : 0} ${t("profile.following_stat")}`;
+
+    info.append(nameRow, handle, stats);
+    const arrow = el("div", "profile-acc-arrow", "›");
+    item.append(av, info, arrow);
+    container.append(item);
+  }
+}
+
+async function viewOwnAccount(net) {
+  if (!profileData || !profileData[net]) return;
+  activeProfileMode = "account";
+  activeProfileNet = net;
+  activeProfileActor = null;
+
+  $("profileHubView").hidden = true;
+  $("profileDetailView").hidden = false;
+  $("profileBackBtn").textContent = t("profile.back_to_accounts");
+
+  const card = renderSingleProfileCard(profileData[net], true);
+  $("profileActiveCard").replaceChildren(card);
+
+  const feedWrap = $("profileActiveFeed");
+  feedWrap.replaceChildren(el("div", "empty", t("feed.loading_posts")));
+
+  profileFilter = net;
+  profileCursors = {};
+  profileItems = [];
+  await loadOwnAccountFeed(net);
+}
+
+async function loadOwnAccountFeed(net, isMore = false) {
+  const feedWrap = $("profileActiveFeed");
   const q = new URLSearchParams();
-  if (profileCursors.bluesky) q.set("cursor_bluesky", profileCursors.bluesky);
-  if (profileCursors.mastodon) q.set("cursor_mastodon", profileCursors.mastodon);
+  if (profileCursors[net]) q.set("cursor_" + net, profileCursors[net]);
   try {
     const d = await api("/api/profile/feed?" + q.toString());
     profileCursors = d.cursors || {};
-    if (d.errors) {
-      for (const [net, err] of Object.entries(d.errors)) {
-        if (err) $("perrors").append(el("div", "banner", LABEL[net] + ": " + err));
-      }
+    const newItems = (d.items || []).filter(it => it.network === net);
+    if (!isMore) feedWrap.replaceChildren();
+    if (!newItems.length && !isMore) {
+      feedWrap.replaceChildren(el("div", "empty", t("feed.empty_profile")));
+    } else {
+      for (const it of newItems) feedWrap.append(postCard(it));
     }
-    const newItems = d.items || [];
-    const seen = new Set(profileItems.map(x => x.ref?.uri || x.ref?.id || x.url));
-    for (const it of newItems) {
-      const k = it.ref?.uri || it.ref?.id || it.url;
-      if (!seen.has(k)) {
-        seen.add(k);
-        profileItems.push(it);
-      }
-    }
-    renderProfileFeed();
+    renderLoadMore(feedWrap, profileCursors, () => loadOwnAccountFeed(net, true));
   } catch (e) {
-    $("perrors").append(el("div", "banner", "Erro ao carregar publicações: " + e.message));
+    feedWrap.append(el("div", "banner", "Erro ao carregar publicações: " + e.message));
   }
-}
-
-function renderProfileFeed() {
-  const feed = $("profileFeed");
-  feed.replaceChildren();
-  const visible = profileFilter === "all" ? profileItems : profileItems.filter(it => it.network === profileFilter);
-  if (!visible.length) {
-    feed.append(el("div", "empty", t("feed.empty_profile")));
-  } else {
-    for (const it of visible) feed.append(postCard(it));
-  }
-  renderLoadMore(feed, profileCursors, () => loadProfileFeed(true));
 }
 
 function renderSingleProfileCard(p, isOwn = false) {
@@ -1994,51 +2058,136 @@ function renderSingleProfileCard(p, isOwn = false) {
   return card;
 }
 
-function renderProfileCards(profiles, errors) {
-  const container = $("profileCards");
-  container.replaceChildren();
-  if (errors) {
-    for (const [net, err] of Object.entries(errors)) {
-      if (err) $("perrors").append(el("div", "banner", LABEL[net] + ": " + err));
+async function openUserProfile(network, actor) {
+  if (!network || !actor) return;
+  if (viewMode === "single") {
+    if (tab !== "profile") {
+      previousTab = tab;
+      setTab("profile");
+    }
+  } else {
+    const colProf = $("colProfile");
+    if (colProf) {
+      colProf.hidden = false;
+      colProf.scrollIntoView({behavior: "smooth", inline: "center"});
     }
   }
-  const nets = Object.keys(profiles);
-  if (!nets.length) {
-    container.append(el("div", "empty", t("feed.empty_profile")));
-    $("profileFilters").hidden = true;
-    return;
-  }
-  $("profileFilters").hidden = nets.length <= 1;
-  $("pillBsky").hidden = !profiles.bluesky;
-  $("pillMasto").hidden = !profiles.mastodon;
 
-  for (const net of ["bluesky", "mastodon"]) {
-    const p = profiles[net];
-    if (!p) continue;
-    const card = renderSingleProfileCard(p, true);
-    card.classList.remove("single");
-    if (profileFilter === net) card.classList.add("active");
-    card.onclick = () => {
-      setProfileFilter(profileFilter === net ? "all" : net);
-    };
-    container.append(card);
+  activeProfileMode = "user";
+  activeProfileNet = network;
+  activeProfileActor = actor;
+  userProfileCursor = null;
+
+  $("pProfile").hidden = false;
+  $("profileHubView").hidden = true;
+  $("profileDetailView").hidden = false;
+  $("profileBackBtn").textContent = (previousTab && viewMode === "single") ? t("actions.back") : t("profile.back_to_profiles");
+
+  $("profileActiveCard").replaceChildren(el("div", "empty", t("feed.loading_profile")));
+  $("profileActiveFeed").replaceChildren();
+
+  try {
+    const profRes = await api("/api/user_profile?network=" + encodeURIComponent(network) + "&actor=" + encodeURIComponent(actor));
+    if (activeProfileActor !== actor) return;
+    if (profRes.error) {
+      $("profileActiveCard").replaceChildren(el("div", "banner", LABEL[network] + ": " + profRes.error));
+      return;
+    }
+    const prof = profRes.profile;
+    $("profileActiveCard").replaceChildren(renderSingleProfileCard(prof, false));
+
+    const feedWrap = $("profileActiveFeed");
+    feedWrap.replaceChildren(el("div", "empty", t("feed.loading_posts")));
+    await loadAuthorFeed(feedWrap);
+  } catch (err) {
+    if (activeProfileActor === actor) {
+      $("profileActiveCard").replaceChildren(el("div", "banner", t("feed.error_loading_profile", {err: err.message})));
+    }
   }
 }
 
-function setProfileFilter(net) {
-  profileFilter = net;
-  document.querySelectorAll(".profile-card").forEach(c => {
-    c.classList.toggle("active", c.dataset.net === net);
+async function loadAuthorFeed(feedWrap, isMore = false) {
+  const q = new URLSearchParams({
+    network: activeProfileNet,
+    actor: activeProfileActor
   });
-  document.querySelectorAll("#profileFilters .pill").forEach(p => {
-    p.classList.toggle("active", p.dataset.net === net);
-  });
-  renderProfileFeed();
+  if (userProfileCursor) q.set("cursor", userProfileCursor);
+
+  try {
+    const d = await api("/api/user_feed?" + q.toString());
+    if (activeProfileActor !== q.get("actor")) return;
+    userProfileCursor = d.cursor || null;
+    const items = d.items || [];
+    if (!isMore) {
+      userProfileItems = [];
+      feedWrap.replaceChildren();
+    } else {
+      const moreBtn = feedWrap.querySelector(".more-wrap");
+      if (moreBtn) moreBtn.remove();
+    }
+    for (const it of items) userProfileItems.push(it);
+    if (!userProfileItems.length) {
+      feedWrap.append(el("div", "empty", t("feed.empty_user_profile")));
+    } else {
+      for (const it of items) feedWrap.append(postCard(it));
+      if (userProfileCursor) {
+        const wrap = el("div", "more-wrap");
+        wrap.style.textAlign = "center";
+        wrap.style.padding = "20px 0";
+        const btn = el("button", "ghost", t("profile.load_more_posts"));
+        btn.onclick = async () => {
+          btn.disabled = true;
+          btn.textContent = t("actions.loading");
+          await loadAuthorFeed(feedWrap, true);
+        };
+        wrap.append(btn);
+        feedWrap.append(wrap);
+      }
+    }
+  } catch (err) {
+    feedWrap.append(el("div", "banner", t("feed.error_loading_posts", {err: err.message})));
+  }
 }
 
-document.querySelectorAll("#profileFilters .pill").forEach(p => {
-  p.onclick = () => setProfileFilter(p.dataset.net);
-});
+function returnFromProfileDetail() {
+  if (activeProfileMode === "user") {
+    if (viewMode === "single" && previousTab && previousTab !== "profile") {
+      const pt = previousTab;
+      previousTab = null;
+      activeProfileActor = null;
+      activeProfileMode = "hub";
+      $("profileDetailView").hidden = true;
+      $("profileHubView").hidden = false;
+      setTab(pt);
+      return;
+    }
+    activeProfileActor = null;
+    activeProfileMode = "hub";
+    $("profileDetailView").hidden = true;
+    $("profileHubView").hidden = false;
+  } else if (activeProfileMode === "account") {
+    activeProfileNet = null;
+    activeProfileMode = "hub";
+    $("profileDetailView").hidden = true;
+    $("profileHubView").hidden = false;
+  }
+}
+
+function closeUserProfile() {
+  returnFromProfileDetail();
+}
+
+function refreshProfileView() {
+  if (activeProfileMode === "user") {
+    openUserProfile(activeProfileNet, activeProfileActor);
+  } else if (activeProfileMode === "account") {
+    loadProfile(true).then(() => {
+      if (profileData && profileData[activeProfileNet]) viewOwnAccount(activeProfileNet);
+    });
+  } else {
+    loadProfile(true);
+  }
+}
 
 function setTab(newTab) {
   tab = newTab;
@@ -2129,133 +2278,6 @@ function closeThread() {
     threadIt = null;
     setTab(tab);
     window.scrollTo(0, threadScroll);
-  }
-}
-
-let userProfileActor = null, userProfileNetwork = null, userProfileScroll = 0, userProfileCursor = null, userProfileItems = [];
-
-async function openUserProfile(network, actor) {
-  if (!network || !actor) return;
-  const box = $("pUserProfile");
-  if (box.hidden) userProfileScroll = window.scrollY;
-  userProfileNetwork = network;
-  userProfileActor = actor;
-  userProfileCursor = null;
-  userProfileItems = [];
-
-  if (viewMode === "deck") {
-    $("colDetail").hidden = false;
-    if ($("deckDetailTitle")) $("deckDetailTitle").textContent = t("header.col_user");
-    $("pThread").hidden = true;
-    box.hidden = false;
-  } else {
-    $("pTimeline").hidden = true;
-    $("pExplore").hidden = true;
-    $("pNotifs").hidden = true;
-    $("pProfile").hidden = true;
-    $("pThread").hidden = true;
-    box.hidden = false;
-  }
-
-  const back = el("button", "ghost back", t("actions.back"));
-  back.onclick = closeUserProfile;
-  const loading = el("div", "empty", t("feed.loading_profile"));
-  box.replaceChildren(back, loading);
-  if (viewMode === "deck") {
-    $("colDetail").scrollIntoView({behavior: "smooth", inline: "end"});
-  } else {
-    window.scrollTo(0, 0);
-  }
-
-  try {
-    const profRes = await api("/api/user_profile?network=" + encodeURIComponent(network) + "&actor=" + encodeURIComponent(actor));
-    if (userProfileActor !== actor) return;
-    if (profRes.error) {
-      box.replaceChildren(back, el("div", "banner", LABEL[network] + ": " + profRes.error));
-      return;
-    }
-    const prof = profRes.profile;
-    box.replaceChildren(back);
-    const card = renderSingleProfileCard(prof, false);
-    box.append(card);
-
-    const feedWrap = el("div", "user-profile-feed");
-    feedWrap.append(el("div", "empty", t("feed.loading_posts")));
-    box.append(feedWrap);
-
-    await loadUserFeed(feedWrap);
-  } catch (err) {
-    if (userProfileActor === actor) {
-      box.replaceChildren(back, el("div", "banner", t("feed.error_loading_profile", {err: err.message})));
-    }
-  }
-}
-
-function closeUserProfile() {
-  if (viewMode === "deck") {
-    closeDeckDetail();
-  } else {
-    userProfileActor = null;
-    $("pUserProfile").hidden = true;
-    setTab(tab);
-    window.scrollTo(0, userProfileScroll);
-  }
-}
-
-async function loadUserFeed(feedWrap, isMore = false) {
-  const q = new URLSearchParams({
-    network: userProfileNetwork,
-    actor: userProfileActor
-  });
-  if (userProfileCursor) q.set("cursor", userProfileCursor);
-
-  try {
-    const d = await api("/api/user_feed?" + q.toString());
-    if (d.error) {
-      feedWrap.append(el("div", "banner", d.error));
-      return;
-    }
-    userProfileCursor = d.cursor || null;
-    const newItems = d.items || [];
-    if (!isMore) {
-      userProfileItems = [];
-      feedWrap.replaceChildren();
-    } else {
-      const moreBtn = feedWrap.querySelector(".more-wrap");
-      if (moreBtn) moreBtn.remove();
-    }
-
-    const seen = new Set(userProfileItems.map(x => x.ref?.uri || x.ref?.id || x.url));
-    for (const it of newItems) {
-      const k = it.ref?.uri || it.ref?.id || it.url;
-      if (!seen.has(k)) {
-        seen.add(k);
-        userProfileItems.push(it);
-      }
-    }
-
-    if (!userProfileItems.length) {
-      feedWrap.append(el("div", "empty", t("feed.empty_user_profile")));
-    } else {
-      for (const it of newItems) {
-        feedWrap.append(postCard(it));
-      }
-      if (userProfileCursor) {
-        const wrap = el("div", "more-wrap");
-        wrap.style.textAlign = "center";
-        wrap.style.padding = "20px 0";
-        const btn = el("button", "ghost", t("profile.load_more_posts"));
-        btn.onclick = async () => {
-          btn.disabled = true;
-          btn.textContent = t("actions.loading");
-          await loadUserFeed(feedWrap, true);
-        };
-        wrap.append(btn);
-        feedWrap.append(wrap);
-      }
-    }
-  } catch (err) {
-    feedWrap.append(el("div", "banner", t("feed.error_loading_posts", {err: err.message})));
   }
 }
 

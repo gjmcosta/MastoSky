@@ -1437,6 +1437,22 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("view_mode_single", html)
         self.assertIn("view_mode_deck", html)
 
+    def test_index_contains_profile_hub_and_brand_action_icons(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn('id="i-refresh"', html)
+        self.assertIn('id="i-arrow-up"', html)
+        self.assertIn('id="profileHubView"', html)
+        self.assertIn('id="profileAccountsList"', html)
+        self.assertIn('id="profileDetailView"', html)
+        self.assertIn('id="profileBackBtn"', html)
+        self.assertIn('id="profileActiveCard"', html)
+        self.assertIn('id="profileActiveFeed"', html)
+        self.assertIn("function renderProfileAccountsList(", html)
+        self.assertIn("function viewOwnAccount(", html)
+        self.assertIn("function returnFromProfileDetail(", html)
+        self.assertIn("function refreshProfileView(", html)
+
 
 if __name__ == "__main__":
     unittest.main()
