@@ -157,6 +157,26 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .setup-section input{width:100%;margin-top:4px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:7px 10px;font-size:13px}
 .setup-help{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.35}
 .setup-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.profile-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:16px}
+.profile-card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;transition:border-color .15s,box-shadow .15s;cursor:pointer;position:relative}
+.profile-card:hover{border-color:var(--accent)}
+.profile-card.active{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent)}
+.profile-banner{height:75px;background-size:cover;background-position:center;background-color:var(--surface-2);background-repeat:no-repeat}
+.profile-card-body{padding:0 14px 14px 14px}
+.profile-card-top{display:flex;justify-content:space-between;align-items:flex-end;margin-top:-28px;margin-bottom:8px}
+.profile-avatar{width:56px;height:56px;border-radius:50%;border:3px solid var(--card);background:var(--line);object-fit:cover;display:block}
+.profile-card-net{display:flex;align-items:center}
+.profile-name-row{display:flex;align-items:center;gap:6px}
+.profile-name{font-size:16px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-handle{font:12.5px var(--mono);color:var(--muted);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-bio{font:13.5px/1.45 var(--sans);color:var(--ink);margin:8px 0;max-height:85px;overflow-y:auto;overflow-wrap:anywhere}
+.profile-bio a{color:var(--accent)}
+.profile-stats{display:flex;gap:12px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;margin-top:8px}
+.profile-stats b{color:var(--ink);font-weight:700}
+.filter-pills{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.pill{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);padding:5px 12px;border-radius:16px;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s}
+.pill:hover{color:var(--ink);border-color:var(--accent)}
+.pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 @media (prefers-reduced-motion:no-preference){button{transition:background .15s,color .15s}}
 </style>
 </head>
@@ -179,6 +199,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
     <button class="tab" role="tab" data-tab="timeline">Timeline</button>
     <button class="tab" role="tab" data-tab="explore">Em Alta</button>
     <button class="tab" role="tab" data-tab="notifs">Notificações <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span></button>
+    <button class="tab" role="tab" data-tab="profile">Perfil</button>
   </nav>
 
   <section class="compose">
@@ -245,6 +266,16 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
     <div id="nerrors"></div>
     <div id="nfeed"></div>
   </div>
+  <div id="pProfile" hidden>
+    <div id="perrors"></div>
+    <div id="profileCards" class="profile-cards"></div>
+    <div class="filter-pills" id="profileFilters" hidden>
+      <button class="pill active" data-net="all">✨ Ambos</button>
+      <button class="pill" data-net="bluesky" id="pillBsky">🦋 Bluesky</button>
+      <button class="pill" data-net="mastodon" id="pillMasto">🐘 Mastodon</button>
+    </div>
+    <div id="profileFeed"></div>
+  </div>
   <div id="pThread" hidden></div>
 
   <div id="setupOverlay" class="setup-overlay" hidden>
@@ -291,6 +322,7 @@ const LIMITS = {bluesky: 300, mastodon: 500};
 const LABEL = {bluesky: "Bluesky", mastodon: "Mastodon"};
 const $ = id => document.getElementById(id);
 let networks = [], reply = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
+let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
 
 async function api(path, body) {
   const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
@@ -712,16 +744,175 @@ function updateBadge() {
   if ($("badgeCount")) $("badgeCount").textContent = n > 99 ? "99+" : n;
 }
 
+async function loadProfile(keep = false) {
+  profileLoaded = true;
+  $("perrors").replaceChildren();
+  if (!keep) {
+    $("profileCards").replaceChildren(el("div", "empty", "A carregar perfil..."));
+    $("profileFeed").replaceChildren();
+  }
+  try {
+    const d = await api("/api/profile");
+    profileData = d.profiles || {};
+    renderProfileCards(profileData, d.errors || {});
+  } catch (e) {
+    $("perrors").replaceChildren(el("div", "banner", "Erro ao carregar perfil: " + e.message));
+  }
+  await loadProfileFeed(false);
+}
+
+async function loadProfileFeed(isMore = false) {
+  if (!isMore) {
+    profileItems = [];
+    profileCursors = {};
+  }
+  const q = new URLSearchParams();
+  if (profileCursors.bluesky) q.set("cursor_bluesky", profileCursors.bluesky);
+  if (profileCursors.mastodon) q.set("cursor_mastodon", profileCursors.mastodon);
+  try {
+    const d = await api("/api/profile/feed?" + q.toString());
+    profileCursors = d.cursors || {};
+    if (d.errors) {
+      for (const [net, err] of Object.entries(d.errors)) {
+        if (err) $("perrors").append(el("div", "banner", LABEL[net] + ": " + err));
+      }
+    }
+    const newItems = d.items || [];
+    const seen = new Set(profileItems.map(x => x.ref?.uri || x.ref?.id || x.url));
+    for (const it of newItems) {
+      const k = it.ref?.uri || it.ref?.id || it.url;
+      if (!seen.has(k)) {
+        seen.add(k);
+        profileItems.push(it);
+      }
+    }
+    renderProfileFeed();
+  } catch (e) {
+    $("perrors").append(el("div", "banner", "Erro ao carregar publicações: " + e.message));
+  }
+}
+
+function renderProfileFeed() {
+  const feed = $("profileFeed");
+  feed.replaceChildren();
+  const visible = profileFilter === "all" ? profileItems : profileItems.filter(it => it.network === profileFilter);
+  if (!visible.length) {
+    feed.append(el("div", "empty", "Ainda não tens publicações para mostrar."));
+  } else {
+    for (const it of visible) feed.append(postCard(it));
+  }
+  renderLoadMore(feed, profileCursors, () => loadProfileFeed(true));
+}
+
+function renderProfileCards(profiles, errors) {
+  const container = $("profileCards");
+  container.replaceChildren();
+  if (errors) {
+    for (const [net, err] of Object.entries(errors)) {
+      if (err) $("perrors").append(el("div", "banner", LABEL[net] + ": " + err));
+    }
+  }
+  const nets = Object.keys(profiles);
+  if (!nets.length) {
+    container.append(el("div", "empty", "Nenhuma conta configurada."));
+    $("profileFilters").hidden = true;
+    return;
+  }
+  $("profileFilters").hidden = nets.length <= 1;
+  $("pillBsky").hidden = !profiles.bluesky;
+  $("pillMasto").hidden = !profiles.mastodon;
+
+  for (const net of ["bluesky", "mastodon"]) {
+    const p = profiles[net];
+    if (!p) continue;
+    const card = el("div", "profile-card" + (profileFilter === net ? " active" : ""));
+    card.dataset.net = net;
+
+    const banner = el("div", "profile-banner");
+    if (p.banner) {
+      banner.style.backgroundImage = `url("${p.banner}")`;
+    }
+    card.append(banner);
+
+    const body = el("div", "profile-card-body");
+    const top = el("div", "profile-card-top");
+    const av = p.avatar ? el("img", "profile-avatar") : el("div", "profile-avatar ph");
+    if (p.avatar) {
+      av.src = su(p.avatar) || "";
+      av.alt = p.name || "";
+      av.loading = "lazy";
+    }
+    const badgeWrap = el("div", "profile-card-net");
+    badgeWrap.append(netBadge(net));
+    top.append(av, badgeWrap);
+    body.append(top);
+
+    const info = el("div", "profile-info");
+    const nameRow = el("div", "profile-name-row");
+    const bName = el("b", "profile-name");
+    if (p.name_html) bName.innerHTML = p.name_html;
+    else bName.textContent = p.name;
+    const star = el("span", "star-badge");
+    star.title = "A tua conta";
+    nameRow.append(bName, star);
+
+    const handle = el("div", "profile-handle", p.handle);
+    info.append(nameRow, handle);
+
+    if (p.bio) {
+      const bio = el("div", "profile-bio");
+      bio.innerHTML = p.bio;
+      info.append(bio);
+    }
+
+    const stats = el("div", "profile-stats");
+    const sPosts = el("span");
+    sPosts.innerHTML = `<b>${p.posts_count != null ? p.posts_count : 0}</b> posts`;
+    const sFollowing = el("span");
+    sFollowing.innerHTML = `<b>${p.following != null ? p.following : 0}</b> a seguir`;
+    const sFollowers = el("span");
+    sFollowers.innerHTML = `<b>${p.followers != null ? p.followers : 0}</b> seguidores`;
+    stats.append(sPosts, sFollowing, sFollowers);
+    info.append(stats);
+
+    body.append(info);
+    card.append(body);
+
+    card.onclick = () => {
+      setProfileFilter(profileFilter === net ? "all" : net);
+    };
+
+    container.append(card);
+  }
+}
+
+function setProfileFilter(net) {
+  profileFilter = net;
+  document.querySelectorAll(".profile-card").forEach(c => {
+    c.classList.toggle("active", c.dataset.net === net);
+  });
+  document.querySelectorAll("#profileFilters .pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.net === net);
+  });
+  renderProfileFeed();
+}
+
+document.querySelectorAll("#profileFilters .pill").forEach(p => {
+  p.onclick = () => setProfileFilter(p.dataset.net);
+});
+
 function setTab(t) {
   tab = t;
   $("pTimeline").hidden = t !== "timeline";
   $("pExplore").hidden = t !== "explore";
   $("pNotifs").hidden = t !== "notifs";
+  $("pProfile").hidden = t !== "profile";
   $("pThread").hidden = true;
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
   if (t === "notifs") localStorage.setItem("notifSeen", new Date().toISOString());
   else seenBefore = localStorage.getItem("notifSeen") || seenBefore;
   if (t === "explore" && !exploreItems.length) loadExplore();
+  if (t === "profile" && !profileLoaded) loadProfile();
   renderNotifs(); updateBadge();
   history.replaceState(null, "", "#" + t);
 }
@@ -733,7 +924,7 @@ async function openThread(it, keep) {
   const box = $("pThread"), y = window.scrollY;
   if (box.hidden) threadScroll = y;
   threadIt = it;
-  $("pTimeline").hidden = true; $("pExplore").hidden = true; $("pNotifs").hidden = true; box.hidden = false;
+  $("pTimeline").hidden = true; $("pExplore").hidden = true; $("pNotifs").hidden = true; $("pProfile").hidden = true; box.hidden = false;
   const back = el("button", "ghost back", "← Voltar");
   back.onclick = closeThread;
   if (!keep) { box.replaceChildren(back, el("div", "empty", "A carregar conversa…")); window.scrollTo(0, 0); }
@@ -1062,6 +1253,7 @@ $("refresh").onclick = async () => {
   $("refresh").disabled = true;
   const tasks = [load(), loadNotifs()];
   if (tab === "explore" || exploreItems.length) tasks.push(loadExplore());
+  if (tab === "profile" || profileLoaded) tasks.push(loadProfile(true));
   await Promise.all(tasks);
   $("refresh").disabled = false;
 };
@@ -1094,6 +1286,7 @@ $("send").onclick = async () => {
     hasPoll = false; pollOptions = ["", ""]; renderPoll();
     reply = null; $("replying").hidden = true;
     setTimeout(load, 1200);
+    if (profileLoaded) setTimeout(() => loadProfileFeed(false), 1200);
     if (!$("pThread").hidden && threadIt) setTimeout(() => openThread(threadIt, true), 1500);
   }
   update();
@@ -1245,15 +1438,17 @@ $("saveSetupBtn").onclick = async () => {
   }
 };
 
-const initTab = location.hash === "#notifs" ? "notifs" : (location.hash === "#explore" ? "explore" : "timeline");
+const initTab = location.hash === "#notifs" ? "notifs" : (location.hash === "#explore" ? "explore" : (location.hash === "#profile" ? "profile" : "timeline"));
 setTab(initTab);
 load();
 loadNotifs();
 if (initTab === "explore") loadExplore();
+if (initTab === "profile") loadProfile();
 setInterval(() => {
   load();
   loadNotifs();
   if (tab === "explore") loadExplore();
+  if (tab === "profile") loadProfile(true);
 }, 120000);
 </script>
 </body>

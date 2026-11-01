@@ -184,7 +184,7 @@ def linkify(text):
     return "".join(parts).replace("\n", "<br>")
 
 
-def render_bsky_text(text, facets):
+def render_bsky_text(text, facets=None):
     if not text:
         return ""
     if not facets or not isinstance(facets, list):
@@ -726,6 +726,33 @@ class Bsky:
             return out
         return {"ancestors": ancestors, "focus": self.item(r["post"]), "replies": tree(r)}
 
+    def profile(self):
+        self._ensure()
+        p = self.call("GET", "app.bsky.actor.getProfile", params={"actor": self.did})
+        desc = p.get("description") or ""
+        bio_html = render_bsky_text(desc) if desc else ""
+        return {
+            "network": "bluesky",
+            "name": p.get("displayName") or p.get("handle") or "",
+            "handle": "@" + (p.get("handle") or ""),
+            "avatar": safe_url(p.get("avatar")),
+            "banner": safe_url(p.get("banner")),
+            "bio": bio_html,
+            "followers": p.get("followersCount", 0),
+            "following": p.get("followsCount", 0),
+            "posts_count": p.get("postsCount", 0),
+            "url": f"https://bsky.app/profile/{p.get('handle')}"
+        }
+
+    def author_feed(self, cursor=None):
+        self._ensure()
+        params = {"actor": self.did, "limit": 40}
+        if cursor:
+            params["cursor"] = cursor
+        r = self.call("GET", "app.bsky.feed.getAuthorFeed", params=params)
+        feed = r.get("feed", [])
+        return [self.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
+
     def upload_blob(self, raw_bytes, mime="image/jpeg"):
         url = f"{self.host}/xrpc/com.atproto.repo.uploadBlob"
         r = self._authed(lambda jwt: http("POST", url, data=raw_bytes, token=jwt, headers={"Content-Type": mime}))
@@ -953,6 +980,34 @@ class Masto:
     def explore(self, cursor=None):
         return self._fetch_statuses("/api/v1/trends/statuses", cursor=cursor)
 
+    def author_feed(self, cursor=None):
+        my_id = self.get_my_id()
+        if not my_id:
+            return [], None
+        return self._fetch_statuses(f"/api/v1/accounts/{my_id}/statuses", cursor=cursor)
+
+    def profile(self):
+        acc = self.call("GET", "/api/v1/accounts/verify_credentials")
+        self.my_id = str(acc.get("id"))
+        name_plain = acc.get("display_name") or acc.get("username", "")
+        name_html = render_custom_emojis(html.escape(name_plain), acc.get("emojis")) if acc.get("emojis") else None
+        bio_html = render_custom_emojis(clean(acc.get("note")), acc.get("emojis"))
+        out = {
+            "network": "mastodon",
+            "name": name_plain,
+            "handle": "@" + (acc.get("acct") or acc.get("username") or ""),
+            "avatar": safe_url(acc.get("avatar")),
+            "banner": safe_url(acc.get("header")),
+            "bio": bio_html,
+            "followers": acc.get("followers_count", 0),
+            "following": acc.get("following_count", 0),
+            "posts_count": acc.get("statuses_count", 0),
+            "url": safe_url(acc.get("url"))
+        }
+        if name_html:
+            out["name_html"] = name_html
+        return out
+
     def thread(self, ref):
         st = self.call("GET", f"/api/v1/statuses/{ref['id']}")
         c = self.call("GET", f"/api/v1/statuses/{ref['id']}/context")
@@ -1123,15 +1178,25 @@ class H(BaseHTTPRequestHandler):
                     "instance": CFG.get("mastodon", {}).get("instance", "")
                 }
             })
-        if path in ("/api/timeline", "/api/notifications", "/api/explore"):
+        if path == "/api/profile":
+            profiles, errors = {}, {}
+            for name, client in CLIENTS.items():
+                try:
+                    profiles[name] = client.profile()
+                except Exception as e:
+                    errors[name] = str(e)
+            return self.send(200, {"profiles": profiles, "errors": errors, "networks": list(CLIENTS)})
+        if path in ("/api/timeline", "/api/notifications", "/api/explore", "/api/profile/feed"):
             if not CLIENTS:
                 return self.send(200, {"items": [], "errors": {}, "networks": [], "cursors": {}})
-            what = path.rsplit("/", 1)[1]
+            what = "author_feed" if path == "/api/profile/feed" else path.rsplit("/", 1)[1]
             qs = urllib.parse.parse_qs(parsed.query)
+            target_net = qs.get("network", [None])[0]
             cursors_in = {
                 "bluesky": qs.get("cursor_bluesky", [None])[0],
                 "mastodon": qs.get("cursor_mastodon", [None])[0]
             }
+            active_clients = [c for c in CLIENTS.values() if not target_net or c.name == target_net]
             network_items, errors, next_cursors = {}, {}, {}
 
             def get(c):
@@ -1146,7 +1211,7 @@ class H(BaseHTTPRequestHandler):
                 except Exception as e:
                     return c.name, [], None, str(e)
             with ThreadPoolExecutor() as ex:
-                for name, its, nxt, err in ex.map(get, CLIENTS.values()):
+                for name, its, nxt, err in ex.map(get, active_clients):
                     network_items[name] = its
                     if nxt:
                         next_cursors[name] = nxt

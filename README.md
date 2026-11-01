@@ -18,6 +18,7 @@
 * **🔄 Unified Timeline:** Read posts from the people you follow on both Bluesky and Mastodon, seamlessly interleaved in chronological order.
 * **🔥 Explore / "What's Hot":** Discover trending posts and viral conversations from both networks, even from accounts you don't follow.
 * **🔔 Centralized Notifications:** Track mentions, replies, likes, boosts, and quote posts in real-time with an unread badge.
+* **👤 Profiles & Author Feeds:** View your Bluesky and Mastodon profiles side-by-side with avatars, bios, follower statistics, and your own published posts with fast network filtering and post deletion.
 * **📝 1-Click Cross-Posting:** Compose once and choose whether to publish to Bluesky, Mastodon, or both at the same time, with live network-specific character count limits.
 * **💬 Native Quote Posts:** Rich rendering of quoted posts from both networks with quoted author avatars, text, and embedded media.
 * **🎬 Integrated Video Player:** Transparent HTML5 playback for both adaptive HLS streams (`.m3u8` from Bluesky) and direct video / animated files (`.mp4` and `gifv` from Mastodon).

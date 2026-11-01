@@ -1048,5 +1048,105 @@ class CliAndMiscTests(unittest.TestCase):
             mock_log.assert_not_called()
 
 
+class ProfileTests(unittest.TestCase):
+    def test_bsky_profile(self):
+        b = app.Bsky({"handle": "alice.bsky.social", "app_password": "pass"})
+        b.did = "did:plc:alice"
+        b.jwt = "jwt"
+        with mock.patch.object(b, "call") as mock_call:
+            mock_call.return_value = {
+                "displayName": "Alice Wonderland",
+                "handle": "alice.bsky.social",
+                "avatar": "https://cdn.bsky/avatar.jpg",
+                "banner": "https://cdn.bsky/banner.jpg",
+                "description": "Hello world\nhttps://example.com",
+                "followersCount": 42,
+                "followsCount": 10,
+                "postsCount": 99
+            }
+            prof = b.profile()
+            self.assertEqual(prof["network"], "bluesky")
+            self.assertEqual(prof["name"], "Alice Wonderland")
+            self.assertEqual(prof["handle"], "@alice.bsky.social")
+            self.assertEqual(prof["followers"], 42)
+            self.assertEqual(prof["posts_count"], 99)
+            self.assertIn("<br>", prof["bio"])
+            self.assertIn('href="https://example.com"', prof["bio"])
+
+    def test_masto_profile(self):
+        m = app.Masto({"instance": "https://masto.pt", "token": "tok"})
+        with mock.patch.object(m, "call") as mock_call:
+            mock_call.return_value = {
+                "id": "1234",
+                "username": "bob",
+                "acct": "bob",
+                "display_name": "Bob :verified:",
+                "avatar": "https://masto.pt/av.jpg",
+                "header": "https://masto.pt/head.jpg",
+                "note": "<p>Olá do Mastodon :blobcat:</p>",
+                "followers_count": 100,
+                "following_count": 50,
+                "statuses_count": 250,
+                "url": "https://masto.pt/@bob",
+                "emojis": [
+                    {"shortcode": "verified", "static_url": "https://masto.pt/ver.png"},
+                    {"shortcode": "blobcat", "static_url": "https://masto.pt/cat.png"}
+                ]
+            }
+            prof = m.profile()
+            self.assertEqual(prof["network"], "mastodon")
+            self.assertEqual(prof["name"], "Bob :verified:")
+            self.assertIn('<img class="emoji" src="https://masto.pt/ver.png"', prof["name_html"])
+            self.assertIn('<img class="emoji" src="https://masto.pt/cat.png"', prof["bio"])
+            self.assertEqual(prof["followers"], 100)
+            self.assertEqual(prof["posts_count"], 250)
+
+    def test_profile_endpoints(self):
+        bsky_mock = mock.MagicMock()
+        bsky_mock.name = "bluesky"
+        bsky_mock.profile.return_value = {"network": "bluesky", "name": "Alice"}
+        bsky_mock.author_feed.return_value = ([{"time": "2026-01-01T00:00:00Z", "network": "bluesky"}], "b_cur")
+
+        masto_mock = mock.MagicMock()
+        masto_mock.name = "mastodon"
+        masto_mock.profile.return_value = {"network": "mastodon", "name": "Bob"}
+        masto_mock.author_feed.return_value = ([{"time": "2026-01-02T00:00:00Z", "network": "mastodon"}], "m_cur")
+
+        with mock.patch.dict(app.CLIENTS, {"bluesky": bsky_mock, "mastodon": masto_mock}, clear=True):
+            # Test /api/profile
+            h = object.__new__(app.H)
+            h.path = "/api/profile"
+            h.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+            h.wfile = io.BytesIO()
+            h.sent = []
+            h.send_response = lambda code: h.sent.append(("code", code))
+            h.send_header = lambda k, v: h.sent.append((k, v))
+            h.end_headers = lambda: None
+            h.do_GET()
+
+            code = [v for k, v in h.sent if k == "code"][0]
+            self.assertEqual(code, 200)
+            res = json.loads(h.wfile.getvalue().decode())
+            self.assertEqual(res["profiles"]["bluesky"]["name"], "Alice")
+            self.assertEqual(res["profiles"]["mastodon"]["name"], "Bob")
+
+            # Test /api/profile/feed
+            h2 = object.__new__(app.H)
+            h2.path = "/api/profile/feed"
+            h2.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+            h2.wfile = io.BytesIO()
+            h2.sent = []
+            h2.send_response = lambda code: h2.sent.append(("code", code))
+            h2.send_header = lambda k, v: h2.sent.append((k, v))
+            h2.end_headers = lambda: None
+            h2.do_GET()
+
+            code2 = [v for k, v in h2.sent if k == "code"][0]
+            self.assertEqual(code2, 200)
+            res2 = json.loads(h2.wfile.getvalue().decode())
+            self.assertEqual(len(res2["items"]), 2)
+            self.assertEqual(res2["cursors"], {"bluesky": "b_cur", "mastodon": "m_cur"})
+
+
 if __name__ == "__main__":
     unittest.main()
