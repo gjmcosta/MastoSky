@@ -1209,6 +1209,69 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(len(res2["items"]), 2)
             self.assertEqual(res2["cursors"], {"bluesky": "b_cur", "mastodon": "m_cur"})
 
+    def test_user_profile_and_feed_endpoints(self):
+        bsky_mock = mock.MagicMock()
+        bsky_mock.name = "bluesky"
+        bsky_mock.user_profile.return_value = {"network": "bluesky", "name": "Charlie", "handle": "@charlie.bsky.social"}
+        bsky_mock.user_feed.return_value = ([{"time": "2026-01-03T00:00:00Z", "network": "bluesky"}], "c_cur")
+
+        with mock.patch.dict(app.CLIENTS, {"bluesky": bsky_mock}, clear=True):
+            # Test /api/user_profile
+            h = object.__new__(app.H)
+            h.path = "/api/user_profile?network=bluesky&actor=charlie.bsky.social"
+            h.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+            h.wfile = io.BytesIO()
+            h.sent = []
+            h.send_response = lambda code: h.sent.append(("code", code))
+            h.send_header = lambda k, v: h.sent.append((k, v))
+            h.end_headers = lambda: None
+            h.do_GET()
+
+            code = [v for k, v in h.sent if k == "code"][0]
+            self.assertEqual(code, 200)
+            res = json.loads(h.wfile.getvalue().decode())
+            self.assertEqual(res["profile"]["name"], "Charlie")
+            bsky_mock.user_profile.assert_called_with("charlie.bsky.social")
+
+            # Test /api/user_feed
+            h2 = object.__new__(app.H)
+            h2.path = "/api/user_feed?network=bluesky&actor=charlie.bsky.social&cursor=prev"
+            h2.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+            h2.wfile = io.BytesIO()
+            h2.sent = []
+            h2.send_response = lambda code: h2.sent.append(("code", code))
+            h2.send_header = lambda k, v: h2.sent.append((k, v))
+            h2.end_headers = lambda: None
+            h2.do_GET()
+
+            code2 = [v for k, v in h2.sent if k == "code"][0]
+            self.assertEqual(code2, 200)
+            res2 = json.loads(h2.wfile.getvalue().decode())
+            self.assertEqual(len(res2["items"]), 1)
+            self.assertEqual(res2["cursor"], "c_cur")
+            bsky_mock.user_feed.assert_called_with("charlie.bsky.social", cursor="prev")
+
+    def test_bsky_and_masto_user_profile_methods(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+        b.call = lambda m, n, d=None, params=None: {
+            "displayName": "User", "handle": "user.bsky.social", "followersCount": 42
+        }
+        prof = b.user_profile("user.bsky.social")
+        self.assertEqual(prof["name"], "User")
+        self.assertEqual(prof["followers"], 42)
+
+        m = app.Masto({"instance": "https://m.pt", "token": "tok"})
+        m.call = lambda mth, pth, data=None, params=None: {
+            "id": 12345, "username": "bob", "acct": "bob@inst", "display_name": "Bob",
+            "statuses_count": 10
+        }
+        prof_m = m.user_profile("12345")
+        self.assertEqual(prof_m["id"], "12345")
+        self.assertEqual(prof_m["name"], "Bob")
+        self.assertEqual(prof_m["posts_count"], 10)
+
 
 if __name__ == "__main__":
     unittest.main()

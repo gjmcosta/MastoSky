@@ -678,6 +678,7 @@ class Bsky:
             ref_obj["repost_uri"] = repost_uri
         return {
             "network": "bluesky", "name": a.get("displayName") or a["handle"], "handle": "@" + a["handle"],
+            "author_id": a.get("did") or a["handle"], "author_handle": a["handle"],
             "avatar": safe_url(a.get("avatar")), "text": rec.get("text", ""),
             "html": render_bsky_text(rec.get("text", ""), rec.get("facets")),
             "time": reason.get("indexedAt") or p.get("indexedAt") or rec["createdAt"],
@@ -730,9 +731,9 @@ class Bsky:
             return out
         return {"ancestors": ancestors, "focus": self.item(r["post"]), "replies": tree(r)}
 
-    def profile(self):
+    def user_profile(self, actor):
         self._ensure()
-        p = self.call("GET", "app.bsky.actor.getProfile", params={"actor": self.did})
+        p = self.call("GET", "app.bsky.actor.getProfile", params={"actor": actor})
         desc = p.get("description") or ""
         bio_html = render_bsky_text(desc) if desc else ""
         return {
@@ -748,14 +749,22 @@ class Bsky:
             "url": f"https://bsky.app/profile/{p.get('handle')}"
         }
 
-    def author_feed(self, cursor=None):
+    def user_feed(self, actor, cursor=None):
         self._ensure()
-        params = {"actor": self.did, "limit": 40}
+        params = {"actor": actor, "limit": 40}
         if cursor:
             params["cursor"] = cursor
         r = self.call("GET", "app.bsky.feed.getAuthorFeed", params=params)
         feed = r.get("feed", [])
         return [self.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
+
+    def profile(self):
+        self._ensure()
+        return self.user_profile(self.did)
+
+    def author_feed(self, cursor=None):
+        self._ensure()
+        return self.user_feed(self.did, cursor=cursor)
 
     def upload_blob(self, raw_bytes, mime="image/jpeg"):
         url = f"{self.host}/xrpc/com.atproto.repo.uploadBlob"
@@ -913,7 +922,8 @@ class Bsky:
                 facets = srec.get("facets")
                 url = f"https://bsky.app/profile/{subject['author']['handle']}/post/{subject['uri'].split('/')[-1]}"
             out.append({"network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
-                        "handle": "@" + a["handle"], "avatar": safe_url(a.get("avatar")),
+                        "handle": "@" + a["handle"], "author_id": a.get("did") or a["handle"],
+                        "author_handle": a["handle"], "avatar": safe_url(a.get("avatar")),
                         "html": render_bsky_text(text, facets) if text else "", "time": n["indexedAt"], "url": url, "ref": ref})
         return out, next_cursor
 
@@ -982,6 +992,7 @@ class Masto:
         plain_text = ((f"[{x['spoiler_text']}] " if x.get("spoiler_text") else "") + plain(x.get("content"))).strip()
         out = {
             "network": "mastodon", "name": name_plain, "handle": "@" + a.get("acct", ""),
+            "author_id": str(a.get("id")), "author_handle": a.get("acct") or a.get("username", ""),
             "avatar": safe_url(a.get("avatar")), "text": plain_text, "html": final_html,
             "time": st.get("created_at"),
             "boosted_by": (st["account"].get("display_name") or st["account"]["username"]) if st.get("reblog") else None,
@@ -1019,20 +1030,13 @@ class Masto:
     def explore(self, cursor=None):
         return self._fetch_statuses("/api/v1/trends/statuses", cursor=cursor)
 
-    def author_feed(self, cursor=None):
-        my_id = self.get_my_id()
-        if not my_id:
-            return [], None
-        return self._fetch_statuses(f"/api/v1/accounts/{my_id}/statuses", cursor=cursor)
-
-    def profile(self):
-        acc = self.call("GET", "/api/v1/accounts/verify_credentials")
-        self.my_id = str(acc.get("id"))
+    def _format_acc(self, acc):
         name_plain = acc.get("display_name") or acc.get("username", "")
         name_html = render_custom_emojis(html.escape(name_plain), acc.get("emojis")) if acc.get("emojis") else None
         bio_html = render_custom_emojis(clean(acc.get("note")), acc.get("emojis"))
         out = {
             "network": "mastodon",
+            "id": str(acc.get("id")),
             "name": name_plain,
             "handle": "@" + (acc.get("acct") or acc.get("username") or ""),
             "avatar": safe_url(acc.get("avatar")),
@@ -1046,6 +1050,34 @@ class Masto:
         if name_html:
             out["name_html"] = name_html
         return out
+
+    def profile(self):
+        acc = self.call("GET", "/api/v1/accounts/verify_credentials")
+        self.my_id = str(acc.get("id"))
+        return self._format_acc(acc)
+
+    def user_profile(self, actor):
+        actor_str = str(actor).strip().lstrip("@")
+        if actor_str.isdigit():
+            acc = self.call("GET", f"/api/v1/accounts/{actor_str}")
+        else:
+            acc = self.call("GET", "/api/v1/accounts/lookup", params={"acct": actor_str})
+        return self._format_acc(acc)
+
+    def user_feed(self, actor, cursor=None):
+        actor_str = str(actor).strip().lstrip("@")
+        if not actor_str.isdigit():
+            prof = self.user_profile(actor_str)
+            acc_id = prof.get("id")
+        else:
+            acc_id = actor_str
+        return self._fetch_statuses(f"/api/v1/accounts/{acc_id}/statuses", cursor=cursor)
+
+    def author_feed(self, cursor=None):
+        my_id = self.get_my_id()
+        if not my_id:
+            return [], None
+        return self.user_feed(my_id, cursor=cursor)
 
     def thread(self, ref):
         st = self.call("GET", f"/api/v1/statuses/{ref['id']}")
@@ -1133,7 +1165,8 @@ class Masto:
             a_name_html = render_custom_emojis(html.escape(a_name), a_emojis) if a_emojis else None
             notif_item = {
                 "network": "mastodon", "kind": kind, "name": a_name,
-                "handle": "@" + a.get("acct", ""), "avatar": safe_url(a.get("avatar")),
+                "handle": "@" + a.get("acct", ""), "author_id": str(a.get("id")),
+                "author_handle": a.get("acct") or a.get("username", ""), "avatar": safe_url(a.get("avatar")),
                 "html": notif_html, "time": n.get("created_at"),
                 "url": safe_url((st or {}).get("url") or a.get("url")),
                 "ref": {"id": st["id"]} if st and kind in ("reply", "mention", "quote") else None
@@ -1228,6 +1261,37 @@ class H(BaseHTTPRequestHandler):
                 except Exception as e:
                     errors[name] = str(e)
             return self.send(200, {"profiles": profiles, "errors": errors, "networks": list(CLIENTS)})
+        if path == "/api/user_profile":
+            qs = urllib.parse.parse_qs(parsed.query)
+            net = qs.get("network", [None])[0]
+            actor = qs.get("actor", [None])[0]
+            if not net or net not in CLIENTS:
+                return self.send(400, {"error": "Rede inválida ou não configurada."})
+            if not actor:
+                return self.send(400, {"error": "Autor em falta."})
+            try:
+                prof = CLIENTS[net].user_profile(actor)
+                return self.send(200, {"profile": prof})
+            except Exception as e:
+                return self.send(500, {"error": str(e)})
+        if path == "/api/user_feed":
+            qs = urllib.parse.parse_qs(parsed.query)
+            net = qs.get("network", [None])[0]
+            actor = qs.get("actor", [None])[0]
+            cursor = qs.get("cursor", [None])[0]
+            if not net or net not in CLIENTS:
+                return self.send(400, {"error": "Rede inválida ou não configurada."})
+            if not actor:
+                return self.send(400, {"error": "Autor em falta."})
+            try:
+                res = CLIENTS[net].user_feed(actor, cursor=cursor)
+                if isinstance(res, tuple):
+                    its, nxt = res
+                else:
+                    its, nxt = res, None
+                return self.send(200, {"items": its, "cursor": nxt})
+            except Exception as e:
+                return self.send(500, {"error": str(e)})
         if path in ("/api/timeline", "/api/notifications", "/api/explore", "/api/profile/feed"):
             if not CLIENTS:
                 return self.send(200, {"items": [], "errors": {}, "networks": [], "cursors": {}})

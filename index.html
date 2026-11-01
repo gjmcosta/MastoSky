@@ -215,6 +215,12 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .pill{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);padding:5px 12px;border-radius:16px;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s}
 .pill:hover{color:var(--ink);border-color:var(--accent)}
 .pill.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.author-link{cursor:pointer;transition:opacity .15s,color .15s}
+.author-link:hover{color:var(--accent);text-decoration:underline}
+.head img.author-link{transition:transform .15s,box-shadow .15s}
+.head img.author-link:hover{transform:scale(1.08);box-shadow:0 0 0 2px var(--accent);text-decoration:none}
+.profile-card.single{margin-bottom:16px;cursor:default}
+.profile-card.single:hover{border-color:var(--line)}
 @media (prefers-reduced-motion:no-preference){button{transition:background .15s,color .15s}}
 </style>
 </head>
@@ -333,6 +339,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
     <div id="profileFeed"></div>
   </div>
   <div id="pThread" hidden></div>
+  <div id="pUserProfile" hidden></div>
 
   <div id="setupOverlay" class="setup-overlay" hidden>
     <div class="setup-box">
@@ -533,12 +540,27 @@ function postCard(it, o = {}) {
   const p = el("article", "post " + it.network + (o.focus ? " focus" : ""));
   if (it.boosted_by) p.append(el("div", "boost", "Partilhado por " + it.boosted_by));
   const head = el("div", "head");
-  if (it.avatar) { const i = el("img"); i.src = su(it.avatar) || ""; i.alt = ""; i.loading = "lazy"; head.append(i); }
-  else head.append(el("div", "ph"));
+  const onProfile = (e) => {
+    e.stopPropagation();
+    openUserProfile(it.network, it.author_id || it.author_handle || it.handle);
+  };
+  if (it.avatar) {
+    const i = el("img", "author-link");
+    i.src = su(it.avatar) || "";
+    i.alt = "";
+    i.loading = "lazy";
+    i.title = "Ver perfil de " + (it.name || it.handle);
+    i.onclick = onProfile;
+    head.append(i);
+  } else {
+    head.append(el("div", "ph"));
+  }
   const who = el("div", "who");
-  const bItName = el("b");
+  const bItName = el("b", "author-link");
   if (it.name_html) bItName.innerHTML = it.name_html;
   else bItName.textContent = it.name;
+  bItName.title = "Ver perfil de " + (it.name || it.handle);
+  bItName.onclick = onProfile;
   if (it.is_own) {
     const star = el("span", "star-badge");
     star.title = "A tua publicação";
@@ -758,16 +780,32 @@ function renderNotifs() {
     const head = el("div", "head");
     const g = el("span", "glyph", GLYPH[n.kind] || "•"); g.setAttribute("aria-hidden", "true");
     head.append(g);
-    if (n.avatar) { const i = el("img"); i.src = su(n.avatar) || ""; i.alt = ""; i.loading = "lazy"; head.append(i); }
-    else head.append(el("div", "ph"));
+    const onNotifProfile = (e) => {
+      e.stopPropagation();
+      openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
+    };
+    if (n.avatar) {
+      const i = el("img", "author-link");
+      i.src = su(n.avatar) || "";
+      i.alt = "";
+      i.loading = "lazy";
+      i.title = "Ver perfil de " + (n.name || n.handle);
+      i.onclick = onNotifProfile;
+      head.append(i);
+    } else {
+      head.append(el("div", "ph"));
+    }
     const who = el("div", "who");
     const bNName = el("b");
+    const sNameWrap = el("span", "author-link");
+    sNameWrap.title = "Ver perfil de " + (n.name || n.handle);
+    sNameWrap.onclick = onNotifProfile;
     if (n.name_html) {
-      const sNName = el("span"); sNName.innerHTML = n.name_html;
-      bNName.append(sNName, document.createTextNode(" " + (VERB[n.kind] || VERB.other)));
+      sNameWrap.innerHTML = n.name_html;
     } else {
-      bNName.textContent = n.name + " " + (VERB[n.kind] || VERB.other);
+      sNameWrap.textContent = n.name;
     }
+    bNName.append(sNameWrap, document.createTextNode(" " + (VERB[n.kind] || VERB.other)));
     who.append(bNName, el("span", null, n.handle + " · " + LABEL[n.network]));
     const when = el("a", "when", ago(n.time));
     when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
@@ -863,6 +901,76 @@ function renderProfileFeed() {
   renderLoadMore(feed, profileCursors, () => loadProfileFeed(true));
 }
 
+function renderSingleProfileCard(p, isOwn = false) {
+  const card = el("div", "profile-card single");
+  card.dataset.net = p.network;
+
+  const banner = el("div", "profile-banner");
+  if (p.banner) {
+    banner.style.backgroundImage = `url("${p.banner}")`;
+  }
+  card.append(banner);
+
+  const body = el("div", "profile-card-body");
+  const top = el("div", "profile-card-top");
+  const av = p.avatar ? el("img", "profile-avatar") : el("div", "profile-avatar ph");
+  if (p.avatar) {
+    av.src = su(p.avatar) || "";
+    av.alt = p.name || "";
+    av.loading = "lazy";
+  }
+  const badgeWrap = el("div", "profile-card-net");
+  badgeWrap.append(netBadge(p.network));
+  top.append(av, badgeWrap);
+  body.append(top);
+
+  const info = el("div", "profile-info");
+  const nameRow = el("div", "profile-name-row");
+  const bName = el("b", "profile-name");
+  if (p.name_html) bName.innerHTML = p.name_html;
+  else bName.textContent = p.name;
+  nameRow.append(bName);
+
+  if (isOwn) {
+    const star = el("span", "star-badge");
+    star.title = "A tua conta";
+    nameRow.append(star);
+  } else if (p.url) {
+    const linkExt = el("a", "ghost", "Ver na web ↗");
+    linkExt.href = su(p.url) || "#";
+    linkExt.target = "_blank";
+    linkExt.rel = "noopener noreferrer";
+    linkExt.style.fontSize = "11.5px";
+    linkExt.style.padding = "2px 8px";
+    linkExt.style.marginLeft = "auto";
+    linkExt.style.textDecoration = "none";
+    nameRow.append(linkExt);
+  }
+
+  const handle = el("div", "profile-handle", p.handle);
+  info.append(nameRow, handle);
+
+  if (p.bio) {
+    const bio = el("div", "profile-bio");
+    bio.innerHTML = p.bio;
+    info.append(bio);
+  }
+
+  const stats = el("div", "profile-stats");
+  const sPosts = el("span");
+  sPosts.innerHTML = `<b>${p.posts_count != null ? p.posts_count : 0}</b> posts`;
+  const sFollowing = el("span");
+  sFollowing.innerHTML = `<b>${p.following != null ? p.following : 0}</b> a seguir`;
+  const sFollowers = el("span");
+  sFollowers.innerHTML = `<b>${p.followers != null ? p.followers : 0}</b> seguidores`;
+  stats.append(sPosts, sFollowing, sFollowers);
+  info.append(stats);
+
+  body.append(info);
+  card.append(body);
+  return card;
+}
+
 function renderProfileCards(profiles, errors) {
   const container = $("profileCards");
   container.replaceChildren();
@@ -884,63 +992,12 @@ function renderProfileCards(profiles, errors) {
   for (const net of ["bluesky", "mastodon"]) {
     const p = profiles[net];
     if (!p) continue;
-    const card = el("div", "profile-card" + (profileFilter === net ? " active" : ""));
-    card.dataset.net = net;
-
-    const banner = el("div", "profile-banner");
-    if (p.banner) {
-      banner.style.backgroundImage = `url("${p.banner}")`;
-    }
-    card.append(banner);
-
-    const body = el("div", "profile-card-body");
-    const top = el("div", "profile-card-top");
-    const av = p.avatar ? el("img", "profile-avatar") : el("div", "profile-avatar ph");
-    if (p.avatar) {
-      av.src = su(p.avatar) || "";
-      av.alt = p.name || "";
-      av.loading = "lazy";
-    }
-    const badgeWrap = el("div", "profile-card-net");
-    badgeWrap.append(netBadge(net));
-    top.append(av, badgeWrap);
-    body.append(top);
-
-    const info = el("div", "profile-info");
-    const nameRow = el("div", "profile-name-row");
-    const bName = el("b", "profile-name");
-    if (p.name_html) bName.innerHTML = p.name_html;
-    else bName.textContent = p.name;
-    const star = el("span", "star-badge");
-    star.title = "A tua conta";
-    nameRow.append(bName, star);
-
-    const handle = el("div", "profile-handle", p.handle);
-    info.append(nameRow, handle);
-
-    if (p.bio) {
-      const bio = el("div", "profile-bio");
-      bio.innerHTML = p.bio;
-      info.append(bio);
-    }
-
-    const stats = el("div", "profile-stats");
-    const sPosts = el("span");
-    sPosts.innerHTML = `<b>${p.posts_count != null ? p.posts_count : 0}</b> posts`;
-    const sFollowing = el("span");
-    sFollowing.innerHTML = `<b>${p.following != null ? p.following : 0}</b> a seguir`;
-    const sFollowers = el("span");
-    sFollowers.innerHTML = `<b>${p.followers != null ? p.followers : 0}</b> seguidores`;
-    stats.append(sPosts, sFollowing, sFollowers);
-    info.append(stats);
-
-    body.append(info);
-    card.append(body);
-
+    const card = renderSingleProfileCard(p, true);
+    card.classList.remove("single");
+    if (profileFilter === net) card.classList.add("active");
     card.onclick = () => {
       setProfileFilter(profileFilter === net ? "all" : net);
     };
-
     container.append(card);
   }
 }
@@ -967,6 +1024,7 @@ function setTab(t) {
   $("pNotifs").hidden = t !== "notifs";
   $("pProfile").hidden = t !== "profile";
   $("pThread").hidden = true;
+  $("pUserProfile").hidden = true;
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
   if (t === "notifs") localStorage.setItem("notifSeen", new Date().toISOString());
   else seenBefore = localStorage.getItem("notifSeen") || seenBefore;
@@ -983,7 +1041,7 @@ async function openThread(it, keep) {
   const box = $("pThread"), y = window.scrollY;
   if (box.hidden) threadScroll = y;
   threadIt = it;
-  $("pTimeline").hidden = true; $("pExplore").hidden = true; $("pNotifs").hidden = true; $("pProfile").hidden = true; box.hidden = false;
+  $("pTimeline").hidden = true; $("pExplore").hidden = true; $("pNotifs").hidden = true; $("pProfile").hidden = true; $("pUserProfile").hidden = true; box.hidden = false;
   const back = el("button", "ghost back", "← Voltar");
   back.onclick = closeThread;
   if (!keep) { box.replaceChildren(back, el("div", "empty", "A carregar conversa…")); window.scrollTo(0, 0); }
@@ -1014,6 +1072,118 @@ function closeThread() {
   threadIt = null;
   setTab(tab);
   window.scrollTo(0, threadScroll);
+}
+
+let userProfileActor = null, userProfileNetwork = null, userProfileScroll = 0, userProfileCursor = null, userProfileItems = [];
+
+async function openUserProfile(network, actor) {
+  if (!network || !actor) return;
+  const box = $("pUserProfile");
+  if (box.hidden) userProfileScroll = window.scrollY;
+  userProfileNetwork = network;
+  userProfileActor = actor;
+  userProfileCursor = null;
+  userProfileItems = [];
+
+  $("pTimeline").hidden = true;
+  $("pExplore").hidden = true;
+  $("pNotifs").hidden = true;
+  $("pProfile").hidden = true;
+  $("pThread").hidden = true;
+  box.hidden = false;
+
+  const back = el("button", "ghost back", "← Voltar");
+  back.onclick = closeUserProfile;
+  const loading = el("div", "empty", "A carregar perfil…");
+  box.replaceChildren(back, loading);
+  window.scrollTo(0, 0);
+
+  try {
+    const profRes = await api("/api/user_profile?network=" + encodeURIComponent(network) + "&actor=" + encodeURIComponent(actor));
+    if (userProfileActor !== actor) return;
+    if (profRes.error) {
+      box.replaceChildren(back, el("div", "banner", LABEL[network] + ": " + profRes.error));
+      return;
+    }
+    const prof = profRes.profile;
+    box.replaceChildren(back);
+    const card = renderSingleProfileCard(prof, false);
+    box.append(card);
+
+    const feedWrap = el("div", "user-profile-feed");
+    feedWrap.append(el("div", "empty", "A carregar publicações…"));
+    box.append(feedWrap);
+
+    await loadUserFeed(feedWrap);
+  } catch (err) {
+    if (userProfileActor === actor) {
+      box.replaceChildren(back, el("div", "banner", "Erro ao carregar perfil: " + err.message));
+    }
+  }
+}
+
+function closeUserProfile() {
+  userProfileActor = null;
+  $("pUserProfile").hidden = true;
+  setTab(tab);
+  window.scrollTo(0, userProfileScroll);
+}
+
+async function loadUserFeed(feedWrap, isMore = false) {
+  const q = new URLSearchParams({
+    network: userProfileNetwork,
+    actor: userProfileActor
+  });
+  if (userProfileCursor) q.set("cursor", userProfileCursor);
+
+  try {
+    const d = await api("/api/user_feed?" + q.toString());
+    if (d.error) {
+      feedWrap.append(el("div", "banner", d.error));
+      return;
+    }
+    userProfileCursor = d.cursor || null;
+    const newItems = d.items || [];
+    if (!isMore) {
+      userProfileItems = [];
+      feedWrap.replaceChildren();
+    } else {
+      const moreBtn = feedWrap.querySelector(".more-wrap");
+      if (moreBtn) moreBtn.remove();
+    }
+
+    const seen = new Set(userProfileItems.map(x => x.ref?.uri || x.ref?.id || x.url));
+    for (const it of newItems) {
+      const k = it.ref?.uri || it.ref?.id || it.url;
+      if (!seen.has(k)) {
+        seen.add(k);
+        userProfileItems.push(it);
+      }
+    }
+
+    if (!userProfileItems.length) {
+      feedWrap.append(el("div", "empty", "Sem publicações para mostrar."));
+    } else {
+      for (const it of newItems) {
+        feedWrap.append(postCard(it));
+      }
+      if (userProfileCursor) {
+        const wrap = el("div", "more-wrap");
+        wrap.style.textAlign = "center";
+        wrap.style.padding = "20px 0";
+        const btn = el("button", "ghost", "Carregar mais publicações");
+        btn.onclick = async () => {
+          btn.disabled = true;
+          btn.textContent = "A carregar...";
+          await loadUserFeed(feedWrap, true);
+        };
+        wrap.append(btn);
+        feedWrap.append(wrap);
+      }
+    }
+  } catch (err) {
+    feedWrap.append(el("div", "banner", "Erro ao carregar publicações: " + err.message));
+  }
 }
 
 function buildTargets() {
