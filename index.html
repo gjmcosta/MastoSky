@@ -309,7 +309,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif .body a{color:var(--c)}
 .notif{transition:background .35s ease,border-color .35s ease;position:relative}
 .notif.fresh{background:color-mix(in srgb,var(--c) 11%,var(--card));border-left:3px solid var(--c)}
-.notif-header-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,var(--card));position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
+.notif-header-bar{display:flex;align-items:center;justify-content:flex-start;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,var(--card));position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
 .notif-filter-pills{display:flex;gap:5px;align-items:center;flex:1;min-width:0;overflow:hidden}
 .notif-filter-pills .filter-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;min-width:28px;padding:0 7px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-size:11.5px;font-weight:600;cursor:pointer;transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);white-space:nowrap}
 .notif-filter-pills .filter-pill .filter-label{display:none;font-size:11.5px;line-height:1}
@@ -317,9 +317,6 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif-filter-pills .filter-pill.active .filter-label{display:inline}
 .notif-filter-pills .filter-pill:hover:not(.active){color:var(--ink);border-color:var(--muted);background:var(--card)}
 .notif-filter-pills .filter-pill .ico{width:13px;height:13px;flex-shrink:0}
-.mark-read-ghost-btn{height:28px;min-width:28px;padding:0 7px;border-radius:14px;border:1px solid var(--line);color:var(--muted);background:var(--surface-2);display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:all .15s;flex-shrink:0}
-.mark-read-ghost-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--card)}
-.mark-read-ghost-btn .ico{width:13px;height:13px}
 .back{margin-bottom:12px}
 .chain{border-left:2px solid var(--line);margin:0 0 10px 12px;padding-left:10px}
 .post.focus{box-shadow:0 0 0 2px var(--c)}
@@ -1278,9 +1275,6 @@ body:not(.view-deck) .deck-col-body {
                 <span class="filter-label" data-i18n="notifs.filter_follows">Seguidores</span>
               </button>
             </div>
-            <button type="button" class="mark-read-ghost-btn" id="markAllReadGhostBtn" onclick="markAllNotifsAsRead()" title="Marcar todas como lidas" data-i18n-title="notifs.mark_all_read">
-              <svg class="ico" style="width:13px;height:13px"><use href="#i-check-all"/></svg>
-            </button>
           </div>
           <div id="nerrors"></div>
           <div id="nfeed"></div>
@@ -1404,6 +1398,75 @@ body:not(.view-deck) .deck-col-body {
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColSaved"> <span data-i18n="setup.deck_col_saved">Guardados</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="setup-section">
+        <div class="setup-sec-title"><span>🔔 <span data-i18n="setup.notifs_sec_title">Alertas e Notificações</span></span></div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;margin-top:8px">
+          <div>
+            <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
+              <input type="checkbox" id="cfgNotifSound">
+              <span data-i18n="notifs.sound_title">Sons espaciais de notificação</span>
+            </label>
+            <div style="font-size:11.5px;color:var(--muted);margin:3px 0 8px 24px" data-i18n="notifs.sound_desc">
+              Efeitos sonoros cósmicos e discretos sintetizados via Web Audio.
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:24px">
+              <button type="button" class="btn-sm" style="padding:4px 9px;font-size:11.5px;border-radius:12px;display:inline-flex;align-items:center;gap:4px" onclick="testSpatialSound('reply')" title="Ouvir som de resposta">
+                <span>▶</span> <span data-i18n="notifs.test_reply">Resposta</span>
+              </button>
+              <button type="button" class="btn-sm" style="padding:4px 9px;font-size:11.5px;border-radius:12px;display:inline-flex;align-items:center;gap:4px" onclick="testSpatialSound('like')" title="Ouvir som de gosto">
+                <span>▶</span> <span data-i18n="notifs.test_like">Gosto</span>
+              </button>
+              <button type="button" class="btn-sm" style="padding:4px 9px;font-size:11.5px;border-radius:12px;display:inline-flex;align-items:center;gap:4px" onclick="testSpatialSound('boost')" title="Ouvir som de partilha">
+                <span>▶</span> <span data-i18n="notifs.test_boost">Partilha</span>
+              </button>
+              <button type="button" class="btn-sm" style="padding:4px 9px;font-size:11.5px;border-radius:12px;display:inline-flex;align-items:center;gap:4px" onclick="testSpatialSound('follow')" title="Ouvir som de seguidor">
+                <span>▶</span> <span data-i18n="notifs.test_follow">Seguidor</span>
+              </button>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--line);padding-top:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
+                <input type="checkbox" id="cfgNotifDesktop">
+                <span data-i18n="notifs.desktop_title">Notificações no ambiente de trabalho</span>
+              </label>
+              <span id="cfgDesktopNotifStatus" style="font-size:11.5px;font-weight:600"></span>
+            </div>
+            <div style="font-size:11.5px;color:var(--muted);margin:3px 0 6px 24px" data-i18n="notifs.desktop_desc">
+              Recebe avisos no ecrã quando chegam novas interações.
+            </div>
+            <div id="cfgDesktopNotifPermBox" style="margin-left:24px" hidden>
+              <button type="button" class="btn-sm" style="font-size:11.5px;padding:3px 10px;border-radius:6px" onclick="requestDesktopNotificationPermission()" data-i18n="notifs.desktop_req_btn">
+                Pedir autorização ao navegador
+              </button>
+            </div>
+          </div>
+
+          <div style="border-top:1px solid var(--line);padding-top:10px">
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px" data-i18n="notifs.types_title">Alertar para:</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" id="cfgNotifTypeReplies" checked>
+                <span data-i18n="notifs.type_replies">Respostas & Menções</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" id="cfgNotifTypeLikes" checked>
+                <span data-i18n="notifs.type_likes">Gostos</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" id="cfgNotifTypeBoosts" checked>
+                <span data-i18n="notifs.type_boosts">Partilhas</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="checkbox" id="cfgNotifTypeFollows" checked>
+                <span data-i18n="notifs.type_follows">Seguidores</span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
@@ -1794,7 +1857,31 @@ const I18N = {
       status: "publicou um post",
       update: "editou um post",
       poll: "– uma sondagem terminou",
-      other: "enviou-te uma notificação"
+      other: "enviou-te uma notificação",
+      sound_title: "Sons espaciais de notificação",
+      sound_desc: "Efeitos sonoros cósmicos e discretos sintetizados via Web Audio.",
+      desktop_title: "Notificações no ambiente de trabalho",
+      desktop_desc: "Recebe avisos no ecrã quando chegam novas interações.",
+      desktop_req_btn: "Pedir autorização ao navegador",
+      desktop_allowed: "✓ Autorizado",
+      desktop_denied: "✕ Bloqueado",
+      desktop_unsupported: "Navegador incompatível com notificações.",
+      desktop_test_body: "As notificações do MastoSky estão ativas!",
+      test_reply: "Resposta",
+      test_like: "Gosto",
+      test_boost: "Partilha",
+      test_follow: "Seguidor",
+      types_title: "Alertar para:",
+      type_replies: "Respostas & Menções",
+      type_likes: "Gostos",
+      type_boosts: "Partilhas",
+      type_follows: "Seguidores",
+      new_notifs_title: "MastoSky • {count} novas notificações",
+      new_reply_title: "MastoSky • Resposta de {name}",
+      new_mention_title: "MastoSky • Menção de {name}",
+      new_like_title: "MastoSky • Gosto de {name}",
+      new_boost_title: "MastoSky • Partilha de {name}",
+      new_follow_title: "MastoSky • Novo seguidor: {name}"
     },
     profile: {
       accounts_title: "Contas associadas",
@@ -1831,6 +1918,7 @@ const I18N = {
       title: "Configuração do MastoSky",
       desc: "Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.",
       pref_title: "Preferências",
+      notifs_sec_title: "Alertas e Notificações",
       lang_title: "Idioma / Language",
       lang_label: "Idioma da interface:",
       nav_mode_title: "Navegação no Scroll",
@@ -2124,7 +2212,31 @@ const I18N = {
       status: "published a post",
       update: "edited a post",
       poll: "– a poll ended",
-      other: "sent you a notification"
+      other: "sent you a notification",
+      sound_title: "Spatial notification sounds",
+      sound_desc: "Subtle cosmic sound effects synthesized via Web Audio.",
+      desktop_title: "Desktop notifications",
+      desktop_desc: "Receive alerts on your screen when new interactions arrive.",
+      desktop_req_btn: "Request browser permission",
+      desktop_allowed: "✓ Granted",
+      desktop_denied: "✕ Blocked",
+      desktop_unsupported: "Browser incompatible with desktop notifications.",
+      desktop_test_body: "MastoSky desktop notifications are active!",
+      test_reply: "Reply",
+      test_like: "Like",
+      test_boost: "Repost",
+      test_follow: "Follow",
+      types_title: "Alert for:",
+      type_replies: "Replies & Mentions",
+      type_likes: "Likes",
+      type_boosts: "Reposts",
+      type_follows: "Followers",
+      new_notifs_title: "MastoSky • {count} new notifications",
+      new_reply_title: "MastoSky • Reply from {name}",
+      new_mention_title: "MastoSky • Mention from {name}",
+      new_like_title: "MastoSky • Like from {name}",
+      new_boost_title: "MastoSky • Repost from {name}",
+      new_follow_title: "MastoSky • New follower: {name}"
     },
     profile: {
       accounts_title: "Connected accounts",
@@ -2161,6 +2273,7 @@ const I18N = {
       title: "MastoSky Settings",
       desc: "You can connect both networks or just one. Your credentials are saved locally and never leave your computer.",
       pref_title: "Preferences",
+      notifs_sec_title: "Alerts & Notifications",
       lang_title: "Language / Idioma",
       lang_label: "Interface language:",
       nav_mode_title: "Scroll Navigation",
@@ -3572,6 +3685,298 @@ let seenBefore = localStorage.getItem("notifSeen");
 if (!seenBefore) { seenBefore = new Date().toISOString(); localStorage.setItem("notifSeen", seenBefore); }
 
 let currentNotifFilter = localStorage.getItem("mastosky_notif_filter") || "all";
+let notifSoundEnabled = localStorage.getItem("mastosky_notif_sound") === "true";
+let notifDesktopEnabled = localStorage.getItem("mastosky_notif_desktop") === "true";
+let notifTypesEnabled = (() => {
+  try {
+    const raw = JSON.parse(localStorage.getItem("mastosky_notif_types") || "{}");
+    return {
+      replies: raw.replies !== false,
+      likes: raw.likes !== false,
+      boosts: raw.boosts !== false,
+      follows: raw.follows !== false
+    };
+  } catch (_) {
+    return { replies: true, likes: true, boosts: true, follows: true };
+  }
+})();
+
+let knownNotifKeys = new Set();
+let isInitialNotifsLoad = true;
+
+let audioCtx = null;
+function getAudioContext() {
+  try {
+    if (!audioCtx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) audioCtx = new AudioCtx();
+    }
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+  } catch (_) {
+    return null;
+  }
+}
+
+document.addEventListener("click", () => {
+  if (audioCtx && audioCtx.state === "suspended") {
+    audioCtx.resume().catch(() => {});
+  }
+}, { passive: true });
+
+function playSpatialSound(kind) {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+
+    if (kind === "reply" || kind === "mention" || kind === "quote") {
+      // Cosmic Starlight Ping: dual ascending sine glide with soft shimmer
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      const gain2 = ctx.createGain();
+
+      osc1.type = "sine";
+      osc2.type = "sine";
+
+      osc1.frequency.setValueAtTime(587.33, now); // D5
+      osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.16); // A5
+      gain1.gain.setValueAtTime(0.0001, now);
+      gain1.gain.linearRampToValueAtTime(0.14, now + 0.02);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+      osc2.frequency.setValueAtTime(880.00, now + 0.04); // A5
+      osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.22); // D6
+      gain2.gain.setValueAtTime(0.0001, now + 0.04);
+      gain2.gain.linearRampToValueAtTime(0.10, now + 0.06);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+
+      osc1.connect(gain1); gain1.connect(ctx.destination);
+      osc2.connect(gain2); gain2.connect(ctx.destination);
+      osc1.start(now); osc1.stop(now + 0.29);
+      osc2.start(now + 0.04); osc2.stop(now + 0.33);
+    } else if (kind === "like" || kind === "like_repost" || kind === "favourite") {
+      // Pulsar Water-drop: velvety resonant downward sine bubble
+      const osc = ctx.createOscillator();
+      const sub = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const subGain = ctx.createGain();
+
+      osc.type = "sine";
+      sub.type = "sine";
+
+      osc.frequency.setValueAtTime(659.25, now); // E5
+      osc.frequency.exponentialRampToValueAtTime(392.00, now + 0.12); // G4
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+      sub.frequency.setValueAtTime(329.63, now); // E4
+      sub.frequency.exponentialRampToValueAtTime(196.00, now + 0.12);
+      subGain.gain.setValueAtTime(0.0001, now);
+      subGain.gain.linearRampToValueAtTime(0.06, now + 0.015);
+      subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+      osc.connect(gain); gain.connect(ctx.destination);
+      sub.connect(subGain); subGain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.17);
+      sub.start(now); sub.stop(now + 0.17);
+    } else if (kind === "boost" || kind === "boost_repost" || kind === "reblog") {
+      // Orbital Harmonic Teleport: fifth chord with celestial expansion
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc1.type = "sine";
+      osc2.type = "sine";
+
+      osc1.frequency.setValueAtTime(440.00, now); // A4
+      osc1.frequency.exponentialRampToValueAtTime(554.37, now + 0.22); // C#5
+      osc2.frequency.setValueAtTime(659.25, now); // E5
+      osc2.frequency.exponentialRampToValueAtTime(830.61, now + 0.22); // G#5
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.27);
+
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      osc1.start(now); osc1.stop(now + 0.28);
+      osc2.start(now); osc2.stop(now + 0.28);
+    } else if (kind === "follow" || kind === "follow_request") {
+      // Ascension Warp Beam: gentle 3-step glissando
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(392.00, now); // G4
+      osc.frequency.exponentialRampToValueAtTime(523.25, now + 0.10); // C5
+      osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.22); // G5
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.14, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now); osc.stop(now + 0.33);
+    }
+  } catch (err) {
+    console.warn("Spatial audio error:", err);
+  }
+}
+
+function testSpatialSound(kind) {
+  const ctx = getAudioContext();
+  if (ctx && ctx.state === "suspended") {
+    ctx.resume().then(() => playSpatialSound(kind)).catch(() => playSpatialSound(kind));
+  } else {
+    playSpatialSound(kind);
+  }
+}
+
+function updateDesktopNotifUI() {
+  const permBox = $("cfgDesktopNotifPermBox");
+  const statusEl = $("cfgDesktopNotifStatus");
+  if (!("Notification" in window)) {
+    if (statusEl) {
+      statusEl.textContent = t("notifs.desktop_unsupported");
+      statusEl.style.color = "var(--muted)";
+    }
+    if (permBox) permBox.hidden = true;
+    if ($("cfgNotifDesktop")) $("cfgNotifDesktop").disabled = true;
+    return;
+  }
+  const perm = Notification.permission;
+  if (perm === "granted") {
+    if (statusEl) {
+      statusEl.textContent = t("notifs.desktop_allowed");
+      statusEl.style.color = "#10b981";
+    }
+    if (permBox) permBox.hidden = true;
+    if ($("cfgNotifDesktop")) $("cfgNotifDesktop").disabled = false;
+  } else if (perm === "denied") {
+    if (statusEl) {
+      statusEl.textContent = t("notifs.desktop_denied");
+      statusEl.style.color = "#ef4444";
+    }
+    if (permBox) permBox.hidden = true;
+    if ($("cfgNotifDesktop")) {
+      $("cfgNotifDesktop").checked = false;
+      $("cfgNotifDesktop").disabled = true;
+    }
+  } else {
+    if (statusEl) statusEl.textContent = "";
+    if (permBox) permBox.hidden = false;
+    if ($("cfgNotifDesktop")) $("cfgNotifDesktop").disabled = false;
+  }
+}
+
+function requestDesktopNotificationPermission() {
+  if (!("Notification" in window)) return;
+  Notification.requestPermission().then(perm => {
+    if (perm === "granted") {
+      notifDesktopEnabled = true;
+      localStorage.setItem("mastosky_notif_desktop", "true");
+      if ($("cfgNotifDesktop")) $("cfgNotifDesktop").checked = true;
+      try {
+        new Notification("MastoSky", {
+          body: t("notifs.desktop_test_body")
+        });
+      } catch (_) {}
+    } else {
+      notifDesktopEnabled = false;
+      localStorage.setItem("mastosky_notif_desktop", "false");
+      if ($("cfgNotifDesktop")) $("cfgNotifDesktop").checked = false;
+    }
+    updateDesktopNotifUI();
+  });
+}
+
+function dispatchIncomingAlerts(arrivals) {
+  if (!arrivals || !arrivals.length) return;
+
+  // 1. Audio alert (highest priority event)
+  if (notifSoundEnabled) {
+    const priority = ["reply", "mention", "quote", "follow", "follow_request", "boost", "boost_repost", "reblog", "like", "like_repost", "favourite"];
+    let bestItem = null;
+    let bestRank = 999;
+    for (const item of arrivals) {
+      const kind = item.kind || "other";
+      let cat = "other";
+      if (kind === "reply" || kind === "mention" || kind === "quote") cat = "replies";
+      else if (kind === "like" || kind === "like_repost" || kind === "favourite") cat = "likes";
+      else if (kind === "boost" || kind === "boost_repost" || kind === "reblog") cat = "boosts";
+      else if (kind === "follow" || kind === "follow_request") cat = "follows";
+
+      if (notifTypesEnabled[cat] !== false) {
+        let rank = priority.indexOf(kind);
+        if (rank === -1) rank = 100;
+        if (rank < bestRank) {
+          bestRank = rank;
+          bestItem = item;
+        }
+      }
+    }
+    if (bestItem) {
+      playSpatialSound(bestItem.kind);
+    }
+  }
+
+  // 2. Desktop notification
+  if (notifDesktopEnabled && ("Notification" in window) && Notification.permission === "granted") {
+    const allowed = arrivals.filter(item => {
+      const kind = item.kind || "other";
+      let cat = "other";
+      if (kind === "reply" || kind === "mention" || kind === "quote") cat = "replies";
+      else if (kind === "like" || kind === "like_repost" || kind === "favourite") cat = "likes";
+      else if (kind === "boost" || kind === "boost_repost" || kind === "reblog") cat = "boosts";
+      else if (kind === "follow" || kind === "follow_request") cat = "follows";
+      return notifTypesEnabled[cat] !== false;
+    });
+
+    if (allowed.length === 1) {
+      const n = allowed[0];
+      const name = n.name || n.handle || "Alguém";
+      let title = "MastoSky • " + (t("notifs." + (n.kind || "other")) || t("tabs.notifs"));
+      if (n.kind === "reply") title = t("notifs.new_reply_title", {name});
+      else if (n.kind === "mention") title = t("notifs.new_mention_title", {name});
+      else if (n.kind === "like" || n.kind === "like_repost" || n.kind === "favourite") title = t("notifs.new_like_title", {name});
+      else if (n.kind === "boost" || n.kind === "boost_repost" || n.kind === "reblog") title = t("notifs.new_boost_title", {name});
+      else if (n.kind === "follow" || n.kind === "follow_request") title = t("notifs.new_follow_title", {name});
+
+      const body = n.text ? (n.text.slice(0, 120) + (n.text.length > 120 ? "…" : "")) : ("@" + (n.handle || ""));
+      try {
+        const notif = new Notification(title, { body, tag: "mastosky-" + getNotifKey(n) });
+        notif.onclick = () => {
+          window.focus();
+          if (viewMode === "single") setTab("notifs");
+          else {
+            const col = $("colNotifs");
+            if (col) { col.hidden = false; col.scrollIntoView({behavior: "smooth", inline: "start"}); }
+          }
+          notif.close();
+        };
+      } catch (_) {}
+    } else if (allowed.length > 1) {
+      const title = t("notifs.new_notifs_title", {count: allowed.length});
+      const top = allowed[0];
+      const body = (top.name || top.handle || "Novo evento") + ": " + (t("notifs." + (top.kind || "other")) || "notificação");
+      try {
+        const notif = new Notification(title, { body, tag: "mastosky-bulk-" + Date.now() });
+        notif.onclick = () => {
+          window.focus();
+          if (viewMode === "single") setTab("notifs");
+          else {
+            const col = $("colNotifs");
+            if (col) { col.hidden = false; col.scrollIntoView({behavior: "smooth", inline: "start"}); }
+          }
+          notif.close();
+        };
+      } catch (_) {}
+    }
+  }
+}
 let readNotifKeys = (() => {
   try {
     const raw = JSON.parse(localStorage.getItem("mastosky_read_notif_keys") || "[]");
@@ -3674,7 +4079,9 @@ async function loadMoreNotifs() {
   if (notifsCursors.mastodon) q.set("cursor_mastodon", notifsCursors.mastodon);
   const d = await api("/api/notifications?" + q.toString());
   notifsCursors = d.cursors || {};
-  notifs = dedupSort(notifs, d.items || []);
+  const olderItems = d.items || [];
+  olderItems.forEach(n => knownNotifKeys.add(getNotifKey(n)));
+  notifs = dedupSort(notifs, olderItems);
   renderNotifs();
 }
 
@@ -3682,7 +4089,26 @@ async function loadNotifs() {
   try {
     const d = await api("/api/notifications");
     if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
-    notifs = d.items || []; notifsCursors = d.cursors || {};
+    const items = d.items || [];
+    const prevKeys = new Set(knownNotifKeys);
+    const newArrivals = [];
+
+    for (const n of items) {
+      const k = getNotifKey(n);
+      if (!isInitialNotifsLoad && !prevKeys.has(k) && !isNotifRead(n)) {
+        newArrivals.push(n);
+      }
+      knownNotifKeys.add(k);
+    }
+
+    if (isInitialNotifsLoad) {
+      isInitialNotifsLoad = false;
+    } else if (newArrivals.length > 0) {
+      dispatchIncomingAlerts(newArrivals);
+    }
+
+    notifs = items;
+    notifsCursors = d.cursors || {};
     const errList = Object.entries(d.errors || {}).map(([n, e]) => el("div", "banner", (LABEL[n] || n) + ": " + e));
     $("nerrors").replaceChildren(...errList);
     renderNotifs();
@@ -3832,7 +4258,6 @@ function updateBadge() {
   if ($("sideBadgeCount")) $("sideBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
   if ($("deckNotifsBadge")) $("deckNotifsBadge").hidden = !unreadCount;
   if ($("deckBadgeCount")) $("deckBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
-  if ($("markAllReadGhostBtn")) $("markAllReadGhostBtn").style.display = unreadCount ? "inline-flex" : "none";
   if ($("markAllNotifsReadHeadBtn")) $("markAllNotifsReadHeadBtn").style.display = unreadCount ? "inline-flex" : "none";
 }
 
@@ -6568,6 +6993,13 @@ async function openSetup(mandatory = false) {
     const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
     if (chk) chk.checked = deckColumns.includes(c);
   });
+  if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+  if ($("cfgNotifDesktop")) $("cfgNotifDesktop").checked = notifDesktopEnabled;
+  if ($("cfgNotifTypeReplies")) $("cfgNotifTypeReplies").checked = notifTypesEnabled.replies !== false;
+  if ($("cfgNotifTypeLikes")) $("cfgNotifTypeLikes").checked = notifTypesEnabled.likes !== false;
+  if ($("cfgNotifTypeBoosts")) $("cfgNotifTypeBoosts").checked = notifTypesEnabled.boosts !== false;
+  if ($("cfgNotifTypeFollows")) $("cfgNotifTypeFollows").checked = notifTypesEnabled.follows !== false;
+  updateDesktopNotifUI();
   try {
     const s = await api("/api/status");
     if (s.bluesky && s.bluesky.handle) $("cfgBskyHandle").value = s.bluesky.handle;
@@ -6612,6 +7044,20 @@ $("saveSetupBtn").onclick = async () => {
   try {
     const res = await api("/api/setup", payload);
     if (res.ok) {
+      if ($("cfgNotifSound")) {
+        notifSoundEnabled = $("cfgNotifSound").checked;
+        localStorage.setItem("mastosky_notif_sound", notifSoundEnabled ? "true" : "false");
+      }
+      if ($("cfgNotifDesktop")) {
+        notifDesktopEnabled = $("cfgNotifDesktop").checked && ("Notification" in window) && Notification.permission === "granted";
+        localStorage.setItem("mastosky_notif_desktop", notifDesktopEnabled ? "true" : "false");
+      }
+      ["Replies", "Likes", "Boosts", "Follows"].forEach(kind => {
+        const chk = $("cfgNotifType" + kind);
+        if (chk) notifTypesEnabled[kind.toLowerCase()] = chk.checked;
+      });
+      localStorage.setItem("mastosky_notif_types", JSON.stringify(notifTypesEnabled));
+
       $("setupMsg").textContent = t("setup.success");
       setTimeout(() => {
         closeSetup();
@@ -6663,6 +7109,44 @@ deckColIds.forEach(c => {
       }
       localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
       applyDeckColumnVisibility();
+    };
+  }
+});
+
+if ($("cfgNotifSound")) {
+  $("cfgNotifSound").onchange = () => {
+    notifSoundEnabled = $("cfgNotifSound").checked;
+    localStorage.setItem("mastosky_notif_sound", notifSoundEnabled ? "true" : "false");
+    if (notifSoundEnabled) {
+      testSpatialSound("reply");
+    }
+  };
+}
+
+if ($("cfgNotifDesktop")) {
+  $("cfgNotifDesktop").onchange = () => {
+    if ($("cfgNotifDesktop").checked) {
+      if ("Notification" in window && Notification.permission !== "granted") {
+        requestDesktopNotificationPermission();
+      } else if ("Notification" in window && Notification.permission === "granted") {
+        notifDesktopEnabled = true;
+        localStorage.setItem("mastosky_notif_desktop", "true");
+      }
+    } else {
+      notifDesktopEnabled = false;
+      localStorage.setItem("mastosky_notif_desktop", "false");
+    }
+    updateDesktopNotifUI();
+  };
+}
+
+["Replies", "Likes", "Boosts", "Follows"].forEach(kind => {
+  const chk = $("cfgNotifType" + kind);
+  if (chk) {
+    chk.onchange = () => {
+      const k = kind.toLowerCase();
+      notifTypesEnabled[k] = chk.checked;
+      localStorage.setItem("mastosky_notif_types", JSON.stringify(notifTypesEnabled));
     };
   }
 });
