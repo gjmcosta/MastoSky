@@ -924,7 +924,7 @@ class Bsky:
             raise ApiError(f"Ação desconhecida: {action}")
 
     def notifications(self, cursor=None):
-        kinds = {"like": "like", "like-via-repost": "like", "repost": "boost", "repost-via-repost": "boost",
+        kinds = {"like": "like", "like-via-repost": "like_repost", "repost": "boost", "repost-via-repost": "boost_repost",
                  "follow": "follow", "mention": "mention", "reply": "reply", "quote": "quote"}
         params = {"limit": 40}
         if cursor:
@@ -932,20 +932,29 @@ class Bsky:
         r = self.call("GET", "app.bsky.notification.listNotifications", params=params)
         ns = r.get("notifications", [])
         next_cursor = r.get("cursor")
+
         def get_subj_uri(notif):
-            if notif.get("reasonSubject"):
-                return notif["reasonSubject"]
+            # Priorizar URI de post (app.bsky.feed.post).
+            # Em likes/reposts de republicações do utilizador, `reasonSubject` aponta para
+            # `app.bsky.feed.repost`, enquanto `record.subject.uri` aponta para o post original.
             rec = notif.get("record")
             if isinstance(rec, dict):
                 s = rec.get("subject")
-                if isinstance(s, dict):
-                    return s.get("uri")
-                if isinstance(s, str):
-                    return s
-            return None
+                s_uri = s.get("uri") if isinstance(s, dict) else (s if isinstance(s, str) else None)
+                if s_uri and "/app.bsky.feed.post/" in s_uri:
+                    return s_uri
+            rs = notif.get("reasonSubject")
+            if rs and "/app.bsky.feed.post/" in rs:
+                return rs
+            if isinstance(rec, dict):
+                s = rec.get("subject")
+                s_uri = s.get("uri") if isinstance(s, dict) else (s if isinstance(s, str) else None)
+                if s_uri:
+                    return s_uri
+            return notif.get("reasonSubject")
 
         subjects = sorted({get_subj_uri(n) for n in ns
-                           if get_subj_uri(n) and kinds.get(n["reason"]) in ("like", "boost")})
+                           if get_subj_uri(n) and ("/app.bsky.feed.post/" in get_subj_uri(n))})
         posts = {}
         for i in range(0, len(subjects), 25):
             res = self.call("GET", "app.bsky.feed.getPosts", params=[("uris", u) for u in subjects[i:i + 25]])
@@ -953,7 +962,17 @@ class Bsky:
                 posts[p["uri"]] = p
         out = []
         for n in ns:
-            kind, a = kinds.get(n["reason"], "other"), n["author"]
+            reason = n.get("reason", "other")
+            reason_subject = n.get("reasonSubject") or ""
+            is_via_repost = "/app.bsky.feed.repost/" in reason_subject
+            kind = kinds.get(reason, "other")
+            if is_via_repost:
+                if kind == "like":
+                    kind = "like_repost"
+                elif kind == "boost":
+                    kind = "boost_repost"
+
+            a = n["author"]
             subj_uri = get_subj_uri(n)
             subject = posts.get(subj_uri) if subj_uri else None
             ref, text, facets, url = None, "", None, f"https://bsky.app/profile/{a['handle']}"
@@ -978,9 +997,10 @@ class Bsky:
                         text = "🎬 [Vídeo]"
                     elif "record" in stype:
                         text = "💬 [Citação]"
-            elif subj_uri and kind in ("like", "boost"):
+            elif subj_uri and kind in ("like", "like_repost", "boost", "boost_repost"):
                 post_id = subj_uri.split("/")[-1]
-                url = f"https://bsky.app/profile/{a['handle']}/post/{post_id}"
+                author_part = subj_uri.replace("at://", "").split("/")[0]
+                url = f"https://bsky.app/profile/{author_part}/post/{post_id}"
                 text = "(Publicação indisponível)"
             out.append({"network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
                         "handle": "@" + a["handle"], "author_id": a.get("did") or a["handle"],

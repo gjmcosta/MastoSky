@@ -801,10 +801,11 @@ function renderExplore() {
   renderLoadMore(feed, exploreCursors, loadMoreExplore);
 }
 
-const VERB = {like: "gostou do teu post", boost: "partilhou o teu post", follow: "começou a seguir-te",
+const VERB = {like: "gostou do teu post", like_repost: "gostou da tua republicação",
+  boost: "partilhou o teu post", boost_repost: "republicou a tua republicação", follow: "começou a seguir-te",
   follow_request: "pediu para te seguir", reply: "respondeu-te", mention: "mencionou-te", quote: "citou o teu post",
   status: "publicou um post", update: "editou um post", poll: "– uma sondagem terminou", other: "enviou-te uma notificação"};
-const GLYPH = {like: "♥", boost: "⇄", follow: "+", follow_request: "+", reply: "↩", mention: "@", quote: "❝",
+const GLYPH = {like: "♥", like_repost: "♥", boost: "⇄", boost_repost: "⇄", follow: "+", follow_request: "+", reply: "↩", mention: "@", quote: "❝",
   status: "•", update: "✎", poll: "▤", other: "•"};
 let seenBefore = localStorage.getItem("notifSeen");
 if (!seenBefore) { seenBefore = new Date().toISOString(); localStorage.setItem("notifSeen", seenBefore); }

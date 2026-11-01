@@ -829,6 +829,60 @@ class FacetsAndRichtextTests(unittest.TestCase):
         self.assertEqual(cursor, "c1")
         self.assertIn("Texto do meu post original", notifs[0]["html"])
 
+    def test_bsky_notification_like_on_repost_resolution(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
+        b.did = "did:plc:me"
+        b.jwt = "jwt"
+
+        get_posts_called_with = []
+
+        def mock_call(m, nsid, d=None, params=None):
+            if nsid == "app.bsky.notification.listNotifications":
+                return {
+                    "notifications": [
+                        {
+                            "uri": "at://did:plc:andre/app.bsky.feed.like/like1",
+                            "cid": "cid1",
+                            "author": {"handle": "andre-wemans.bsky.social", "displayName": "André Wemans"},
+                            "reason": "like",
+                            # Em likes de reposts, reasonSubject aponta para o feed.repost do utilizador:
+                            "reasonSubject": "at://did:plc:me/app.bsky.feed.repost/repost1",
+                            # E record.subject.uri aponta para o post original:
+                            "record": {
+                                "$type": "app.bsky.feed.like",
+                                "subject": {"uri": "at://did:plc:jocandi/app.bsky.feed.post/3mzaiad2oz422"}
+                            },
+                            "indexedAt": "2026-01-01T00:00:00Z"
+                        }
+                    ],
+                    "cursor": "c2"
+                }
+            elif nsid == "app.bsky.feed.getPosts":
+                get_posts_called_with.extend([v for k, v in (params or []) if k == "uris"])
+                return {
+                    "posts": [
+                        {
+                            "uri": "at://did:plc:jocandi/app.bsky.feed.post/3mzaiad2oz422",
+                            "author": {"handle": "jocandi.bsky.social"},
+                            "record": {"text": "Eu votei neste homem para que o Fascismo não regressasse!"}
+                        }
+                    ]
+                }
+            return {}
+
+        b.call = mock_call
+        notifs, cursor = b.notifications()
+        self.assertEqual(len(notifs), 1)
+        self.assertEqual(cursor, "c2")
+        self.assertEqual(notifs[0]["kind"], "like_repost")
+        # Garante que getPosts foi chamado com o URI do post original e NÃO com o URI do repost:
+        self.assertIn("at://did:plc:jocandi/app.bsky.feed.post/3mzaiad2oz422", get_posts_called_with)
+        self.assertNotIn("at://did:plc:me/app.bsky.feed.repost/repost1", get_posts_called_with)
+        # Garante o texto do preview e que o link aponta para o autor do post (jocandi) e não para o liker (andre):
+        self.assertIn("Eu votei neste homem", notifs[0]["html"])
+        self.assertEqual(notifs[0]["url"], "https://bsky.app/profile/jocandi.bsky.social/post/3mzaiad2oz422")
+
+
 
 class ActionsTests(unittest.TestCase):
     def test_masto_item_and_act(self):
