@@ -1002,6 +1002,8 @@ class FacetsAndRichtextTests(unittest.TestCase):
         # Garante o texto do preview e que o link aponta para o autor do post (jocandi) e não para o liker (andre):
         self.assertIn("Eu votei neste homem", notifs[0]["html"])
         self.assertEqual(notifs[0]["url"], "https://bsky.app/profile/jocandi.bsky.social/post/3mzaiad2oz422")
+        self.assertIsNotNone(notifs[0]["target_post"])
+        self.assertEqual(notifs[0]["target_post"]["author_handle"], "@jocandi.bsky.social")
 
     def test_bsky_notification_with_image_and_external_embed(self):
         b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})

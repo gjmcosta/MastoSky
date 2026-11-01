@@ -1245,6 +1245,7 @@ class Bsky:
             ref, text, facets, url = None, "", None, f"https://bsky.app/profile/{a['handle']}"
             media, quote = [], None
 
+            target_post = None
             if kind in ("reply", "mention", "quote"):
                 rec = n.get("record") or {}
                 text = rec.get("text", "")
@@ -1270,10 +1271,11 @@ class Bsky:
                         quote = q_obj
             elif subject:
                 srec = subject.get("record") or {}
+                s_a = subject.get("author") or {}
                 text = srec.get("text", "")
                 facets = srec.get("facets")
-                url = f"https://bsky.app/profile/{subject['author']['handle']}/post/{subject['uri'].split('/')[-1]}"
-                subj_did = (subject.get("author") or {}).get("did") or (subj_uri.replace("at://", "").split("/")[0] if subj_uri else None)
+                url = f"https://bsky.app/profile/{s_a.get('handle')}/post/{subject['uri'].split('/')[-1]}"
+                subj_did = s_a.get("did") or (subj_uri.replace("at://", "").split("/")[0] if subj_uri else None)
                 embed_sources = []
                 if subject.get("embed"): embed_sources.append(subject.get("embed"))
                 for emb in subject.get("embeds") or []:
@@ -1309,6 +1311,19 @@ class Bsky:
                         elif "record" in stype:
                             text = "💬 [Citação]"
                             break
+                target_post = {
+                    "author_name": s_a.get("displayName") or s_a.get("handle") or "",
+                    "author_handle": "@" + (s_a.get("handle") or ""),
+                    "author_avatar": safe_url(s_a.get("avatar")),
+                    "author_id": s_a.get("did") or s_a.get("handle") or "",
+                    "time": srec.get("createdAt") or subject.get("indexedAt"),
+                    "url": url,
+                    "uri": subject.get("uri"),
+                    "cid": subject.get("cid"),
+                    "is_own": bool(self.did and s_a.get("did") == self.did)
+                }
+                if not ref and subject.get("uri") and subject.get("cid"):
+                    ref = {"uri": subject["uri"], "cid": subject["cid"]}
             elif subj_uri and kind in ("like", "like_repost", "boost", "boost_repost"):
                 post_id = subj_uri.split("/")[-1]
                 author_part = subj_uri.replace("at://", "").split("/")[0]
@@ -1331,7 +1346,7 @@ class Bsky:
                         "handle": "@" + a["handle"], "author_id": a.get("did") or a["handle"],
                         "author_handle": a["handle"], "avatar": safe_url(a.get("avatar")),
                         "html": render_bsky_text(text, facets) if text else "", "time": n["indexedAt"], "url": url, "ref": ref,
-                        "media": safe_media_list(media), "quote": quote})
+                        "media": safe_media_list(media), "quote": quote, "target_post": target_post})
         return out, next_cursor
 
 
@@ -1623,6 +1638,23 @@ class Masto:
             a_emojis = a.get("emojis")
             a_name = a.get("display_name") or a.get("username", "")
             a_name_html = render_custom_emojis(html.escape(a_name), a_emojis) if a_emojis else None
+            target_post = None
+            if st:
+                orig_st = st.get("reblog") or st
+                st_a = orig_st.get("account") or {}
+                my_id = self.get_my_id()
+                target_post = {
+                    "author_name": st_a.get("display_name") or st_a.get("username") or "",
+                    "author_handle": "@" + (st_a.get("acct") or st_a.get("username") or ""),
+                    "author_avatar": safe_url(st_a.get("avatar")),
+                    "author_id": str(st_a.get("id")),
+                    "time": orig_st.get("created_at"),
+                    "url": safe_url(orig_st.get("url")),
+                    "id": str(orig_st.get("id")),
+                    "is_own": bool(my_id and str(st_a.get("id")) == my_id)
+                }
+                if st_a.get("emojis"):
+                    target_post["author_name_html"] = render_custom_emojis(html.escape(target_post["author_name"]), st_a.get("emojis"))
             notif_item = {
                 "id": str(n.get("id")),
                 "network": "mastodon", "kind": kind, "name": a_name,
@@ -1630,9 +1662,10 @@ class Masto:
                 "author_handle": a.get("acct") or a.get("username", ""), "avatar": safe_url(a.get("avatar")),
                 "html": notif_html, "time": n.get("created_at"),
                 "url": safe_url((st or {}).get("url") or a.get("url")),
-                "ref": {"id": st["id"]} if st and kind in ("reply", "mention", "quote") else None,
+                "ref": {"id": (st.get("reblog") or st)["id"]} if st else None,
                 "media": safe_media_list(st_media),
-                "quote": st_quote
+                "quote": st_quote,
+                "target_post": target_post
             }
             if a_name_html:
                 notif_item["name_html"] = a_name_html

@@ -309,6 +309,14 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif .body a{color:var(--c)}
 .notif{transition:background .35s ease,border-color .35s ease;position:relative}
 .notif.fresh{background:color-mix(in srgb,var(--c) 11%,var(--card));border-left:3px solid var(--c)}
+.notif-boost-banner{display:flex;align-items:center;gap:7px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent);font-size:12.5px;color:var(--muted);line-height:1.3;flex-wrap:wrap}
+.notif-boost-banner .glyph{width:22px;height:22px;display:inline-grid;place-items:center;border-radius:50%;background:color-mix(in srgb,var(--glyph-c,var(--c)) 16%,transparent);color:var(--glyph-c,var(--c));flex-shrink:0}
+.notif-boost-banner .glyph svg{width:13px;height:13px}
+.notif-boost-banner .boost-av{width:22px;height:22px;border-radius:50%;object-fit:cover;cursor:pointer;flex-shrink:0;transition:transform .15s}
+.notif-boost-banner .boost-av:hover{transform:scale(1.1)}
+.notif-boost-banner .notif-author{color:var(--ink);font-weight:600}
+.notif-boost-banner .notif-action{color:var(--muted)}
+.notif-boost-banner .notif-meta{color:var(--muted);font-size:11.5px}
 .notif-header-bar{display:flex;align-items:center;justify-content:flex-start;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,var(--card));position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
 .notif-filter-pills{display:flex;gap:5px;align-items:center;flex:1;min-width:0;overflow:hidden}
 .notif-filter-pills .filter-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;min-width:28px;padding:0 7px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-size:11.5px;font-weight:600;cursor:pointer;transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);white-space:nowrap}
@@ -4171,47 +4179,126 @@ function renderNotifs() {
       notifObserver.observe(p);
     }
 
-    const head = el("div", "head");
-    const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
-    g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
-    g.title = t("notifs." + (n.kind || "other"));
-    g.setAttribute("aria-hidden", "true");
-    head.append(g);
     const onNotifProfile = (e) => {
       e.stopPropagation();
       markSingleNotifRead(n, p);
       openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
     };
-    if (n.avatar) {
-      const i = el("img", "author-link");
-      i.src = su(n.avatar) || "";
-      i.alt = "";
-      i.loading = "lazy";
-      i.title = t("post.view_profile", {name: n.name || n.handle});
-      i.onclick = onNotifProfile;
-      head.append(i);
+
+    const isRepostNotif = (n.kind === "boost" || n.kind === "boost_repost" || n.kind === "like_repost") && n.target_post;
+
+    if (isRepostNotif) {
+      const tp = n.target_post;
+      // 1. Banner superior estilo timeline com indicação da ação e do utilizador que a fez
+      const boostBar = el("div", "boost notif-boost-banner");
+      const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
+      g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
+      g.title = t("notifs." + (n.kind || "other"));
+      g.setAttribute("aria-hidden", "true");
+      boostBar.append(g);
+
+      if (n.avatar) {
+        const i = el("img", "boost-av author-link");
+        i.src = su(n.avatar) || "";
+        i.alt = "";
+        i.title = t("post.view_profile", {name: n.name || n.handle});
+        i.onclick = onNotifProfile;
+        boostBar.append(i);
+      }
+
+      const sNameWrap = el("span", "author-link notif-author");
+      sNameWrap.title = t("post.view_profile", {name: n.name || n.handle});
+      sNameWrap.onclick = onNotifProfile;
+      if (n.name_html) sNameWrap.innerHTML = n.name_html;
+      else sNameWrap.textContent = n.name;
+
+      const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
+      const sMeta = el("span", "notif-meta", n.handle);
+      boostBar.append(sNameWrap, sVerb, sMeta, netBadge(n.network));
+
+      const notifWhen = el("span", "when", ago(n.time));
+      notifWhen.style.marginLeft = "auto";
+      boostBar.append(notifWhen);
+      p.append(boostBar);
+
+      // 2. Cabeçalho do post original (idêntico à timeline)
+      const head = el("div", "head");
+      const onOrigProfile = (e) => {
+        e.stopPropagation();
+        markSingleNotifRead(n, p);
+        openUserProfile(n.network, tp.author_id || tp.author_handle);
+      };
+      if (tp.author_avatar) {
+        const origImg = el("img", "author-link");
+        origImg.src = su(tp.author_avatar) || "";
+        origImg.alt = "";
+        origImg.loading = "lazy";
+        origImg.title = t("post.view_profile", {name: tp.author_name || tp.author_handle});
+        origImg.onclick = onOrigProfile;
+        head.append(origImg);
+      } else {
+        head.append(el("div", "ph"));
+      }
+
+      const who = el("div", "who");
+      const bOrigName = el("b", "author-link");
+      if (tp.author_name_html) bOrigName.innerHTML = tp.author_name_html;
+      else bOrigName.textContent = tp.author_name || tp.author_handle;
+      bOrigName.title = t("post.view_profile", {name: tp.author_name || tp.author_handle});
+      bOrigName.onclick = onOrigProfile;
+      if (tp.is_own) {
+        const star = el("span", "star-badge");
+        star.title = t("profile.your_account");
+        star.style.marginLeft = "5px";
+        bOrigName.append(star);
+      }
+      who.append(bOrigName, el("span", null, tp.author_handle + " · " + LABEL[n.network]));
+
+      const origWhen = el("a", "when", ago(tp.time || n.time));
+      origWhen.href = su(tp.url || n.url) || "#";
+      origWhen.target = "_blank";
+      origWhen.rel = "noopener noreferrer";
+      origWhen.onclick = () => markSingleNotifRead(n, p);
+      head.append(who, origWhen);
+      p.append(head);
     } else {
-      head.append(el("div", "ph"));
+      const head = el("div", "head");
+      const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
+      g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
+      g.title = t("notifs." + (n.kind || "other"));
+      g.setAttribute("aria-hidden", "true");
+      head.append(g);
+      if (n.avatar) {
+        const i = el("img", "author-link");
+        i.src = su(n.avatar) || "";
+        i.alt = "";
+        i.loading = "lazy";
+        i.title = t("post.view_profile", {name: n.name || n.handle});
+        i.onclick = onNotifProfile;
+        head.append(i);
+      } else {
+        head.append(el("div", "ph"));
+      }
+      const who = el("div", "who");
+      const bNName = el("b");
+      const sNameWrap = el("span", "author-link notif-author");
+      sNameWrap.title = t("post.view_profile", {name: n.name || n.handle});
+      sNameWrap.onclick = onNotifProfile;
+      if (n.name_html) {
+        sNameWrap.innerHTML = n.name_html;
+      } else {
+        sNameWrap.textContent = n.name;
+      }
+      const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
+      bNName.append(sNameWrap, sVerb);
+      const sMeta = el("span", "notif-meta", n.handle + " · " + LABEL[n.network]);
+      who.append(bNName, sMeta);
+      const when = el("a", "when", ago(n.time));
+      when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
+      when.onclick = () => markSingleNotifRead(n, p);
+      head.append(who, netBadge(n.network), when);
+      p.append(head);
     }
-    const who = el("div", "who");
-    const bNName = el("b");
-    const sNameWrap = el("span", "author-link notif-author");
-    sNameWrap.title = t("post.view_profile", {name: n.name || n.handle});
-    sNameWrap.onclick = onNotifProfile;
-    if (n.name_html) {
-      sNameWrap.innerHTML = n.name_html;
-    } else {
-      sNameWrap.textContent = n.name;
-    }
-    const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
-    bNName.append(sNameWrap, sVerb);
-    const sMeta = el("span", "notif-meta", n.handle + " · " + LABEL[n.network]);
-    who.append(bNName, sMeta);
-    const when = el("a", "when", ago(n.time));
-    when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
-    when.onclick = () => markSingleNotifRead(n, p);
-    head.append(who, netBadge(n.network), when);
-    p.append(head);
     const hasMedia = n.media && n.media.length;
     if (n.html && (!hasMedia || !n.html.includes("📷 [Imagem]"))) {
       const b = el("div", "body");
@@ -4229,7 +4316,7 @@ function renderNotifs() {
       r.innerHTML = ICONS.reply;
       r.onclick = () => {
         markSingleNotifRead(n, p);
-        startReply(n);
+        startReply(isRepostNotif && n.target_post ? {network: n.network, ref: n.ref, name: n.target_post.author_name} : n);
       };
       acts.append(r);
       if (n.kind === "reply" || n.kind === "mention" || n.kind === "quote") {
