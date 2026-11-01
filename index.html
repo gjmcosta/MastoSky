@@ -156,6 +156,35 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .thread-rm-btn:hover{background:color-mix(in srgb,var(--danger) 20%,transparent);color:var(--danger)}
 .thread-textarea{width:100%;min-height:68px;border:0;background:none;color:var(--ink);font:14.5px/1.45 var(--sans);resize:vertical;outline:none}
 .thread-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid color-mix(in srgb,var(--line) 60%,transparent);padding-top:6px}
+.search-box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.search-input-wrap{display:flex;align-items:center;gap:8px;background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:4px 8px 4px 12px;transition:border-color .15s}
+.search-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.search-ico{width:18px;height:18px;color:var(--muted);flex-shrink:0}
+.search-input-wrap input{flex:1;border:none;background:transparent;color:var(--ink);font:14.5px var(--sans);outline:none;padding:6px 0}
+.search-clear-btn{border:none;background:none;color:var(--muted);cursor:pointer;padding:4px 6px;font-size:12px;border-radius:50%}
+.search-clear-btn:hover{color:var(--ink)}
+.search-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.search-btn:hover{opacity:.9}
+.search-filters-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.search-pills{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.filter-pill{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:16px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.filter-pill:hover{color:var(--ink);border-color:var(--accent)}
+.filter-pill.active{background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);border-color:var(--accent)}
+.search-section{margin-bottom:16px}
+.search-sec-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;padding:0 2px}
+.search-sec-title{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px}
+.search-sec-count{font-size:11.5px;color:var(--muted);font-weight:600}
+.search-actors-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-bottom:12px}
+.search-actor-card{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer;transition:all .15s}
+.search-actor-card:hover{border-color:var(--accent);transform:translateY(-1px);background:color-mix(in srgb,var(--surface-2) 40%,var(--card))}
+.search-actor-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#000;flex-shrink:0}
+.search-actor-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.search-actor-name{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-actor-handle{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-actor-bio{font-size:12px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35;margin-top:2px}
+.search-tags-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.search-tag-chip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:5px 12px;color:var(--accent);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s}
+.search-tag-chip:hover{background:color-mix(in srgb,var(--accent) 15%,var(--card));transform:translateY(-1px)}
 .replying{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px}
 .replying button{border:0;background:none;color:var(--muted);text-decoration:underline}
 .msg{font-size:13px;margin-top:8px;min-height:18px}
@@ -647,6 +676,7 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-arrow-up" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><polyline points="5 12 12 5 19 12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-thread" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="1.75" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -661,6 +691,9 @@ body:not(.view-deck) .deck-col-body {
     </button>
     <button type="button" class="side-nav-btn" data-tab="explore" title="Em Alta" data-i18n-title="tabs.explore" aria-label="Em Alta">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+    </button>
+    <button type="button" class="side-nav-btn" data-tab="search" title="Pesquisa" data-i18n-title="tabs.search" aria-label="Pesquisa">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
     </button>
     <button type="button" class="side-nav-btn" data-tab="notifs" title="Notificações" data-i18n-title="tabs.notifs" aria-label="Notificações">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -703,6 +736,7 @@ body:not(.view-deck) .deck-col-body {
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="timeline" data-i18n="tabs.timeline">Timeline</button>
       <button class="tab" role="tab" data-tab="explore" data-i18n="tabs.explore">Em Alta</button>
+      <button class="tab" role="tab" data-tab="search" data-i18n="tabs.search">Pesquisa</button>
       <button class="tab" role="tab" data-tab="notifs"><span data-i18n="tabs.notifs">Notificações</span> <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span></button>
       <button class="tab" role="tab" data-tab="profile" data-i18n="tabs.profile">Perfil</button>
     </nav>
@@ -840,6 +874,63 @@ body:not(.view-deck) .deck-col-body {
           <div id="efeed"></div>
         </div>
         <div id="threadExplore" hidden></div>
+      </div>
+    </div>
+
+    <div class="deck-col" id="colSearch" data-col="search">
+      <div class="deck-col-head">
+        <span class="deck-col-title" data-i18n="header.col_search">Pesquisa</span>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn" onclick="doSearch()" title="Atualizar pesquisa" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colSearchBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+        </div>
+      </div>
+      <div class="deck-col-body" id="colSearchBody">
+        <div id="pSearch" hidden>
+          <div class="search-box">
+            <div class="search-input-wrap">
+              <svg class="ico search-ico"><use href="#i-search"/></svg>
+              <input type="text" id="searchInput" placeholder="Pesquisar publicações, @utilizadores ou #hashtags..." data-i18n-ph="search.placeholder" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+              <button type="button" class="search-clear-btn" id="searchClearBtn" title="Limpar" hidden>✕</button>
+              <button type="button" class="search-btn" id="searchBtn" data-i18n="search.btn">Pesquisar</button>
+            </div>
+            <div class="search-filters-row">
+              <div class="search-pills" id="searchTypePills">
+                <button type="button" class="filter-pill active" data-type="all" data-i18n="search.type_all">Tudo</button>
+                <button type="button" class="filter-pill" data-type="posts" data-i18n="search.type_posts">Publicações</button>
+                <button type="button" class="filter-pill" data-type="actors" data-i18n="search.type_actors">Utilizadores</button>
+                <button type="button" class="filter-pill" data-type="hashtags" data-i18n="search.type_hashtags">Hashtags</button>
+              </div>
+              <div class="search-pills" id="searchNetPills">
+                <button type="button" class="filter-pill active" data-net="all" data-i18n="search.net_all">Ambas</button>
+                <button type="button" class="filter-pill" data-net="bluesky">Bluesky</button>
+                <button type="button" class="filter-pill" data-net="mastodon">Mastodon</button>
+              </div>
+            </div>
+          </div>
+          <div id="serrors"></div>
+          <div id="sActorsSection" class="search-section" hidden>
+            <div class="search-sec-head">
+              <span class="search-sec-title">👤 <span data-i18n="search.sec_users">Utilizadores</span></span>
+              <span class="search-sec-count" id="sActorsCount"></span>
+            </div>
+            <div id="sActorsList" class="search-actors-list"></div>
+          </div>
+          <div id="sHashtagsSection" class="search-section" hidden>
+            <div class="search-sec-head">
+              <span class="search-sec-title">🏷️ <span data-i18n="search.sec_hashtags">Hashtags</span></span>
+            </div>
+            <div id="sHashtagsList" class="search-tags-list"></div>
+          </div>
+          <div id="sPostsSection" class="search-section">
+            <div class="search-sec-head" id="sPostsHead" hidden>
+              <span class="search-sec-title">💬 <span data-i18n="search.sec_posts">Publicações</span></span>
+              <span class="search-sec-count" id="sPostsCount"></span>
+            </div>
+            <div id="sfeed"></div>
+          </div>
+        </div>
+        <div id="threadSearch" hidden></div>
       </div>
     </div>
 
@@ -1068,11 +1159,13 @@ const I18N = {
       col_compose: "Novo post",
       col_compose_hub: "Compor & Menu",
       col_thread: "Conversa",
-      col_user: "Perfil de utilizador"
+      col_user: "Perfil de utilizador",
+      col_search: "Pesquisa"
     },
     tabs: {
       timeline: "Timeline",
       explore: "Em Alta",
+      search: "Pesquisa",
       notifs: "Notificações",
       profile: "Perfil"
     },
@@ -1157,6 +1250,22 @@ const I18N = {
       err: "Erro ao atualizar: ",
       btn_check: "Verificar",
       btn_update: "Atualizar agora"
+    },
+    search: {
+      placeholder: "Pesquisar publicações, @utilizadores ou #hashtags...",
+      btn: "Pesquisar",
+      type_all: "Tudo",
+      type_posts: "Publicações",
+      type_actors: "Utilizadores",
+      type_hashtags: "Hashtags",
+      net_all: "Ambas",
+      sec_users: "Utilizadores",
+      sec_hashtags: "Hashtags",
+      sec_posts: "Publicações",
+      empty_start: "Escreve algo acima para pesquisar em simultâneo no Bluesky e Mastodon.",
+      empty_results: "Nenhum resultado encontrado para \"{q}\".",
+      searching: "A pesquisar nas redes...",
+      err_search: "Erro na pesquisa: {err}"
     },
     actions: {
       reply: "Responder",
@@ -1309,11 +1418,13 @@ const I18N = {
       col_compose: "New post",
       col_compose_hub: "Compose & Menu",
       col_thread: "Thread",
-      col_user: "User profile"
+      col_user: "User profile",
+      col_search: "Search"
     },
     tabs: {
       timeline: "Timeline",
       explore: "Trending",
+      search: "Search",
       notifs: "Notifications",
       profile: "Profile"
     },
@@ -1398,6 +1509,22 @@ const I18N = {
       err: "Update error: ",
       btn_check: "Check",
       btn_update: "Update now"
+    },
+    search: {
+      placeholder: "Search posts, @users or #hashtags...",
+      btn: "Search",
+      type_all: "All",
+      type_posts: "Posts",
+      type_actors: "Users",
+      type_hashtags: "Hashtags",
+      net_all: "Both",
+      sec_users: "Users",
+      sec_hashtags: "Hashtags",
+      sec_posts: "Posts",
+      empty_start: "Type something above to search Bluesky and Mastodon simultaneously.",
+      empty_results: "No results found for \"{q}\".",
+      searching: "Searching networks...",
+      err_search: "Search error: {err}"
     },
     actions: {
       reply: "Reply",
@@ -2035,6 +2162,18 @@ function postCard(it, o = {}) {
   head.append(who, netBadge(it.network), when);
   const body = el("div", "body");
   body.innerHTML = it.html; // já limpo no servidor
+  body.addEventListener("click", (e) => {
+    const a = e.target.closest("a");
+    if (!a || !a.href) return;
+    const mTag = a.href.match(/(?:tags|hashtag)\/([^/?#]+)/i);
+    if (mTag && mTag[1]) {
+      e.preventDefault();
+      e.stopPropagation();
+      const tagName = decodeURIComponent(mTag[1]);
+      setTab("search");
+      doSearch("#" + tagName);
+    }
+  });
   p.append(head);
   if (it.reply_to && !o.focus) {
     const r = el("button", "replyto"), rt = it.reply_to;
@@ -2209,6 +2348,208 @@ function renderExplore() {
   for (const it of exploreItems) feed.append(postCard(it));
   renderLoadMore(feed, exploreCursors, loadMoreExplore);
 }
+
+let currentSearchQuery = "";
+let currentSearchType = "all";
+let currentSearchNet = "all";
+let searchResultsData = null;
+
+async function doSearch(queryOverride = null) {
+  const inp = $("searchInput");
+  const query = (queryOverride !== null ? queryOverride : (inp ? inp.value : "")).trim();
+  if (inp && queryOverride !== null) inp.value = query;
+
+  if ($("searchClearBtn")) {
+    $("searchClearBtn").hidden = !query;
+  }
+
+  if (!query) {
+    $("sfeed").innerHTML = '<div class="empty">' + t("search.empty_start") + '</div>';
+    $("sActorsSection").hidden = true;
+    $("sHashtagsSection").hidden = true;
+    $("sPostsHead").hidden = true;
+    $("serrors").replaceChildren();
+    return;
+  }
+
+  currentSearchQuery = query;
+
+  if (query.startsWith("@") && currentSearchType === "all") {
+    setSearchType("actors");
+    return;
+  } else if (query.startsWith("#") && currentSearchType === "all") {
+    setSearchType("hashtags");
+    return;
+  }
+
+  $("sfeed").innerHTML = '<div class="empty">' + t("search.searching") + '</div>';
+  $("sActorsSection").hidden = true;
+  $("sHashtagsSection").hidden = true;
+  $("sPostsHead").hidden = true;
+  $("serrors").replaceChildren();
+
+  try {
+    let url = "/api/search?q=" + encodeURIComponent(query) + "&type=" + encodeURIComponent(currentSearchType);
+    if (currentSearchNet !== "all") {
+      url += "&network=" + encodeURIComponent(currentSearchNet);
+    }
+    const data = await api(url);
+    searchResultsData = data;
+    renderSearchResults(data);
+  } catch (err) {
+    $("sfeed").innerHTML = '<div class="empty err">' + t("search.err_search", {err: err.message}) + '</div>';
+  }
+}
+
+function renderSearchResults(data) {
+  if (!data) return;
+  const { posts = [], actors = [], hashtags = [], errors = {} } = data;
+
+  // Erros parciais de rede
+  const errWrap = $("serrors");
+  errWrap.replaceChildren();
+  Object.entries(errors).forEach(([net, msg]) => {
+    errWrap.append(el("div", "banner", (LABEL[net] || net) + ": " + msg));
+  });
+
+  // 1. Actores / Utilizadores
+  const actorsSec = $("sActorsSection");
+  const actorsList = $("sActorsList");
+  if (currentSearchType === "all" || currentSearchType === "actors") {
+    if (actors.length > 0) {
+      actorsSec.hidden = false;
+      $("sActorsCount").textContent = String(actors.length);
+      actorsList.replaceChildren();
+      actors.forEach(a => {
+        const card = el("div", "search-actor-card");
+        card.onclick = () => openUserProfile(a.network, a.raw_handle || a.handle || a.did || a.id);
+
+        const img = el("img", "search-actor-avatar");
+        img.src = su(a.avatar) || "/brand/favicon.svg";
+        img.alt = a.name || "";
+
+        const info = el("div", "search-actor-info");
+        const nameRow = el("div", "search-actor-name");
+        nameRow.textContent = a.name || a.handle;
+
+        const handleRow = el("div", "search-actor-handle");
+        handleRow.textContent = a.handle + " · " + (LABEL[a.network] || a.network);
+
+        info.append(nameRow, handleRow);
+        if (a.description) {
+          const bio = el("div", "search-actor-bio");
+          bio.textContent = a.description;
+          info.append(bio);
+        }
+
+        card.append(img, info);
+        actorsList.append(card);
+      });
+    } else {
+      actorsSec.hidden = true;
+    }
+  } else {
+    actorsSec.hidden = true;
+  }
+
+  // 2. Hashtags
+  const tagsSec = $("sHashtagsSection");
+  const tagsList = $("sHashtagsList");
+  if (currentSearchType === "all" || currentSearchType === "hashtags") {
+    if (hashtags.length > 0) {
+      tagsSec.hidden = false;
+      tagsList.replaceChildren();
+      hashtags.forEach(h => {
+        const chip = el("button", "search-tag-chip");
+        chip.type = "button";
+        chip.textContent = "#" + h.name + " (" + (LABEL[h.network] || h.network) + ")";
+        chip.onclick = () => {
+          doSearch("#" + h.name);
+        };
+        tagsList.append(chip);
+      });
+    } else {
+      tagsSec.hidden = true;
+    }
+  } else {
+    tagsSec.hidden = true;
+  }
+
+  // 3. Publicações (Posts)
+  const feed = $("sfeed");
+  const postsHead = $("sPostsHead");
+  if (currentSearchType === "all" || currentSearchType === "posts") {
+    feed.replaceChildren();
+    if (posts.length > 0) {
+      postsHead.hidden = false;
+      $("sPostsCount").textContent = String(posts.length);
+      posts.forEach(p => feed.append(postCard(p)));
+    } else {
+      postsHead.hidden = true;
+      if (!actors.length && !hashtags.length) {
+        feed.innerHTML = '<div class="empty">' + t("search.empty_results", {q: currentSearchQuery}) + '</div>';
+      }
+    }
+  } else {
+    postsHead.hidden = true;
+    feed.replaceChildren();
+    if (currentSearchType === "actors" && !actors.length) {
+      feed.innerHTML = '<div class="empty">' + t("search.empty_results", {q: currentSearchQuery}) + '</div>';
+    } else if (currentSearchType === "hashtags" && !hashtags.length) {
+      feed.innerHTML = '<div class="empty">' + t("search.empty_results", {q: currentSearchQuery}) + '</div>';
+    }
+  }
+}
+
+function setSearchType(newType) {
+  currentSearchType = newType;
+  document.querySelectorAll("#searchTypePills .filter-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.type === newType);
+  });
+  if (currentSearchQuery) {
+    doSearch();
+  }
+}
+
+function setSearchNet(newNet) {
+  currentSearchNet = newNet;
+  document.querySelectorAll("#searchNetPills .filter-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.net === newNet);
+  });
+  if (currentSearchQuery) {
+    doSearch();
+  }
+}
+
+if ($("searchInput")) {
+  $("searchInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      doSearch();
+    }
+  });
+  $("searchInput").addEventListener("input", (e) => {
+    if ($("searchClearBtn")) {
+      $("searchClearBtn").hidden = !e.target.value;
+    }
+  });
+}
+if ($("searchBtn")) {
+  $("searchBtn").onclick = () => doSearch();
+}
+if ($("searchClearBtn")) {
+  $("searchClearBtn").onclick = () => {
+    $("searchInput").value = "";
+    $("searchClearBtn").hidden = true;
+    doSearch("");
+  };
+}
+document.querySelectorAll("#searchTypePills .filter-pill").forEach(p => {
+  p.onclick = () => setSearchType(p.dataset.type);
+});
+document.querySelectorAll("#searchNetPills .filter-pill").forEach(p => {
+  p.onclick = () => setSearchNet(p.dataset.net);
+});
 
 const NOTIF_ICONS = {
   like: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -2673,6 +3014,7 @@ function setTab(newTab) {
     const colMap = {
       timeline: "colTimeline",
       explore: "colExplore",
+      search: "colSearch",
       notifs: "colNotifs",
       profile: "colCompose"
     };
@@ -2684,9 +3026,10 @@ function setTab(newTab) {
   } else {
     $("pTimeline").hidden = newTab !== "timeline";
     $("pExplore").hidden = newTab !== "explore";
+    $("pSearch").hidden = newTab !== "search";
     $("pNotifs").hidden = newTab !== "notifs";
     $("pProfile").hidden = newTab !== "profile";
-    ["Timeline", "Explore", "Notifs", "Profile"].forEach(c => {
+    ["Timeline", "Explore", "Search", "Notifs", "Profile"].forEach(c => {
       const th = $("thread" + c);
       if (th) { th.hidden = true; th.replaceChildren(); }
     });
@@ -2697,6 +3040,12 @@ function setTab(newTab) {
   else seenBefore = localStorage.getItem("notifSeen") || seenBefore;
   if (newTab === "explore" && !exploreItems.length) loadExplore();
   if (newTab === "profile" && !profileLoaded) loadProfile();
+  if (newTab === "search") {
+    setTimeout(() => {
+      const inp = $("searchInput");
+      if (inp) inp.focus();
+    }, 50);
+  }
   renderNotifs(); updateBadge();
   history.replaceState(null, "", "#" + newTab);
 }

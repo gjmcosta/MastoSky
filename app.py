@@ -984,6 +984,53 @@ class Bsky:
         self._ensure()
         return self.user_feed(self.did, cursor=cursor)
 
+    def search(self, q, search_type="all", limit=25):
+        self._ensure()
+        clean_q = q.strip()
+        if not clean_q:
+            return {"posts": [], "actors": [], "hashtags": []}
+
+        posts = []
+        actors = []
+        hashtags = []
+
+        if search_type in ("all", "posts", "hashtags"):
+            try:
+                params = {"q": clean_q, "limit": min(limit, 40)}
+                if clean_q.startswith("#"):
+                    params["tag"] = [clean_q.lstrip("#")]
+                res = self.call("GET", "app.bsky.feed.searchPosts", params=params)
+                posts = [self.item(p) for p in res.get("posts", [])]
+            except Exception:
+                pass
+
+        if search_type in ("all", "actors"):
+            try:
+                actor_q = clean_q.lstrip("@")
+                res = self.call("GET", "app.bsky.actor.searchActors", params={"q": actor_q, "limit": min(limit, 30)})
+                actors = [{
+                    "network": "bluesky",
+                    "did": a.get("did"),
+                    "handle": "@" + (a.get("handle") or ""),
+                    "raw_handle": a.get("handle") or "",
+                    "name": a.get("displayName") or a.get("handle") or "",
+                    "avatar": safe_url(a.get("avatar")),
+                    "description": a.get("description") or "",
+                    "url": f"https://bsky.app/profile/{a.get('handle')}"
+                } for a in res.get("actors", [])]
+            except Exception:
+                pass
+
+        if clean_q.startswith("#") and search_type in ("all", "hashtags"):
+            tag_name = clean_q.lstrip("#")
+            hashtags.append({
+                "network": "bluesky",
+                "name": tag_name,
+                "url": f"https://bsky.app/hashtag/{tag_name}"
+            })
+
+        return {"posts": posts, "actors": actors, "hashtags": hashtags}
+
     def upload_blob(self, raw_bytes, mime="image/jpeg"):
         url = f"{self.host}/xrpc/com.atproto.repo.uploadBlob"
         r = self._authed(lambda jwt: http("POST", url, data=raw_bytes, token=jwt, headers={"Content-Type": mime}))
@@ -1410,6 +1457,46 @@ class Masto:
             return [], None
         return self.user_feed(my_id, cursor=cursor)
 
+    def search(self, q, search_type="all", limit=25):
+        clean_q = q.strip()
+        if not clean_q:
+            return {"posts": [], "actors": [], "hashtags": []}
+
+        type_param = None
+        if search_type == "posts":
+            type_param = "statuses"
+        elif search_type == "actors":
+            type_param = "accounts"
+        elif search_type == "hashtags":
+            type_param = "hashtags"
+
+        params = {"q": clean_q, "limit": min(limit, 40), "resolve": "true"}
+        if type_param:
+            params["type"] = type_param
+
+        res = self.call("GET", "/api/v2/search", params=params)
+
+        posts = [self.item(st) for st in res.get("statuses", [])]
+        actors = [{
+            "network": "mastodon",
+            "id": str(a.get("id")),
+            "name": a.get("display_name") or a.get("username") or "",
+            "handle": "@" + (a.get("acct") or a.get("username") or ""),
+            "raw_handle": a.get("acct") or a.get("username") or "",
+            "avatar": safe_url(a.get("avatar")),
+            "description": clean(a.get("note") or ""),
+            "url": safe_url(a.get("url"))
+        } for a in res.get("accounts", [])]
+
+        hashtags = [{
+            "network": "mastodon",
+            "name": h.get("name"),
+            "url": safe_url(h.get("url")),
+            "history": h.get("history")
+        } for h in res.get("hashtags", [])]
+
+        return {"posts": posts, "actors": actors, "hashtags": hashtags}
+
     def thread(self, ref):
         st = self.call("GET", f"/api/v1/statuses/{ref['id']}")
         c = self.call("GET", f"/api/v1/statuses/{ref['id']}/context")
@@ -1729,6 +1816,53 @@ class H(BaseHTTPRequestHandler):
                     items += its
                 items = sort_items(items)
             return self.send(200, {"items": items, "errors": errors, "networks": list(CLIENTS), "cursors": next_cursors})
+        if path == "/api/search":
+            if not CLIENTS:
+                return self.send(200, {"posts": [], "actors": [], "hashtags": [], "errors": {}})
+            qs = urllib.parse.parse_qs(parsed.query)
+            q = qs.get("q", [""])[0].strip()
+            if not q:
+                return self.send(200, {"posts": [], "actors": [], "hashtags": [], "errors": {}})
+            search_type = qs.get("type", ["all"])[0].strip().lower()
+            if search_type not in ("all", "posts", "actors", "hashtags"):
+                search_type = "all"
+            target_net = qs.get("network", [None])[0]
+            try:
+                limit = int(qs.get("limit", [25])[0])
+            except (ValueError, TypeError):
+                limit = 25
+            limit = max(1, min(limit, 50))
+
+            active_clients = [c for c in CLIENTS.values() if not target_net or c.name == target_net]
+            all_posts = []
+            all_actors = []
+            all_hashtags = []
+            errors = {}
+
+            def do_search(c):
+                try:
+                    res = c.search(q, search_type=search_type, limit=limit)
+                    return c.name, res, None
+                except Exception as e:
+                    return c.name, None, str(e)
+
+            with ThreadPoolExecutor() as ex:
+                for name, res, err in ex.map(do_search, active_clients):
+                    if err:
+                        errors[name] = err
+                    elif res:
+                        all_posts.extend(res.get("posts", []))
+                        all_actors.extend(res.get("actors", []))
+                        all_hashtags.extend(res.get("hashtags", []))
+
+            all_posts.sort(key=lambda x: x.get("time") or "", reverse=True)
+
+            return self.send(200, {
+                "posts": all_posts,
+                "actors": all_actors,
+                "hashtags": all_hashtags,
+                "errors": errors
+            })
         self.send(404, {"error": "not found"})
 
     def do_POST(self):

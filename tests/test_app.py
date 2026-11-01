@@ -1674,6 +1674,99 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(res2["cursor"], "c_cur")
             bsky_mock.user_feed.assert_called_with("charlie.bsky.social", cursor="prev")
 
+    def test_search_endpoints(self):
+        bsky_mock = mock.MagicMock()
+        bsky_mock.name = "bluesky"
+        bsky_mock.search.return_value = {
+            "posts": [{"time": "2026-01-02T12:00:00Z", "text": "Bluesky post", "network": "bluesky"}],
+            "actors": [{"name": "User B", "network": "bluesky"}],
+            "hashtags": [{"name": "tech", "network": "bluesky"}]
+        }
+
+        masto_mock = mock.MagicMock()
+        masto_mock.name = "mastodon"
+        masto_mock.search.return_value = {
+            "posts": [{"time": "2026-01-03T12:00:00Z", "text": "Mastodon post", "network": "mastodon"}],
+            "actors": [{"name": "User M", "network": "mastodon"}],
+            "hashtags": [{"name": "tech", "network": "mastodon"}]
+        }
+
+        with mock.patch.dict(app.CLIENTS, {"bluesky": bsky_mock, "mastodon": masto_mock}, clear=True):
+            # 1. Pesquisa vazia
+            h = object.__new__(app.H)
+            h.path = "/api/search?q="
+            h.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+            h.wfile = io.BytesIO()
+            h.sent = []
+            h.send_response = lambda code: h.sent.append(("code", code))
+            h.send_header = lambda k, v: h.sent.append((k, v))
+            h.end_headers = lambda: None
+            h.do_GET()
+            res = json.loads(h.wfile.getvalue().decode())
+            self.assertEqual(res["posts"], [])
+            self.assertEqual(res["actors"], [])
+            self.assertEqual(res["hashtags"], [])
+
+            # 2. Pesquisa unificada com query
+            h2 = object.__new__(app.H)
+            h2.path = "/api/search?q=tech&type=all"
+            h2.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+            h2.wfile = io.BytesIO()
+            h2.sent = []
+            h2.send_response = lambda code: h2.sent.append(("code", code))
+            h2.send_header = lambda k, v: h2.sent.append((k, v))
+            h2.end_headers = lambda: None
+            h2.do_GET()
+            res2 = json.loads(h2.wfile.getvalue().decode())
+            self.assertEqual(len(res2["posts"]), 2)
+            # Ordenado por mais recente (Mastodon 2026-01-03 antes de Bluesky 2026-01-02)
+            self.assertEqual(res2["posts"][0]["text"], "Mastodon post")
+            self.assertEqual(res2["posts"][1]["text"], "Bluesky post")
+            self.assertEqual(len(res2["actors"]), 2)
+            self.assertEqual(len(res2["hashtags"]), 2)
+            bsky_mock.search.assert_called_with("tech", search_type="all", limit=25)
+            masto_mock.search.assert_called_with("tech", search_type="all", limit=25)
+
+            # 3. Pesquisa filtrada por rede
+            h3 = object.__new__(app.H)
+            h3.path = "/api/search?q=tech&network=bluesky"
+            h3.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+            h3.wfile = io.BytesIO()
+            h3.sent = []
+            h3.send_response = lambda code: h3.sent.append(("code", code))
+            h3.send_header = lambda k, v: h3.sent.append((k, v))
+            h3.end_headers = lambda: None
+            h3.do_GET()
+            res3 = json.loads(h3.wfile.getvalue().decode())
+            self.assertEqual(len(res3["posts"]), 1)
+            self.assertEqual(res3["posts"][0]["network"], "bluesky")
+
+    def test_bsky_and_masto_search_helpers(self):
+        bsky = app.Bsky({"handle": "test.bsky.social", "password": "pass"})
+        bsky.call = mock.MagicMock()
+        bsky.call.side_effect = [
+            {"posts": [{"uri": "at://1", "cid": "c1", "author": {"handle": "u1"}, "record": {"$type": "app.bsky.feed.post", "text": "Bsky tag", "createdAt": "2026-01-01T00:00:00Z"}}]},
+            {"actors": [{"did": "did:1", "handle": "u1", "displayName": "User One", "avatar": "https://img/av.jpg"}]}
+        ]
+        with mock.patch.object(bsky, "_ensure"):
+            res_b = bsky.search("#tag", search_type="all")
+            self.assertEqual(len(res_b["posts"]), 1)
+            self.assertEqual(len(res_b["actors"]), 1)
+            self.assertEqual(len(res_b["hashtags"]), 1)
+            self.assertEqual(res_b["hashtags"][0]["name"], "tag")
+
+        masto = app.Masto({"instance": "masto.test", "token": "tok"})
+        masto.call = mock.MagicMock(return_value={
+            "statuses": [{"id": "s1", "content": "Masto status", "account": {"id": "1", "acct": "m1", "username": "m1"}}],
+            "accounts": [{"id": "a1", "acct": "m1", "username": "m1", "display_name": "Masto User"}],
+            "hashtags": [{"name": "tag", "url": "https://masto.test/tags/tag"}]
+        })
+        res_m = masto.search("tag", search_type="all")
+        self.assertEqual(len(res_m["posts"]), 1)
+        self.assertEqual(len(res_m["actors"]), 1)
+        self.assertEqual(len(res_m["hashtags"]), 1)
+        self.assertEqual(res_m["hashtags"][0]["name"], "tag")
+
     def test_bsky_and_masto_user_profile_methods(self):
         b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
         b.did = "did:plc:me"
