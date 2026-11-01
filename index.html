@@ -1023,11 +1023,11 @@ function buildTargets() {
   sel.replaceChildren();
   if (networks.length > 1) {
     sel.hidden = Boolean(reply);
-    const optAll = el("option", null, "🌐 Ambas as redes");
+    const optAll = el("option", null, "🌐 Ambas as redes (Crosspost)");
     optAll.value = "all";
     sel.append(optAll);
     for (const n of networks) {
-      const opt = el("option", null, (n === "bluesky" ? "🦋 " : "🐘 ") + LABEL[n]);
+      const opt = el("option", null, (n === "bluesky" ? "🦋 Apenas Bluesky" : "🐘 Apenas Mastodon"));
       opt.value = n;
       sel.append(opt);
     }
@@ -1330,13 +1330,19 @@ function update() {
 }
 
 function startQuote(it) {
+  let txt = (it.text || "").trim();
+  if (!txt && it.html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = it.html;
+    txt = (tmp.textContent || tmp.innerText || "").trim();
+  }
   quote = {
     network: it.network,
     ref: it.ref,
     url: it.url,
     name: it.name,
     handle: it.handle,
-    text: it.text || "",
+    text: txt,
     avatar: it.avatar || ""
   };
   renderQuoteBox();

@@ -204,6 +204,16 @@ class SafeUrlTests(unittest.TestCase):
         it = app.Bsky({"handle": "h", "app_password": "p"}).item(p)
         self.assertIsNone(it["avatar"])
         self.assertEqual(it["media"], [])
+        self.assertEqual(it["text"], "x")
+
+    def test_masto_item_text(self):
+        st = {"id": "1", "account": {"username": "u", "acct": "u@inst"},
+              "content": "<p>Olá mundo <b>fediverso</b></p>",
+              "spoiler_text": "Aviso",
+              "created_at": "2026-01-01T00:00:00Z"}
+        it = app.Masto({"instance": "https://x", "token": "t"}).item(st)
+        self.assertIn("Olá mundo fediverso", it["text"])
+        self.assertIn("[Aviso]", it["text"])
 
 
 class ConfigPermsTests(unittest.TestCase):

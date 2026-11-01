@@ -460,6 +460,7 @@ def parse_bsky_quote(rec):
         "name": author.get("displayName") or handle,
         "handle": "@" + handle if handle else "",
         "avatar": safe_url(author.get("avatar")),
+        "text": text,
         "html": render_bsky_text(text, facets) if text else "",
         "time": val.get("createdAt") or rec.get("createdAt") or rec.get("indexedAt"),
         "url": f"https://bsky.app/profile/{handle}/post/{rec.get('uri', '').split('/')[-1]}" if handle else None,
@@ -544,11 +545,13 @@ def parse_masto_quote(st):
     q_name = q_acc.get("display_name") or q_acc.get("username", "")
     q_name_html = render_custom_emojis(html.escape(q_name), q_acc.get("emojis")) if q_acc.get("emojis") else None
 
+    plain_text = ((f"[{qs['spoiler_text']}] " if qs.get("spoiler_text") else "") + plain(qs.get("content"))).strip()
     out = {
         "network": "mastodon",
         "name": q_name,
         "handle": "@" + q_acc.get("acct", ""),
         "avatar": safe_url(q_acc.get("avatar")),
+        "text": plain_text,
         "html": q_html,
         "time": qs.get("created_at"),
         "url": safe_url(qs.get("url")),
@@ -675,7 +678,8 @@ class Bsky:
             ref_obj["repost_uri"] = repost_uri
         return {
             "network": "bluesky", "name": a.get("displayName") or a["handle"], "handle": "@" + a["handle"],
-            "avatar": safe_url(a.get("avatar")), "html": render_bsky_text(rec.get("text", ""), rec.get("facets")),
+            "avatar": safe_url(a.get("avatar")), "text": rec.get("text", ""),
+            "html": render_bsky_text(rec.get("text", ""), rec.get("facets")),
             "time": reason.get("indexedAt") or p.get("indexedAt") or rec["createdAt"],
             "boosted_by": by.get("displayName") or by.get("handle"), "reply_to": rt,
             "media": media,
@@ -975,9 +979,10 @@ class Masto:
         name_plain = a.get("display_name") or a.get("username", "")
         name_html = render_custom_emojis(html.escape(name_plain), a.get("emojis")) if a.get("emojis") else None
         final_html = render_custom_emojis(cw + raw_html, x.get("emojis"))
+        plain_text = ((f"[{x['spoiler_text']}] " if x.get("spoiler_text") else "") + plain(x.get("content"))).strip()
         out = {
             "network": "mastodon", "name": name_plain, "handle": "@" + a.get("acct", ""),
-            "avatar": safe_url(a.get("avatar")), "html": final_html,
+            "avatar": safe_url(a.get("avatar")), "text": plain_text, "html": final_html,
             "time": st.get("created_at"),
             "boosted_by": (st["account"].get("display_name") or st["account"]["username"]) if st.get("reblog") else None,
             "media": safe_media_list(media),
