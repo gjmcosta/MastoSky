@@ -1643,6 +1643,8 @@ class H(BaseHTTPRequestHandler):
         self.send_header("Content-Security-Policy", CSP)
         if ctype.startswith("image/"):
             self.send_header("Cache-Control", "public, max-age=86400")
+        elif "text/html" in ctype:
+            self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         self.end_headers()
         self.wfile.write(b)
 
@@ -1662,13 +1664,15 @@ class H(BaseHTTPRequestHandler):
         path = parsed.path
         if not self.allowed():
             return self.send(403, {"error": "forbidden"})
-        if path == "/":
+        if path in ("/", "/index.html"):
             html_text = (DIR / "index.html").read_text(encoding="utf-8")
             if '<meta name="csrf-token"' in html_text:
                 html_text = re.sub(r'<meta name="csrf-token" content="[^"]*">', f'<meta name="csrf-token" content="{SESSION_TOKEN}">', html_text)
             else:
                 html_text = html_text.replace("</head>", f'<meta name="csrf-token" content="{SESSION_TOKEN}">\n</head>', 1)
             return self.send(200, html_text.encode("utf-8"), "text/html")
+        if path == "/api/csrf":
+            return self.send(200, {"token": SESSION_TOKEN})
         if path == "/api/version":
             return self.send(200, check_github_update())
         if path == "/vendor/hls.min.js":

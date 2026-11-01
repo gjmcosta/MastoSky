@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="csrf-token" content="">
 <title>MastoSky</title>
 <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
 <script src="/vendor/hls.min.js"></script>
@@ -2003,9 +2004,41 @@ let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [
 let threadPosts = [], nextThreadId = 1;
 let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
 
+let CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+
+function getCsrfToken() {
+  if (!CSRF_TOKEN) {
+    CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
+  }
+  return CSRF_TOKEN;
+}
+
 async function api(path, body) {
-  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
-  return r.json();
+  let token = getCsrfToken();
+  const headers = {"Content-Type": "application/json"};
+  if (token) headers["X-CSRF-Token"] = token;
+  let r = await fetch(path, body ? {method: "POST", headers, body: JSON.stringify(body)} : {});
+  let data = await r.json().catch(() => ({}));
+
+  // Se o serviço foi reiniciado com a página aberta, o token mudou.
+  // Recarrega o token fresco do servidor e tenta novamente 1 vez.
+  if (r.status === 403 && data && data.error && data.error.includes("Token de sessão")) {
+    try {
+      const rf = await fetch("/api/csrf");
+      if (rf.ok) {
+        const j = await rf.json();
+        if (j.token) {
+          CSRF_TOKEN = j.token;
+          const meta = document.querySelector('meta[name="csrf-token"]');
+          if (meta) meta.setAttribute("content", CSRF_TOKEN);
+          headers["X-CSRF-Token"] = CSRF_TOKEN;
+          r = await fetch(path, body ? {method: "POST", headers, body: JSON.stringify(body)} : {});
+          data = await r.json().catch(() => ({}));
+        }
+      }
+    } catch (_) {}
+  }
+  return data;
 }
 
 function ago(iso) {

@@ -273,6 +273,13 @@ class SecurityHeadersTests(unittest.TestCase):
         body = h.wfile.getvalue().decode("utf-8")
         self.assertIn(f'<meta name="csrf-token" content="{app.SESSION_TOKEN}">', body)
 
+    def test_csrf_endpoint(self):
+        h = self._handler("127.0.0.1:%d" % app.PORT)
+        h.path = "/api/csrf"
+        h.do_GET()
+        body = json.loads(h.wfile.getvalue())
+        self.assertEqual(body.get("token"), app.SESSION_TOKEN)
+
     def test_options_allowed(self):
         h = self._handler("127.0.0.1:%d" % app.PORT, "http://127.0.0.1:%d" % app.PORT)
         h.do_OPTIONS()
