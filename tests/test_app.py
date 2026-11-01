@@ -1880,6 +1880,25 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("function returnFromProfileDetail(", html)
         self.assertIn("function refreshProfileView(", html)
 
+    def test_index_contains_saved_posts_feature(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn('id="i-bookmark"', html)
+        self.assertIn('id="i-bookmark-fill"', html)
+        self.assertIn('data-tab="saved"', html)
+        self.assertIn('id="colSaved"', html)
+        self.assertIn('id="pSaved"', html)
+        self.assertIn('id="savedFeed"', html)
+        self.assertIn('id="threadSaved"', html)
+        self.assertIn('id="savedNetFilters"', html)
+        self.assertIn('id="savedSearchInput"', html)
+        self.assertIn('mastosky_saved_posts', html)
+        self.assertIn("function getSavedPosts(", html)
+        self.assertIn("function toggleSavePost(", html)
+        self.assertIn("function renderSavedFeed(", html)
+        self.assertIn("act-save", html)
+        self.assertIn("saved_rm", html)
+        self.assertIn("toast_saved", html)
 
     def test_parse_semver(self):
         self.assertEqual(app.parse_semver("0.3.0"), [0, 3, 0])

@@ -254,8 +254,17 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .acts button.act-like:hover{color:#E0245E}
 .acts button.act-like.on{color:#E0245E;font-weight:600}
 .acts button.act-like.on svg{fill:currentColor}
+.acts button.act-save:hover{color:var(--star, #F0B400)}
+.acts button.act-save.on{color:var(--star, #F0B400);font-weight:600}
+.acts button.act-save.on svg{fill:currentColor}
 .acts button.act-thread:hover{color:var(--ink)}
 .acts button.act-del:hover{color:var(--danger)}
+.saved-box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.saved-filters-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.saved-count-text{font-size:12px;color:var(--muted);font-weight:600}
+.saved-search-wrap{display:flex;align-items:center;gap:8px;background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:4px 8px 4px 12px;transition:border-color .15s}
+.saved-search-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
+.saved-search-wrap input{flex:1;border:none;background:transparent;color:var(--ink);font:13.5px var(--sans);outline:none;padding:5px 0}
 .banner{background:var(--card);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px}
 .empty{text-align:center;color:var(--muted);padding:40px 0}
 .tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
@@ -700,6 +709,8 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-thread" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="1.75" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-draft" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="9" x2="8" y2="9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bookmark-fill" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -717,6 +728,9 @@ body:not(.view-deck) .deck-col-body {
     </button>
     <button type="button" class="side-nav-btn" data-tab="search" title="Pesquisa" data-i18n-title="tabs.search" aria-label="Pesquisa">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    </button>
+    <button type="button" class="side-nav-btn" data-tab="saved" title="Guardados" data-i18n-title="tabs.saved" aria-label="Guardados">
+      <svg class="ico"><use href="#i-bookmark"/></svg>
     </button>
     <button type="button" class="side-nav-btn" data-tab="notifs" title="Notificações" data-i18n-title="tabs.notifs" aria-label="Notificações">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -760,6 +774,7 @@ body:not(.view-deck) .deck-col-body {
       <button class="tab" role="tab" data-tab="timeline" data-i18n="tabs.timeline">Timeline</button>
       <button class="tab" role="tab" data-tab="explore" data-i18n="tabs.explore">Em Alta</button>
       <button class="tab" role="tab" data-tab="search" data-i18n="tabs.search">Pesquisa</button>
+      <button class="tab" role="tab" data-tab="saved" data-i18n="tabs.saved">Guardados</button>
       <button class="tab" role="tab" data-tab="notifs"><span data-i18n="tabs.notifs">Notificações</span> <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span></button>
       <button class="tab" role="tab" data-tab="profile" data-i18n="tabs.profile">Perfil</button>
     </nav>
@@ -966,6 +981,36 @@ body:not(.view-deck) .deck-col-body {
       </div>
     </div>
 
+    <div class="deck-col" id="colSaved" data-col="saved">
+      <div class="deck-col-head">
+        <span class="deck-col-title" data-i18n="header.col_saved">Guardados</span>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn" onclick="renderSavedFeed()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colSavedBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+        </div>
+      </div>
+      <div class="deck-col-body" id="colSavedBody">
+        <div id="pSaved" hidden>
+          <div class="saved-box">
+            <div class="saved-filters-row">
+              <div class="search-pills" id="savedNetFilters">
+                <button type="button" class="filter-pill active" data-saved-net="all" data-i18n="search.net_all">Ambas</button>
+                <button type="button" class="filter-pill" data-saved-net="bluesky">Bluesky</button>
+                <button type="button" class="filter-pill" data-saved-net="mastodon">Mastodon</button>
+              </div>
+              <span id="savedCountText" class="saved-count-text">0 guardados</span>
+            </div>
+            <div class="saved-search-wrap" style="margin-top:10px">
+              <svg class="ico search-ico"><use href="#i-search"/></svg>
+              <input type="text" id="savedSearchInput" placeholder="Filtrar guardados..." data-i18n-ph="saved.search_ph" autocomplete="off">
+            </div>
+          </div>
+          <div id="savedFeed"></div>
+        </div>
+        <div id="threadSaved" hidden></div>
+      </div>
+    </div>
+
     <div class="deck-col" id="colNotifs" data-col="notifs">
       <div class="deck-col-head">
         <span class="deck-col-title"><span data-i18n="header.col_notifs">Notificações</span> <span class="badge" id="deckNotifsBadge" hidden><span class="star-badge"></span><span id="deckBadgeCount"></span></span></span>
@@ -1072,6 +1117,8 @@ body:not(.view-deck) .deck-col-body {
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Compor & Menu</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColTimeline"> <span data-i18n="setup.deck_col_timeline">Timeline</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColExplore"> <span data-i18n="setup.deck_col_explore">Em Alta</span></label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColSearch"> <span data-i18n="setup.deck_col_search">Pesquisa</span></label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColSaved"> <span data-i18n="setup.deck_col_saved">Guardados</span></label>
             <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
           </div>
         </div>
@@ -1218,12 +1265,14 @@ const I18N = {
       col_compose_hub: "Compor & Menu",
       col_thread: "Conversa",
       col_user: "Perfil de utilizador",
-      col_search: "Pesquisa"
+      col_search: "Pesquisa",
+      col_saved: "Guardados"
     },
     tabs: {
       timeline: "Timeline",
       explore: "Em Alta",
       search: "Pesquisa",
+      saved: "Guardados",
       notifs: "Notificações",
       profile: "Perfil"
     },
@@ -1357,11 +1406,25 @@ const I18N = {
       tag_reply: "💬 Resposta",
       quota_err: "Limite de armazenamento atingido. Elimina rascunhos antigos."
     },
+    saved: {
+      title: "Guardados",
+      empty: "Ainda não tens publicações guardadas.",
+      empty_filter: "Nenhuma publicação guardada corresponde ao filtro.",
+      empty_tip: "Clica no ícone de marcador num post para o guardares e leres mais tarde.",
+      count_one: "1 publicação guardada",
+      count_many: "{n} publicações guardadas",
+      search_ph: "Filtrar por texto ou autor...",
+      toast_saved: "Publicação guardada!",
+      toast_removed: "Publicação removida dos guardados.",
+      quota_err: "Limite de armazenamento atingido. Remove alguns posts guardados."
+    },
     actions: {
       reply: "Responder",
       share: "Partilhar",
       like: "Gostar",
       liked: "Remover gosto",
+      save: "Guardar post",
+      saved_rm: "Remover dos guardados",
       delete: "Eliminar",
       view_thread: "Ver conversa",
       confirm_delete: "Tens a certeza que queres eliminar esta publicação?",
@@ -1466,6 +1529,8 @@ const I18N = {
       deck_col_compose: "Compor & Menu",
       deck_col_timeline: "Timeline (Feed unificado)",
       deck_col_explore: "Em Alta (Trending)",
+      deck_col_search: "Pesquisa",
+      deck_col_saved: "Guardados",
       deck_col_notifs: "Notificações",
       deck_col_profile: "Perfil",
       active_session: "Sessão ativa",
@@ -1509,12 +1574,14 @@ const I18N = {
       col_compose_hub: "Compose & Menu",
       col_thread: "Thread",
       col_user: "User profile",
-      col_search: "Search"
+      col_search: "Search",
+      col_saved: "Saved"
     },
     tabs: {
       timeline: "Timeline",
       explore: "Trending",
       search: "Search",
+      saved: "Saved",
       notifs: "Notifications",
       profile: "Profile"
     },
@@ -1648,11 +1715,25 @@ const I18N = {
       tag_reply: "💬 Reply",
       quota_err: "Storage limit reached. Delete older drafts."
     },
+    saved: {
+      title: "Saved Posts",
+      empty: "No saved posts yet.",
+      empty_filter: "No saved posts match this filter.",
+      empty_tip: "Click the bookmark icon on any post to save it for later.",
+      count_one: "1 saved post",
+      count_many: "{n} saved posts",
+      search_ph: "Filter by text or author...",
+      toast_saved: "Post saved!",
+      toast_removed: "Post removed from saved.",
+      quota_err: "Storage limit reached. Remove some saved posts."
+    },
     actions: {
       reply: "Reply",
       share: "Share",
       like: "Like",
       liked: "Unlike",
+      save: "Save post",
+      saved_rm: "Remove from saved",
       delete: "Delete",
       view_thread: "View thread",
       confirm_delete: "Are you sure you want to delete this post?",
@@ -1757,6 +1838,8 @@ const I18N = {
       deck_col_compose: "Compose & Menu",
       deck_col_timeline: "Timeline (Unified feed)",
       deck_col_explore: "Trending (Explore)",
+      deck_col_search: "Search",
+      deck_col_saved: "Saved",
       deck_col_notifs: "Notifications",
       deck_col_profile: "Profile",
       active_session: "Active session",
@@ -1936,7 +2019,7 @@ window.addEventListener("scroll", handleScrollNav, {passive: true});
 
 function applyDeckColumnVisibility() {
   if (viewMode !== "deck") return;
-  const cols = ["compose", "timeline", "explore", "notifs"];
+  const cols = ["compose", "timeline", "explore", "search", "saved", "notifs"];
   cols.forEach(c => {
     const el = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
     if (el) el.hidden = !deckColumns.includes(c);
@@ -1984,8 +2067,11 @@ function applyViewMode(mode) {
   if (mode === "deck") {
     $("pTimeline").hidden = false;
     $("pExplore").hidden = false;
+    if ($("pSearch")) $("pSearch").hidden = false;
+    if ($("pSaved")) $("pSaved").hidden = false;
     $("pNotifs").hidden = false;
     if (!exploreItems.length) loadExplore();
+    renderSavedFeed();
     if (!notifs) loadNotifs();
     if (!profileLoaded) loadProfile();
     applyDeckColumnVisibility();
@@ -2070,6 +2156,8 @@ const ICONS = {
   reply: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
   boost: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
   like: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  bookmark: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
+  bookmarkFill: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
   thread: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5z"/><path d="M18 9h2a2 2 0 0 1 2 2v7l-3-3h-5a2 2 0 0 1-2-2v-1"/></svg>',
   trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>'
 };
@@ -2285,6 +2373,160 @@ function renderQuote(q) {
   return card;
 }
 
+// --- SISTEMA DE POSTS GUARDADOS (BOOKMARKS) ---
+let savedFilterNet = "all";
+let savedFilterQuery = "";
+
+function getPostKey(it) {
+  if (!it) return "";
+  if (it.network && it.id) return it.network + ":" + it.id;
+  if (it.url) return it.url;
+  if (it.ref && typeof it.ref === "object") {
+    if (it.ref.uri) return "bsky:" + it.ref.uri;
+    if (it.ref.id) return "masto:" + it.ref.id;
+  }
+  return (it.network || "") + ":" + (it.time || "") + ":" + (it.handle || "");
+}
+
+function getSavedPosts() {
+  try {
+    const raw = localStorage.getItem("mastosky_saved_posts");
+    return raw ? JSON.parse(raw) : [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function persistSavedPosts(list) {
+  try {
+    localStorage.setItem("mastosky_saved_posts", JSON.stringify(list));
+    return true;
+  } catch (err) {
+    if (err.name === "QuotaExceededError" || err.code === 22) {
+      alert(t("saved.quota_err") || "Limite de armazenamento atingido.");
+    }
+    return false;
+  }
+}
+
+function isPostSaved(it) {
+  const key = getPostKey(it);
+  if (!key) return false;
+  const list = getSavedPosts();
+  return list.some(p => getPostKey(p) === key);
+}
+
+function toggleSavePost(it, btnEl) {
+  const key = getPostKey(it);
+  if (!key) return;
+  const list = getSavedPosts();
+  const idx = list.findIndex(p => getPostKey(p) === key);
+  let saved = false;
+
+  if (idx >= 0) {
+    list.splice(idx, 1);
+    saved = false;
+  } else {
+    const clone = { ...it, saved_at: Date.now() };
+    list.unshift(clone);
+    saved = true;
+  }
+
+  persistSavedPosts(list);
+
+  document.querySelectorAll(`.act-save[data-post-key="${CSS.escape(key)}"]`).forEach(b => {
+    b.classList.toggle("on", saved);
+    b.title = saved ? t("actions.saved_rm") : t("actions.save");
+    b.setAttribute("aria-label", b.title);
+    b.innerHTML = saved ? ICONS.bookmarkFill : ICONS.bookmark;
+  });
+
+  if (btnEl) {
+    btnEl.classList.toggle("on", saved);
+    btnEl.title = saved ? t("actions.saved_rm") : t("actions.save");
+    btnEl.setAttribute("aria-label", btnEl.title);
+    btnEl.innerHTML = saved ? ICONS.bookmarkFill : ICONS.bookmark;
+  }
+
+  const msg = $("msg");
+  if (msg) {
+    msg.className = "msg";
+    msg.textContent = saved ? t("saved.toast_saved") : t("saved.toast_removed");
+    setTimeout(() => {
+      if (msg.textContent === t("saved.toast_saved") || msg.textContent === t("saved.toast_removed")) {
+        msg.textContent = "";
+      }
+    }, 2500);
+  }
+
+  if (tab === "saved" || viewMode === "deck") {
+    renderSavedFeed();
+  }
+}
+
+function renderSavedFeed() {
+  const feed = $("savedFeed");
+  const countText = $("savedCountText");
+  if (!feed) return;
+
+  const allSaved = getSavedPosts();
+  let filtered = allSaved;
+
+  if (savedFilterNet && savedFilterNet !== "all") {
+    filtered = filtered.filter(p => p.network === savedFilterNet);
+  }
+
+  if (savedFilterQuery) {
+    const q = savedFilterQuery.toLowerCase();
+    filtered = filtered.filter(p => {
+      const txt = (p.text || "").toLowerCase();
+      const author = (p.name || p.handle || "").toLowerCase();
+      return txt.includes(q) || author.includes(q);
+    });
+  }
+
+  if (countText) {
+    countText.textContent = filtered.length === 1
+      ? t("saved.count_one")
+      : t("saved.count_many", { n: filtered.length });
+  }
+
+  feed.replaceChildren();
+
+  if (!filtered.length) {
+    const empty = el("div", "drafts-empty");
+    empty.innerHTML = `
+      <svg class="ico" style="width:36px;height:36px;opacity:0.4"><use href="#i-bookmark"/></svg>
+      <div><b>${allSaved.length ? t("saved.empty_filter") : t("saved.empty")}</b></div>
+      <div style="font-size:12.5px;max-width:340px">${t("saved.empty_tip")}</div>
+    `;
+    feed.append(empty);
+    return;
+  }
+
+  filtered.forEach(it => {
+    const p = postCard(it);
+    feed.append(p);
+  });
+}
+
+function initSavedEvents() {
+  document.querySelectorAll("#savedNetFilters button").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll("#savedNetFilters button").forEach(b => b.classList.toggle("active", b === btn));
+      savedFilterNet = btn.dataset.savedNet || "all";
+      renderSavedFeed();
+    };
+  });
+  const sInp = $("savedSearchInput");
+  if (sInp) {
+    sInp.oninput = (e) => {
+      savedFilterQuery = (e.target.value || "").trim();
+      renderSavedFeed();
+    };
+  }
+}
+
 function postCard(it, o = {}) {
   const p = el("article", "post " + it.network + (o.focus ? " focus" : ""));
   if (it.boosted_by) p.append(el("div", "boost", t("post.shared_by", {name: it.boosted_by})));
@@ -2369,7 +2611,19 @@ function postCard(it, o = {}) {
   bL.innerHTML = ICONS.like + (it.likes ? '<span>' + Number(it.likes) + '</span>' : '');
   bL.onclick = () => act(it, "like", bL);
 
-  acts.append(bR, bB, bL);
+  const postKey = getPostKey(it);
+  const isSaved = isPostSaved(it);
+  const bS = el("button", "act-btn act-save" + (isSaved ? " on" : ""));
+  bS.dataset.postKey = postKey;
+  bS.title = isSaved ? t("actions.saved_rm") : t("actions.save");
+  bS.setAttribute("aria-label", bS.title);
+  bS.innerHTML = isSaved ? ICONS.bookmarkFill : ICONS.bookmark;
+  bS.onclick = (e) => {
+    e.stopPropagation();
+    toggleSavePost(it, bS);
+  };
+
+  acts.append(bR, bB, bL, bS);
 
   if (it.is_own) {
     const bD = el("button", "act-btn act-del");
@@ -3175,6 +3429,7 @@ function setTab(newTab) {
       timeline: "colTimeline",
       explore: "colExplore",
       search: "colSearch",
+      saved: "colSaved",
       notifs: "colNotifs",
       profile: "colCompose"
     };
@@ -3183,16 +3438,19 @@ function setTab(newTab) {
       $(colId).hidden = false;
       $(colId).scrollIntoView({behavior: "smooth", inline: "start"});
     }
+    if (newTab === "saved") renderSavedFeed();
   } else {
     $("pTimeline").hidden = newTab !== "timeline";
     $("pExplore").hidden = newTab !== "explore";
     $("pSearch").hidden = newTab !== "search";
+    if ($("pSaved")) $("pSaved").hidden = newTab !== "saved";
     $("pNotifs").hidden = newTab !== "notifs";
     $("pProfile").hidden = newTab !== "profile";
-    ["Timeline", "Explore", "Search", "Notifs", "Profile"].forEach(c => {
+    ["Timeline", "Explore", "Search", "Saved", "Notifs", "Profile"].forEach(c => {
       const th = $("thread" + c);
       if (th) { th.hidden = true; th.replaceChildren(); }
     });
+    if (newTab === "saved") renderSavedFeed();
   }
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === newTab));
   document.querySelectorAll(".side-nav-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === newTab));
@@ -5547,7 +5805,7 @@ async function openSetup(mandatory = false) {
   if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
   if ($("cfgViewModeSelect")) $("cfgViewModeSelect").value = viewMode;
   if ($("deckColsConfig")) $("deckColsConfig").hidden = viewMode !== "deck";
-  const colIds = ["compose", "timeline", "explore", "notifs"];
+  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs"];
   colIds.forEach(c => {
     const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
     if (chk) chk.checked = deckColumns.includes(c);
@@ -5629,7 +5887,7 @@ if ($("cfgViewModeSelect")) {
   $("cfgViewModeSelect").value = viewMode;
   $("cfgViewModeSelect").onchange = (e) => applyViewMode(e.target.value);
 }
-const deckColIds = ["compose", "timeline", "explore", "notifs"];
+const deckColIds = ["compose", "timeline", "explore", "search", "saved", "notifs"];
 deckColIds.forEach(c => {
   const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
   if (chk) {
@@ -5685,6 +5943,7 @@ if ($("sideRefreshBtn")) $("sideRefreshBtn").onclick = () => {
   load();
   loadNotifs();
   if (tab === "explore") loadExplore();
+  if (tab === "saved") renderSavedFeed();
   if (tab === "profile") loadProfile(true);
 };
 if ($("sideSettingsBtn")) $("sideSettingsBtn").onclick = () => openSetup(false);
@@ -5756,18 +6015,23 @@ applyI18n();
 applyViewMode(viewMode);
 updateDraftsBadge();
 checkAndRestoreAutoDraft();
+initSavedEvents();
 
-const initTab = location.hash === "#notifs" ? "notifs" : (location.hash === "#explore" ? "explore" : (location.hash === "#profile" ? "profile" : "timeline"));
+const validTabs = ["timeline", "explore", "search", "saved", "notifs", "profile"];
+const hashTab = (location.hash || "").replace("#", "");
+const initTab = validTabs.includes(hashTab) ? hashTab : "timeline";
 setTab(initTab);
 load();
 loadNotifs();
 if (initTab === "explore") loadExplore();
+if (initTab === "saved") renderSavedFeed();
 if (initTab === "profile") loadProfile();
 checkAppUpdate(false);
 setInterval(() => {
   load();
   loadNotifs();
   if (tab === "explore") loadExplore();
+  if (tab === "saved") renderSavedFeed();
   if (tab === "profile") loadProfile(true);
 }, 120000);
 setInterval(() => checkAppUpdate(false), 1800000);
