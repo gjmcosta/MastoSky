@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Timeline unificada Bluesky + Mastodon. Corre só no teu Mac (127.0.0.1)."""
-import base64, html, json, os, re, stat, threading, urllib.error, urllib.parse, urllib.request, uuid
+import base64, binascii, html, json, os, re, stat, threading, urllib.error, urllib.parse, urllib.request, uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from html.parser import HTMLParser
@@ -43,6 +43,7 @@ def load_cfg():
     return {}
 
 
+MAX_BODY = 32 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens em base64)
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
 
@@ -792,29 +793,80 @@ class H(BaseHTTPRequestHandler):
         s.send(404, {"error": "not found"})
 
     def do_POST(s):
+        try:
+            s._do_post()
+        except Exception:
+            # Resposta genérica: nunca expor tracebacks nem segredos.
+            try:
+                s.send(500, {"error": "Erro interno do servidor."})
+            except Exception:
+                pass
+
+    def _read_json(s):
+        """Lê o corpo JSON. Devolve (dict, None) ou (None, (código, mensagem))."""
+        try:
+            n = int(s.headers.get("Content-Length", 0))
+        except (TypeError, ValueError):
+            return None, (400, "Content-Length inválido.")
+        if n < 0:
+            return None, (400, "Content-Length inválido.")
+        if n > MAX_BODY:
+            return None, (413, "Pedido demasiado grande.")
+        try:
+            d = json.loads(s.rfile.read(n) or b"{}")
+        except (ValueError, UnicodeDecodeError):
+            return None, (400, "JSON inválido")
+        if not isinstance(d, dict):
+            return None, (400, "JSON inválido")
+        return d, None
+
+    def _do_post(s):
         global CFG, CLIENTS
         if not s.allowed():
             return s.send(403, {"error": "forbidden"})
-        d = json.loads(s.rfile.read(int(s.headers.get("Content-Length", 0))) or b"{}")
+        d, err = s._read_json()
+        if err:
+            return s.send(err[0], {"error": err[1]})
         results = {}
         if s.path == "/api/post":
             text = (d.get("text") or "").strip()
             ref = d.get("reply")  # {"network": ..., "ref": {...}}
+            if ref is not None and not (isinstance(ref, dict) and isinstance(ref.get("ref"), dict)
+                                        and isinstance(ref.get("network"), str)):
+                return s.send(400, {"error": "Resposta inválida."})
             spoiler = (d.get("spoiler") or "").strip() or None
             poll = d.get("poll")
+            if poll is not None and not isinstance(poll, dict):
+                return s.send(400, {"error": "Sondagem inválida."})
             targets = [ref["network"]] if ref else d.get("targets", [])
+            if (not isinstance(targets, list) or not targets
+                    or not all(isinstance(t, str) for t in targets)):
+                return s.send(400, {"error": "Escolhe pelo menos uma rede."})
+            unknown = [t for t in targets if t not in CLIENTS]
+            if unknown:
+                return s.send(400, {"error": "Rede não configurada: " + ", ".join(unknown)})
             raw_images = d.get("images") or []
+            if not isinstance(raw_images, list):
+                return s.send(400, {"error": "Imagens inválidas."})
             parsed_images = []
             for img in raw_images:
+                if not isinstance(img, dict):
+                    return s.send(400, {"error": "Imagens inválidas."})
                 raw_data = img.get("data", "")
+                if not isinstance(raw_data, str):
+                    return s.send(400, {"error": "Imagens inválidas."})
                 if "," in raw_data:
                     hdr, b64 = raw_data.split(",", 1)
                     mime = hdr.split(";")[0].replace("data:", "") or "image/jpeg"
                 else:
                     mime = img.get("mime") or "image/jpeg"
                     b64 = raw_data
+                try:
+                    img_bytes = base64.b64decode(b64, validate=True)
+                except (binascii.Error, ValueError):
+                    return s.send(400, {"error": "Imagem com codificação inválida."})
                 parsed_images.append({
-                    "bytes": base64.b64decode(b64),
+                    "bytes": img_bytes,
                     "mime": mime,
                     "alt": img.get("alt", ""),
                     "aspectRatio": img.get("aspectRatio")
@@ -840,7 +892,7 @@ class H(BaseHTTPRequestHandler):
         if s.path == "/api/setup":
             new_cfg = dict(CFG)
             new_cfg["port"] = PORT
-            if "bluesky" in d:
+            if isinstance(d.get("bluesky"), dict):
                 b = d["bluesky"]
                 h = (b.get("handle") or "").strip().lstrip("@")
                 p = (b.get("app_password") or "").strip()
@@ -851,7 +903,7 @@ class H(BaseHTTPRequestHandler):
                 elif not h and not p and "bluesky" in new_cfg:
                     new_cfg.pop("bluesky", None)
 
-            if "mastodon" in d:
+            if isinstance(d.get("mastodon"), dict):
                 m = d["mastodon"]
                 inst = (m.get("instance") or "").strip().rstrip("/")
                 tok = (m.get("token") or "").strip()

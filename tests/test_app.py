@@ -1,4 +1,5 @@
 """Testes unitários dos parsers do MastoSky. Sem rede e sem config.json."""
+import json
 import os
 import stat
 import sys
@@ -252,6 +253,78 @@ class SecurityHeadersTests(unittest.TestCase):
     def test_hls_is_vendored(self):
         self.assertTrue((app.DIR / "vendor" / "hls.min.js").exists())
         self.assertNotIn("cdn.jsdelivr", (app.DIR / "index.html").read_text())
+
+
+class PostHandlerTests(unittest.TestCase):
+    def _post(self, path, body, length=None):
+        import io
+        raw = body if isinstance(body, bytes) else json.dumps(body).encode()
+        h = object.__new__(app.H)
+        h.path = path
+        h.headers = {"Host": "127.0.0.1:%d" % app.PORT,
+                     "Content-Length": str(len(raw)) if length is None else length}
+        h.rfile = io.BytesIO(raw)
+        h.wfile = io.BytesIO()
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        h.do_POST()
+        code = [v for k, v in h.sent if k == "code"][0]
+        return code, json.loads(h.wfile.getvalue())
+
+    def setUp(self):
+        from unittest import mock
+        self.client = mock.Mock()
+        p = mock.patch.dict(app.CLIENTS, {"bluesky": self.client}, clear=True)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_invalid_json(self):
+        code, r = self._post("/api/post", b"{nao e json")
+        self.assertEqual(code, 400)
+        self.assertEqual(r["error"], "JSON inválido")
+
+    def test_json_not_dict(self):
+        self.assertEqual(self._post("/api/post", b"[1,2]")[0], 400)
+
+    def test_body_too_large(self):
+        code, _ = self._post("/api/post", b"{}", length=str(app.MAX_BODY + 1))
+        self.assertEqual(code, 413)
+
+    def test_bad_content_length(self):
+        self.assertEqual(self._post("/api/post", b"{}", length="abc")[0], 400)
+
+    def test_unknown_target(self):
+        code, r = self._post("/api/post", {"text": "x", "targets": ["mastodon"]})
+        self.assertEqual(code, 400)
+        self.assertIn("mastodon", r["error"])
+
+    def test_no_targets(self):
+        self.assertEqual(self._post("/api/post", {"text": "x", "targets": []})[0], 400)
+        self.assertEqual(self._post("/api/post", {"text": "x", "targets": "bluesky"})[0], 400)
+
+    def test_invalid_base64(self):
+        code, _ = self._post("/api/post", {"text": "x", "targets": ["bluesky"],
+                                           "images": [{"data": "data:image/png;base64,@@@"}]})
+        self.assertEqual(code, 400)
+        self.client.post.assert_not_called()
+
+    def test_bad_images_shape(self):
+        self.assertEqual(self._post("/api/post", {"targets": ["bluesky"], "images": "x"})[0], 400)
+        self.assertEqual(self._post("/api/post", {"targets": ["bluesky"], "images": [5]})[0], 400)
+
+    def test_valid_post(self):
+        code, r = self._post("/api/post", {"text": " olá ", "targets": ["bluesky"]})
+        self.assertEqual((code, r), (200, {"bluesky": "ok"}))
+        self.assertEqual(self.client.post.call_args[0][0], "olá")
+
+    def test_unexpected_error_is_generic_500(self):
+        from unittest import mock
+        with mock.patch.object(app.H, "_read_json", side_effect=RuntimeError("segredo-token")):
+            code, r = self._post("/api/post", {})
+        self.assertEqual(code, 500)
+        self.assertNotIn("segredo", json.dumps(r))
 
 
 if __name__ == "__main__":
