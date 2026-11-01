@@ -126,6 +126,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .tool:disabled,.tool[disabled]{opacity:.35;pointer-events:none}
 @media (pointer: coarse){.tool{min-width:44px;height:44px}}
 .tool--network{--n1:var(--net-mastodon);--n2:var(--net-bluesky)}
+.tool-label{font-size:12px;font-weight:600;white-space:nowrap}
 textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;color:var(--ink);font:15px/1.45 var(--sans)}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
 .bar-left{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -287,11 +288,14 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
   <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.8 16.5 L9 11.5 L12.5 15 L15 12.5 L20.2 17.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.5" cy="8.5" r="1.6" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-poll" viewBox="0 0 24 24"><path d="M4 6.5 H13 M4 12 H17.5 M4 17.5 H8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.5" cy="6.5" r="1.9" fill="currentColor" stroke="none"/><circle cx="20.5" cy="12" r="1.9" fill="currentColor" stroke="none"/><circle cx="11.5" cy="17.5" r="1.9" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-cw" viewBox="0 0 24 24"><path d="M2.5 12 C5 7.5 8.5 5.5 12 5.5 C15.5 5.5 19 7.5 21.5 12 C19 16.5 15.5 18.5 12 18.5 C8.5 18.5 5 16.5 2.5 12 Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 20 L19.5 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.1" fill="currentColor" stroke="none"/></symbol>
-  <symbol id="i-net-both" viewBox="0 0 24 24"><path d="M9.5 13.5 L14.5 10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="15.5" r="3" fill="currentColor" stroke="none" style="fill:var(--n1,currentColor)"/><circle cx="17.5" cy="8.5" r="3" fill="currentColor" stroke="none" style="fill:var(--n2,currentColor)"/></symbol>
-  <symbol id="i-net-masto" viewBox="0 0 24 24"><circle cx="6.5" cy="15.5" r="3" fill="currentColor" stroke="none" style="fill:var(--n1,currentColor)"/><circle cx="17.5" cy="8.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
-  <symbol id="i-net-bsky" viewBox="0 0 24 24"><circle cx="6.5" cy="15.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="17.5" cy="8.5" r="3" fill="currentColor" stroke="none" style="fill:var(--n2,currentColor)"/></symbol>
+  <symbol id="i-net-both" viewBox="0 0 24 24"><path d="M9.5 13.5 L14.5 10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" opacity="0.6"/><circle cx="6.5" cy="15.5" r="3.4" fill="#6364FF"/><circle cx="17.5" cy="8.5" r="3.4" fill="#0085FF"/></symbol>
+  <symbol id="i-net-masto" viewBox="0 0 24 24"><circle cx="6.5" cy="15.5" r="5" fill="none" stroke="#6364FF" stroke-width="1.2" opacity="0.7"/><circle cx="6.5" cy="15.5" r="3.4" fill="#6364FF"/><circle cx="17.5" cy="8.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"/></symbol>
+  <symbol id="i-net-bsky" viewBox="0 0 24 24"><circle cx="6.5" cy="15.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"/><circle cx="17.5" cy="8.5" r="5" fill="none" stroke="#0085FF" stroke-width="1.2" opacity="0.7"/><circle cx="17.5" cy="8.5" r="3.4" fill="#0085FF"/></symbol>
+  <symbol id="i-vis-public" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.75"/><ellipse cx="12" cy="12" rx="3.6" ry="8.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M3.5 12 H20.5" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-vis-unlisted" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M8 10.5 V7 A4 4 0 0 1 16 7 V8.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-vis-private" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M8 10.5 V7 A4 4 0 0 1 16 7 V10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-vis-direct" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="m4.5 7 7.5 5.5 7.5-5.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12.5" r="1.8" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-language" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.75"/><ellipse cx="12" cy="12" rx="3.8" ry="9" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M3 12 H21" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
-  <symbol id="i-visibility" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><path d="M8.3 8.6 Q6 12 8.3 15.4 M15.7 8.6 Q18 12 15.7 15.4 M5.3 5.6 Q1.4 12 5.3 18.4 M18.7 5.6 Q22.6 12 18.7 18.4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-cross" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 7H9a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m8 21-4-4 4-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17h11a4 4 0 0 0 4-4v-2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
@@ -407,9 +411,11 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
           </button>
           <button type="button" class="tool tool--network" id="netToggleBtn" title="Rede onde publicar" data-i18n-title="composer.net_target_title" aria-label="Rede onde publicar">
             <svg class="ico" id="netToggleIcon"><use href="#i-net-both"/></svg>
+            <span id="netToggleText" class="tool-label">Ambas</span>
           </button>
           <button type="button" class="tool" id="visToggleBtn" title="Visibilidade no Mastodon" data-i18n-title="composer.vis_title" aria-label="Visibilidade no Mastodon" hidden>
-            <svg class="ico"><use href="#i-visibility"/></svg>
+            <svg class="ico" id="visToggleIcon"><use href="#i-vis-public"/></svg>
+            <span id="visToggleText" class="tool-label">Público</span>
           </button>
         </div>
         <select id="targetSelect" hidden></select>
@@ -597,6 +603,7 @@ const I18N = {
       target_all: "Ambas as redes (Bluesky + Mastodon)",
       target_only_bsky: "Apenas Bluesky",
       target_only_masto: "Apenas Mastodon",
+      net_badge_both: "Ambas",
       vis_title: "Visibilidade no Mastodon",
       vis_label: "Visibilidade no Mastodon: {vis}",
       vis_public: "Público",
@@ -775,6 +782,7 @@ const I18N = {
       target_all: "Both networks (Bluesky + Mastodon)",
       target_only_bsky: "Bluesky only",
       target_only_masto: "Mastodon only",
+      net_badge_both: "Both",
       vis_title: "Mastodon visibility",
       vis_label: "Mastodon visibility: {vis}",
       vis_public: "Public",
@@ -1856,6 +1864,7 @@ async function loadUserFeed(feedWrap, isMore = false) {
 function updateNetToggleUI() {
   const btn = $("netToggleBtn");
   const ico = $("netToggleIcon");
+  const txt = $("netToggleText");
   const sel = $("targetSelect");
   if (!btn || !ico || !sel) return;
   if (networks.length <= 1 || reply) {
@@ -1866,12 +1875,24 @@ function updateNetToggleUI() {
   const val = sel.value;
   if (val === "all") {
     ico.querySelector("use").setAttribute("href", "#i-net-both");
+    if (txt) {
+      txt.textContent = t("composer.net_badge_both");
+      txt.style.color = "";
+    }
     btn.title = t("composer.target_all");
   } else if (val === "mastodon") {
     ico.querySelector("use").setAttribute("href", "#i-net-masto");
+    if (txt) {
+      txt.textContent = "Mastodon";
+      txt.style.color = "var(--net-mastodon, #6364FF)";
+    }
     btn.title = t("composer.target_only_masto");
   } else if (val === "bluesky") {
     ico.querySelector("use").setAttribute("href", "#i-net-bsky");
+    if (txt) {
+      txt.textContent = "Bluesky";
+      txt.style.color = "var(--net-bluesky, #0085FF)";
+    }
     btn.title = t("composer.target_only_bsky");
   }
   btn.setAttribute("aria-label", btn.title);
@@ -1879,6 +1900,8 @@ function updateNetToggleUI() {
 
 function updateVisToggleUI() {
   const btn = $("visToggleBtn");
+  const ico = $("visToggleIcon");
+  const txt = $("visToggleText");
   const sel = $("mastoVisibility");
   if (!btn || !sel) return;
   const targets = selected();
@@ -1888,7 +1911,11 @@ function updateVisToggleUI() {
   }
   btn.hidden = false;
   const val = sel.value || "public";
+  if (ico && ico.querySelector("use")) {
+    ico.querySelector("use").setAttribute("href", "#i-vis-" + val);
+  }
   const visName = t("composer.vis_" + val) || val;
+  if (txt) txt.textContent = visName;
   btn.title = t("composer.vis_label", {vis: visName});
   btn.setAttribute("aria-label", btn.title);
 }
