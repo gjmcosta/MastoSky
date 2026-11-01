@@ -2826,26 +2826,28 @@ function selected() {
 }
 
 async function processImage(file) {
-  if (file.type === "image/gif") {
+  // Ler dados do ficheiro via FileReader (compatível com Safari/WebKit e Chromium para blobs de clipboard)
+  const dataUrl = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error("Falha ao ler o ficheiro de imagem."));
+    r.readAsDataURL(file);
+  });
+
+  const isGif = (file.type === "image/gif") || (typeof dataUrl === "string" && dataUrl.startsWith("data:image/gif"));
+  if (isGif) {
     if (file.size > 1000000) {
-      throw new Error("O GIF \"" + (file.name || "imagem") + "\" excede o limite de 1 MB.");
+      throw new Error("O GIF " + (file.name ? `"${file.name}" ` : "") + "excede o limite de 1 MB.");
     }
-    return new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res({ data: r.result, mime: file.type, alt: "", aspectRatio: null });
-      r.onerror = rej;
-      r.readAsDataURL(file);
-    });
+    return { data: dataUrl, mime: "image/gif", alt: "", aspectRatio: null };
   }
 
   return new Promise((resolve, reject) => {
     const img = new Image();
-    const url = URL.createObjectURL(file);
     img.onload = () => {
-      URL.revokeObjectURL(url);
       let { naturalWidth: w, naturalHeight: h } = img;
       const maxDim = 2000;
-      let targetW = w, targetH = h;
+      let targetW = w || 800, targetH = h || 600;
       if (w > maxDim || h > maxDim) {
         if (w > h) {
           targetW = maxDim;
@@ -2859,21 +2861,24 @@ async function processImage(file) {
       canvas.width = targetW;
       canvas.height = targetH;
       const ctx = canvas.getContext("2d");
+      // Fundo branco para PNGs transparentes convertidos para JPEG
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, targetW, targetH);
       ctx.drawImage(img, 0, 0, targetW, targetH);
       let quality = 0.85;
-      let dataUrl = canvas.toDataURL("image/jpeg", quality);
-      if (dataUrl.length > 1300000) {
-        dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+      let outUrl = canvas.toDataURL("image/jpeg", quality);
+      if (outUrl.length > 1300000) {
+        outUrl = canvas.toDataURL("image/jpeg", 0.7);
       }
       resolve({
-        data: dataUrl,
+        data: outUrl,
         mime: "image/jpeg",
         alt: "",
         aspectRatio: { width: targetW, height: targetH }
       });
     };
-    img.onerror = () => reject(new Error("Não foi possível carregar " + file.name));
-    img.src = url;
+    img.onerror = () => reject(new Error("Não foi possível processar a imagem. Formato não suportado."));
+    img.src = dataUrl;
   });
 }
 
@@ -2941,27 +2946,66 @@ async function handleImageFiles(files) {
   update();
 }
 
-async function handlePasteEvent(e) {
-  const cd = e.clipboardData || window.clipboardData;
-  if (!cd) return;
+function isImageCandidate(f) {
+  if (!f) return false;
+  if (f.type && f.type.startsWith("image/")) return true;
+  if (f.name && /\.(png|jpe?g|gif|webp|bmp|svg|avif|heic|heif|tiff?)$/i.test(f.name)) return true;
+  // Se kind era "file" e tem tamanho > 0, é candidato a imagem (comum em screenshots colados)
+  return Boolean(f.size && f.size > 0);
+}
 
+async function extractImageFiles(cd) {
+  if (!cd) return [];
   const files = [];
-  if (cd.items) {
-    for (const it of cd.items) {
-      if (it.type && it.type.startsWith("image/")) {
-        const f = it.getAsFile();
-        if (f) files.push(f);
+
+  // 1. Procurar em cd.items (DataTransferItemList)
+  if (cd.items && cd.items.length) {
+    for (let i = 0; i < cd.items.length; i++) {
+      const it = cd.items[i];
+      if (it.kind === "file" || (it.type && it.type.startsWith("image/"))) {
+        try {
+          const f = it.getAsFile();
+          if (f && isImageCandidate(f)) {
+            files.push(f);
+          }
+        } catch (_) {}
       }
     }
   }
+
+  // 2. Fallback: procurar em cd.files (FileList)
   if (!files.length && cd.files && cd.files.length) {
-    for (const f of cd.files) {
-      if (f.type && f.type.startsWith("image/")) {
+    for (let i = 0; i < cd.files.length; i++) {
+      const f = cd.files[i];
+      if (f && isImageCandidate(f)) {
         files.push(f);
       }
     }
   }
 
+  // 3. Fallback: verificar se HTML contém imagem embutida (data URI)
+  if (!files.length) {
+    try {
+      const html = cd.getData("text/html");
+      if (html) {
+        const m = html.match(/<img[^>]+src=["'](data:image\/[^"']+)["']/i);
+        if (m) {
+          const res = await fetch(m[1]);
+          const blob = await res.blob();
+          files.push(blob);
+        }
+      }
+    } catch (_) {}
+  }
+
+  return files;
+}
+
+async function handlePasteEvent(e) {
+  const cd = e.clipboardData || window.clipboardData;
+  if (!cd) return;
+
+  const files = await extractImageFiles(cd);
   if (files.length > 0) {
     e.preventDefault();
     await handleImageFiles(files);
@@ -2986,7 +3030,7 @@ if ($("composeSection")) {
   });
   $("composeSection").addEventListener("drop", async (e) => {
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-      const imgFiles = Array.from(e.dataTransfer.files).filter(f => f.type && f.type.startsWith("image/"));
+      const imgFiles = Array.from(e.dataTransfer.files).filter(f => isImageCandidate(f));
       if (imgFiles.length) {
         e.preventDefault();
         await handleImageFiles(imgFiles);
@@ -2994,6 +3038,22 @@ if ($("composeSection")) {
     }
   });
 }
+
+// Ouvir paste global no documento quando o utilizador está na janela do compositor
+document.addEventListener("paste", async (e) => {
+  const active = document.activeElement;
+  if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA") && active.id !== "text") {
+    return; // Não intercetar inputs fora do compositor (ex: definições ou pesquisa)
+  }
+  if (e.target === $("text")) return; // Já tratado pelo listener específico
+  const cd = e.clipboardData || window.clipboardData;
+  if (!cd) return;
+  const files = await extractImageFiles(cd);
+  if (files.length > 0) {
+    e.preventDefault();
+    await handleImageFiles(files);
+  }
+});
 
 function renderCW() {
   const row = $("cwRow");
@@ -3584,11 +3644,11 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   // Nome e handle
   const textLeft = avX + avR * 2 + 20;
   ctx.fillStyle = "#EEF0FF";
-  ctx.font = "bold 30px system-ui, sans-serif";
+  ctx.font = "bold 30px system-ui, -apple-system, sans-serif";
   ctx.fillText(it.name || it.handle, textLeft, avY + 32);
 
   ctx.fillStyle = "#9AA0D6";
-  ctx.font = "22px ui-monospace, monospace";
+  ctx.font = "20px system-ui, -apple-system, sans-serif";
   ctx.fillText(it.handle + " · " + LABEL[it.network] + (it.time ? " · " + ago(it.time) : ""), textLeft, avY + 62);
 
   // Distintivo da rede
@@ -3683,7 +3743,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
 
   if (it.url) {
     ctx.fillStyle = "#4DB2FF";
-    ctx.font = "17px ui-monospace, monospace";
+    ctx.font = "16px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "right";
     const shortUrl = it.url.replace(/^https?:\/\//, "");
     ctx.fillText(shortUrl.length > 40 ? shortUrl.slice(0, 38) + "..." : shortUrl, cardX + cardW, footY);
