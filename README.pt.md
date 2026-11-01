@@ -16,6 +16,10 @@
 ## ✨ Funcionalidades
 
 * **🔄 Timeline Unificada:** Visualiza os posts das pessoas que segues no Bluesky e no Mastodon misturados cronologicamente numa única página.
+* **🗂️ Vista em Colunas (Deck View):** Alterna com 1 clique entre a timeline clássica de coluna única e a visualização em múltiplas colunas (estilo TweetDeck / Mastodon Avançado) com colunas personalizáveis (Compositor, Timeline, Em Alta, Notificações, Perfil) e coluna lateral de detalhes para discussões e perfis.
+* **🌍 Interface Bilingue (i18n):** Alternador rápido com 1 clique entre Português e Inglês com persistência de preferências e tradução completa de toda a interface, mensagens e diálogos.
+* **🧭 Modos de Navegação Flexíveis:** Escolhe a disposição que preferires: barra lateral flutuante tipo *dock*, cabeçalho fixo no topo (*sticky*) ou disposição estática.
+* **🎨 Sistema de Ícones SVG de Marca:** Ícones geométricos minimalistas com indicadores de estado dedicados para visibilidade no Mastodon (Público, Não listado, Seguidores, Direta) e nós coloridos das redes.
 * **🔥 Aba "Em Alta":** Descobre o que está a ser mais partilhado e com mais interação em ambas as redes (mesmo de perfis que não segues).
 * **🔔 Notificações Centralizadas:** Vê respostas, gostos, partilhas (*boosts* / *reposts*) e citações com contador de novos alertas em tempo real.
 * **👤 Perfil e Publicações Próprias:** Visualiza os teus perfis do Bluesky e Mastodon lado a lado com avatares, bios e estatísticas de seguidores, além da timeline dos teus próprios posts com filtros rápidos e opção de apagar.

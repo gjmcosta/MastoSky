@@ -16,6 +16,10 @@
 ## ✨ Features
 
 * **🔄 Unified Timeline:** Read posts from the people you follow on both Bluesky and Mastodon, seamlessly interleaved in chronological order.
+* **🗂️ Multi-Column Deck View:** Seamlessly switch between a classic single-column timeline and a TweetDeck / Mastodon Advanced-style multi-column layout with customizable columns (Composer, Timeline, Trending, Notifications, Profile) and a dedicated side detail panel for threads and user inspection.
+* **🌍 Bilingual Interface (i18n):** Instant 1-click toggle between Portuguese and English with persistent user preference and complete translation of all feeds, dialogs, and notices.
+* **🧭 Flexible Navigation Modes:** Customize your browsing flow with a floating side-dock navigation rail, a sticky top header, or a static layout.
+* **🎨 Custom Minimalist Brand Icons:** Crisp geometric SVG icons with stateful Mastodon visibility indicators (Public, Unlisted, Followers, Direct) and vibrant network constellation badges.
 * **🔥 Explore / "What's Hot":** Discover trending posts and viral conversations from both networks, even from accounts you don't follow.
 * **🔔 Centralized Notifications:** Track mentions, replies, likes, boosts, and quote posts in real-time with an unread badge.
 * **👤 Profiles & Author Feeds:** View your Bluesky and Mastodon profiles side-by-side with avatars, bios, follower statistics, and your own published posts with fast network filtering and post deletion.
