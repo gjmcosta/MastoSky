@@ -164,17 +164,29 @@ class Clean(HTMLParser):
         super().__init__()
         s.o, s.sp, s.hide = [], [], 0
         s.strip_quote_inline = strip_quote_inline
-        s.quote_inline_depth = 0
+        s.qi_stack = []  # tags abertas dentro de um bloco quote-inline (o primeiro é a raiz)
+
+    _VOID = frozenset(("br", "img", "hr", "input", "meta", "link", "wbr"))
+
+    def handle_startendtag(s, t, a):
+        # <br/> & afins não abrem nada: não pode haver fecho correspondente.
+        if s.qi_stack:
+            return
+        if t == "br":
+            s.o.append("<br>")
+            return
+        s.handle_starttag(t, a)
+        s.handle_endtag(t)
 
     def handle_starttag(s, t, a):
         a = dict(a)
-        if s.strip_quote_inline and ("quote-inline" in (a.get("class") or "")):
-            s.quote_inline_depth += 1
-            s.hide += 1
+        if s.qi_stack:
+            if t not in s._VOID:
+                s.qi_stack.append(t)
             return
-        if s.quote_inline_depth > 0:
-            if t in ("p", "div", "span", "a"):
-                s.quote_inline_depth += 1
+        if s.strip_quote_inline and ("quote-inline" in (a.get("class") or "")):
+            s.qi_stack.append(t)
+            s.hide += 1
             return
         if t == "p" and s.o:
             s.o.append("<br><br>")
@@ -189,10 +201,13 @@ class Clean(HTMLParser):
             s.o.append(f'<a href="{html.escape(h, True)}" target="_blank" rel="noopener noreferrer">' if ok else "<a>")
 
     def handle_endtag(s, t):
-        if s.quote_inline_depth > 0:
-            s.quote_inline_depth -= 1
-            if s.quote_inline_depth == 0:
-                s.hide -= 1
+        if s.qi_stack:
+            # só fecha se a tag foi realmente aberta dentro do bloco
+            if t in s.qi_stack:
+                while s.qi_stack and s.qi_stack.pop() != t:
+                    pass
+                if not s.qi_stack:
+                    s.hide -= 1
             return
         if t == "a":
             s.o.append("</a>")

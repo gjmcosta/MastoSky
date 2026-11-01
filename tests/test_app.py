@@ -547,5 +547,31 @@ class ThreadSafetyTests(unittest.TestCase):
         self.assertLessEqual(len(m.cache), 501)
 
 
+class CleanQuoteInlineTests(unittest.TestCase):
+    def test_self_closed_br_inside_quote_inline(self):
+        h = '<p class="quote-inline">RE: <a href="https://x">x</a><br/></p><p>texto</p>'
+        self.assertEqual(app.clean(h, strip_quote_inline=True), "texto")
+
+    def test_unclosed_br_inside_quote_inline(self):
+        h = '<p class="quote-inline">RE: <a href="https://x">x</a><br></p><p>texto</p>'
+        self.assertEqual(app.clean(h, strip_quote_inline=True), "texto")
+
+    def test_nested_tags_inside_quote_inline(self):
+        h = '<p class="quote-inline"><span>RE:</span> <a href="https://x"><span>x</span></a></p><p>depois</p>'
+        self.assertEqual(app.clean(h, strip_quote_inline=True), "depois")
+
+    def test_br_self_closed_outside_is_kept(self):
+        self.assertEqual(app.clean("a<br/>b", strip_quote_inline=True), "a<br>b")
+        self.assertEqual(app.clean("a<br/>b"), "a<br>b")
+
+    def test_content_after_block_not_swallowed_and_stray_end_tags(self):
+        h = '<p class="quote-inline">RE: x</p></span><p>um</p><p>dois</p>'
+        self.assertEqual(app.clean(h, strip_quote_inline=True), "um<br><br>dois")
+
+    def test_without_flag_quote_inline_is_kept(self):
+        h = '<p class="quote-inline">RE: x</p><p>y</p>'
+        self.assertIn("RE: x", app.clean(h))
+
+
 if __name__ == "__main__":
     unittest.main()
