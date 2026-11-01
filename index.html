@@ -307,7 +307,15 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif:hover .glyph{transform:scale(1.08);background:color-mix(in srgb,var(--glyph-c,var(--c)) 22%,transparent)}
 .notif .body{color:var(--ink);font:14px/1.5 var(--sans);margin-top:6px;word-break:break-word}
 .notif .body a{color:var(--c)}
-.notif.fresh{background:color-mix(in srgb,var(--c) 9%,var(--card))}
+.notif{transition:background .35s ease,border-color .35s ease;position:relative}
+.notif.fresh{background:color-mix(in srgb,var(--c) 11%,var(--card));border-left:3px solid var(--c)}
+.notif-header-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,var(--card));position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
+.notif-filter-pills{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;align-items:center;flex:1;min-width:0}
+.notif-filter-pills::-webkit-scrollbar{display:none}
+.notif-filter-pills .filter-pill{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;padding:4px 10px;font-size:11.5px}
+.notif-filter-pills .filter-pill .ico{width:12.5px;height:12.5px}
+.mark-read-ghost-btn{font-size:11.5px;font-weight:600;color:var(--muted);border:1px solid var(--line);border-radius:14px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;background:var(--surface-2);cursor:pointer;transition:all .15s}
+.mark-read-ghost-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--card)}
 .back{margin-bottom:12px}
 .chain{border-left:2px solid var(--line);margin:0 0 10px 12px;padding-left:10px}
 .post.focus{box-shadow:0 0 0 2px var(--c)}
@@ -884,6 +892,12 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-close" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-drag-grip" viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5" fill="currentColor"/><circle cx="15" cy="6" r="1.5" fill="currentColor"/><circle cx="9" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/><circle cx="9" cy="18" r="1.5" fill="currentColor"/><circle cx="15" cy="18" r="1.5" fill="currentColor"/></symbol>
+  <symbol id="i-check-all" viewBox="0 0 24 24"><path d="M18 6L7 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 10l-7.5 7.5-2-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.73 21a2 2 0 0 1-3.46 0" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-reply" viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 18v-2a4 4 0 0 0-4-4H4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-repost" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11v-1a4 4 0 0 1 4-4h14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m7 22-4-4 4-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v1a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -1224,11 +1238,12 @@ body:not(.view-deck) .deck-col-body {
       <div class="deck-col-head">
         <div class="deck-col-head-left">
           <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
-          <span class="deck-col-title"><span data-i18n="header.col_notifs">Notificações</span> <span class="badge" id="deckNotifsBadge" hidden><span class="star-badge"></span><span id="deckBadgeCount"></span></span></span>
+          <span class="deck-col-title"><span data-i18n="header.col_notifs">Notificações</span> <span class="badge" id="deckNotifsBadge" hidden onclick="markAllNotifsAsRead()" title="Marcar todas como lidas" data-i18n-title="notifs.mark_all_read" style="cursor:pointer"><span class="star-badge"></span><span id="deckBadgeCount"></span></span></span>
         </div>
         <div class="deck-col-actions">
           <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('notifs', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
           <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('notifs', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
+          <button type="button" class="deck-act-btn" id="markAllNotifsReadHeadBtn" onclick="markAllNotifsAsRead()" title="Marcar todas como lidas" data-i18n-title="notifs.mark_all_read"><svg class="ico" style="width:14px;height:14px"><use href="#i-check-all"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="loadNotifs()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
           <button type="button" class="deck-act-btn" onclick="$('colNotifsBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
           <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('notifs')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
@@ -1236,6 +1251,34 @@ body:not(.view-deck) .deck-col-body {
       </div>
       <div class="deck-col-body" id="colNotifsBody">
         <div id="pNotifs" hidden>
+          <div class="notif-header-bar">
+            <div class="notif-filter-pills" id="notifFilterPills">
+              <button type="button" class="filter-pill active" data-notif-filter="all">
+                <svg class="ico"><use href="#i-bell"/></svg>
+                <span data-i18n="notifs.filter_all">Todas</span>
+              </button>
+              <button type="button" class="filter-pill" data-notif-filter="replies">
+                <svg class="ico"><use href="#i-reply"/></svg>
+                <span data-i18n="notifs.filter_replies">Respostas</span>
+              </button>
+              <button type="button" class="filter-pill" data-notif-filter="likes">
+                <svg class="ico"><use href="#i-heart"/></svg>
+                <span data-i18n="notifs.filter_likes">Gostos</span>
+              </button>
+              <button type="button" class="filter-pill" data-notif-filter="boosts">
+                <svg class="ico"><use href="#i-repost"/></svg>
+                <span data-i18n="notifs.filter_boosts">Partilhas</span>
+              </button>
+              <button type="button" class="filter-pill" data-notif-filter="follows">
+                <svg class="ico"><use href="#i-user"/></svg>
+                <span data-i18n="notifs.filter_follows">Seguidores</span>
+              </button>
+            </div>
+            <button type="button" class="mark-read-ghost-btn" id="markAllReadGhostBtn" onclick="markAllNotifsAsRead()" title="Marcar todas como lidas" data-i18n-title="notifs.mark_all_read">
+              <svg class="ico" style="width:13px;height:13px"><use href="#i-check-all"/></svg>
+              <span data-i18n="notifs.mark_all_read">Marcar como lidas</span>
+            </button>
+          </div>
           <div id="nerrors"></div>
           <div id="nfeed"></div>
         </div>
@@ -1726,6 +1769,16 @@ const I18N = {
       attach_alt: "Anexo"
     },
     notifs: {
+      filter_all: "Todas",
+      filter_replies: "Respostas",
+      filter_likes: "Gostos",
+      filter_boosts: "Partilhas",
+      filter_follows: "Seguidores",
+      mark_all_read: "Marcar como lidas",
+      empty_replies: "Sem respostas ou menções por agora.",
+      empty_likes: "Sem gostos recentes.",
+      empty_boosts: "Sem partilhas recentes.",
+      empty_follows: "Sem novos seguidores.",
       like: "gostou do teu post",
       like_repost: "gostou da tua republicação",
       boost: "partilhou o teu post",
@@ -2046,6 +2099,16 @@ const I18N = {
       attach_alt: "Attachment"
     },
     notifs: {
+      filter_all: "All",
+      filter_replies: "Replies",
+      filter_likes: "Likes",
+      filter_boosts: "Reposts",
+      filter_follows: "Follows",
+      mark_all_read: "Mark all as read",
+      empty_replies: "No replies or mentions yet.",
+      empty_likes: "No recent likes.",
+      empty_boosts: "No recent reposts.",
+      empty_follows: "No new followers.",
       like: "liked your post",
       like_repost: "liked your repost",
       boost: "shared your post",
@@ -3505,6 +3568,103 @@ const GLYPH = NOTIF_ICONS;
 let seenBefore = localStorage.getItem("notifSeen");
 if (!seenBefore) { seenBefore = new Date().toISOString(); localStorage.setItem("notifSeen", seenBefore); }
 
+let currentNotifFilter = localStorage.getItem("mastosky_notif_filter") || "all";
+let readNotifKeys = (() => {
+  try {
+    const raw = JSON.parse(localStorage.getItem("mastosky_read_notif_keys") || "[]");
+    return new Set(raw);
+  } catch (_) {
+    return new Set();
+  }
+})();
+
+function getNotifKey(n) {
+  return n.id || (n.network + "_" + (n.author_id || n.author_handle || n.handle || "") + "_" + (n.time || ""));
+}
+
+function isNotifRead(n) {
+  const k = getNotifKey(n);
+  if (readNotifKeys.has(k)) return true;
+  if (seenBefore && n.time && n.time <= seenBefore) return true;
+  return false;
+}
+
+function persistReadNotifs() {
+  try {
+    const arr = Array.from(readNotifKeys).slice(-1000);
+    localStorage.setItem("mastosky_read_notif_keys", JSON.stringify(arr));
+  } catch (_) {}
+}
+
+let notifObserver = null;
+function initNotifObserver() {
+  if (notifObserver) notifObserver.disconnect();
+  notifObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const target = entry.target;
+        const key = target.dataset.notifKey;
+        if (key && target.classList.contains("fresh")) {
+          if (!target._readTimer) {
+            target._readTimer = setTimeout(() => {
+              target.classList.remove("fresh");
+              readNotifKeys.add(key);
+              persistReadNotifs();
+              updateBadge();
+              if (notifObserver) notifObserver.unobserve(target);
+            }, 600);
+          }
+        }
+      } else {
+        if (entry.target._readTimer) {
+          clearTimeout(entry.target._readTimer);
+          entry.target._readTimer = null;
+        }
+      }
+    });
+  }, {
+    threshold: 0.5
+  });
+}
+
+function markSingleNotifRead(n, cardEl) {
+  const k = getNotifKey(n);
+  if (cardEl && cardEl.classList.contains("fresh")) {
+    cardEl.classList.remove("fresh");
+    if (cardEl._readTimer) clearTimeout(cardEl._readTimer);
+    if (cardEl._hoverTimer) clearTimeout(cardEl._hoverTimer);
+  }
+  if (!readNotifKeys.has(k)) {
+    readNotifKeys.add(k);
+    persistReadNotifs();
+    updateBadge();
+  }
+}
+
+function markAllNotifsAsRead() {
+  seenBefore = new Date().toISOString();
+  localStorage.setItem("notifSeen", seenBefore);
+  if (notifs) {
+    notifs.forEach(n => readNotifKeys.add(getNotifKey(n)));
+  }
+  persistReadNotifs();
+  document.querySelectorAll(".post.notif.fresh").forEach(p => {
+    p.classList.remove("fresh");
+    if (p._readTimer) clearTimeout(p._readTimer);
+    if (p._hoverTimer) clearTimeout(p._hoverTimer);
+  });
+  updateBadge();
+}
+
+function setNotifFilter(filter) {
+  currentNotifFilter = filter;
+  localStorage.setItem("mastosky_notif_filter", filter);
+  document.querySelectorAll("#notifFilterPills .filter-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.notifFilter === filter);
+  });
+  renderNotifs();
+}
+
 async function loadMoreNotifs() {
   const q = new URLSearchParams();
   if (notifsCursors.bluesky) q.set("cursor_bluesky", notifsCursors.bluesky);
@@ -3535,9 +3695,53 @@ function renderNotifs() {
   const box = $("nfeed");
   if (notifs === null) return;
   box.replaceChildren();
-  if (!notifs.length) box.append(el("div", "empty", t("feed.empty_notifs")));
-  for (const n of notifs) {
-    const p = el("article", "post notif " + n.network + (n.time > seenBefore ? " fresh" : ""));
+
+  document.querySelectorAll("#notifFilterPills .filter-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.notifFilter === currentNotifFilter);
+  });
+
+  const filtered = (notifs || []).filter(n => {
+    if (currentNotifFilter === "replies") return n.kind === "reply" || n.kind === "mention" || n.kind === "quote";
+    if (currentNotifFilter === "likes") return n.kind === "like" || n.kind === "like_repost";
+    if (currentNotifFilter === "boosts") return n.kind === "boost" || n.kind === "boost_repost";
+    if (currentNotifFilter === "follows") return n.kind === "follow" || n.kind === "follow_request";
+    return true;
+  });
+
+  if (!filtered.length) {
+    let emptyMsg = t("feed.empty_notifs");
+    if (currentNotifFilter === "replies") emptyMsg = t("notifs.empty_replies");
+    else if (currentNotifFilter === "likes") emptyMsg = t("notifs.empty_likes");
+    else if (currentNotifFilter === "boosts") emptyMsg = t("notifs.empty_boosts");
+    else if (currentNotifFilter === "follows") emptyMsg = t("notifs.empty_follows");
+    box.append(el("div", "empty", emptyMsg));
+    updateBadge();
+    return;
+  }
+
+  initNotifObserver();
+
+  for (const n of filtered) {
+    const isFresh = !isNotifRead(n);
+    const key = getNotifKey(n);
+    const p = el("article", "post notif " + n.network + (isFresh ? " fresh" : ""));
+    p.dataset.notifKey = key;
+
+    p.onmouseenter = () => {
+      if (p.classList.contains("fresh")) {
+        p._hoverTimer = setTimeout(() => {
+          markSingleNotifRead(n, p);
+        }, 350);
+      }
+    };
+    p.onmouseleave = () => {
+      if (p._hoverTimer) clearTimeout(p._hoverTimer);
+    };
+
+    if (isFresh && notifObserver) {
+      notifObserver.observe(p);
+    }
+
     const head = el("div", "head");
     const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
     g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
@@ -3546,6 +3750,7 @@ function renderNotifs() {
     head.append(g);
     const onNotifProfile = (e) => {
       e.stopPropagation();
+      markSingleNotifRead(n, p);
       openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
     };
     if (n.avatar) {
@@ -3575,6 +3780,7 @@ function renderNotifs() {
     who.append(bNName, sMeta);
     const when = el("a", "when", ago(n.time));
     when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
+    when.onclick = () => markSingleNotifRead(n, p);
     head.append(who, netBadge(n.network), when);
     p.append(head);
     const hasMedia = n.media && n.media.length;
@@ -3592,14 +3798,20 @@ function renderNotifs() {
       r.title = t("actions.reply");
       r.setAttribute("aria-label", t("actions.reply"));
       r.innerHTML = ICONS.reply;
-      r.onclick = () => startReply(n);
+      r.onclick = () => {
+        markSingleNotifRead(n, p);
+        startReply(n);
+      };
       acts.append(r);
       if (n.kind === "reply" || n.kind === "mention" || n.kind === "quote") {
         const c = el("button", "act-btn act-thread");
         c.title = t("actions.view_thread");
         c.setAttribute("aria-label", t("actions.view_thread"));
         c.innerHTML = ICONS.thread;
-        c.onclick = () => openThread(n);
+        c.onclick = () => {
+          markSingleNotifRead(n, p);
+          openThread(n);
+        };
         acts.append(c);
       }
       p.append(acts);
@@ -3610,13 +3822,15 @@ function renderNotifs() {
 }
 
 function updateBadge() {
-  const n = tab === "notifs" ? 0 : (notifs || []).filter(x => x.time > seenBefore).length;
-  $("badge").hidden = !n;
-  if ($("badgeCount")) $("badgeCount").textContent = n > 99 ? "99+" : n;
-  if ($("sideBadge")) $("sideBadge").hidden = !n;
-  if ($("sideBadgeCount")) $("sideBadgeCount").textContent = n > 99 ? "99+" : n;
-  if ($("deckNotifsBadge")) $("deckNotifsBadge").hidden = !n;
-  if ($("deckBadgeCount")) $("deckBadgeCount").textContent = n > 99 ? "99+" : n;
+  const unreadCount = (notifs || []).filter(n => !isNotifRead(n)).length;
+  $("badge").hidden = !unreadCount;
+  if ($("badgeCount")) $("badgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
+  if ($("sideBadge")) $("sideBadge").hidden = !unreadCount;
+  if ($("sideBadgeCount")) $("sideBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
+  if ($("deckNotifsBadge")) $("deckNotifsBadge").hidden = !unreadCount;
+  if ($("deckBadgeCount")) $("deckBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
+  if ($("markAllReadGhostBtn")) $("markAllReadGhostBtn").style.display = unreadCount ? "inline-flex" : "none";
+  if ($("markAllNotifsReadHeadBtn")) $("markAllNotifsReadHeadBtn").style.display = unreadCount ? "inline-flex" : "none";
 }
 
 let activeProfileMode = "hub";
@@ -3972,8 +4186,7 @@ function setTab(newTab) {
   }
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === newTab));
   document.querySelectorAll(".side-nav-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === newTab));
-  if (newTab === "notifs") localStorage.setItem("notifSeen", new Date().toISOString());
-  else seenBefore = localStorage.getItem("notifSeen") || seenBefore;
+  seenBefore = localStorage.getItem("notifSeen") || seenBefore;
   if (newTab === "explore" && !exploreItems.length) loadExplore();
   if (newTab === "profile" && !profileLoaded) loadProfile();
   if (newTab === "search") {
@@ -3986,6 +4199,9 @@ function setTab(newTab) {
   history.replaceState(null, "", "#" + newTab);
 }
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+document.querySelectorAll("#notifFilterPills .filter-pill").forEach(p => {
+  p.onclick = () => setNotifFilter(p.dataset.notifFilter);
+});
 
 let threadIt = null;
 let activeThreadColId = "timeline";

@@ -1326,7 +1326,8 @@ class Bsky:
                 media = dedup_m
                 if text in ("📷 [Imagem]", "🎬 [Vídeo]", "💬 [Citação]"):
                     text = ""
-            out.append({"network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
+            out.append({"id": n.get("uri") or f"bsky_{n['indexedAt']}_{a.get('did')}",
+                        "network": "bluesky", "kind": kind, "name": a.get("displayName") or a["handle"],
                         "handle": "@" + a["handle"], "author_id": a.get("did") or a["handle"],
                         "author_handle": a["handle"], "avatar": safe_url(a.get("avatar")),
                         "html": render_bsky_text(text, facets) if text else "", "time": n["indexedAt"], "url": url, "ref": ref,
@@ -1623,6 +1624,7 @@ class Masto:
             a_name = a.get("display_name") or a.get("username", "")
             a_name_html = render_custom_emojis(html.escape(a_name), a_emojis) if a_emojis else None
             notif_item = {
+                "id": str(n.get("id")),
                 "network": "mastodon", "kind": kind, "name": a_name,
                 "handle": "@" + a.get("acct", ""), "author_id": str(a.get("id")),
                 "author_handle": a.get("acct") or a.get("username", ""), "avatar": safe_url(a.get("avatar")),
