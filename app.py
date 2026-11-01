@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """MastoSky: cliente local-first Bluesky + Mastodon (127.0.0.1)."""
-import argparse, base64, binascii, hmac, html, ipaddress, json, os, re, secrets, socket, stat, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
+import argparse, base64, binascii, hmac, html, ipaddress, json, os, re, secrets, socket, stat, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
@@ -47,6 +47,112 @@ MAX_BODY = 32 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens em base
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
+VERSION = "0.3.0"
+UPDATE_CACHE = {"checked_at": 0, "data": None}
+
+
+def parse_semver(s):
+    return [int(x) if x.isdigit() else 0 for x in re.findall(r"\d+", s or "0")]
+
+
+def check_github_update():
+    """Consulta a API do GitHub com cache de 1 hora para evitar rate limiting."""
+    now = time.time()
+    if UPDATE_CACHE["data"] and (now - UPDATE_CACHE["checked_at"] < 3600):
+        return UPDATE_CACHE["data"]
+
+    url = "https://api.github.com/repos/gjmcosta/MastoSky/releases/latest"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": f"MastoSky/{VERSION} (+https://github.com/gjmcosta/MastoSky)",
+            "Accept": "application/vnd.github.v3+json"
+        }
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status == 200:
+                d = json.loads(resp.read().decode("utf-8"))
+                tag = (d.get("tag_name") or "").lstrip("v")
+                has_update = False
+                if tag:
+                    has_update = parse_semver(tag) > parse_semver(VERSION)
+
+                res = {
+                    "current": VERSION,
+                    "latest": tag or VERSION,
+                    "has_update": has_update,
+                    "url": d.get("html_url") or "https://github.com/gjmcosta/MastoSky/releases",
+                    "name": d.get("name") or f"MastoSky v{tag}",
+                    "notes": (d.get("body") or "")[:400]
+                }
+                UPDATE_CACHE["checked_at"] = now
+                UPDATE_CACHE["data"] = res
+                return res
+    except Exception:
+        pass
+
+    fallback = {
+        "current": VERSION,
+        "latest": VERSION,
+        "has_update": False,
+        "url": "https://github.com/gjmcosta/MastoSky/releases",
+        "name": "",
+        "notes": ""
+    }
+    return fallback
+
+
+def run_self_update():
+    """Atualiza o MastoSky. Se estiver num repositório git, faz git pull.
+    Caso contrário, descarrega o arquivo tarball da release mais recente."""
+    is_git = (DIR / ".git").is_dir()
+    if is_git:
+        proc = subprocess.run(
+            ["git", "pull", "--ff-only"],
+            cwd=str(DIR),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=30
+        )
+        if proc.returncode != 0:
+            proc_reset = subprocess.run(
+                ["git", "fetch", "origin", "main"],
+                cwd=str(DIR),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=30
+            )
+            if proc_reset.returncode == 0:
+                subprocess.run(["git", "reset", "--hard", "origin/main"], cwd=str(DIR), timeout=10)
+            else:
+                raise RuntimeError(proc.stderr or proc_reset.stderr or "Falha ao atualizar via Git.")
+        return "MastoSky atualizado com sucesso via Git!"
+    else:
+        import io, tarfile
+        url = "https://github.com/gjmcosta/MastoSky/archive/refs/heads/main.tar.gz"
+        req = urllib.request.Request(url, headers={"User-Agent": f"MastoSky/{VERSION}"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = resp.read()
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
+            for member in tar.getmembers():
+                parts = Path(member.name).parts
+                if len(parts) > 1:
+                    rel_path = Path(*parts[1:])
+                    # Nunca sobrescrever configurações locais do utilizador
+                    if rel_path.name == "config.json":
+                        continue
+                    dest = DIR / rel_path
+                    if member.isdir():
+                        dest.mkdir(parents=True, exist_ok=True)
+                    elif member.isfile():
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        f = tar.extractfile(member)
+                        if f:
+                            dest.write_bytes(f.read())
+        return "MastoSky atualizado com sucesso!"
 
 
 def multipart_encode(fields, files):
@@ -1445,6 +1551,8 @@ class H(BaseHTTPRequestHandler):
             else:
                 html_text = html_text.replace("</head>", f'<meta name="csrf-token" content="{SESSION_TOKEN}">\n</head>', 1)
             return self.send(200, html_text.encode("utf-8"), "text/html")
+        if path == "/api/version":
+            return self.send(200, check_github_update())
         if path == "/vendor/hls.min.js":
             return self.send(200, (DIR / "vendor" / "hls.min.js").read_bytes(), "application/javascript")
         if path.startswith("/brand/"):
@@ -1725,6 +1833,13 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, {"ok": True, "networks": list(CLIENTS)})
             except Exception as e:
                 return self.send(500, {"error": f"Não foi possível guardar config.json: {e}"})
+        if self.path == "/api/self_update":
+            try:
+                msg = run_self_update()
+                UPDATE_CACHE["data"] = None
+                return self.send(200, {"ok": True, "message": msg})
+            except Exception as e:
+                return self.send(500, {"ok": False, "error": str(e)})
         self.send(404, {"error": "not found"})
 
 

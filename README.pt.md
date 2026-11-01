@@ -43,21 +43,38 @@
 
 ---
 
-## 🚀 Como Executar
+## 🚀 Como Começar
 
-### Pré-requisitos
+### ⚡ Instalação Rápida (Comando em 1 Linha)
+
+Sem necessidade de clonar manualmente com o Git. Basta colar uma linha no terminal:
+
+* **🍎 macOS & 🐧 Linux:**
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.sh | bash
+  ```
+  *(Instala em `~/.mastosky/app`, cria um atalho de secretária / aplicação e abre o MastoSky no teu browser).*
+
+* **🪟 Windows (PowerShell):**
+  ```powershell
+  irm https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.ps1 | iex
+  ```
+  *(Instala em `%USERPROFILE%\.mastosky\app`, cria um atalho no Ambiente de Trabalho `MastoSky.lnk` e inicia de imediato).*
+
+---
+
+### Instalação Manual (via Git)
+
+#### Pré-requisitos
 Apenas precisas do **Python 3** instalado (já vem por defeito no macOS e na maioria das distribuições Linux).
 
-### 1. Clonar o repositório
+#### 1. Clonar o repositório
 ```bash
 git clone https://github.com/gjmcosta/MastoSky.git
 cd MastoSky
 ```
 
-### 2. Iniciar a aplicação
-
-Escolhe a forma que preferires para iniciar o MastoSky:
-
+#### 2. Iniciar a aplicação
 * **🍎 macOS:** Dá duplo clique em **`MastoSky.command`** (inicia o servidor e abre o teu browser automaticamente).
 * **🪟 Windows:** Dá duplo clique em **`MastoSky.bat`** (inicia o servidor e abre o teu browser automaticamente).
 * **💻 Linha de comandos (qualquer sistema):**
@@ -81,7 +98,13 @@ Se o browser não abrir automaticamente, acede a:
 
 Se for a primeira vez que abres a ferramenta, surge automaticamente o **ecrã de configuração** para introduzires as tuas credenciais do Bluesky e/ou do Mastodon.
 
-*(Em alternativa, podes copiar `cp config.example.json config.json` e preencher manualmente antes de iniciar).*
+---
+
+## 🔄 Atualizações (1 Clique & Verificação Automática)
+
+O MastoSky mantém-te sempre na versão mais recente sem esforço:
+* **Deteção Automática Integrada:** Quando sai uma nova versão no GitHub, surge um distintivo discreto na barra superior (`✨ v0.X.X`).
+* **Auto-Atualização com 1 Clique:** Abre as **Definições** e clica em **"Atualizar agora"**. O MastoSky atualiza os seus ficheiros e recarrega a página automaticamente — sem tocar no terminal!
 
 ---
 

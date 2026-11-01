@@ -45,19 +45,36 @@
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### ⚡ Quick Install (1-Line Command)
+
+No Git or manual cloning required. Just paste one line into your terminal:
+
+* **🍎 macOS & 🐧 Linux:**
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.sh | bash
+  ```
+  *(Installs to `~/.mastosky/app`, creates a desktop launcher / application shortcut, and opens MastoSky in your browser).*
+
+* **🪟 Windows (PowerShell):**
+  ```powershell
+  irm https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.ps1 | iex
+  ```
+  *(Installs to `%USERPROFILE%\.mastosky\app`, creates a desktop shortcut `MastoSky.lnk`, and launches immediately).*
+
+---
+
+### Manual Installation (via Git)
+
+#### Prerequisites
 You only need **Python 3** installed (built-in on macOS and most Linux distributions).
 
-### 1. Clone the repository
+#### 1. Clone the repository
 ```bash
 git clone https://github.com/gjmcosta/MastoSky.git
 cd MastoSky
 ```
 
-### 2. Start the application
-
-Choose your preferred way to launch MastoSky:
-
+#### 2. Start the application
 * **🍎 macOS:** Double-click **`MastoSky.command`** (launches the server and automatically opens your browser).
 * **🪟 Windows:** Double-click **`MastoSky.bat`** (launches the server and automatically opens your browser).
 * **💻 Terminal (any OS):**
@@ -81,7 +98,13 @@ If it doesn't open automatically, navigate to:
 
 On your first launch, a friendly **Setup Window** will automatically appear to let you enter your Bluesky and/or Mastodon credentials right in the browser UI.
 
-*(Alternatively, you can copy `cp config.example.json config.json` and edit it manually before starting).*
+---
+
+## 🔄 Updates (1-Click & In-App Checker)
+
+MastoSky keeps you seamlessly up to date:
+* **Automatic In-App Notifications:** Whenever a new version is released on GitHub, a discreet badge appears in the top header (`✨ v0.X.X`).
+* **1-Click Self-Update:** Open **Settings** and click **"Atualizar agora / Update now"**. MastoSky updates its files in place and automatically reloads the page with zero downtime or terminal interaction!
 
 ---
 

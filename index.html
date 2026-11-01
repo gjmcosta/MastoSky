@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="csrf-token" content="">
 <title>MastoSky</title>
 <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
 <script src="/vendor/hls.min.js"></script>
@@ -111,6 +110,11 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .ghost-sm{background:none;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
 .ghost-sm:hover{background:var(--card)}
 .ghost-sm[disabled]{opacity:.35;pointer-events:none}
+.send-sm{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;transition:opacity .15s}
+.send-sm:hover{opacity:.9}
+.send-sm:disabled{opacity:.4;cursor:default}
+.update-pill{background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:4px;cursor:pointer;transition:transform .1s,background-color .15s}
+.update-pill:hover{background:var(--accent);color:#fff;transform:translateY(-1px)}
 .poll-dur{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .poll-dur select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px}
 .previews{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px;padding:8px;background:rgba(255,255,255,0.02);border:1px dashed var(--line);border-radius:10px}
@@ -673,6 +677,7 @@ body:not(.view-deck) .deck-col-body {
         </picture>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
+        <button type="button" class="update-pill" id="headerUpdatePill" hidden>✨ Nova versão</button>
         <button class="ghost" id="viewToggleBtn" title="Mudar para vista em colunas" data-i18n-title="header.view_mode_single_title" aria-label="Mudar visualização" style="display:grid;place-items:center;padding:5px 8px">
           <svg class="ico" id="viewToggleIcon" style="width:18px;height:18px"><use href="#i-view-deck"/></svg>
         </button>
@@ -950,6 +955,20 @@ body:not(.view-deck) .deck-col-body {
         <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt; Desenvolvimento &gt; Nova aplicação. Marca apenas os âmbitos: read:statuses, read:notifications, write:statuses, write:media, write:favourites.</small>
       </div>
 
+      <div class="setup-section update-section" style="border-top:1px solid var(--line);padding-top:14px;margin-top:10px">
+        <div class="setup-sec-title"><span data-i18n="update.section_title">🔄 Versão e Atualizações</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink)">MastoSky <span id="appVersionBadge" style="opacity:0.85">v0.3.0</span></div>
+            <div id="updateStatusText" style="font-size:12px;color:var(--muted);margin-top:2px" data-i18n="update.checking">A verificar atualizações...</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button type="button" class="ghost-sm" id="checkUpdateBtn" data-i18n="update.btn_check">Verificar</button>
+            <button type="button" class="send-sm" id="selfUpdateBtn" style="display:none" data-i18n="update.btn_update">Atualizar agora</button>
+          </div>
+        </div>
+      </div>
+
       <div id="setupMsg" class="msg"></div>
 
       <div class="setup-actions">
@@ -1094,6 +1113,19 @@ const I18N = {
       img_err: "Erro ao processar imagem.",
       attach_disabled_poll: "Não é possível ter sondagem e imagens no mesmo post.",
       attach_disabled_max: "Máximo de 4 imagens."
+    },
+    update: {
+      section_title: "🔄 Versão e Atualizações",
+      checking: "A verificar atualizações...",
+      available_title: "Nova versão disponível: v{ver}. Clica para atualizar.",
+      available_badge: "✨ Nova versão",
+      latest: "Estás a usar a versão mais recente.",
+      check_failed: "Não foi possível verificar atualizações.",
+      updating: "A atualizar o MastoSky...",
+      success: "Atualizado com sucesso! A recarregar...",
+      err: "Erro ao atualizar: ",
+      btn_check: "Verificar",
+      btn_update: "Atualizar agora"
     },
     actions: {
       reply: "Responder",
@@ -1312,6 +1344,19 @@ const I18N = {
       img_err: "Error processing image.",
       attach_disabled_poll: "Cannot have both a poll and images in the same post.",
       attach_disabled_max: "Maximum 4 images."
+    },
+    update: {
+      section_title: "🔄 Version & Updates",
+      checking: "Checking for updates...",
+      available_title: "New version available: v{ver}. Click to update.",
+      available_badge: "✨ New version",
+      latest: "You are running the latest version.",
+      check_failed: "Could not check for updates.",
+      updating: "Updating MastoSky...",
+      success: "Successfully updated! Reloading...",
+      err: "Update error: ",
+      btn_check: "Check",
+      btn_update: "Update now"
     },
     actions: {
       reply: "Reply",
@@ -1668,12 +1713,8 @@ function closeDeckDetail() {
 let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
 let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
 
-const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || "";
-
 async function api(path, body) {
-  const headers = {"Content-Type": "application/json"};
-  if (CSRF_TOKEN) headers["X-CSRF-Token"] = CSRF_TOKEN;
-  const r = await fetch(path, body ? {method: "POST", headers, body: JSON.stringify(body)} : {});
+  const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {});
   return r.json();
 }
 
@@ -4161,6 +4202,7 @@ async function openSetup(mandatory = false) {
     if ($("cfgBskyActive")) $("cfgBskyActive").hidden = !s.bluesky?.configured;
     if ($("cfgMastoActive")) $("cfgMastoActive").hidden = !s.mastodon?.configured;
   } catch (_) {}
+  checkAppUpdate(false);
 }
 
 function closeSetup() {
@@ -4294,6 +4336,64 @@ if ($("sideScrollTopBtn")) $("sideScrollTopBtn").onclick = () => {
   window.scrollTo({top: 0, behavior: "smooth"});
 };
 
+let updateInfo = null;
+
+async function checkAppUpdate(manual = false) {
+  const statusEl = $("updateStatusText");
+  const updateBtn = $("selfUpdateBtn");
+  const headerPill = $("headerUpdatePill");
+  if (statusEl && manual) statusEl.textContent = t("update.checking");
+  try {
+    const res = await api("/api/version");
+    if (!res) return;
+    updateInfo = res;
+    if ($("appVersionBadge")) $("appVersionBadge").textContent = "v" + res.current;
+
+    if (res.has_update) {
+      if (headerPill) {
+        headerPill.hidden = false;
+        headerPill.textContent = "✨ v" + res.latest;
+        headerPill.title = t("update.available_title", {ver: res.latest});
+        headerPill.onclick = () => openSetup(false);
+      }
+      if (statusEl) {
+        statusEl.innerHTML = `<span style="color:var(--accent);font-weight:600">✨ ${t("update.available_title", {ver: res.latest})}</span>`;
+      }
+      if (updateBtn) updateBtn.style.display = "inline-flex";
+    } else {
+      if (headerPill) headerPill.hidden = true;
+      if (statusEl) {
+        statusEl.textContent = t("update.latest");
+      }
+      if (updateBtn) updateBtn.style.display = "none";
+    }
+  } catch (_) {
+    if (statusEl && manual) statusEl.textContent = t("update.check_failed");
+  }
+}
+
+async function triggerSelfUpdate() {
+  const btn = $("selfUpdateBtn");
+  const statusEl = $("updateStatusText");
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = t("update.updating");
+  try {
+    const r = await api("/api/self_update", {});
+    if (r && r.ok) {
+      if (statusEl) statusEl.textContent = t("update.success");
+      setTimeout(() => { window.location.reload(); }, 2000);
+    } else {
+      throw new Error(r?.error || "Falha ao atualizar.");
+    }
+  } catch (err) {
+    if (statusEl) statusEl.textContent = t("update.err") + err.message;
+    if (btn) btn.disabled = false;
+  }
+}
+
+if ($("checkUpdateBtn")) $("checkUpdateBtn").onclick = () => checkAppUpdate(true);
+if ($("selfUpdateBtn")) $("selfUpdateBtn").onclick = triggerSelfUpdate;
+
 setNavMode(navMode);
 applyI18n();
 applyViewMode(viewMode);
@@ -4304,12 +4404,14 @@ load();
 loadNotifs();
 if (initTab === "explore") loadExplore();
 if (initTab === "profile") loadProfile();
+checkAppUpdate(false);
 setInterval(() => {
   load();
   loadNotifs();
   if (tab === "explore") loadExplore();
   if (tab === "profile") loadProfile(true);
 }, 120000);
+setInterval(() => checkAppUpdate(false), 1800000);
 </script>
 </body>
 </html>

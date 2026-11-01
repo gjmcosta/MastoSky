@@ -1702,6 +1702,46 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("function refreshProfileView(", html)
 
 
+    def test_parse_semver(self):
+        self.assertEqual(app.parse_semver("0.3.0"), [0, 3, 0])
+        self.assertEqual(app.parse_semver("v1.2.3"), [1, 2, 3])
+        self.assertTrue(app.parse_semver("0.4.0") > app.parse_semver("0.3.0"))
+        self.assertFalse(app.parse_semver("0.3.0") > app.parse_semver("0.3.0"))
+
+    def test_api_version_endpoint(self):
+        import io
+        h = object.__new__(app.H)
+        h.path = "/api/version"
+        h.headers = {"Host": "127.0.0.1:%d" % app.PORT}
+        h.wfile = io.BytesIO()
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        h.do_GET()
+        code = [v for k, v in h.sent if k == "code"][0]
+        self.assertEqual(code, 200)
+        data = json.loads(h.wfile.getvalue())
+        self.assertIn("current", data)
+        self.assertIn("latest", data)
+        self.assertIn("has_update", data)
+
+    def test_self_update_endpoint_requires_csrf(self):
+        import io
+        h = object.__new__(app.H)
+        h.path = "/api/self_update"
+        h.headers = {"Host": "127.0.0.1:%d" % app.PORT, "Content-Length": "2"}
+        h.rfile = io.BytesIO(b"{}")
+        h.wfile = io.BytesIO()
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        h.do_POST()
+        code = [v for k, v in h.sent if k == "code"][0]
+        self.assertEqual(code, 403)
+
+
 if __name__ == "__main__":
     unittest.main()
 
