@@ -60,17 +60,22 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .prev-card img{width:100%;height:85px;object-fit:cover;border-radius:4px}
 .prev-card input{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:4px;padding:3px 6px;font-size:11.5px;width:100%}
 .prev-card .rm{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--card);border:0;display:grid;place-items:center;font-size:11px;line-height:1;cursor:pointer}
-.compose-tools{display:flex;gap:6px;align-items:center}
-.btn-sm{font-size:13px;padding:5px 10px;display:inline-flex;align-items:center;gap:4px;cursor:pointer}
-.btn-sm.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
-.btn-sm[disabled]{opacity:.35;pointer-events:none}
+.compose-tools{display:flex;gap:5px;align-items:center}
+.compose-selects{display:flex;gap:5px;align-items:center}
+.tool-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:0 8px;height:26px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;cursor:pointer;transition:all .15s}
+.tool-btn:hover{color:var(--ink);border-color:var(--accent);background:var(--card)}
+.tool-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tool-btn[disabled]{opacity:.35;pointer-events:none}
+.compose-select{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:0 8px;height:26px;font-size:12px;font-weight:500;cursor:pointer;transition:border-color .15s;outline:none}
+.compose-select:hover,.compose-select:focus{border-color:var(--accent)}
 textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;color:var(--ink);font:17px/1.45 var(--serif)}
-.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px}
-.bar label{display:flex;align-items:center;gap:6px;cursor:pointer}
-.dot{width:10px;height:10px;border-radius:50%}
-.count{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
-.count.over{color:var(--danger);font-weight:600}
-.send{background:var(--ink);color:var(--card);border:0;border-radius:8px;padding:7px 18px;font-weight:600}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
+.bar-left{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.bar-right{display:flex;align-items:center;gap:10px;margin-left:auto}
+.count{color:var(--muted);font:12px var(--mono);font-variant-numeric:tabular-nums}
+.count.over{color:var(--danger);font-weight:700}
+.send{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:0 16px;height:26px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s}
+.send:hover:not(:disabled){opacity:.9}
 .send:disabled{opacity:.35;cursor:default}
 .replying{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px}
 .replying button{border:0;background:none;color:var(--muted);text-decoration:underline}
@@ -233,22 +238,28 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
     </div>
     <div class="previews" id="previews" hidden></div>
     <div class="bar">
-      <div class="compose-tools">
-        <label class="ghost btn-sm" id="attachLabel" title="Anexar imagens (máx. 4)">
-          📷 Imagem <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
-        </label>
-        <button type="button" class="ghost btn-sm" id="pollBtn" title="Criar sondagem">📊 Sondagem</button>
-        <button type="button" class="ghost btn-sm" id="cwBtn" title="Aviso de conteúdo / Spoiler">⚠️ Spoiler</button>
+      <div class="bar-left">
+        <div class="compose-tools">
+          <label class="tool-btn" id="attachLabel" title="Anexar imagens (máx. 4)">
+            📷 Imagem <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
+          </label>
+          <button type="button" class="tool-btn" id="pollBtn" title="Criar sondagem">📊 Sondagem</button>
+          <button type="button" class="tool-btn" id="cwBtn" title="Aviso de conteúdo / Spoiler">⚠️ Spoiler</button>
+        </div>
+        <div class="compose-selects">
+          <select id="targetSelect" class="compose-select" title="Redes onde publicar"></select>
+          <select id="mastoVisibility" class="compose-select" title="Visibilidade no Mastodon" hidden>
+            <option value="public" selected>🌐 Público</option>
+            <option value="unlisted">🔓 Não listado</option>
+            <option value="private">🔒 Seguidores</option>
+            <option value="direct">✉️ Direta</option>
+          </select>
+        </div>
       </div>
-      <div id="targets" style="display:flex;gap:12px;align-items:center"></div>
-      <select id="mastoVisibility" title="Visibilidade da publicação no Mastodon" style="font-size:12px;padding:3px 6px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink)" hidden>
-        <option value="public" selected>🌐 Público</option>
-        <option value="unlisted">🔓 Não listado</option>
-        <option value="private">🔒 Apenas seguidores</option>
-        <option value="direct">✉️ Directa</option>
-      </select>
-      <span class="count" id="count"></span>
-      <button class="send" id="send" disabled>Publicar</button>
+      <div class="bar-right">
+        <span class="count" id="count"></span>
+        <button class="send" id="send" disabled>Publicar</button>
+      </div>
     </div>
     <div class="bsky-note" id="bskyNote" style="font-size:12px;color:var(--muted);margin-top:6px" hidden>ℹ️ No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).</div>
     <div class="msg" id="msg" role="status"></div>
@@ -958,18 +969,43 @@ function closeThread() {
 }
 
 function buildTargets() {
-  if ($("targets").children.length) return;
-  for (const n of networks) {
-    const l = el("label");
-    const c = el("input"); c.type = "checkbox"; c.checked = true; c.value = n; c.onchange = update;
-    const d = el("span", "dot"); d.style.background = `var(--${n === "bluesky" ? "bsky" : "masto"})`;
-    l.append(c, d, document.createTextNode(LABEL[n]));
-    $("targets").append(l);
+  const sel = $("targetSelect");
+  if (!sel) return;
+  const currentVal = sel.value;
+  sel.replaceChildren();
+  if (networks.length > 1) {
+    sel.hidden = Boolean(reply);
+    const optAll = el("option", null, "🌐 Ambas as redes");
+    optAll.value = "all";
+    sel.append(optAll);
+    for (const n of networks) {
+      const opt = el("option", null, (n === "bluesky" ? "🦋 " : "🐘 ") + LABEL[n]);
+      opt.value = n;
+      sel.append(opt);
+    }
+    if (currentVal && Array.from(sel.options).some(o => o.value === currentVal)) {
+      sel.value = currentVal;
+    } else {
+      sel.value = "all";
+    }
+  } else if (networks.length === 1) {
+    sel.hidden = true;
+    const opt = el("option", null, (networks[0] === "bluesky" ? "🦋 " : "🐘 ") + LABEL[networks[0]]);
+    opt.value = networks[0];
+    sel.append(opt);
+    sel.value = networks[0];
+  } else {
+    sel.hidden = true;
   }
+  sel.onchange = update;
 }
 
 function selected() {
-  return reply ? [reply.network] : [...$("targets").querySelectorAll("input:checked")].map(c => c.value);
+  if (reply) return [reply.network];
+  const sel = $("targetSelect");
+  if (!sel || !sel.value) return networks;
+  if (sel.value === "all") return networks;
+  return [sel.value];
 }
 
 async function processImage(file) {
@@ -1221,6 +1257,9 @@ function update() {
     $("attachLabel").removeAttribute("disabled");
     $("attachLabel").title = "Anexar imagens (máx. 4)";
   }
+  if ($("attachLabel")) {
+    $("attachLabel").classList.toggle("on", images.length > 0);
+  }
 
   const pollValid = !hasPoll || filledOpts.length >= 2;
   const hasContent = lenText > 0 || images.length > 0 || (hasPoll && filledOpts.length >= 2);
@@ -1235,19 +1274,27 @@ function update() {
   if (visEl) {
     visEl.hidden = !mastoActive;
   }
+  if ($("targetSelect")) {
+    $("targetSelect").hidden = Boolean(reply) || networks.length <= 1;
+  }
 
   $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !t.length;
-  $("targets").style.display = reply ? "none" : "flex";
 }
 
 function startReply(it) {
   reply = {network: it.network, ref: it.ref};
   $("replying").hidden = false;
   $("replyingTo").textContent = "A responder a " + it.name + " no " + LABEL[it.network];
+  if ($("targetSelect")) $("targetSelect").hidden = true;
   $("text").focus(); update();
 }
 
-$("cancelReply").onclick = () => { reply = null; $("replying").hidden = true; update(); };
+$("cancelReply").onclick = () => {
+  reply = null;
+  $("replying").hidden = true;
+  if ($("targetSelect")) $("targetSelect").hidden = networks.length <= 1;
+  update();
+};
 $("text").oninput = update;
 $("refresh").onclick = async () => {
   $("refresh").disabled = true;
