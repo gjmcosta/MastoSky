@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
 > **Data de atualização:** 2 de Novembro de 2026  
-> **Versão:** v0.5.0  
+> **Versão:** v0.5.1  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 132 testes aprovados (`python3 -m unittest discover -s tests`)
+> **Testes Automatizados:** 133 testes aprovados (`python3 -m unittest discover -s tests`)
 
 ---
 
@@ -63,7 +63,7 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 ### 👤 Perfis de Utilizador e Contas
 - Visualização de perfis com avatar, cabeçalho, estatísticas de seguidores/a seguir e feed de publicações.
 - Modal dedicado de perfil ao clicar no avatar ou autor de qualquer post, preservando a coluna de Composição intacta.
-- **Seguir e Deixar de Seguir (*Follow / Unfollow*):** Suporte nativo completo a seguir e deixar de seguir perfis no Bluesky (`app.bsky.graph.follow` via AT Protocol) e Mastodon (`/api/v1/accounts/:id/follow` e `unfollow`), com deteção do estado de relação (`viewer.following` / `/relationships`), botão dinâmico (*Follow* / *Following* com transição para *Unfollow* em *hover*), atualização reativa do contador de seguidores e proteção CSRF no endpoint `/api/follow`.
+- **Seguir e Deixar de Seguir (*Follow / Unfollow*):** Suporte nativo completo a seguir e deixar de seguir perfis no Bluesky (`app.bsky.graph.follow` via AT Protocol) e Mastodon (`/api/v1/accounts/:id/follow` e `unfollow`), com deteção fidedigna do estado de relação (`viewer.following` no Bluesky e consulta a `/api/v1/accounts/relationships` com codificação robusta de arrays no Mastodon), botão dinâmico (*Follow* / *Following* com transição para *Unfollow* em *hover*), cores personalizadas por rede (azul `#0085FF` para Bluesky e roxo `#6364FF` oficial para Mastodon), cápsula perfeitamente alinhada e coerente com o botão "Ver na web / View on web ↗", atualização reativa do contador de seguidores e proteção CSRF no endpoint `/api/follow`.
 - Gestão de contas ativas e alternância de sessão.
 
 ### 🔔 Sistema de Notificações Avançado

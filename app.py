@@ -47,7 +47,7 @@ MAX_BODY = 32 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens em base
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
@@ -862,7 +862,7 @@ class Bsky:
             return fn(self.jwt)
 
     def call(self, method, nsid, data=None, params=None):
-        url = f"{self.host}/xrpc/{nsid}" + ("?" + urllib.parse.urlencode(params) if params else "")
+        url = f"{self.host}/xrpc/{nsid}" + ("?" + urllib.parse.urlencode(params, doseq=True) if params else "")
         return self._authed(lambda jwt: http(method, url, data, jwt))
 
     def item(self, p, reason=None, reply=None):
@@ -979,7 +979,8 @@ class Bsky:
 
     def user_profile(self, actor):
         self._ensure()
-        p = self.call("GET", "app.bsky.actor.getProfile", params={"actor": actor})
+        actor_clean = str(actor).strip().lstrip("@")
+        p = self.call("GET", "app.bsky.actor.getProfile", params={"actor": actor_clean})
         desc = p.get("description") or ""
         bio_html = render_bsky_text(desc) if desc else ""
         viewer = p.get("viewer") or {}
@@ -1411,7 +1412,7 @@ class Masto:
             return None
 
     def call(self, method, path, data=None, params=None, timeout=30):
-        url = self.base + path + ("?" + urllib.parse.urlencode(params) if params else "")
+        url = self.base + path + ("?" + urllib.parse.urlencode(params, doseq=True) if params else "")
         return http(method, url, data, self.token, timeout=timeout)
 
     def parent(self, sid):
@@ -1535,7 +1536,7 @@ class Masto:
         is_following = False
         if not is_self and acc_id:
             try:
-                rels = self.call("GET", "/api/v1/accounts/relationships", params={"id[]": [acc_id]})
+                rels = self.call("GET", "/api/v1/accounts/relationships", params={"id[]": [str(acc_id)]})
                 if isinstance(rels, list) and len(rels) > 0 and isinstance(rels[0], dict):
                     is_following = bool(rels[0].get("following"))
             except Exception:

@@ -1834,22 +1834,49 @@ class ProfileTests(unittest.TestCase):
         b = app.Bsky({"handle": "me.bsky.social", "app_password": "p"})
         b.did = "did:plc:me"
         b.jwt = "jwt"
-        b.call = lambda m, n, d=None, params=None: {
-            "displayName": "User", "handle": "user.bsky.social", "followersCount": 42
-        }
-        prof = b.user_profile("user.bsky.social")
+        b_calls = []
+        def mock_b_call(m, n, d=None, params=None):
+            b_calls.append((m, n, params))
+            return {
+                "displayName": "User", "handle": "user.bsky.social", "followersCount": 42,
+                "viewer": {"following": "at://did:plc:me/app.bsky.graph.follow/123"}
+            }
+        b.call = mock_b_call
+        prof = b.user_profile("@user.bsky.social")
         self.assertEqual(prof["name"], "User")
         self.assertEqual(prof["followers"], 42)
+        self.assertTrue(prof["is_following"])
+        self.assertEqual(b_calls[0][2], {"actor": "user.bsky.social"})
 
         m = app.Masto({"instance": "https://m.pt", "token": "tok"})
-        m.call = lambda mth, pth, data=None, params=None: {
-            "id": 12345, "username": "bob", "acct": "bob@inst", "display_name": "Bob",
-            "statuses_count": 10
-        }
+        m.my_id = "99999"
+        m_calls = []
+        def mock_m_call(mth, pth, data=None, params=None, timeout=30):
+            m_calls.append((mth, pth, params))
+            if pth.startswith("/api/v1/accounts/relationships"):
+                return [{"id": "12345", "following": True}]
+            return {
+                "id": 12345, "username": "bob", "acct": "bob@inst", "display_name": "Bob",
+                "statuses_count": 10
+            }
+        m.call = mock_m_call
         prof_m = m.user_profile("12345")
         self.assertEqual(prof_m["id"], "12345")
         self.assertEqual(prof_m["name"], "Bob")
         self.assertEqual(prof_m["posts_count"], 10)
+        self.assertTrue(prof_m["is_following"])
+        self.assertEqual(len(m_calls), 2)
+        self.assertEqual(m_calls[1][1], "/api/v1/accounts/relationships")
+        self.assertEqual(m_calls[1][2], {"id[]": ["12345"]})
+
+    def test_masto_call_doseq_encoding(self):
+        m = app.Masto({"instance": "https://m.pt", "token": "tok"})
+        with mock.patch("app.http") as mock_http:
+            mock_http.return_value = [{"id": "123", "following": True}]
+            m.call("GET", "/api/v1/accounts/relationships", params={"id[]": ["123"]})
+            mock_http.assert_called_once()
+            called_url = mock_http.call_args[0][1]
+            self.assertEqual(called_url, "https://m.pt/api/v1/accounts/relationships?id%5B%5D=123")
 
 
 class ProxyImageTests(unittest.TestCase):

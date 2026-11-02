@@ -384,12 +384,19 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .head img.author-link:hover{transform:scale(1.08);box-shadow:0 0 0 2px var(--accent);text-decoration:none}
 .profile-card.single{margin-bottom:16px;cursor:default}
 .profile-actions-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
-.btn-follow{background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:16px;padding:3px 12px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;justify-content:center}
-.btn-follow:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 2px 8px rgba(91,75,219,0.35)}
+.btn-follow{background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:999px;padding:5px 14px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;box-sizing:border-box;white-space:nowrap}
+.btn-follow[data-net="bluesky"]{background:#0085FF;border-color:#0085FF;color:#fff}
+.btn-follow[data-net="bluesky"]:hover{background:#1a94ff;border-color:#1a94ff;box-shadow:0 2px 8px rgba(0,133,255,0.35)}
+.btn-follow[data-net="mastodon"]{background:#6364FF;border-color:#6364FF;color:#fff}
+.btn-follow[data-net="mastodon"]:hover{background:#7576ff;border-color:#7576ff;box-shadow:0 2px 8px rgba(99,100,255,0.35)}
+.btn-follow:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 2px 8px rgba(91,75,219,0.35)}
 .btn-follow:active{transform:scale(0.96)}
-.btn-following{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:3px 12px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;justify-content:center}
-.btn-following:hover, .btn-following.danger-hover{background:color-mix(in srgb,var(--danger) 15%,transparent);color:var(--danger);border-color:var(--danger)}
+.btn-following{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:5px 14px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;box-sizing:border-box;white-space:nowrap}
+.btn-following:hover, .btn-following.danger-hover{background:color-mix(in srgb,var(--danger) 15%,transparent);color:var(--danger);border-color:var(--danger);box-shadow:0 2px 8px rgba(255,75,75,0.15)}
 .btn-following:active{transform:scale(0.96)}
+.btn-profile-ext{display:inline-flex;align-items:center;justify-content:center;gap:4px;border:1px solid var(--line);background:var(--surface-2);color:var(--muted);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;font-family:var(--sans);text-decoration:none;line-height:1.2;cursor:pointer;transition:all .15s ease;box-sizing:border-box;white-space:nowrap}
+.btn-profile-ext:hover{background:color-mix(in srgb,var(--surface) 60%,var(--surface-2));color:var(--ink);border-color:var(--line-active, var(--line));transform:translateY(-1px);text-decoration:none}
+.btn-profile-ext:active{transform:scale(0.96)}
 .btn-follow:disabled, .btn-following:disabled{opacity:0.6;cursor:not-allowed;transform:none}
 .profile-card.single:hover{border-color:var(--line)}
 .profile-account-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
@@ -4529,6 +4536,7 @@ function renderSingleProfileCard(p, isOwn = false) {
 
     const followBtn = el("button", p.is_following ? "btn-following" : "btn-follow");
     followBtn.type = "button";
+    followBtn.dataset.net = p.network || "";
     followBtn.textContent = p.is_following ? t("profile.following") : t("profile.follow");
     followBtn.onmouseenter = () => {
       if (p.is_following) {
@@ -4549,13 +4557,10 @@ function renderSingleProfileCard(p, isOwn = false) {
     actionsRight.append(followBtn);
 
     if (p.url) {
-      const linkExt = el("a", "ghost", t("profile.view_on_web"));
+      const linkExt = el("a", "btn-profile-ext", t("profile.view_on_web"));
       linkExt.href = su(p.url) || "#";
       linkExt.target = "_blank";
       linkExt.rel = "noopener noreferrer";
-      linkExt.style.fontSize = "11.5px";
-      linkExt.style.padding = "2px 8px";
-      linkExt.style.textDecoration = "none";
       actionsRight.append(linkExt);
     }
     nameRow.append(actionsRight);
@@ -4615,6 +4620,7 @@ async function toggleFollow(p, btn, card) {
     }
 
     btn.className = p.is_following ? "btn-following" : "btn-follow";
+    btn.dataset.net = p.network || "";
     btn.textContent = p.is_following ? t("profile.following") : t("profile.follow");
     btn.classList.remove("danger-hover");
     btn.disabled = false;
