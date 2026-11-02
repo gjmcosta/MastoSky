@@ -471,6 +471,43 @@ class PostHandlerTests(unittest.TestCase):
             # Call 3: in_reply_to 1002
             self.assertEqual(masto_client.post.call_args_list[2][0][1], {"id": "1002"})
 
+    def test_follow_endpoint_validation_and_actions(self):
+        # Missing network
+        code, r = self._post("/api/follow", {"action": "follow", "actor": "alice"})
+        self.assertEqual(code, 400)
+        self.assertIn("Rede inválida", r["error"])
+
+        # Invalid action
+        code, r = self._post("/api/follow", {"network": "bluesky", "action": "fly", "actor": "alice"})
+        self.assertEqual(code, 400)
+        self.assertIn("Ação inválida", r["error"])
+
+        # Missing actor
+        code, r = self._post("/api/follow", {"network": "bluesky", "action": "follow"})
+        self.assertEqual(code, 400)
+        self.assertIn("Identificador", r["error"])
+
+        # Successful follow
+        self.client.follow.return_value = {"uri": "at://did:plc:me/app.bsky.graph.follow/3k1"}
+        code, r = self._post("/api/follow", {"network": "bluesky", "action": "follow", "actor": "alice"})
+        self.assertEqual(code, 200)
+        self.assertTrue(r["ok"])
+        self.assertTrue(r["following"])
+        self.assertEqual(r["follow_uri"], "at://did:plc:me/app.bsky.graph.follow/3k1")
+        self.client.follow.assert_called_with("alice")
+
+        # Successful unfollow
+        self.client.unfollow.return_value = {}
+        code, r = self._post("/api/follow", {"network": "bluesky", "action": "unfollow", "actor": "alice", "follow_uri": "at://did:plc:me/app.bsky.graph.follow/3k1"})
+        self.assertEqual(code, 200)
+        self.assertTrue(r["ok"])
+        self.assertFalse(r["following"])
+        self.client.unfollow.assert_called_with("alice", follow_uri="at://did:plc:me/app.bsky.graph.follow/3k1")
+
+        # CSRF failure
+        code, r = self._post("/api/follow", {"network": "bluesky", "action": "follow", "actor": "alice"}, token="BAD_TOKEN")
+        self.assertEqual(code, 403)
+
 
 class HttpErrorTests(unittest.TestCase):
     def _http_error(self, code, retry_after=None, body=b"x"):
@@ -1243,12 +1280,16 @@ class ActionsTests(unittest.TestCase):
         m.act("unlike", {"id": "100"})
         m.act("boost", {"id": "100"})
         m.act("unboost", {"id": "100"})
+        m.follow("100")
+        m.unfollow("100")
 
         self.assertEqual(calls, [
             ("POST", "/api/v1/statuses/100/favourite"),
             ("POST", "/api/v1/statuses/100/unfavourite"),
             ("POST", "/api/v1/statuses/100/reblog"),
-            ("POST", "/api/v1/statuses/100/unreblog")
+            ("POST", "/api/v1/statuses/100/unreblog"),
+            ("POST", "/api/v1/accounts/100/follow"),
+            ("POST", "/api/v1/accounts/100/unfollow")
         ])
 
     def test_bsky_item_and_act(self):
@@ -1299,6 +1340,16 @@ class ActionsTests(unittest.TestCase):
         self.assertEqual(calls[-1][1], "com.atproto.repo.deleteRecord")
         self.assertEqual(calls[-1][2]["rkey"], "repost456")
         self.assertEqual(calls[-1][2]["collection"], "app.bsky.feed.repost")
+
+        b.follow("did:plc:target")
+        self.assertEqual(calls[-1][1], "com.atproto.repo.createRecord")
+        self.assertEqual(calls[-1][2]["collection"], "app.bsky.graph.follow")
+        self.assertEqual(calls[-1][2]["record"]["subject"], "did:plc:target")
+
+        b.unfollow("target", follow_uri="at://did:plc:me/app.bsky.graph.follow/fol123")
+        self.assertEqual(calls[-1][1], "com.atproto.repo.deleteRecord")
+        self.assertEqual(calls[-1][2]["collection"], "app.bsky.graph.follow")
+        self.assertEqual(calls[-1][2]["rkey"], "fol123")
 
     def test_delete_and_is_own(self):
         # Mastodon
@@ -1849,11 +1900,18 @@ class ProxyImageTests(unittest.TestCase):
     def test_index_contains_i18n_elements(self):
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()
-        self.assertIn('id="langToggleBtn"', html)
         self.assertIn('id="cfgLangSelect"', html)
         self.assertIn("const I18N =", html)
         self.assertIn("function applyI18n()", html)
         self.assertIn("function setLang(", html)
+
+    def test_index_contains_follow_elements(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn(".btn-follow", html)
+        self.assertIn(".btn-following", html)
+        self.assertIn("async function toggleFollow", html)
+        self.assertIn('api("/api/follow"', html)
 
     def test_index_contains_deck_view_elements(self):
         with open("index.html", "r", encoding="utf-8") as f:

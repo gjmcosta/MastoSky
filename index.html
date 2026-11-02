@@ -343,8 +343,19 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .setup-desc{color:var(--muted);font-size:13px;margin:0 0 16px;line-height:1.45}
 .setup-section{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
 .setup-sec-title{font-weight:600;font-size:13.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.setup-section label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px}
-.setup-section input{width:100%;margin-top:4px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:7px 10px;font-size:13px}
+.setup-section label:not(.setup-check-item){display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px}
+.setup-section input:not([type="checkbox"]):not([type="radio"]){width:100%;margin-top:4px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:7px 10px;font-size:13px;box-sizing:border-box}
+.setup-check-item{display:flex;align-items:center;gap:8px;margin-bottom:0;font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer;user-select:none;padding:5px 8px;border-radius:6px;background:transparent;transition:background .15s ease}
+.setup-check-item:hover{background:color-mix(in srgb,var(--surface-2) 65%,transparent)}
+.setup-check-item input[type="checkbox"],.setup-section input[type="checkbox"]{width:16px;height:16px;margin:0;padding:0;cursor:pointer;accent-color:var(--accent);flex-shrink:0}
+.setup-check-item span{line-height:1.3}
+.notif-sound-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;font-size:12px;font-weight:600;font-family:var(--sans);border-radius:20px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;transition:all .15s ease}
+.notif-sound-btn:hover{background:color-mix(in srgb,var(--accent) 18%,var(--surface-2));border-color:var(--accent);color:var(--ink);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.18)}
+.notif-sound-btn:active{transform:scale(0.96)}
+.notif-sound-btn .sound-play-ico{font-size:9px;color:var(--accent);transition:transform .15s ease}
+.notif-sound-btn:hover .sound-play-ico{transform:scale(1.2)}
+.setup-secondary-btn{font-size:11.5px;font-weight:600;font-family:var(--sans);padding:4px 11px;border-radius:6px;border:1px solid var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);cursor:pointer;transition:all .15s ease}
+.setup-secondary-btn:hover{background:var(--accent);color:#fff}
 .setup-help{display:block;font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.35}
 .setup-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .profile-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:16px}
@@ -372,6 +383,14 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .head img.author-link{transition:transform .15s,box-shadow .15s}
 .head img.author-link:hover{transform:scale(1.08);box-shadow:0 0 0 2px var(--accent);text-decoration:none}
 .profile-card.single{margin-bottom:16px;cursor:default}
+.profile-actions-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
+.btn-follow{background:var(--accent);color:#fff;border:1px solid var(--accent);border-radius:16px;padding:3px 12px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;justify-content:center}
+.btn-follow:hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 2px 8px rgba(91,75,219,0.35)}
+.btn-follow:active{transform:scale(0.96)}
+.btn-following{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:16px;padding:3px 12px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;transition:all .15s ease;display:inline-flex;align-items:center;justify-content:center}
+.btn-following:hover, .btn-following.danger-hover{background:color-mix(in srgb,var(--danger) 15%,transparent);color:var(--danger);border-color:var(--danger)}
+.btn-following:active{transform:scale(0.96)}
+.btn-follow:disabled, .btn-following:disabled{opacity:0.6;cursor:not-allowed;transform:none}
 .profile-card.single:hover{border-color:var(--line)}
 .profile-account-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
 .profile-account-item:hover{border-color:var(--accent);background:color-mix(in srgb,var(--surface-2) 35%,var(--card));transform:translateY(-1px)}
@@ -877,8 +896,8 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-poll" viewBox="0 0 24 24"><path d="M4 6.5 H13 M4 12 H17.5 M4 17.5 H8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.5" cy="6.5" r="1.9" fill="currentColor" stroke="none"/><circle cx="20.5" cy="12" r="1.9" fill="currentColor" stroke="none"/><circle cx="11.5" cy="17.5" r="1.9" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-cw" viewBox="0 0 24 24"><path d="M2.5 12 C5 7.5 8.5 5.5 12 5.5 C15.5 5.5 19 7.5 21.5 12 C19 16.5 15.5 18.5 12 18.5 C8.5 18.5 5 16.5 2.5 12 Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 20 L19.5 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-net-both" viewBox="0 0 24 24"><path d="M9.5 13.5 L14.5 10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" opacity="0.6"/><circle cx="6.5" cy="15.5" r="3.4" fill="#6364FF"/><circle cx="17.5" cy="8.5" r="3.4" fill="#0085FF"/></symbol>
-  <symbol id="i-net-masto" viewBox="0 0 24 24"><circle cx="6.5" cy="15.5" r="5" fill="none" stroke="#6364FF" stroke-width="1.2" opacity="0.7"/><circle cx="6.5" cy="15.5" r="3.4" fill="#6364FF"/><circle cx="17.5" cy="8.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"/></symbol>
-  <symbol id="i-net-bsky" viewBox="0 0 24 24"><circle cx="6.5" cy="15.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"/><circle cx="17.5" cy="8.5" r="5" fill="none" stroke="#0085FF" stroke-width="1.2" opacity="0.7"/><circle cx="17.5" cy="8.5" r="3.4" fill="#0085FF"/></symbol>
+  <symbol id="i-net-masto" viewBox="0 0 24 24"><path fill="currentColor" d="M23.193 7.88c0-5.207-3.411-6.733-3.411-6.733C18.062.357 15.108.025 12.041 0h-.076c-3.069.025-6.02.357-7.74 1.147 0 0-3.412 1.526-3.412 6.732 0 1.193-.023 2.619.015 4.13.124 5.092.934 10.11 5.641 11.355 2.17.574 4.034.695 5.536.612 2.722-.15 4.25-.972 4.25-.972l-.09-1.975s-1.945.613-4.13.54c-2.165-.075-4.449-.234-4.799-2.892a5.5 5.5 0 0 1-.048-.745s2.125.52 4.818.643c1.646.075 3.19-.097 4.758-.283 3.007-.359 5.625-2.212 5.954-3.905.517-2.665.475-6.508.475-6.508zm-4.024 6.709h-2.497v-6.12c0-1.29-.543-1.944-1.628-1.944-1.2 0-1.802.776-1.802 2.313v3.349h-2.484v-3.35c0-1.537-.602-2.313-1.802-2.313-1.085 0-1.628.655-1.628 1.945v6.119H4.831V8.285c0-1.29.328-2.314.987-3.07.68-.759 1.57-1.147 2.674-1.147 1.278 0 2.246.491 2.886 1.474L12 6.585l.622-1.043c.64-.983 1.608-1.474 2.886-1.474 1.104 0 1.994.388 2.674 1.146.658.757.986 1.781.986 3.07v6.305z"/></symbol>
+  <symbol id="i-net-bsky" viewBox="0 0 24 24"><path fill="currentColor" d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/></symbol>
   <symbol id="i-vis-public" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.75"/><ellipse cx="12" cy="12" rx="3.6" ry="8.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M3.5 12 H20.5" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-vis-unlisted" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M8 10.5 V7 A4 4 0 0 1 16 7 V8.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-vis-private" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M8 10.5 V7 A4 4 0 0 1 16 7 V10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></symbol>
@@ -963,9 +982,6 @@ body:not(.view-deck) .deck-col-body {
           </button>
           <button type="button" class="header-nav-btn" id="refresh" title="Atualizar" data-i18n-title="header.refresh" aria-label="Atualizar">
             <svg class="ico"><use href="#i-refresh"/></svg>
-          </button>
-          <button type="button" class="header-nav-btn" id="langToggleBtn" title="Mudar idioma / Switch language" data-i18n-title="header.lang_switch_title" aria-label="Mudar idioma">
-            <span id="langToggleText" class="header-lang-badge">EN</span>
           </button>
           <button type="button" class="header-nav-btn" id="settingsBtn" title="Definições / Contas" data-i18n-title="header.settings_title" aria-label="Definições">
             <svg class="ico"><use href="#i-settings"/></svg>
@@ -1395,17 +1411,17 @@ body:not(.view-deck) .deck-col-body {
             <option id="optViewDeck" value="deck">Colunas múltiplas (Deck View)</option>
           </select>
         </label>
-        <div id="deckColsConfig" style="margin-top:10px;padding:10px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line)" hidden>
-          <div style="font-size:12.5px;font-weight:600;margin-bottom:4px" data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
+        <div id="deckColsConfig" style="margin-top:10px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line)" hidden>
+          <div style="font-size:12.5px;font-weight:600;margin-bottom:4px;color:var(--ink)" data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
           <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px" data-i18n="setup.deck_col_order_tip">Podes arrastar as colunas ou usar as setas no cabeçalho do Deck para reordenar.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px">
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Novo post</span></label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColTimeline"> <span data-i18n="setup.deck_col_timeline">Timeline</span></label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColExplore"> <span data-i18n="setup.deck_col_explore">Em Alta</span></label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColSearch"> <span data-i18n="setup.deck_col_search">Pesquisa</span></label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColSaved"> <span data-i18n="setup.deck_col_saved">Guardados</span></label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
+            <label class="setup-check-item"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Novo post</span></label>
+            <label class="setup-check-item"><input type="checkbox" id="chkColTimeline"> <span data-i18n="setup.deck_col_timeline">Timeline</span></label>
+            <label class="setup-check-item"><input type="checkbox" id="chkColExplore"> <span data-i18n="setup.deck_col_explore">Em Alta</span></label>
+            <label class="setup-check-item"><input type="checkbox" id="chkColSearch"> <span data-i18n="setup.deck_col_search">Pesquisa</span></label>
+            <label class="setup-check-item"><input type="checkbox" id="chkColSaved"> <span data-i18n="setup.deck_col_saved">Guardados</span></label>
+            <label class="setup-check-item"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
+            <label class="setup-check-item"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
           </div>
         </div>
       </div>
@@ -1414,7 +1430,7 @@ body:not(.view-deck) .deck-col-body {
         <div class="setup-sec-title"><span>🔔 <span data-i18n="setup.notifs_sec_title">Alertas e Notificações</span></span></div>
         <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;margin-top:8px">
           <div>
-            <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
+            <label class="setup-check-item" style="padding:0;font-weight:600">
               <input type="checkbox" id="cfgNotifSound">
               <span data-i18n="notifs.sound_title">Sons espaciais de notificação</span>
             </label>
@@ -1422,24 +1438,24 @@ body:not(.view-deck) .deck-col-body {
               Efeitos sonoros cósmicos e discretos sintetizados via Web Audio.
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:24px">
-              <button type="button" class="btn-sm" style="padding:4px 9px;font-size:11.5px;border-radius:12px;display:inline-flex;align-items:center;gap:4px" onclick="testSpatialSound('reply')" title="Ouvir som de resposta">
-                <span>▶</span> <span data-i18n="notifs.test_reply">Resposta</span>
+              <button type="button" class="notif-sound-btn" onclick="testSpatialSound('reply')" title="Ouvir som de resposta">
+                <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_reply">Resposta</span>
               </button>
-              <button type="button" class="btn-sm" style="padding:4px 9px;font-size:11.5px;border-radius:12px;display:inline-flex;align-items:center;gap:4px" onclick="testSpatialSound('like')" title="Ouvir som de gosto">
-                <span>▶</span> <span data-i18n="notifs.test_like">Gosto</span>
+              <button type="button" class="notif-sound-btn" onclick="testSpatialSound('like')" title="Ouvir som de gosto">
+                <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_like">Gosto</span>
               </button>
-              <button type="button" class="btn-sm" style="padding:4px 9px;font-size:11.5px;border-radius:12px;display:inline-flex;align-items:center;gap:4px" onclick="testSpatialSound('boost')" title="Ouvir som de partilha">
-                <span>▶</span> <span data-i18n="notifs.test_boost">Partilha</span>
+              <button type="button" class="notif-sound-btn" onclick="testSpatialSound('boost')" title="Ouvir som de partilha">
+                <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_boost">Partilha</span>
               </button>
-              <button type="button" class="btn-sm" style="padding:4px 9px;font-size:11.5px;border-radius:12px;display:inline-flex;align-items:center;gap:4px" onclick="testSpatialSound('follow')" title="Ouvir som de seguidor">
-                <span>▶</span> <span data-i18n="notifs.test_follow">Seguidor</span>
+              <button type="button" class="notif-sound-btn" onclick="testSpatialSound('follow')" title="Ouvir som de seguidor">
+                <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_follow">Seguidor</span>
               </button>
             </div>
           </div>
 
           <div style="border-top:1px solid var(--line);padding-top:10px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-              <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer">
+              <label class="setup-check-item" style="padding:0;font-weight:600">
                 <input type="checkbox" id="cfgNotifDesktop">
                 <span data-i18n="notifs.desktop_title">Notificações no ambiente de trabalho</span>
               </label>
@@ -1449,28 +1465,28 @@ body:not(.view-deck) .deck-col-body {
               Recebe avisos no ecrã quando chegam novas interações.
             </div>
             <div id="cfgDesktopNotifPermBox" style="margin-left:24px" hidden>
-              <button type="button" class="btn-sm" style="font-size:11.5px;padding:3px 10px;border-radius:6px" onclick="requestDesktopNotificationPermission()" data-i18n="notifs.desktop_req_btn">
+              <button type="button" class="setup-secondary-btn" onclick="requestDesktopNotificationPermission()" data-i18n="notifs.desktop_req_btn">
                 Pedir autorização ao navegador
               </button>
             </div>
           </div>
 
           <div style="border-top:1px solid var(--line);padding-top:10px">
-            <div style="font-size:12px;font-weight:600;margin-bottom:6px" data-i18n="notifs.types_title">Alertar para:</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--ink)" data-i18n="notifs.types_title">Alertar para:</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
+              <label class="setup-check-item">
                 <input type="checkbox" id="cfgNotifTypeReplies" checked>
                 <span data-i18n="notifs.type_replies">Respostas & Menções</span>
               </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <label class="setup-check-item">
                 <input type="checkbox" id="cfgNotifTypeLikes" checked>
                 <span data-i18n="notifs.type_likes">Gostos</span>
               </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <label class="setup-check-item">
                 <input type="checkbox" id="cfgNotifTypeBoosts" checked>
                 <span data-i18n="notifs.type_boosts">Partilhas</span>
               </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <label class="setup-check-item">
                 <input type="checkbox" id="cfgNotifTypeFollows" checked>
                 <span data-i18n="notifs.type_follows">Seguidores</span>
               </label>
@@ -1901,7 +1917,12 @@ const I18N = {
       posts_stat: "posts",
       following_stat: "a seguir",
       followers_stat: "seguidores",
-      load_more_posts: "Carregar mais publicações"
+      load_more_posts: "Carregar mais publicações",
+      follow: "+ Seguir",
+      following: "A seguir",
+      unfollow: "Deixar de seguir",
+      following_action: "A atualizar...",
+      follow_err: "Erro ao atualizar seguidor: {err}"
     },
     panel: {
       title: "Menu & Perfil",
@@ -2256,7 +2277,12 @@ const I18N = {
       posts_stat: "posts",
       following_stat: "following",
       followers_stat: "followers",
-      load_more_posts: "Load more posts"
+      load_more_posts: "Load more posts",
+      follow: "+ Follow",
+      following: "Following",
+      unfollow: "Unfollow",
+      following_action: "Updating...",
+      follow_err: "Error updating follow status: {err}"
     },
     panel: {
       title: "Menu & Profile",
@@ -2811,7 +2837,7 @@ function el(tag, cls, text) {
 
 const LOGO = {
   bluesky: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/></svg>',
-  mastodon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M23.193 7.879c0-5.206-3.411-6.732-3.411-6.732C18.062.357 15.108.025 12.041 0h-.076c-3.068.025-6.02.357-7.74 1.147 0 0-3.411 1.526-3.411 6.732 0 1.192-.023 2.618.015 4.129.124 5.092.934 10.109 5.641 11.355 2.17.574 4.034.695 5.535.612 2.722-.15 4.25-.972 4.25-.972l-.09-1.975s-1.945.613-4.129.539c-2.165-.074-4.04-0.638-4.04-0.638s3.34-1.132 5.05-5.296c1.11-2.74 1.101-5.588 1.088-5.747zm-5.856 5.864h-2.11v-5.46c0-1.127-.474-1.696-1.424-1.696-.653 0-1.071.282-1.288.847-.13.342-.146.815-.146 1.488v3.136h-2.106v-3.136c0-.673-.016-1.146-.146-1.488-.217-.565-.635-.847-1.288-.847-.95 0-1.424.569-1.424 1.696v5.46h-2.11V7.931c0-1.077.275-1.933.826-2.569.566-.636 1.303-.956 2.212-.956 1.055 0 1.852.41 2.376 1.231l.542 1.011.542-1.011c.524-.821 1.321-1.231 2.376-1.231.909 0 1.646.32 2.212.956.551.636.826 1.492.826 2.569z"/></svg>'
+  mastodon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M23.193 7.88c0-5.207-3.411-6.733-3.411-6.733C18.062.357 15.108.025 12.041 0h-.076c-3.069.025-6.02.357-7.74 1.147 0 0-3.412 1.526-3.412 6.732 0 1.193-.023 2.619.015 4.13.124 5.092.934 10.11 5.641 11.355 2.17.574 4.034.695 5.536.612 2.722-.15 4.25-.972 4.25-.972l-.09-1.975s-1.945.613-4.13.54c-2.165-.075-4.449-.234-4.799-2.892a5.5 5.5 0 0 1-.048-.745s2.125.52 4.818.643c1.646.075 3.19-.097 4.758-.283 3.007-.359 5.625-2.212 5.954-3.905.517-2.665.475-6.508.475-6.508zm-4.024 6.709h-2.497v-6.12c0-1.29-.543-1.944-1.628-1.944-1.2 0-1.802.776-1.802 2.313v3.349h-2.484v-3.35c0-1.537-.602-2.313-1.802-2.313-1.085 0-1.628.655-1.628 1.945v6.119H4.831V8.285c0-1.29.328-2.314.987-3.07.68-.759 1.57-1.147 2.674-1.147 1.278 0 2.246.491 2.886 1.474L12 6.585l.622-1.043c.64-.983 1.608-1.474 2.886-1.474 1.104 0 1.994.388 2.674 1.146.658.757.986 1.781.986 3.07v6.305z"/></svg>'
 };
 const ICONS = {
   reply: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
@@ -4493,20 +4519,46 @@ function renderSingleProfileCard(p, isOwn = false) {
   else bName.textContent = p.name;
   nameRow.append(bName);
 
-  if (isOwn) {
+  const isSelf = isOwn || Boolean(p.is_self);
+  if (isSelf) {
     const star = el("span", "star-badge");
     star.title = t("profile.your_account");
     nameRow.append(star);
-  } else if (p.url) {
-    const linkExt = el("a", "ghost", t("profile.view_on_web"));
-    linkExt.href = su(p.url) || "#";
-    linkExt.target = "_blank";
-    linkExt.rel = "noopener noreferrer";
-    linkExt.style.fontSize = "11.5px";
-    linkExt.style.padding = "2px 8px";
-    linkExt.style.marginLeft = "auto";
-    linkExt.style.textDecoration = "none";
-    nameRow.append(linkExt);
+  } else {
+    const actionsRight = el("div", "profile-actions-right");
+
+    const followBtn = el("button", p.is_following ? "btn-following" : "btn-follow");
+    followBtn.type = "button";
+    followBtn.textContent = p.is_following ? t("profile.following") : t("profile.follow");
+    followBtn.onmouseenter = () => {
+      if (p.is_following) {
+        followBtn.textContent = t("profile.unfollow");
+        followBtn.classList.add("danger-hover");
+      }
+    };
+    followBtn.onmouseleave = () => {
+      if (p.is_following) {
+        followBtn.textContent = t("profile.following");
+        followBtn.classList.remove("danger-hover");
+      }
+    };
+    followBtn.onclick = async (e) => {
+      e.stopPropagation();
+      await toggleFollow(p, followBtn, card);
+    };
+    actionsRight.append(followBtn);
+
+    if (p.url) {
+      const linkExt = el("a", "ghost", t("profile.view_on_web"));
+      linkExt.href = su(p.url) || "#";
+      linkExt.target = "_blank";
+      linkExt.rel = "noopener noreferrer";
+      linkExt.style.fontSize = "11.5px";
+      linkExt.style.padding = "2px 8px";
+      linkExt.style.textDecoration = "none";
+      actionsRight.append(linkExt);
+    }
+    nameRow.append(actionsRight);
   }
 
   const handle = el("div", "profile-handle", p.handle);
@@ -4524,13 +4576,53 @@ function renderSingleProfileCard(p, isOwn = false) {
   const sFollowing = el("span");
   sFollowing.innerHTML = `<b>${p.following != null ? p.following : 0}</b> ` + t("profile.following_stat");
   const sFollowers = el("span");
-  sFollowers.innerHTML = `<b>${p.followers != null ? p.followers : 0}</b> ` + t("profile.followers_stat");
+  sFollowers.innerHTML = `<b class="profile-followers-count">${p.followers != null ? p.followers : 0}</b> ` + t("profile.followers_stat");
   stats.append(sPosts, sFollowing, sFollowers);
   info.append(stats);
 
   body.append(info);
   card.append(body);
   return card;
+}
+
+async function toggleFollow(p, btn, card) {
+  const nextAction = p.is_following ? "unfollow" : "follow";
+  btn.disabled = true;
+  const prevText = btn.textContent;
+  btn.textContent = t("profile.following_action");
+
+  try {
+    const res = await api("/api/follow", {
+      network: p.network,
+      action: nextAction,
+      actor: p.network === "bluesky" ? (p.did || p.handle) : (p.id || p.handle),
+      follow_uri: p.follow_uri
+    });
+    if (!res || res.error || !res.ok) {
+      alert(t("profile.follow_err", {err: (res && res.error) || "Erro de comunicação."}));
+      btn.disabled = false;
+      btn.textContent = prevText;
+      return;
+    }
+    p.is_following = Boolean(res.following);
+    if (res.follow_uri) p.follow_uri = res.follow_uri;
+    else if (!p.is_following) p.follow_uri = null;
+
+    if (p.followers != null) {
+      p.followers = Math.max(0, p.followers + (p.is_following ? 1 : -1));
+      const followersEl = card ? card.querySelector(".profile-followers-count") : null;
+      if (followersEl) followersEl.textContent = p.followers;
+    }
+
+    btn.className = p.is_following ? "btn-following" : "btn-follow";
+    btn.textContent = p.is_following ? t("profile.following") : t("profile.follow");
+    btn.classList.remove("danger-hover");
+    btn.disabled = false;
+  } catch (err) {
+    alert(t("profile.follow_err", {err: err.message}));
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
 }
 
 let userProfileModalCursor = null;

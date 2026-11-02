@@ -47,7 +47,7 @@ MAX_BODY = 32 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens em base
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
@@ -982,8 +982,13 @@ class Bsky:
         p = self.call("GET", "app.bsky.actor.getProfile", params={"actor": actor})
         desc = p.get("description") or ""
         bio_html = render_bsky_text(desc) if desc else ""
+        viewer = p.get("viewer") or {}
+        follow_uri = viewer.get("following")
+        target_did = p.get("did") or ""
+        is_self = (target_did == self.did) if (self.did and target_did) else False
         return {
             "network": "bluesky",
+            "did": target_did,
             "name": p.get("displayName") or p.get("handle") or "",
             "handle": "@" + (p.get("handle") or ""),
             "avatar": safe_url(p.get("avatar")),
@@ -992,7 +997,10 @@ class Bsky:
             "followers": p.get("followersCount", 0),
             "following": p.get("followsCount", 0),
             "posts_count": p.get("postsCount", 0),
-            "url": f"https://bsky.app/profile/{p.get('handle')}"
+            "url": f"https://bsky.app/profile/{p.get('handle')}",
+            "is_following": bool(follow_uri),
+            "follow_uri": follow_uri,
+            "is_self": is_self
         }
 
     def user_feed(self, actor, cursor=None):
@@ -1180,6 +1188,39 @@ class Bsky:
                 "repo": self.did, "collection": "app.bsky.feed.post", "rkey": rkey})
         else:
             raise ApiError(f"Ação desconhecida: {action}")
+
+    def follow(self, actor):
+        self._ensure()
+        target_did = actor
+        if not target_did.startswith("did:"):
+            target_did = self.resolve_handle(actor)
+            if not target_did:
+                prof = self.user_profile(actor)
+                target_did = prof.get("did") or actor
+        return self.call("POST", "com.atproto.repo.createRecord", {
+            "repo": self.did,
+            "collection": "app.bsky.graph.follow",
+            "record": {
+                "$type": "app.bsky.graph.follow",
+                "subject": target_did,
+                "createdAt": now_iso()
+            }
+        })
+
+    def unfollow(self, actor, follow_uri=None):
+        self._ensure()
+        target_uri = follow_uri
+        if not target_uri:
+            prof = self.user_profile(actor)
+            target_uri = prof.get("follow_uri")
+        if not target_uri:
+            raise ApiError("Registo de follow não encontrado para remover.")
+        rkey = target_uri.split("/")[-1]
+        return self.call("POST", "com.atproto.repo.deleteRecord", {
+            "repo": self.did,
+            "collection": "app.bsky.graph.follow",
+            "rkey": rkey
+        })
 
     def notifications(self, cursor=None):
         kinds = {"like": "like", "like-via-repost": "like_repost", "repost": "boost", "repost-via-repost": "boost_repost",
@@ -1476,7 +1517,10 @@ class Masto:
     def profile(self):
         acc = self.call("GET", "/api/v1/accounts/verify_credentials")
         self.my_id = str(acc.get("id"))
-        return self._format_acc(acc)
+        prof = self._format_acc(acc)
+        prof["is_self"] = True
+        prof["is_following"] = False
+        return prof
 
     def user_profile(self, actor):
         actor_str = str(actor).strip().lstrip("@")
@@ -1484,7 +1528,21 @@ class Masto:
             acc = self.call("GET", f"/api/v1/accounts/{actor_str}")
         else:
             acc = self.call("GET", "/api/v1/accounts/lookup", params={"acct": actor_str})
-        return self._format_acc(acc)
+        prof = self._format_acc(acc)
+        my_id = self.get_my_id()
+        acc_id = prof.get("id")
+        is_self = (str(acc_id) == str(my_id)) if (my_id and acc_id) else False
+        is_following = False
+        if not is_self and acc_id:
+            try:
+                rels = self.call("GET", "/api/v1/accounts/relationships", params={"id[]": [acc_id]})
+                if isinstance(rels, list) and len(rels) > 0 and isinstance(rels[0], dict):
+                    is_following = bool(rels[0].get("following"))
+            except Exception:
+                pass
+        prof["is_self"] = is_self
+        prof["is_following"] = is_following
+        return prof
 
     def user_feed(self, actor, cursor=None):
         actor_str = str(actor).strip().lstrip("@")
@@ -1616,6 +1674,20 @@ class Masto:
         if action not in endpoints:
             raise ApiError(f"Ação desconhecida: {action}")
         return self.call("POST", endpoints[action])
+
+    def follow(self, actor):
+        acc_id = str(actor).strip().lstrip("@")
+        if not acc_id.isdigit():
+            prof = self.user_profile(acc_id)
+            acc_id = prof.get("id")
+        return self.call("POST", f"/api/v1/accounts/{acc_id}/follow")
+
+    def unfollow(self, actor, follow_uri=None):
+        acc_id = str(actor).strip().lstrip("@")
+        if not acc_id.isdigit():
+            prof = self.user_profile(acc_id)
+            acc_id = prof.get("id")
+        return self.call("POST", f"/api/v1/accounts/{acc_id}/unfollow")
 
     def notifications(self, cursor=None):
         kinds = {"favourite": "like", "reblog": "boost", "follow": "follow", "follow_request": "follow_request",
@@ -2143,6 +2215,30 @@ class H(BaseHTTPRequestHandler):
                 if isinstance(res, dict) and "uri" in res:
                     out["uri"] = res["uri"]
                 return self.send(200, out)
+            except Exception as e:
+                return self.send(200, {"ok": False, "error": str(e)})
+        if self.path == "/api/follow":
+            net = d.get("network")
+            action = d.get("action")
+            actor = d.get("actor")
+            follow_uri = d.get("follow_uri")
+            if not net or net not in CLIENTS:
+                return self.send(400, {"error": "Rede inválida ou não configurada."})
+            if action not in ("follow", "unfollow"):
+                return self.send(400, {"error": "Ação inválida (deve ser 'follow' ou 'unfollow')."})
+            if not actor:
+                return self.send(400, {"error": "Identificador do utilizador em falta."})
+            try:
+                client = CLIENTS[net]
+                if action == "follow":
+                    res = client.follow(actor)
+                    out = {"ok": True, "following": True}
+                    if isinstance(res, dict) and "uri" in res:
+                        out["follow_uri"] = res["uri"]
+                    return self.send(200, out)
+                else:
+                    client.unfollow(actor, follow_uri=follow_uri)
+                    return self.send(200, {"ok": True, "following": False})
             except Exception as e:
                 return self.send(200, {"ok": False, "error": str(e)})
         if self.path == "/api/setup":
