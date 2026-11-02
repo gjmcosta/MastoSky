@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
 > **Data de atualização:** 2 de Novembro de 2026  
-> **Versão:** v0.5.1  
+> **Versão:** v0.6.0  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 133 testes aprovados (`python3 -m unittest discover -s tests`)
+> **Testes Automatizados:** 140 testes aprovados (`python3 -m unittest discover -s tests`)
 
 ---
 
@@ -40,8 +40,15 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 - Sondagens nativas no Mastodon e renderizadas no Bluesky.
 - Upload de imagens (até 4) com pré-visualização, legendas (*alt text*) e colar da área de transferência (`Cmd+V` / arrastar e largar).
 - Suporte a publicação de fios de publicações (*Threads*).
-- **Cartão de Publicação Cruzada (*Cross-post Card*):** Geração dinâmica de cartões visuais para partilhar publicações de uma rede na outra.
+- **Cartão de Publicação Cruzada Renovado (*Cross-post Card*):** Geração dinâmica de cartões visuais para partilhar publicações de uma rede na outra com melhorias substanciais:
+  - *Altura dinâmica e formato vertical adaptável:* Em vez de um quadrado 1:1 fixo com grandes espaços vazios, a altura do cartão agora adapta-se com precisão ao volume de texto e anexos (desde ~2:1 compacto para posts curtos até 4:5 vertical — a proporção máxima exibida por inteiro nas timelines e apps do Bluesky e Mastodon sem qualquer corte).
+  - *Renderização de publicações citadas (*Quote Posts*):* Quando o post original cita outro post, é renderizado um cartão interno embutido elegante com o avatar, nome, handle, link e texto do autor citado.
+  - *Preservação de quebras de linha:* Respeita parágrafos manuais, listas, IBANs e dados estruturados sem aglomerar o texto numa só linha.
+  - *Céu estrelado enriquecido:* Fundo cósmico com 35+ estrelas e reflexos em cruz subtis sem poluição visual.
+  - *Destaque oficial ao MastoSky:* Rodapé enriquecido com o logótipo oficial completo do elefante constelação (`/brand/logo-lockup-dark.svg`).
+  - *Botões de tema circulares perfeitos:* Ajuste nos estilos de `.swatch` para eliminar quaisquer contornos ou artefactos quadrados em todos os navegadores.
 - **Sistema de Rascunhos (*Drafts*):** Indicador de rascunho guardado automaticamente no `localStorage`.
+- **Resposta Integrada Encadeada (*Threaded Reply Composer* à semelhança do Mastodon):** Ao clicar em "Responder" em qualquer publicação da timeline ou notificações, o post original pai passa a ser renderizado de forma destacada no topo da coluna de novo post (com avatar, autor, texto completo e anexos), seguido de uma linha conetora vertical de fio de conversa até ao autor atual e um botão `✕` para cancelar a resposta e voltar imediatamente ao modo de "Novo post" normal. Inclui highlight reativo na timeline (`.is-reply-target`), alternância por clique duplo (*toggle*), preenchimento automático da menção do autor em respostas Mastodon, foco imediato e botão de envio dinâmico ("Responder" / "Publicar").
 
 ### 🗂️ Modos de Visualização: Deck View e Coluna Única
 - **Coluna Única:** Layout limpo e focado, com barra lateral flutuante de navegação rápida e alternador de abas.
@@ -54,8 +61,18 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - Notificações
   - Perfil
 - **Reordenação e Personalização do Deck:** Possibilidade de mover colunas com setas ou arrastar (*drag-and-drop*), fechar colunas e reabri-las através do menu "+ Adicionar Coluna". Persistência da ordem no `localStorage`.
+- **Preservação de Posição de Leitura e Scroll Anchoring:** Durante as atualizações automáticas em segundo plano (auto-refresh/polling) na Timeline, Explore e Notificações, a posição do utilizador é mantida 100% estática e congelada no mesmo pixel do ecrã caso esteja a ler posts mais abaixo (`captureScrollAnchor` / `restoreScrollAnchor`), sem saltos visuais (*content jumps*) e sem perder posts carregados via paginação. Quando chegam novos posts ou notificações enquanto o utilizador está abaixo do topo:
+  - É exibida uma pílula flutuante animada e com estilo unificado (`↑ X novas publicações` / `↑ X novas notificações`).
+  - Clicar na pílula leva o utilizador com suavidade ao topo (`scrollColToTop`), tanto no modo Deck (na respetiva coluna) como no modo de Coluna Única (`window.scrollTo({top: 0, behavior: "smooth"})`).
+  - O desaparecimento da pílula é feito via fade gradual com transição CSS para evitar o cancelamento precoce da animação de scroll em navegadores baseados em WebKit/Blink, e inclui auto-dispensa inteligente quando o utilizador faz scroll manual até às imediações do topo (<30px).
 
 ### 💬 Citações e Fios de Conversa (*Threads*)
+- **Ícones Claros e Inconfundíveis:** Diferenciação visual total entre "Responder" (seta curva ↩️, padrão Mastodon/web) e "Ver conversa" (fio vertical com nós conetores 🧵).
+- **Coluna Lateral Dedicada de Conversa no Modo Deck (*Side Thread Column*) e Coerência Universal de Clique:** À semelhança do Mastodon Web, clicar numa publicação (no texto ou cartão fora de links/botões/media) ou no botão de conversa abre a coluna lateral de conversa (`#colThread`) posicionada dinamicamente imediatamente ao lado da coluna onde a publicação foi vista. Este comportamento é agora **universal e consistente em todas as colunas**:
+  - *Timeline, Em Alta, Pesquisa, Guardados, Perfil e Notificações:* Em qualquer uma das colunas, clicar no cartão de um post abre o detalhe e a árvore de respostas.
+  - *Coluna de Notificações:* Notificações de resposta, menção, citação, gosto ou partilha associadas a um post abrem diretamente a conversa completa do post e marcam o item como lido; eventos de perfil (como novos seguidores) abrem o perfil do utilizador.
+  - A coluna de origem permanece totalmente aberta, ativa e interativa, com realce luminoso suave no post inspecionado (`.is-thread-active`).
+- **Navegação Completa e Fecho:** A coluna de conversa possui cabeçalho com botão de retorno para navegação profunda no histórico do fio (`←`), botão de subida ao topo e botão de fechar (`✕`), suportando também a tecla `Escape` para fecho rápido. No modo de coluna única, mantém-se a transição suave no feed com botão de voltar e reposicionamento exato de scroll.
 - As publicações citadas abrem diretamente como uma conversa dentro do MastoSky (sem abrir separadores externos).
 - Resolução direta de URLs web do Bluesky (`bsky.app/...`) para AT-URIs nativos (`at://...`).
 - Histórico de navegação de conversas com botão de retrocesso (`← Voltar ao post anterior`).
@@ -67,9 +84,17 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 - Gestão de contas ativas e alternância de sessão.
 
 ### 🔔 Sistema de Notificações Avançado
+- **Sinalética Renovada & Alto Contraste:** Cartões não lidos com destaque notório no tema escuro (`border-left: 5px`, fundo com 18% da cor da rede, borda iluminada e sombra volumétrica). Cada notificação por ler exibe um ponto luminoso pulsante (*unread dot*) no canto superior.
+- **Banner de Resumo e Contadores por Filtro:** Barra superior no feed com o número total de notificações pendentes (`🔵 X notificações não lidas`) e botão rápido `Marcar todas como lidas ✓✓`. As pílulas de filtro passam a exibir pequenos crachás numéricos dinâmicos com as não lidas por categoria (Respostas, Gostos, Partilhas, Seguidores).
 - **Filtros rápidos compactos por tipo:** Todas, Respostas, Gostos, Partilhas, Seguidores (pílulas compactas com expansão suave).
 - **Leitura automática:** As notificações são marcadas como lidas ao fazer scroll sobre elas via `IntersectionObserver` ou ao passar o rato (hover).
 - **Marcação manual em lote:** Botão de marcar todas como lidas no cabeçalho da coluna (`✓✓`).
+- **Ações Completas nos Cartões de Notificação:** Assim como nos cartões da Timeline, as notificações de publicações (respostas, menções, citações, gostos e partilhas) contam agora com a barra de ações completa:
+  - Responder (`↩`) com contador de respostas e pré-preenchimento;
+  - Partilhar / Repost (`🔁`) com popover para republicação direta ou geração de cartão de crossposting para a outra rede;
+  - Gosto (`❤️`) com contagem reativa e sincronização com a respetiva rede (Bluesky / Mastodon);
+  - Guardar / Bookmark (`🔖`) com persistência no armazenamento local;
+  - Ver conversa (`🧵`) para inspecionar a árvore do fio na coluna lateral.
 - **Apresentação idêntica à Timeline nas Republicações:** As notificações de partilha exibem um banner superior com quem partilhou (`🔁 Nome republicou a tua publicação`) e, em baixo, o post original completo com a autoria real, eliminando qualquer ambiguidade.
 - **Sons Espaciais via Web Audio API:** 4 efeitos cósmicos sutis sintetizados 100% em código (zero ficheiros áudio externos):
   - *Respostas / Menções:* Glissando estelar límpido (587Hz $\rightarrow$ 880Hz $\rightarrow$ 1175Hz).

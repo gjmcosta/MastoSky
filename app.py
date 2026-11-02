@@ -47,7 +47,7 @@ MAX_BODY = 32 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens em base
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "0.5.1"
+VERSION = "0.6.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
@@ -1169,12 +1169,35 @@ class Bsky:
         self._ensure()
         if action in ("like", "boost"):
             col = {"like": "app.bsky.feed.like", "boost": "app.bsky.feed.repost"}[action]
+            uri = ref.get("uri")
+            cid = ref.get("cid")
+            if not cid and uri:
+                try:
+                    res = self.call("GET", "app.bsky.feed.getPosts", params=[("uris", uri)])
+                    posts = res.get("posts", [])
+                    if posts:
+                        cid = posts[0].get("cid")
+                except Exception:
+                    pass
+            if not uri or not cid:
+                raise ApiError("Referência de post incompleta para Bluesky (requer uri e cid).")
             return self.call("POST", "com.atproto.repo.createRecord", {
                 "repo": self.did, "collection": col,
-                "record": {"$type": col, "subject": {"uri": ref["uri"], "cid": ref["cid"]}, "createdAt": now_iso()}})
+                "record": {"$type": col, "subject": {"uri": uri, "cid": cid}, "createdAt": now_iso()}})
         elif action in ("unlike", "unboost"):
             col = {"unlike": "app.bsky.feed.like", "unboost": "app.bsky.feed.repost"}[action]
-            target_uri = ref.get("like_uri" if action == "unlike" else "repost_uri") or ref.get("uri")
+            target_uri = ref.get("like_uri" if action == "unlike" else "repost_uri")
+            if not target_uri and ref.get("uri"):
+                try:
+                    res = self.call("GET", "app.bsky.feed.getPosts", params=[("uris", ref["uri"])])
+                    posts = res.get("posts", [])
+                    if posts:
+                        viewer = posts[0].get("viewer") or {}
+                        target_uri = viewer.get("like" if action == "unlike" else "repost")
+                except Exception:
+                    pass
+            if not target_uri:
+                target_uri = ref.get("uri")
             if not target_uri:
                 raise ApiError("URI do registo a remover não fornecido.")
             rkey = target_uri.split("/")[-1]
@@ -1297,6 +1320,13 @@ class Bsky:
                 url = f"https://bsky.app/profile/{a['handle']}/post/{n['uri'].split('/')[-1]}"
                 target_did = a.get("did") or (n.get("uri").replace("at://", "").split("/")[0] if n.get("uri") else None)
                 if n_post:
+                    p_viewer = n_post.get("viewer") or {}
+                    n_like = p_viewer.get("like")
+                    n_repost = p_viewer.get("repost")
+                    if n_like and ref:
+                        ref["like_uri"] = n_like
+                    if n_repost and ref:
+                        ref["repost_uri"] = n_repost
                     embed_sources = []
                     if n_post.get("embed"): embed_sources.append(n_post.get("embed"))
                     for emb in n_post.get("embeds") or []:
@@ -1353,6 +1383,9 @@ class Bsky:
                         elif "record" in stype:
                             text = "💬 [Citação]"
                             break
+                s_viewer = subject.get("viewer") or {}
+                s_like = s_viewer.get("like")
+                s_repost = s_viewer.get("repost")
                 target_post = {
                     "author_name": s_a.get("displayName") or s_a.get("handle") or "",
                     "author_handle": "@" + (s_a.get("handle") or ""),
@@ -1362,15 +1395,43 @@ class Bsky:
                     "url": url,
                     "uri": subject.get("uri"),
                     "cid": subject.get("cid"),
-                    "is_own": bool(self.did and s_a.get("did") == self.did)
+                    "is_own": bool(self.did and s_a.get("did") == self.did),
+                    "liked": bool(s_like),
+                    "boosted": bool(s_repost),
+                    "likes": subject.get("likeCount", 0),
+                    "boosts": subject.get("repostCount", 0),
+                    "replies": subject.get("replyCount", 0)
                 }
                 if not ref and subject.get("uri") and subject.get("cid"):
                     ref = {"uri": subject["uri"], "cid": subject["cid"]}
+                if s_like and ref:
+                    ref["like_uri"] = s_like
+                if s_repost and ref:
+                    ref["repost_uri"] = s_repost
             elif subj_uri and kind in ("like", "like_repost", "boost", "boost_repost"):
                 post_id = subj_uri.split("/")[-1]
                 author_part = subj_uri.replace("at://", "").split("/")[0]
                 url = f"https://bsky.app/profile/{author_part}/post/{post_id}"
                 text = "(Publicação indisponível)"
+
+            liked = False
+            boosted = False
+            likes_cnt = 0
+            boosts_cnt = 0
+            replies_cnt = 0
+            if n_post:
+                p_viewer = n_post.get("viewer") or {}
+                liked = bool(p_viewer.get("like"))
+                boosted = bool(p_viewer.get("repost"))
+                likes_cnt = n_post.get("likeCount", 0)
+                boosts_cnt = n_post.get("repostCount", 0)
+                replies_cnt = n_post.get("replyCount", 0)
+            elif target_post:
+                liked = bool(target_post.get("liked"))
+                boosted = bool(target_post.get("boosted"))
+                likes_cnt = target_post.get("likes", 0)
+                boosts_cnt = target_post.get("boosts", 0)
+                replies_cnt = target_post.get("replies", 0)
 
             if media:
                 dedup_m, seen_keys = [], set()
@@ -1388,7 +1449,8 @@ class Bsky:
                         "handle": "@" + a["handle"], "author_id": a.get("did") or a["handle"],
                         "author_handle": a["handle"], "avatar": safe_url(a.get("avatar")),
                         "html": render_bsky_text(text, facets) if text else "", "time": n["indexedAt"], "url": url, "ref": ref,
-                        "media": safe_media_list(media), "quote": quote, "target_post": target_post})
+                        "media": safe_media_list(media), "quote": quote, "target_post": target_post,
+                        "liked": liked, "boosted": boosted, "likes": likes_cnt, "boosts": boosts_cnt, "replies": replies_cnt})
         return out, next_cursor
 
 
@@ -1712,8 +1774,13 @@ class Masto:
             a_name = a.get("display_name") or a.get("username", "")
             a_name_html = render_custom_emojis(html.escape(a_name), a_emojis) if a_emojis else None
             target_post = None
+            orig_st = (st.get("reblog") or st) if st else None
+            liked = bool(orig_st.get("favourited")) if orig_st else False
+            boosted = bool(orig_st.get("reblogged")) if orig_st else False
+            likes_cnt = orig_st.get("favourites_count", 0) if orig_st else 0
+            boosts_cnt = orig_st.get("reblogs_count", 0) if orig_st else 0
+            replies_cnt = orig_st.get("replies_count", 0) if orig_st else 0
             if st:
-                orig_st = st.get("reblog") or st
                 st_a = orig_st.get("account") or {}
                 my_id = self.get_my_id()
                 target_post = {
@@ -1724,7 +1791,12 @@ class Masto:
                     "time": orig_st.get("created_at"),
                     "url": safe_url(orig_st.get("url")),
                     "id": str(orig_st.get("id")),
-                    "is_own": bool(my_id and str(st_a.get("id")) == my_id)
+                    "is_own": bool(my_id and str(st_a.get("id")) == my_id),
+                    "liked": liked,
+                    "boosted": boosted,
+                    "likes": likes_cnt,
+                    "boosts": boosts_cnt,
+                    "replies": replies_cnt
                 }
                 if st_a.get("emojis"):
                     target_post["author_name_html"] = render_custom_emojis(html.escape(target_post["author_name"]), st_a.get("emojis"))
@@ -1735,10 +1807,15 @@ class Masto:
                 "author_handle": a.get("acct") or a.get("username", ""), "avatar": safe_url(a.get("avatar")),
                 "html": notif_html, "time": n.get("created_at"),
                 "url": safe_url((st or {}).get("url") or a.get("url")),
-                "ref": {"id": (st.get("reblog") or st)["id"]} if st else None,
+                "ref": {"id": orig_st["id"]} if orig_st else None,
                 "media": safe_media_list(st_media),
                 "quote": st_quote,
-                "target_post": target_post
+                "target_post": target_post,
+                "liked": liked,
+                "boosted": boosted,
+                "likes": likes_cnt,
+                "boosts": boosts_cnt,
+                "replies": replies_cnt
             }
             if a_name_html:
                 notif_item["name_html"] = a_name_html

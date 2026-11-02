@@ -373,6 +373,16 @@ class PostHandlerTests(unittest.TestCase):
         self.assertEqual((code, r), (200, {"bluesky": "ok"}))
         self.assertEqual(self.client.post.call_args[0][0], "olá")
 
+    def test_partial_success_post(self):
+        from unittest import mock
+        masto_client = mock.Mock()
+        masto_client.post.side_effect = RuntimeError("Mastodon timeout")
+        with mock.patch.dict(app.CLIENTS, {"bluesky": self.client, "mastodon": masto_client}):
+            code, r = self._post("/api/post", {"text": "Olá", "targets": ["bluesky", "mastodon"]})
+            self.assertEqual(code, 200)
+            self.assertEqual(r["bluesky"], "ok")
+            self.assertEqual(r["mastodon"], "Mastodon timeout")
+
     def test_unexpected_error_is_generic_500(self):
         from unittest import mock
         with mock.patch.object(app.H, "_read_json", side_effect=RuntimeError("segredo-token")):
@@ -470,6 +480,27 @@ class PostHandlerTests(unittest.TestCase):
 
             # Call 3: in_reply_to 1002
             self.assertEqual(masto_client.post.call_args_list[2][0][1], {"id": "1002"})
+
+    def test_reply_post_endpoint(self):
+        from unittest import mock
+        masto_client = mock.Mock()
+        masto_client.post.return_value = {"id": "9999"}
+        with mock.patch.dict(app.CLIENTS, {"mastodon": masto_client}):
+            payload = {
+                "text": "@user olá resposta",
+                "reply": {
+                    "network": "mastodon",
+                    "ref": {"id": "12345"}
+                }
+            }
+            code, r = self._post("/api/post", payload)
+            self.assertEqual(code, 200)
+            self.assertEqual(r, {"mastodon": "ok"})
+            self.assertEqual(masto_client.post.call_count, 1)
+            # Verifica se foi chamado com in_reply_to_id correto
+            args, kwargs = masto_client.post.call_args
+            self.assertEqual(args[0], "@user olá resposta")
+            self.assertEqual(args[1], {"id": "12345"})
 
     def test_follow_endpoint_validation_and_actions(self):
         # Missing network
@@ -2001,6 +2032,101 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("act-save", html)
         self.assertIn("saved_rm", html)
         self.assertIn("toast_saved", html)
+
+    def test_index_contains_reply_box_elements(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn('id="replyBox"', html)
+        self.assertIn('id="replyParentAvatar"', html)
+        self.assertIn('id="replyParentName"', html)
+        self.assertIn('id="replyUserAvatar"', html)
+        self.assertIn('id="cancelReply"', html)
+        self.assertIn("function renderReplyBox(", html)
+        self.assertIn("function startReply(", html)
+        self.assertIn("function cancelReply(", html)
+        self.assertIn(".is-reply-target", html)
+
+    def test_scroll_anchoring_and_notification_signaling_elements(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        # Scroll anchoring e pílulas de novos posts
+        self.assertIn('id="timelineNewPostsPill"', html)
+        self.assertIn('id="exploreNewPostsPill"', html)
+        self.assertIn('id="notifsNewPostsPill"', html)
+        self.assertIn(".new-posts-pill", html)
+        self.assertIn("function captureScrollAnchor(", html)
+        self.assertIn("function restoreScrollAnchor(", html)
+        self.assertIn("function scrollColToTop(", html)
+        self.assertIn("new_notifs_pill_one", html)
+        self.assertIn("new_notifs_pill_many", html)
+        self.assertIn('["timeline", "explore", "notifs"]', html)
+        # Notificações renovadas
+        self.assertIn('id="notifSummaryBanner"', html)
+        self.assertIn('id="notifSummaryText"', html)
+        self.assertIn(".notif-unread-dot", html)
+        self.assertIn(".filter-badge", html)
+        self.assertIn('id="notifBadgeAll"', html)
+        self.assertIn('id="notifBadgeReplies"', html)
+        self.assertIn('id="notifBadgeLikes"', html)
+
+    def test_deck_thread_side_column_and_distinct_icons(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        # Coluna lateral de conversa no modo Deck
+        self.assertIn('id="colThread"', html)
+        self.assertIn('class="deck-col deck-col-thread"', html)
+        self.assertIn('id="deckThreadBackBtn"', html)
+        self.assertIn('id="deckThreadTitle"', html)
+        self.assertIn('id="colThreadBody"', html)
+        self.assertIn('id="deckThreadContent"', html)
+        self.assertIn("function closeDeckThread(", html)
+        self.assertIn("function deckThreadBack(", html)
+        self.assertIn(".is-thread-active", html)
+        self.assertIn(".clickable-post", html)
+        # Suporte a clique em posts em todas as colunas incluindo Notificações
+        self.assertIn("openThread(targetPost, false, p)", html)
+        self.assertIn("p.classList.add(\"clickable-post\")", html)
+        self.assertIn('id="threadNotifs"', html)
+        # Ações completas nos cartões de notificação (like, repost, bookmark, reply, thread)
+        self.assertIn("act-boost", html)
+        self.assertIn("act-like", html)
+        self.assertIn("openBoostMenu(postTarget, bB)", html)
+        self.assertIn("act(postTarget, \"like\", bL)", html)
+        self.assertIn("toggleSavePost(postTarget, bS)", html)
+        # Ícones distintos para responder e ver conversa
+        # Responder: seta curva
+        self.assertIn('reply: \'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>', html)
+        # Conversa: nós/cadeia conectados
+        self.assertIn('thread: \'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke-dasharray="2 2"/>', html)
+
+    def test_crosspost_card_enhancements(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        # Funções de renderização aprimorada de crosspost
+        self.assertIn("function getCanvasWrappedLines(", html)
+        self.assertIn("async function drawQuotedCard(", html)
+        self.assertIn("async function renderCrossCanvas(", html)
+        self.assertIn("/brand/logo-lockup-dark.svg", html)
+        # Suporte a posts citados dentro do cartão
+        self.assertIn("it.quote", html)
+        self.assertIn("drawQuotedCard(ctx, it.quote", html)
+        # Botões de tema 100% redondos e sem artefatos
+        self.assertIn(".swatch{width:28px;height:28px;border-radius:50%!important", html)
+        self.assertIn("background-clip:padding-box", html)
+
+    def test_index_javascript_syntax_valid(self):
+        import shutil, subprocess, re
+        node_bin = shutil.which("node")
+        if not node_bin:
+            return
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        m = re.search(r"<script>([\s\S]*?)</script>", html)
+        self.assertIsNotNone(m, "Bloco <script> não encontrado no index.html")
+        js_code = m.group(1)
+        res = subprocess.run([node_bin, "-e", "new Function(process.argv[1]);", js_code],
+                             capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0, f"Erro de sintaxe no JavaScript do index.html: {res.stderr}")
 
     def test_parse_semver(self):
         self.assertEqual(app.parse_semver("0.3.0"), [0, 3, 0])

@@ -85,9 +85,9 @@ main{max-width:640px;margin:0 auto;padding:20px 14px 60px;position:relative;z-in
 .cross-post-box{max-width:540px;width:100%}
 .cross-preview-wrap{width:100%;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0B1020;display:grid;place-items:center;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,0.2)}
 .cross-img-preview{width:100%;height:auto;max-height:360px;object-fit:contain;display:block}
-.cross-theme-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.theme-swatches{display:flex;gap:8px;align-items:center}
-.swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;outline:none;transition:transform .15s,border-color .15s}
+.cross-theme-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.theme-swatches{display:flex;gap:10px;align-items:center}
+.swatch{width:28px;height:28px;border-radius:50%!important;border:2px solid transparent;cursor:pointer;outline:none;padding:0;margin:0;box-sizing:border-box;-webkit-appearance:none;appearance:none;background-clip:padding-box;overflow:hidden;display:inline-block;flex-shrink:0;transition:transform .15s,border-color .15s,box-shadow .15s}
 .swatch:hover{transform:scale(1.15)}
 .swatch.active{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
 header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
@@ -185,6 +185,20 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .draft-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:4px;padding-top:6px;border-top:1px solid color-mix(in srgb,var(--line) 50%,transparent)}
 .drafts-empty{text-align:center;padding:36px 16px;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .drafts-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+.partial-post-box{max-width:520px;width:100%}
+.partial-post-list{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.partial-post-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;background:var(--surface-1);border:1px solid var(--line)}
+.partial-post-item.success{border-color:color-mix(in srgb, #10b981 40%, var(--line));background:color-mix(in srgb, #10b981 8%, var(--surface-1))}
+.partial-post-item.failed{border-color:color-mix(in srgb, var(--danger) 40%, var(--line));background:color-mix(in srgb, var(--danger) 8%, var(--surface-1))}
+.partial-post-status-icon{font-size:16px;line-height:1;margin-top:2px;flex-shrink:0;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-weight:700}
+.partial-post-item.success .partial-post-status-icon{background:color-mix(in srgb, #10b981 20%, transparent);color:#10b981}
+.partial-post-item.failed .partial-post-status-icon{background:color-mix(in srgb, var(--danger) 20%, transparent);color:var(--danger)}
+.partial-post-info{flex:1 1 auto;min-width:0}
+.partial-post-net-title{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px;color:var(--ink);margin-bottom:3px}
+.partial-post-msg{font-size:12px;line-height:1.4;word-break:break-word}
+.partial-post-item.success .partial-post-msg{color:#10b981}
+.partial-post-item.failed .partial-post-msg{color:var(--danger)}
+.partial-post-actions{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .search-box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
 .search-input-wrap{display:flex;align-items:center;gap:8px;background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:4px 8px 4px 12px;transition:border-color .15s}
 .search-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
@@ -216,6 +230,31 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .search-tag-chip:hover{background:color-mix(in srgb,var(--accent) 15%,var(--card));transform:translateY(-1px)}
 .replying{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:6px}
 .replying button{border:0;background:none;color:var(--muted);text-decoration:underline}
+.reply-card-box{background:color-mix(in srgb,var(--card) 60%,var(--bg));border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;animation:popIn .15s ease-out}
+.reply-parent-card{display:flex;gap:10px;align-items:stretch;position:relative}
+.reply-avatar-col{display:flex;flex-direction:column;align-items:center;width:38px;flex:none}
+.reply-avatar-img{width:38px;height:38px;border-radius:50%;object-fit:cover;background:var(--line);flex:none}
+.reply-connector-line{width:2px;flex:1;min-height:14px;background:color-mix(in srgb,var(--muted) 35%,var(--line));margin:4px 0;border-radius:2px}
+.reply-parent-content{flex:1;min-width:0;padding-bottom:6px}
+.reply-parent-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+.reply-parent-author{display:flex;flex-direction:column;min-width:0}
+.reply-parent-author b{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reply-parent-author span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reply-parent-body{font-size:13.5px;line-height:1.45;color:var(--ink);word-break:break-word;overflow-wrap:anywhere;max-height:160px;overflow-y:auto}
+.reply-parent-body a{color:var(--accent);text-decoration:underline}
+.reply-cw-tag{font-size:12px;font-weight:600;color:var(--ms-gold, #f59e0b);margin-bottom:4px}
+.reply-parent-media{display:flex;gap:6px;margin-top:6px;overflow-x:auto;padding-bottom:2px}
+.reply-thumb-img{width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--line);flex:none}
+.reply-user-row{display:flex;justify-content:space-between;align-items:center;margin-top:2px}
+.reply-user-left{display:flex;gap:10px;align-items:center;min-width:0;flex:1}
+.reply-user-avatar-img{width:32px;height:32px}
+.reply-user-meta{display:flex;flex-direction:column;min-width:0}
+.reply-user-meta b{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reply-user-meta span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reply-cancel-x{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px;transition:all .15s ease;flex:none}
+.reply-cancel-x:hover{background:color-mix(in srgb,var(--danger) 15%,transparent);color:var(--danger)}
+.post.is-reply-target{box-shadow:0 0 0 2px var(--c), 0 4px 16px rgba(0,0,0,0.18);border-left-width:6px}
+.acts button.act-reply.active{color:var(--c);font-weight:700;background:color-mix(in srgb,var(--c) 14%,transparent)}
 .msg{font-size:13px;margin-top:8px;min-height:18px}
 .msg.err{color:var(--danger)}
 .post{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c);border-radius:4px 12px 12px 4px;padding:12px 14px;margin-bottom:10px}
@@ -307,8 +346,18 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif:hover .glyph{transform:scale(1.08);background:color-mix(in srgb,var(--glyph-c,var(--c)) 22%,transparent)}
 .notif .body{color:var(--ink);font:14px/1.5 var(--sans);margin-top:6px;word-break:break-word}
 .notif .body a{color:var(--c)}
-.notif{transition:background .35s ease,border-color .35s ease;position:relative}
-.notif.fresh{background:color-mix(in srgb,var(--c) 11%,var(--card));border-left:3px solid var(--c)}
+.notif{transition:background .35s ease,border-color .35s ease,box-shadow .35s ease;position:relative}
+.notif.fresh{background:color-mix(in srgb,var(--glyph-c,var(--c)) 18%,var(--card));border-left:5px solid var(--glyph-c,var(--c));border-color:color-mix(in srgb,var(--glyph-c,var(--c)) 45%,var(--line));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--glyph-c,var(--c)) 25%,transparent),0 3px 12px rgba(0,0,0,0.18)}
+.notif-unread-dot{position:absolute;top:12px;right:12px;width:9px;height:9px;border-radius:50%;background:var(--glyph-c,var(--accent));box-shadow:0 0 8px var(--glyph-c,var(--accent));display:block;animation:unreadPulse 2s infinite ease-in-out;flex-shrink:0}
+@keyframes unreadPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.8}}
+.notif-summary-banner{display:flex;justify-content:space-between;align-items:center;background:color-mix(in srgb,var(--accent) 15%,var(--card));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:8px;padding:8px 12px;margin:8px 0 12px;font-size:12.5px;color:var(--ink);animation:popIn .18s ease-out}
+.notif-summary-left{display:flex;align-items:center;gap:8px;font-weight:600}
+.notif-summary-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);display:inline-block;flex-shrink:0}
+.notif-summary-action{border:0;background:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;padding:3px 8px;border-radius:4px;transition:background .15s}
+.notif-summary-action:hover{background:color-mix(in srgb,var(--accent) 20%,transparent);text-decoration:underline}
+.new-posts-pill{position:sticky;top:8px;z-index:50;display:flex;align-items:center;justify-content:center;gap:6px;margin:0 auto 10px;padding:7px 16px;background:var(--accent);color:#fff;border:0;border-radius:20px;font-size:12.5px;font-weight:700;cursor:pointer;user-select:none;box-shadow:0 4px 16px rgba(0,0,0,0.25);animation:popIn .18s ease-out;transition:transform .15s ease,filter .15s ease,opacity .25s ease}
+.new-posts-pill:hover{transform:translateY(-2px);filter:brightness(1.12)}
+.new-posts-pill:active{transform:translateY(0);filter:brightness(0.95)}
 .notif-boost-banner{display:flex;align-items:center;gap:7px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent);font-size:12.5px;color:var(--muted);line-height:1.3;flex-wrap:wrap}
 .notif-boost-banner .glyph{width:22px;height:22px;display:inline-grid;place-items:center;border-radius:50%;background:color-mix(in srgb,var(--glyph-c,var(--c)) 16%,transparent);color:var(--glyph-c,var(--c));flex-shrink:0}
 .notif-boost-banner .glyph svg{width:13px;height:13px}
@@ -325,6 +374,7 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif-filter-pills .filter-pill.active .filter-label{display:inline}
 .notif-filter-pills .filter-pill:hover:not(.active){color:var(--ink);border-color:var(--muted);background:var(--card)}
 .notif-filter-pills .filter-pill .ico{width:13px;height:13px;flex-shrink:0}
+.filter-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;font-size:10px;font-weight:700;line-height:1;background:var(--accent);color:#fff;margin-left:3px;box-shadow:0 1px 4px rgba(0,0,0,0.25)}
 .back{margin-bottom:12px}
 .chain{border-left:2px solid var(--line);margin:0 0 10px 12px;padding-left:10px}
 .post.focus{box-shadow:0 0 0 2px var(--c)}
@@ -726,6 +776,32 @@ body:not(.view-deck) .deck-add-col-card {
 .panel-action-btn .ico{width:16px;height:16px;color:var(--muted);flex-shrink:0}
 .panel-action-btn:hover .ico{color:var(--accent)}
 
+.deck-col-thread {
+  border-left: 2px solid var(--accent);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  animation: deckColFadeIn .18s ease-out;
+}
+@keyframes deckColFadeIn {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+body:not(.view-deck) .deck-col-thread {
+  display: none !important;
+}
+.post.clickable-post {
+  cursor: pointer;
+}
+.post.clickable-post .body {
+  cursor: pointer;
+}
+.post.focus {
+  cursor: default;
+}
+.post.is-thread-active {
+  box-shadow: 0 0 0 2px var(--accent), 0 4px 16px rgba(0,0,0,0.22) !important;
+  border-left-width: 6px !important;
+}
+
 /* Single View Mode default overrides */
 body:not(.view-deck) .deck-container {
   display: block;
@@ -903,8 +979,10 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-poll" viewBox="0 0 24 24"><path d="M4 6.5 H13 M4 12 H17.5 M4 17.5 H8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16.5" cy="6.5" r="1.9" fill="currentColor" stroke="none"/><circle cx="20.5" cy="12" r="1.9" fill="currentColor" stroke="none"/><circle cx="11.5" cy="17.5" r="1.9" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-cw" viewBox="0 0 24 24"><path d="M2.5 12 C5 7.5 8.5 5.5 12 5.5 C15.5 5.5 19 7.5 21.5 12 C19 16.5 15.5 18.5 12 18.5 C8.5 18.5 5 16.5 2.5 12 Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.5 20 L19.5 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-net-both" viewBox="0 0 24 24"><path d="M9.5 13.5 L14.5 10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" opacity="0.6"/><circle cx="6.5" cy="15.5" r="3.4" fill="#6364FF"/><circle cx="17.5" cy="8.5" r="3.4" fill="#0085FF"/></symbol>
-  <symbol id="i-net-masto" viewBox="0 0 24 24"><path fill="currentColor" d="M23.193 7.88c0-5.207-3.411-6.733-3.411-6.733C18.062.357 15.108.025 12.041 0h-.076c-3.069.025-6.02.357-7.74 1.147 0 0-3.412 1.526-3.412 6.732 0 1.193-.023 2.619.015 4.13.124 5.092.934 10.11 5.641 11.355 2.17.574 4.034.695 5.536.612 2.722-.15 4.25-.972 4.25-.972l-.09-1.975s-1.945.613-4.13.54c-2.165-.075-4.449-.234-4.799-2.892a5.5 5.5 0 0 1-.048-.745s2.125.52 4.818.643c1.646.075 3.19-.097 4.758-.283 3.007-.359 5.625-2.212 5.954-3.905.517-2.665.475-6.508.475-6.508zm-4.024 6.709h-2.497v-6.12c0-1.29-.543-1.944-1.628-1.944-1.2 0-1.802.776-1.802 2.313v3.349h-2.484v-3.35c0-1.537-.602-2.313-1.802-2.313-1.085 0-1.628.655-1.628 1.945v6.119H4.831V8.285c0-1.29.328-2.314.987-3.07.68-.759 1.57-1.147 2.674-1.147 1.278 0 2.246.491 2.886 1.474L12 6.585l.622-1.043c.64-.983 1.608-1.474 2.886-1.474 1.104 0 1.994.388 2.674 1.146.658.757.986 1.781.986 3.07v6.305z"/></symbol>
-  <symbol id="i-net-bsky" viewBox="0 0 24 24"><path fill="currentColor" d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/></symbol>
+  <symbol id="i-net-masto" viewBox="0 0 24 24"><path d="M9.5 13.5 L14.5 10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" opacity="0.3"/><circle cx="6.5" cy="15.5" r="5" fill="none" stroke="#6364FF" stroke-width="1.2" opacity="0.7"/><circle cx="6.5" cy="15.5" r="3.4" fill="#6364FF"/><circle cx="17.5" cy="8.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"/></symbol>
+  <symbol id="i-net-bsky" viewBox="0 0 24 24"><path d="M9.5 13.5 L14.5 10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" opacity="0.3"/><circle cx="6.5" cy="15.5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"/><circle cx="17.5" cy="8.5" r="5" fill="none" stroke="#0085FF" stroke-width="1.2" opacity="0.7"/><circle cx="17.5" cy="8.5" r="3.4" fill="#0085FF"/></symbol>
+  <symbol id="i-brand-masto" viewBox="0 0 24 24"><path fill="currentColor" d="M23.193 7.88c0-5.207-3.411-6.733-3.411-6.733C18.062.357 15.108.025 12.041 0h-.076c-3.069.025-6.02.357-7.74 1.147 0 0-3.412 1.526-3.412 6.732 0 1.193-.023 2.619.015 4.13.124 5.092.934 10.11 5.641 11.355 2.17.574 4.034.695 5.536.612 2.722-.15 4.25-.972 4.25-.972l-.09-1.975s-1.945.613-4.13.54c-2.165-.075-4.449-.234-4.799-2.892a5.5 5.5 0 0 1-.048-.745s2.125.52 4.818.643c1.646.075 3.19-.097 4.758-.283 3.007-.359 5.625-2.212 5.954-3.905.517-2.665.475-6.508.475-6.508zm-4.024 6.709h-2.497v-6.12c0-1.29-.543-1.944-1.628-1.944-1.2 0-1.802.776-1.802 2.313v3.349h-2.484v-3.35c0-1.537-.602-2.313-1.802-2.313-1.085 0-1.628.655-1.628 1.945v6.119H4.831V8.285c0-1.29.328-2.314.987-3.07.68-.759 1.57-1.147 2.674-1.147 1.278 0 2.246.491 2.886 1.474L12 6.585l.622-1.043c.64-.983 1.608-1.474 2.886-1.474 1.104 0 1.994.388 2.674 1.146.658.757.986 1.781.986 3.07v6.305z"/></symbol>
+  <symbol id="i-brand-bsky" viewBox="0 0 24 24"><path fill="currentColor" d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/></symbol>
   <symbol id="i-vis-public" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.75"/><ellipse cx="12" cy="12" rx="3.6" ry="8.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M3.5 12 H20.5" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-vis-unlisted" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M8 10.5 V7 A4 4 0 0 1 16 7 V8.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-vis-private" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M8 10.5 V7 A4 4 0 0 1 16 7 V10.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor" stroke="none"/></symbol>
@@ -1010,7 +1088,38 @@ body:not(.view-deck) .deck-col-body {
   <div id="singleComposeWrap">
     <section class="compose" id="composeSection">
       <div class="replying" id="replying" hidden>
-        <span id="replyingTo"></span><button id="cancelReply" data-i18n="composer.cancel_reply">Cancelar resposta</button>
+        <span id="replyingTo"></span>
+      </div>
+      <div class="reply-card-box" id="replyBox" hidden>
+        <div class="reply-parent-card">
+          <div class="reply-avatar-col">
+            <img id="replyParentAvatar" class="reply-avatar-img" src="" alt="" loading="lazy">
+            <div class="reply-connector-line"></div>
+          </div>
+          <div class="reply-parent-content">
+            <div class="reply-parent-header">
+              <span class="reply-parent-author">
+                <b id="replyParentName"></b>
+                <span id="replyParentHandle"></span>
+              </span>
+              <span id="replyParentNet" class="net"></span>
+            </div>
+            <div id="replyParentBody" class="reply-parent-body"></div>
+            <div id="replyParentMedia" class="reply-parent-media" hidden></div>
+          </div>
+        </div>
+        <div class="reply-user-row">
+          <div class="reply-user-left">
+            <div class="reply-avatar-col" style="height:32px">
+              <img id="replyUserAvatar" class="reply-avatar-img reply-user-avatar-img" src="" alt="" loading="lazy">
+            </div>
+            <div class="reply-user-meta">
+              <b id="replyUserName"></b>
+              <span id="replyUserHandle"></span>
+            </div>
+          </div>
+          <button type="button" class="rm-sm reply-cancel-x" id="cancelReply" title="Cancelar resposta" data-i18n-title="composer.cancel_reply" aria-label="Cancelar resposta">✕</button>
+        </div>
       </div>
       <div class="cw-row" id="cwRow" hidden>
         <span class="cw-label" style="display:inline-flex;align-items:center;gap:5px"><svg class="ico" style="width:16px;height:16px"><use href="#i-cw"/></svg> <span data-i18n="composer.spoiler_label">Spoiler:</span></span>
@@ -1137,10 +1246,32 @@ body:not(.view-deck) .deck-col-body {
       </div>
       <div class="deck-col-body" id="colTimelineBody">
         <div id="pTimeline">
+          <button type="button" class="new-posts-pill" id="timelineNewPostsPill" onclick="scrollColToTop('timeline')" hidden></button>
           <div id="errors"></div>
           <div id="feed"></div>
         </div>
         <div id="threadTimeline" hidden></div>
+      </div>
+    </div>
+
+    <div class="deck-col deck-col-thread" id="colThread" data-col="thread" hidden>
+      <div class="deck-col-head">
+        <div class="deck-col-head-left">
+          <button type="button" class="deck-act-btn" id="deckThreadBackBtn" onclick="deckThreadBack()" title="Voltar" data-i18n-title="actions.back" style="display:none">
+            <svg class="ico"><use href="#i-arrow-left"/></svg>
+          </button>
+          <span class="deck-col-title" id="deckThreadTitle">
+            <svg class="ico" style="width:14px;height:14px"><use href="#i-thread"/></svg>
+            <span data-i18n="header.col_thread">Conversa</span>
+          </span>
+        </div>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn" onclick="$('colThreadBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+          <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckThread()" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
+        </div>
+      </div>
+      <div class="deck-col-body" id="colThreadBody">
+        <div id="deckThreadContent"></div>
       </div>
     </div>
 
@@ -1160,6 +1291,7 @@ body:not(.view-deck) .deck-col-body {
       </div>
       <div class="deck-col-body" id="colExploreBody">
         <div id="pExplore" hidden>
+          <button type="button" class="new-posts-pill" id="exploreNewPostsPill" onclick="scrollColToTop('explore')" hidden></button>
           <div id="eerrors"></div>
           <div id="efeed"></div>
         </div>
@@ -1283,29 +1415,42 @@ body:not(.view-deck) .deck-col-body {
       </div>
       <div class="deck-col-body" id="colNotifsBody">
         <div id="pNotifs" hidden>
+          <button type="button" class="new-posts-pill" id="notifsNewPostsPill" onclick="scrollColToTop('notifs')" hidden></button>
           <div class="notif-header-bar">
             <div class="notif-filter-pills" id="notifFilterPills">
               <button type="button" class="filter-pill active" data-notif-filter="all" title="Todas" data-i18n-title="notifs.filter_all">
                 <svg class="ico"><use href="#i-bell"/></svg>
                 <span class="filter-label" data-i18n="notifs.filter_all">Todas</span>
+                <span class="filter-badge" id="notifBadgeAll" hidden></span>
               </button>
               <button type="button" class="filter-pill" data-notif-filter="replies" title="Respostas" data-i18n-title="notifs.filter_replies">
                 <svg class="ico"><use href="#i-reply"/></svg>
                 <span class="filter-label" data-i18n="notifs.filter_replies">Respostas</span>
+                <span class="filter-badge" id="notifBadgeReplies" hidden></span>
               </button>
               <button type="button" class="filter-pill" data-notif-filter="likes" title="Gostos" data-i18n-title="notifs.filter_likes">
                 <svg class="ico"><use href="#i-heart"/></svg>
                 <span class="filter-label" data-i18n="notifs.filter_likes">Gostos</span>
+                <span class="filter-badge" id="notifBadgeLikes" hidden></span>
               </button>
               <button type="button" class="filter-pill" data-notif-filter="boosts" title="Partilhas" data-i18n-title="notifs.filter_boosts">
                 <svg class="ico"><use href="#i-repost"/></svg>
                 <span class="filter-label" data-i18n="notifs.filter_boosts">Partilhas</span>
+                <span class="filter-badge" id="notifBadgeBoosts" hidden></span>
               </button>
               <button type="button" class="filter-pill" data-notif-filter="follows" title="Seguidores" data-i18n-title="notifs.filter_follows">
                 <svg class="ico"><use href="#i-user"/></svg>
                 <span class="filter-label" data-i18n="notifs.filter_follows">Seguidores</span>
+                <span class="filter-badge" id="notifBadgeFollows" hidden></span>
               </button>
             </div>
+          </div>
+          <div class="notif-summary-banner" id="notifSummaryBanner" hidden>
+            <div class="notif-summary-left">
+              <span class="notif-summary-dot"></span>
+              <span id="notifSummaryText"></span>
+            </div>
+            <button type="button" class="notif-summary-action" id="notifSummaryMarkAll" onclick="markAllNotifsAsRead()" data-i18n="notifs.mark_all_read_btn">Marcar todas como lidas ✓✓</button>
           </div>
           <div id="nerrors"></div>
           <div id="nfeed"></div>
@@ -1621,6 +1766,33 @@ body:not(.view-deck) .deck-col-body {
     </div>
   </div>
 
+  <div id="partialPostOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="partialPostTitle">
+    <div class="setup-box partial-post-box">
+      <div class="setup-header">
+        <h2 id="partialPostTitle" style="display:inline-flex;align-items:center;gap:8px">
+          <span style="font-size:18px">⚠️</span>
+          <span data-i18n="composer.partial_title">Publicação Parcial</span>
+        </h2>
+        <button type="button" class="rm-sm" id="closePartialPost" title="Fechar (Esc)">✕</button>
+      </div>
+      <p class="setup-desc" data-i18n="composer.partial_desc">
+        A publicação foi concluída numa rede, mas falhou noutra. Podes tentar novamente apenas nas redes em falta sem duplicar o post.
+      </p>
+      <div id="partialPostList" class="partial-post-list"></div>
+      <div class="partial-post-actions">
+        <button type="button" class="send" id="retryPartialPostBtn">
+          <span id="retryPartialPostText">Tentar novamente</span>
+        </button>
+        <button type="button" class="ghost" id="finishPartialPostBtn" data-i18n="composer.partial_finish">
+          Concluir (Manter onde teve sucesso)
+        </button>
+        <button type="button" class="ghost-sm" id="editPartialPostBtn" style="color:var(--muted);margin-top:2px" data-i18n="composer.partial_edit">
+          Editar antes de tentar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="imageLightbox" class="lightbox-overlay" hidden role="dialog" aria-modal="true" aria-label="Pré-visualização de imagem">
     <div class="lightbox-backdrop" onclick="closeImageLightbox()"></div>
     <div class="lightbox-container">
@@ -1734,7 +1906,17 @@ const I18N = {
       thread_badge: "Fio #{n}",
       thread_ph: "Continua o teu fio...",
       thread_rm: "Remover do fio",
-      thread_published: "Fio publicado com sucesso!"
+      thread_published: "Fio publicado com sucesso!",
+      partial_title: "Publicação Parcial",
+      partial_desc: "A publicação foi concluída numa rede, mas falhou noutra. Podes tentar novamente apenas nas redes em falta sem duplicar o post onde já teve sucesso.",
+      partial_success_label: "Publicado com sucesso!",
+      partial_fail_label: "Falha ao publicar",
+      partial_retry_btn: "Tentar novamente no {net}",
+      partial_retry_all_failed: "Tentar novamente nas redes com falha",
+      partial_finish: "Concluir (Manter onde teve sucesso)",
+      partial_edit: "Editar publicação antes de tentar",
+      partial_editing_note: "Podes rever a tua publicação e reenviar apenas para a rede em falta.",
+      partial_retrying: "A reenviar..."
     },
     update: {
       section_title: "🔄 Versão e Atualizações",
@@ -1847,6 +2029,10 @@ const I18N = {
       orig_link_label: "Post original no {net}: {url}"
     },
     feed: {
+      new_posts_pill_one: "↑ 1 nova publicação",
+      new_posts_pill_many: "↑ {n} novas publicações",
+      new_notifs_pill_one: "↑ 1 nova notificação",
+      new_notifs_pill_many: "↑ {n} novas notificações",
       empty_timeline: "Ainda não há posts para mostrar. Segue mais contas ou adiciona a outra rede!",
       empty_explore: "Sem posts em alta para mostrar.",
       empty_notifs: "Sem notificações por agora.",
@@ -1872,6 +2058,10 @@ const I18N = {
       filter_boosts: "Partilhas",
       filter_follows: "Seguidores",
       mark_all_read: "Marcar como lidas",
+      mark_all_read_btn: "Marcar todas como lidas ✓✓",
+      unread_label: "Não lida",
+      unread_count_one: "1 notificação não lida",
+      unread_count_many: "{n} notificações não lidas",
       empty_replies: "Sem respostas ou menções por agora.",
       empty_likes: "Sem gostos recentes.",
       empty_boosts: "Sem partilhas recentes.",
@@ -2094,7 +2284,17 @@ const I18N = {
       thread_badge: "Thread #{n}",
       thread_ph: "Continue your thread...",
       thread_rm: "Remove from thread",
-      thread_published: "Thread published successfully!"
+      thread_published: "Thread published successfully!",
+      partial_title: "Partial Post",
+      partial_desc: "The post was published to one network, but failed on another. You can retry only on the failed networks without duplicating where it already succeeded.",
+      partial_success_label: "Published successfully!",
+      partial_fail_label: "Failed to publish",
+      partial_retry_btn: "Retry on {net}",
+      partial_retry_all_failed: "Retry on failed networks",
+      partial_finish: "Finish (Keep where it succeeded)",
+      partial_edit: "Edit post before retrying",
+      partial_editing_note: "You can review your post and resend only to the missing network.",
+      partial_retrying: "Retrying..."
     },
     update: {
       section_title: "🔄 Version & Updates",
@@ -2207,6 +2407,10 @@ const I18N = {
       orig_link_label: "Original post on {net}: {url}"
     },
     feed: {
+      new_posts_pill_one: "↑ 1 new post",
+      new_posts_pill_many: "↑ {n} new posts",
+      new_notifs_pill_one: "↑ 1 new notification",
+      new_notifs_pill_many: "↑ {n} new notifications",
       empty_timeline: "No posts yet. Follow more accounts or connect the other network!",
       empty_explore: "No trending posts to show.",
       empty_notifs: "No notifications yet.",
@@ -2232,6 +2436,10 @@ const I18N = {
       filter_boosts: "Reposts",
       filter_follows: "Follows",
       mark_all_read: "Mark all as read",
+      mark_all_read_btn: "Mark all as read ✓✓",
+      unread_label: "Unread",
+      unread_count_one: "1 unread notification",
+      unread_count_many: "{n} unread notifications",
       empty_replies: "No replies or mentions yet.",
       empty_likes: "No recent likes.",
       empty_boosts: "No recent reposts.",
@@ -2468,8 +2676,9 @@ function applyI18n() {
   const pillAll = $("pillAll");
   if (pillAll) pillAll.textContent = t("profile.both_pills");
 
-  if (reply && $("replyingTo")) {
-    $("replyingTo").textContent = t("composer.replying_to", {name: reply.name || "", net: LABEL[reply.network]});
+  if (reply) {
+    if ($("replyingTo")) $("replyingTo").textContent = t("composer.replying_to", {name: reply.name || "", net: LABEL[reply.network]});
+    renderReplyBox();
   }
 }
 
@@ -2526,7 +2735,8 @@ const DECK_COL_INFO = {
   search: { titleKey: "header.col_search", defTitle: "Pesquisa", icon: "#i-search" },
   saved: { titleKey: "header.col_saved", defTitle: "Guardados", icon: "#i-bookmark" },
   notifs: { titleKey: "header.col_notifs", defTitle: "Notificações", icon: "#i-vis-public" },
-  profile: { titleKey: "tabs.profile", defTitle: "Perfil", icon: "#i-net-both" }
+  profile: { titleKey: "tabs.profile", defTitle: "Perfil", icon: "#i-net-both" },
+  thread: { titleKey: "header.col_thread", defTitle: "Conversa", icon: "#i-thread" }
 };
 
 function applyDeckColumnVisibility() {
@@ -2675,7 +2885,7 @@ function initDeckDragAndDrop() {
   const container = $("deckContainer");
   if (!container) return;
 
-  const cols = container.querySelectorAll(".deck-col:not(.deck-add-col-card)");
+  const cols = container.querySelectorAll(".deck-col:not(.deck-add-col-card):not(.deck-col-thread)");
   cols.forEach(col => {
     const head = col.querySelector(".deck-col-head");
     if (!head) return;
@@ -2775,10 +2985,7 @@ function applyViewMode(mode) {
 }
 
 function closeDeckDetail() {
-  const cd = $("colDetail");
-  if (cd) cd.hidden = true;
-  $("pThread").hidden = true;
-  threadIt = null;
+  closeDeckThread();
 }
 let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
 let threadPosts = [], nextThreadId = 1;
@@ -2847,12 +3054,12 @@ const LOGO = {
   mastodon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M23.193 7.88c0-5.207-3.411-6.733-3.411-6.733C18.062.357 15.108.025 12.041 0h-.076c-3.069.025-6.02.357-7.74 1.147 0 0-3.412 1.526-3.412 6.732 0 1.193-.023 2.619.015 4.13.124 5.092.934 10.11 5.641 11.355 2.17.574 4.034.695 5.536.612 2.722-.15 4.25-.972 4.25-.972l-.09-1.975s-1.945.613-4.13.54c-2.165-.075-4.449-.234-4.799-2.892a5.5 5.5 0 0 1-.048-.745s2.125.52 4.818.643c1.646.075 3.19-.097 4.758-.283 3.007-.359 5.625-2.212 5.954-3.905.517-2.665.475-6.508.475-6.508zm-4.024 6.709h-2.497v-6.12c0-1.29-.543-1.944-1.628-1.944-1.2 0-1.802.776-1.802 2.313v3.349h-2.484v-3.35c0-1.537-.602-2.313-1.802-2.313-1.085 0-1.628.655-1.628 1.945v6.119H4.831V8.285c0-1.29.328-2.314.987-3.07.68-.759 1.57-1.147 2.674-1.147 1.278 0 2.246.491 2.886 1.474L12 6.585l.622-1.043c.64-.983 1.608-1.474 2.886-1.474 1.104 0 1.994.388 2.674 1.146.658.757.986 1.781.986 3.07v6.305z"/></svg>'
 };
 const ICONS = {
-  reply: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  reply: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>',
   boost: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>',
   like: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
   bookmark: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
   bookmarkFill: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
-  thread: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9a2 2 0 0 1-2 2H6l-3 3V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v5z"/><path d="M18 9h2a2 2 0 0 1 2 2v7l-3-3h-5a2 2 0 0 1-2-2v-1"/></svg>',
+  thread: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
   trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>'
 };
 function netBadge(n) {
@@ -2960,12 +3167,20 @@ function closeImageLightbox() {
 
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    if ($("partialPostOverlay") && !$("partialPostOverlay").hidden) {
+      closePartialPostModal();
+      return;
+    }
     if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
       closeUserProfileModal();
       return;
     }
     if ($("draftsOverlay") && !$("draftsOverlay").hidden) {
       closeDraftsModal();
+      return;
+    }
+    if (viewMode === "deck" && $("colThread") && !$("colThread").hidden) {
+      closeDeckThread();
       return;
     }
   }
@@ -3269,7 +3484,11 @@ function initSavedEvents() {
 }
 
 function postCard(it, o = {}) {
-  const p = el("article", "post " + it.network + (o.focus ? " focus" : ""));
+  const postKey = getPostKey(it);
+  const isReplyTarget = Boolean(reply && getPostKey(reply) === postKey);
+  const isThreadTarget = Boolean(threadIt && getPostKey(threadIt) === postKey);
+  const p = el("article", "post " + it.network + (o.focus ? " focus" : "") + (isReplyTarget ? " is-reply-target" : "") + (isThreadTarget ? " is-thread-active" : ""));
+  if (postKey) p.dataset.postKey = postKey;
   if (it.boosted_by) p.append(el("div", "boost", t("post.shared_by", {name: it.boosted_by})));
   const head = el("div", "head");
   const onProfile = (e) => {
@@ -3331,7 +3550,8 @@ function postCard(it, o = {}) {
   if (m) p.append(m);
   if (it.quote) p.append(renderQuote(it.quote));
   const acts = el("div", "acts");
-  const bR = el("button", "act-btn act-reply");
+  const bR = el("button", "act-btn act-reply" + (isReplyTarget ? " active" : ""));
+  if (postKey) bR.dataset.replyKey = postKey;
   bR.title = t("actions.reply");
   bR.setAttribute("aria-label", t("actions.reply"));
   bR.innerHTML = ICONS.reply + (it.replies ? '<span>' + Number(it.replies) + '</span>' : '');
@@ -3352,7 +3572,6 @@ function postCard(it, o = {}) {
   bL.innerHTML = ICONS.like + (it.likes ? '<span>' + Number(it.likes) + '</span>' : '');
   bL.onclick = () => act(it, "like", bL);
 
-  const postKey = getPostKey(it);
   const isSaved = isPostSaved(it);
   const bS = el("button", "act-btn act-save" + (isSaved ? " on" : ""));
   bS.dataset.postKey = postKey;
@@ -3384,10 +3603,23 @@ function postCard(it, o = {}) {
     bT.title = t("actions.view_thread") + (hasReplies ? " (" + it.replies + ")" : "");
     bT.setAttribute("aria-label", t("actions.view_thread"));
     bT.innerHTML = ICONS.thread;
-    bT.onclick = () => openThread(it);
+    bT.onclick = (e) => {
+      e.stopPropagation();
+      openThread(it, false, p);
+    };
     acts.append(bT);
   }
   p.append(acts);
+
+  if (!o.focus) {
+    p.classList.add("clickable-post");
+    p.onclick = (e) => {
+      if (e.target.closest("a, button, input, textarea, select, video, .media, .author-link, .quote-box")) return;
+      const sel = window.getSelection ? window.getSelection().toString() : "";
+      if (sel && sel.trim().length > 0) return;
+      openThread(it, false, p);
+    };
+  }
   return p;
 }
 
@@ -3434,6 +3666,121 @@ function renderLoadMore(container, cursors, onLoadMore) {
   container.append(wrap);
 }
 
+function getColScrollContainer(colId) {
+  if (viewMode === "single") return window;
+  const capCol = colId.charAt(0).toUpperCase() + colId.slice(1);
+  return $("col" + capCol + "Body") || window;
+}
+
+function captureScrollAnchor(colId, feedEl) {
+  if (!feedEl) return null;
+  const sc = getColScrollContainer(colId);
+  const isWin = sc === window;
+  const scrollTop = isWin ? window.scrollY : sc.scrollTop;
+  if (scrollTop < 30) {
+    return { atTop: true };
+  }
+
+  const posts = feedEl.querySelectorAll(".post");
+  if (!posts.length) return null;
+
+  const containerTop = isWin ? 0 : sc.getBoundingClientRect().top;
+  const headerOffset = isWin ? 110 : 0;
+
+  for (const p of posts) {
+    const rect = p.getBoundingClientRect();
+    const topRel = rect.top - containerTop - headerOffset;
+    if (rect.bottom - containerTop - headerOffset > 5) {
+      return {
+        atTop: false,
+        key: p.dataset.postKey || p.dataset.notifKey || null,
+        offset: topRel
+      };
+    }
+  }
+  return { atTop: false, fallbackScroll: scrollTop };
+}
+
+function restoreScrollAnchor(colId, feedEl, anchor) {
+  if (!anchor || !feedEl) return;
+  const sc = getColScrollContainer(colId);
+  const isWin = sc === window;
+
+  if (anchor.atTop) {
+    if (isWin) window.scrollTo({ top: 0 });
+    else sc.scrollTop = 0;
+    return;
+  }
+
+  if (anchor.key) {
+    const target = feedEl.querySelector(`[data-post-key="${anchor.key}"], [data-notif-key="${anchor.key}"]`);
+    if (target) {
+      const containerTop = isWin ? 0 : sc.getBoundingClientRect().top;
+      const headerOffset = isWin ? 110 : 0;
+      const currentTop = target.getBoundingClientRect().top - containerTop - headerOffset;
+      const delta = currentTop - anchor.offset;
+      if (Math.abs(delta) > 1) {
+        const currentScroll = isWin ? window.scrollY : sc.scrollTop;
+        if (isWin) {
+          window.scrollTo({ top: currentScroll + delta });
+        } else {
+          sc.scrollTop = currentScroll + delta;
+        }
+      }
+      return;
+    }
+  }
+
+  if (typeof anchor.fallbackScroll === "number") {
+    if (isWin) window.scrollTo({ top: anchor.fallbackScroll });
+    else sc.scrollTop = anchor.fallbackScroll;
+  }
+}
+
+function scrollColToTop(colId) {
+  const capCol = colId.charAt(0).toUpperCase() + colId.slice(1);
+  const bodyEl = $("col" + capCol + "Body");
+  const pill = $(colId + "NewPostsPill");
+
+  // Animação suave para o topo
+  if (viewMode === "deck" && bodyEl) {
+    try {
+      bodyEl.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (_) {
+      bodyEl.scrollTop = 0;
+    }
+  } else {
+    try {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (_) {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  }
+
+  // Desvanece a pílula suavemente sem abortar o layout/scroll
+  if (pill) {
+    pill.style.opacity = "0";
+    pill.style.pointerEvents = "none";
+    setTimeout(() => {
+      pill.hidden = true;
+      pill.style.opacity = "";
+      pill.style.pointerEvents = "";
+    }, 300);
+  }
+
+  // Garantia de reposicionamento no topo após a transição
+  setTimeout(() => {
+    if (viewMode === "deck" && bodyEl && bodyEl.scrollTop > 5) {
+      bodyEl.scrollTop = 0;
+    } else if (viewMode === "single" && (window.scrollY > 5 || document.documentElement.scrollTop > 5)) {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+    }
+  }, 400);
+}
+
 function render() {
   const feed = $("feed");
   feed.replaceChildren();
@@ -3456,14 +3803,45 @@ async function load() {
   try {
     const d = await api("/api/timeline");
     if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
-    items = d.items || []; networks = d.networks || []; timelineCursors = d.cursors || {};
+    const newItems = d.items || [];
+    networks = d.networks || [];
+    timelineCursors = d.cursors || {};
     if (!networks || networks.length === 0) {
       openSetup(true);
       return;
     }
     const errList = Object.entries(d.errors || {}).map(([n, e]) => el("div", "banner", (LABEL[n] || n) + ": " + e));
     $("errors").replaceChildren(...errList);
-    buildTargets(); render(); update();
+    buildTargets();
+
+    let newlyArrivedCount = 0;
+    if (items.length && newItems.length) {
+      const oldTopKey = getPostKey(items[0]);
+      const idx = newItems.findIndex(it => getPostKey(it) === oldTopKey);
+      if (idx > 0) newlyArrivedCount = idx;
+      else if (idx === -1) newlyArrivedCount = newItems.length;
+    }
+
+    const feedEl = $("feed");
+    const anchor = captureScrollAnchor("timeline", feedEl);
+
+    items = dedupSort(items, newItems);
+    render();
+
+    restoreScrollAnchor("timeline", feedEl, anchor);
+
+    const pill = $("timelineNewPostsPill");
+    if (pill) {
+      if (newlyArrivedCount > 0 && anchor && !anchor.atTop) {
+        pill.hidden = false;
+        pill.textContent = newlyArrivedCount === 1 ? t("feed.new_posts_pill_one") : t("feed.new_posts_pill_many", {n: newlyArrivedCount});
+        pill.onclick = () => scrollColToTop("timeline");
+      } else if (anchor && anchor.atTop) {
+        pill.hidden = true;
+      }
+    }
+
+    update();
   } catch (e) {
     console.error("load() error:", e);
     const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
@@ -3485,10 +3863,37 @@ async function loadExplore() {
   try {
     const d = await api("/api/explore");
     if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
-    exploreItems = d.items || []; exploreCursors = d.cursors || {};
+    const newItems = d.items || [];
+    exploreCursors = d.cursors || {};
     const errList = Object.entries(d.errors || {}).map(([n, e]) => el("div", "banner", (LABEL[n] || n) + ": " + e));
     $("eerrors").replaceChildren(...errList);
+
+    let newlyArrivedCount = 0;
+    if (exploreItems.length && newItems.length) {
+      const oldTopKey = getPostKey(exploreItems[0]);
+      const idx = newItems.findIndex(it => getPostKey(it) === oldTopKey);
+      if (idx > 0) newlyArrivedCount = idx;
+      else if (idx === -1) newlyArrivedCount = newItems.length;
+    }
+
+    const feedEl = $("efeed");
+    const anchor = captureScrollAnchor("explore", feedEl);
+
+    exploreItems = dedupSort(exploreItems, newItems, false);
     renderExplore();
+
+    restoreScrollAnchor("explore", feedEl, anchor);
+
+    const pill = $("exploreNewPostsPill");
+    if (pill) {
+      if (newlyArrivedCount > 0 && anchor && !anchor.atTop) {
+        pill.hidden = false;
+        pill.textContent = newlyArrivedCount === 1 ? t("feed.new_posts_pill_one") : t("feed.new_posts_pill_many", {n: newlyArrivedCount});
+        pill.onclick = () => scrollColToTop("explore");
+      } else if (anchor && anchor.atTop) {
+        pill.hidden = true;
+      }
+    }
   } catch (e) {
     console.error("loadExplore() error:", e);
     const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
@@ -3773,7 +4178,7 @@ function playSpatialSound(kind) {
     if (!ctx) return;
     const now = ctx.currentTime;
 
-    if (kind === "reply" || kind === "mention" || kind === "quote") {
+    if (kind === "reply" || kind === "mention") {
       // Cosmic Starlight Ping: dual ascending sine glide with soft shimmer
       const osc1 = ctx.createOscillator();
       const osc2 = ctx.createOscillator();
@@ -3825,7 +4230,7 @@ function playSpatialSound(kind) {
       sub.connect(subGain); subGain.connect(ctx.destination);
       osc.start(now); osc.stop(now + 0.17);
       sub.start(now); sub.stop(now + 0.17);
-    } else if (kind === "boost" || kind === "boost_repost" || kind === "reblog") {
+    } else if (kind === "boost" || kind === "boost_repost" || kind === "reblog" || kind === "quote") {
       // Orbital Harmonic Teleport: fifth chord with celestial expansion
       const osc1 = ctx.createOscillator();
       const osc2 = ctx.createOscillator();
@@ -3945,9 +4350,9 @@ function dispatchIncomingAlerts(arrivals) {
     for (const item of arrivals) {
       const kind = item.kind || "other";
       let cat = "other";
-      if (kind === "reply" || kind === "mention" || kind === "quote") cat = "replies";
+      if (kind === "reply" || kind === "mention") cat = "replies";
       else if (kind === "like" || kind === "like_repost" || kind === "favourite") cat = "likes";
-      else if (kind === "boost" || kind === "boost_repost" || kind === "reblog") cat = "boosts";
+      else if (kind === "boost" || kind === "boost_repost" || kind === "reblog" || kind === "quote") cat = "boosts";
       else if (kind === "follow" || kind === "follow_request") cat = "follows";
 
       if (notifTypesEnabled[cat] !== false) {
@@ -3969,9 +4374,9 @@ function dispatchIncomingAlerts(arrivals) {
     const allowed = arrivals.filter(item => {
       const kind = item.kind || "other";
       let cat = "other";
-      if (kind === "reply" || kind === "mention" || kind === "quote") cat = "replies";
+      if (kind === "reply" || kind === "mention") cat = "replies";
       else if (kind === "like" || kind === "like_repost" || kind === "favourite") cat = "likes";
-      else if (kind === "boost" || kind === "boost_repost" || kind === "reblog") cat = "boosts";
+      else if (kind === "boost" || kind === "boost_repost" || kind === "reblog" || kind === "quote") cat = "boosts";
       else if (kind === "follow" || kind === "follow_request") cat = "follows";
       return notifTypesEnabled[cat] !== false;
     });
@@ -4080,6 +4485,8 @@ function markSingleNotifRead(n, cardEl) {
   const k = getNotifKey(n);
   if (cardEl && cardEl.classList.contains("fresh")) {
     cardEl.classList.remove("fresh");
+    const dot = cardEl.querySelector(".notif-unread-dot");
+    if (dot) dot.remove();
     if (cardEl._readTimer) clearTimeout(cardEl._readTimer);
     if (cardEl._hoverTimer) clearTimeout(cardEl._hoverTimer);
   }
@@ -4099,6 +4506,8 @@ function markAllNotifsAsRead() {
   persistReadNotifs();
   document.querySelectorAll(".post.notif.fresh").forEach(p => {
     p.classList.remove("fresh");
+    const dot = p.querySelector(".notif-unread-dot");
+    if (dot) dot.remove();
     if (p._readTimer) clearTimeout(p._readTimer);
     if (p._hoverTimer) clearTimeout(p._hoverTimer);
   });
@@ -4148,11 +4557,35 @@ async function loadNotifs() {
       dispatchIncomingAlerts(newArrivals);
     }
 
-    notifs = items;
+    const nfeedEl = $("nfeed");
+    const anchor = captureScrollAnchor("notifs", nfeedEl);
+    const oldTopKey = (notifs && notifs.length) ? getNotifKey(notifs[0]) : null;
+
+    notifs = dedupSort(notifs || [], items);
     notifsCursors = d.cursors || {};
     const errList = Object.entries(d.errors || {}).map(([n, e]) => el("div", "banner", (LABEL[n] || n) + ": " + e));
     $("nerrors").replaceChildren(...errList);
     renderNotifs();
+
+    restoreScrollAnchor("notifs", nfeedEl, anchor);
+
+    let newlyArrivedCount = newArrivals.length;
+    if (newlyArrivedCount === 0 && oldTopKey && items.length) {
+      const idx = items.findIndex(n => getNotifKey(n) === oldTopKey);
+      if (idx > 0) newlyArrivedCount = idx;
+      else if (idx === -1) newlyArrivedCount = items.length;
+    }
+
+    const pill = $("notifsNewPostsPill");
+    if (pill) {
+      if (newlyArrivedCount > 0 && anchor && !anchor.atTop) {
+        pill.hidden = false;
+        pill.textContent = newlyArrivedCount === 1 ? t("feed.new_notifs_pill_one") : t("feed.new_notifs_pill_many", {n: newlyArrivedCount});
+        pill.onclick = () => scrollColToTop("notifs");
+      } else if (anchor && anchor.atTop) {
+        pill.hidden = true;
+      }
+    }
   } catch (e) {
     console.error("loadNotifs() error:", e);
     const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
@@ -4171,9 +4604,9 @@ function renderNotifs() {
   });
 
   const filtered = (notifs || []).filter(n => {
-    if (currentNotifFilter === "replies") return n.kind === "reply" || n.kind === "mention" || n.kind === "quote";
+    if (currentNotifFilter === "replies") return n.kind === "reply" || n.kind === "mention";
     if (currentNotifFilter === "likes") return n.kind === "like" || n.kind === "like_repost";
-    if (currentNotifFilter === "boosts") return n.kind === "boost" || n.kind === "boost_repost";
+    if (currentNotifFilter === "boosts") return n.kind === "boost" || n.kind === "boost_repost" || n.kind === "reblog" || n.kind === "quote";
     if (currentNotifFilter === "follows") return n.kind === "follow" || n.kind === "follow_request";
     return true;
   });
@@ -4194,8 +4627,58 @@ function renderNotifs() {
   for (const n of filtered) {
     const isFresh = !isNotifRead(n);
     const key = getNotifKey(n);
-    const p = el("article", "post notif " + n.network + (isFresh ? " fresh" : ""));
+    const isRepostNotif = (n.kind === "boost" || n.kind === "boost_repost" || n.kind === "like_repost") && n.target_post;
+
+    const targetPost = (n.target_post && (n.target_post.uri || n.target_post.id || n.target_post.url)) ? {
+      network: n.network,
+      id: n.target_post.uri || (n.target_post.id ? String(n.target_post.id) : null) || n.target_post.url,
+      ref: n.ref || (n.target_post.uri ? { uri: n.target_post.uri, cid: n.target_post.cid } : (n.target_post.id ? { id: String(n.target_post.id) } : null)),
+      url: n.target_post.url || n.url,
+      author_id: n.target_post.author_id,
+      handle: n.target_post.author_handle || n.handle,
+      name: n.target_post.author_name || n.name,
+      avatar: n.target_post.author_avatar || n.avatar,
+      text: n.target_post.text || n.text || "",
+      html: n.html || "",
+      media: n.media || [],
+      quote: n.quote || null,
+      liked: Boolean(n.target_post.liked ?? n.liked),
+      likes: n.target_post.likes ?? n.likes ?? 0,
+      boosted: Boolean(n.target_post.boosted ?? n.boosted),
+      boosts: n.target_post.boosts ?? n.boosts ?? 0,
+      replies: n.target_post.replies ?? n.replies ?? 0
+    } : (n.ref || (n.url && (n.url.includes("/post/") || /\/\d+/.test(n.url))) ? {
+      network: n.network,
+      id: (n.ref && typeof n.ref === "object" && (n.ref.uri || n.ref.id)) ? (n.ref.uri || String(n.ref.id)) : n.id,
+      ref: n.ref,
+      url: n.url,
+      author_id: n.author_id,
+      handle: n.handle,
+      name: n.name,
+      avatar: n.avatar,
+      text: n.text || "",
+      html: n.html || "",
+      media: n.media || [],
+      quote: n.quote || null,
+      liked: Boolean(n.liked),
+      likes: n.likes || 0,
+      boosted: Boolean(n.boosted),
+      boosts: n.boosts || 0,
+      replies: n.replies || 0
+    } : null);
+
+    const postKey = targetPost ? getPostKey(targetPost) : key;
+    const isReplyTarget = Boolean(reply && targetPost && getPostKey(reply) === postKey);
+    const isThreadTarget = Boolean(threadIt && targetPost && getPostKey(threadIt) === postKey);
+
+    const p = el("article", "post notif " + n.network + (isFresh ? " fresh" : "") + (isReplyTarget ? " is-reply-target" : "") + (isThreadTarget ? " is-thread-active" : ""));
     p.dataset.notifKey = key;
+    if (postKey) p.dataset.postKey = postKey;
+    if (isFresh) {
+      const dot = el("span", "notif-unread-dot");
+      dot.title = t("notifs.unread_label") || "Não lida";
+      p.append(dot);
+    }
 
     p.onmouseenter = () => {
       if (p.classList.contains("fresh")) {
@@ -4217,8 +4700,6 @@ function renderNotifs() {
       markSingleNotifRead(n, p);
       openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
     };
-
-    const isRepostNotif = (n.kind === "boost" || n.kind === "boost_repost" || n.kind === "like_repost") && n.target_post;
 
     if (isRepostNotif) {
       const tp = n.target_post;
@@ -4336,34 +4817,99 @@ function renderNotifs() {
     if (n.html && (!hasMedia || !n.html.includes("📷 [Imagem]"))) {
       const b = el("div", "body");
       b.innerHTML = n.html;
+      b.addEventListener("click", (e) => {
+        const a = e.target.closest("a");
+        if (!a || !a.href) return;
+        const mTag = a.href.match(/(?:tags|hashtag)\/([^/?#]+)/i);
+        if (mTag && mTag[1]) {
+          e.preventDefault();
+          e.stopPropagation();
+          const tagName = decodeURIComponent(mTag[1]);
+          setTab("search");
+          doSearch("#" + tagName);
+        }
+      });
       p.append(b);
     }
     const m = renderMedia(n.media);
     if (m) p.append(m);
     if (n.quote) p.append(renderQuote(n.quote));
-    if (n.ref) {
+    if (n.ref || targetPost) {
       const acts = el("div", "acts");
-      const r = el("button", "act-btn act-reply");
-      r.title = t("actions.reply");
-      r.setAttribute("aria-label", t("actions.reply"));
-      r.innerHTML = ICONS.reply;
-      r.onclick = () => {
+      const postTarget = targetPost || n;
+      const bR = el("button", "act-btn act-reply" + (isReplyTarget ? " active" : ""));
+      if (postKey) bR.dataset.replyKey = postKey;
+      bR.title = t("actions.reply");
+      bR.setAttribute("aria-label", t("actions.reply"));
+      bR.innerHTML = ICONS.reply + (postTarget.replies ? '<span>' + Number(postTarget.replies) + '</span>' : '');
+      bR.onclick = (e) => {
+        e.stopPropagation();
         markSingleNotifRead(n, p);
-        startReply(isRepostNotif && n.target_post ? {network: n.network, ref: n.ref, name: n.target_post.author_name} : n);
+        startReply(isRepostNotif && n.target_post ? {network: n.network, ref: n.ref, name: n.target_post.author_name} : postTarget);
       };
-      acts.append(r);
-      if (n.kind === "reply" || n.kind === "mention" || n.kind === "quote") {
+
+      const bB = el("button", "act-btn act-boost" + (postTarget.boosted ? " on" : ""));
+      bB.title = t("actions.share");
+      bB.setAttribute("aria-label", bB.title);
+      bB.innerHTML = ICONS.boost + (postTarget.boosts ? '<span>' + Number(postTarget.boosts) + '</span>' : '');
+      bB.onclick = (e) => {
+        e.stopPropagation();
+        markSingleNotifRead(n, p);
+        openBoostMenu(postTarget, bB);
+      };
+
+      const bL = el("button", "act-btn act-like" + (postTarget.liked ? " on" : ""));
+      bL.title = postTarget.liked ? t("actions.liked") : t("actions.like");
+      bL.setAttribute("aria-label", bL.title);
+      bL.innerHTML = ICONS.like + (postTarget.likes ? '<span>' + Number(postTarget.likes) + '</span>' : '');
+      bL.onclick = (e) => {
+        e.stopPropagation();
+        markSingleNotifRead(n, p);
+        act(postTarget, "like", bL);
+      };
+
+      const isSaved = isPostSaved(postTarget);
+      const bS = el("button", "act-btn act-save" + (isSaved ? " on" : ""));
+      bS.dataset.postKey = postKey;
+      bS.title = isSaved ? t("actions.saved_rm") : t("actions.save");
+      bS.setAttribute("aria-label", bS.title);
+      bS.innerHTML = isSaved ? ICONS.bookmarkFill : ICONS.bookmark;
+      bS.onclick = (e) => {
+        e.stopPropagation();
+        markSingleNotifRead(n, p);
+        toggleSavePost(postTarget, bS);
+      };
+
+      acts.append(bR, bB, bL, bS);
+
+      if (targetPost) {
         const c = el("button", "act-btn act-thread");
         c.title = t("actions.view_thread");
         c.setAttribute("aria-label", t("actions.view_thread"));
         c.innerHTML = ICONS.thread;
-        c.onclick = () => {
+        c.onclick = (e) => {
+          e.stopPropagation();
           markSingleNotifRead(n, p);
-          openThread(n);
+          openThread(targetPost, false, p);
         };
         acts.append(c);
       }
       p.append(acts);
+    }
+
+    if (targetPost || n.kind === "follow" || n.kind === "follow_request") {
+      p.classList.add("clickable-post");
+      p.onclick = (e) => {
+        if (e.target.closest("a, button, input, textarea, select, video, .media, .author-link, .quote-box")) return;
+        const sel = window.getSelection ? window.getSelection().toString() : "";
+        if (sel && sel.trim().length > 0) return;
+        markSingleNotifRead(n, p);
+        if (targetPost) {
+          openThread(targetPost, false, p);
+        } else {
+          openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
+        }
+      };
     }
     box.append(p);
   }
@@ -4371,7 +4917,8 @@ function renderNotifs() {
 }
 
 function updateBadge() {
-  const unreadCount = (notifs || []).filter(n => !isNotifRead(n)).length;
+  const allNotifs = notifs || [];
+  const unreadCount = allNotifs.filter(n => !isNotifRead(n)).length;
   $("badge").hidden = !unreadCount;
   if ($("badgeCount")) $("badgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
   if ($("sideBadge")) $("sideBadge").hidden = !unreadCount;
@@ -4379,6 +4926,37 @@ function updateBadge() {
   if ($("deckNotifsBadge")) $("deckNotifsBadge").hidden = !unreadCount;
   if ($("deckBadgeCount")) $("deckBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
   if ($("markAllNotifsReadHeadBtn")) $("markAllNotifsReadHeadBtn").style.display = unreadCount ? "inline-flex" : "none";
+
+  // Contagens por categoria
+  const unreadReplies = allNotifs.filter(n => !isNotifRead(n) && (n.kind === "reply" || n.kind === "mention")).length;
+  const unreadLikes = allNotifs.filter(n => !isNotifRead(n) && (n.kind === "like" || n.kind === "like_repost")).length;
+  const unreadBoosts = allNotifs.filter(n => !isNotifRead(n) && (n.kind === "boost" || n.kind === "boost_repost" || n.kind === "reblog" || n.kind === "quote")).length;
+  const unreadFollows = allNotifs.filter(n => !isNotifRead(n) && (n.kind === "follow" || n.kind === "follow_request")).length;
+
+  const updatePillBadge = (elId, count) => {
+    const el = $(elId);
+    if (!el) return;
+    el.hidden = !count;
+    el.textContent = count > 99 ? "99+" : String(count);
+  };
+
+  updatePillBadge("notifBadgeAll", unreadCount);
+  updatePillBadge("notifBadgeReplies", unreadReplies);
+  updatePillBadge("notifBadgeLikes", unreadLikes);
+  updatePillBadge("notifBadgeBoosts", unreadBoosts);
+  updatePillBadge("notifBadgeFollows", unreadFollows);
+
+  // Banner de resumo no feed de notificações
+  const banner = $("notifSummaryBanner");
+  const bannerText = $("notifSummaryText");
+  if (banner && bannerText) {
+    if (unreadCount > 0) {
+      banner.hidden = false;
+      bannerText.textContent = unreadCount === 1 ? t("notifs.unread_count_one") : t("notifs.unread_count_many", {n: unreadCount});
+    } else {
+      banner.hidden = true;
+    }
+  }
 }
 
 let activeProfileMode = "hub";
@@ -4820,6 +5398,7 @@ let threadIt = null;
 let activeThreadColId = "timeline";
 let colScrolls = {};
 let threadHistory = {};
+let deckThreadHistory = [];
 
 function getActiveColId(it) {
   if (viewMode === "single") return tab || "timeline";
@@ -4831,11 +5410,107 @@ function getActiveColId(it) {
   return tab || "timeline";
 }
 
-async function openThread(it, keep) {
+async function openThread(it, keep, originEl) {
   if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
     closeUserProfileModal();
   }
-  const colId = keep ? (activeThreadColId || "timeline") : getActiveColId(it);
+
+  const postKey = getPostKey(it);
+
+  // MODO DECK: Abre coluna dedicada lateral de conversa ao lado do feed de origem
+  if (viewMode === "deck") {
+    const colThread = $("colThread");
+    const threadBody = $("colThreadBody");
+    const threadContent = $("deckThreadContent");
+    const backBtn = $("deckThreadBackBtn");
+    if (!colThread || !threadContent) return;
+
+    // Remove destaque anterior e aplica na publicação atual em foco
+    document.querySelectorAll(".post.is-thread-active").forEach(el => el.classList.remove("is-thread-active"));
+    let clickedPost = originEl?.closest?.(".post") || window.event?.target?.closest?.(".post");
+    if (!clickedPost && postKey) {
+      try {
+        clickedPost = document.querySelector(`.deck-col:not(#colThread) .post[data-post-key="${CSS.escape(postKey)}"]`);
+      } catch (_) {}
+    }
+    if (clickedPost && !clickedPost.closest("#colThread")) {
+      clickedPost.classList.add("is-thread-active");
+    }
+
+    // Identifica a coluna de origem e posiciona a coluna de conversa imediatamente ao lado dela
+    let sourceCol = clickedPost?.closest?.(".deck-col:not(#colThread)") || originEl?.closest?.(".deck-col:not(#colThread)") || window.event?.target?.closest?.(".deck-col:not(#colThread)");
+    if (!sourceCol) {
+      const colId = getActiveColId(it);
+      const capCol = colId === "compose" ? "Compose" : (colId.charAt(0).toUpperCase() + colId.slice(1));
+      sourceCol = $("col" + capCol) || $("colTimeline");
+    }
+    if (sourceCol && sourceCol.parentElement) {
+      sourceCol.after(colThread);
+      colThread.style.order = sourceCol.style.order || "0";
+    }
+
+    // Histórico de navegação dentro da coluna de conversa
+    if (!keep) {
+      if (!colThread.hidden && threadIt && threadIt !== it) {
+        deckThreadHistory.push(threadIt);
+      } else {
+        deckThreadHistory = [];
+      }
+    }
+    if (backBtn) {
+      backBtn.style.display = deckThreadHistory.length > 0 ? "inline-flex" : "none";
+    }
+
+    threadIt = it;
+    colThread.hidden = false;
+
+    if (!keep) {
+      threadContent.replaceChildren(el("div", "empty", t("feed.loading_thread")));
+      if (threadBody) threadBody.scrollTop = 0;
+      colThread.scrollIntoView({ behavior: "smooth", inline: "nearest" });
+    }
+
+    let d;
+    try {
+      const net = it.network || (it.url && it.url.includes("bsky.app") ? "bluesky" : "mastodon");
+      const ref = it.ref || (it.url ? {url: it.url} : {});
+      d = await api("/api/thread", {network: net, ref: ref});
+    } catch (e) {
+      d = {error: t("feed.error_server")};
+    }
+
+    if (threadIt !== it) return;
+
+    threadContent.replaceChildren();
+    if (d.error) {
+      threadContent.append(el("div", "banner", LABEL[it.network] + ": " + d.error));
+      return;
+    }
+    if (d.ancestors && d.ancestors.length) {
+      const chain = el("div", "chain");
+      d.ancestors.forEach(a => chain.append(postCard(a)));
+      threadContent.append(chain);
+    }
+    const focus = postCard(d.focus, {focus: true});
+    threadContent.append(focus);
+    const kids = (list, depth) => {
+      const w = el("div", depth < 4 ? "kids" : "kids flat");
+      list.forEach(r => {
+        w.append(postCard(r));
+        if (r.children && r.children.length) w.append(kids(r.children, depth + 1));
+      });
+      return w;
+    };
+    threadContent.append(d.replies && d.replies.length ? kids(d.replies, 0) : el("div", "empty", t("feed.empty_replies")));
+
+    if (!keep && d.ancestors && d.ancestors.length) {
+      focus.scrollIntoView({behavior: "smooth", block: "nearest"});
+    }
+    return;
+  }
+
+  // MODO COLUNA ÚNICA: substitui a visualização no próprio feed com botão Voltar e restauração de scroll
+  const colId = keep ? (activeThreadColId || "timeline") : (originEl?.closest?.(".deck-col")?.dataset?.col || getActiveColId(it));
   activeThreadColId = colId;
   const capCol = colId === "compose" ? "Profile" : (colId.charAt(0).toUpperCase() + colId.slice(1));
   const mainEl = $("p" + capCol);
@@ -4912,6 +5587,27 @@ async function openThread(it, keep) {
   }
 }
 
+function deckThreadBack() {
+  if (deckThreadHistory.length > 0) {
+    const prevIt = deckThreadHistory.pop();
+    openThread(prevIt, false);
+  } else {
+    closeDeckThread();
+  }
+}
+
+function closeDeckThread() {
+  const colThread = $("colThread");
+  if (colThread) {
+    colThread.hidden = true;
+    const content = $("deckThreadContent");
+    if (content) content.replaceChildren();
+  }
+  document.querySelectorAll(".post.is-thread-active").forEach(el => el.classList.remove("is-thread-active"));
+  threadIt = null;
+  deckThreadHistory = [];
+}
+
 function closeColumnThread(colId) {
   if (threadHistory[colId] && threadHistory[colId].length > 0) {
     const prevIt = threadHistory[colId].pop();
@@ -4943,10 +5639,12 @@ function closeColumnThread(colId) {
 }
 
 function closeThread() {
-  if (activeThreadColId) closeColumnThread(activeThreadColId);
+  if (viewMode === "deck") {
+    closeDeckThread();
+  } else if (activeThreadColId) {
+    closeColumnThread(activeThreadColId);
+  }
 }
-
-function closeDeckDetail() {}
 
 function updateNetToggleUI() {
   const btn = $("netToggleBtn");
@@ -5819,6 +6517,8 @@ function update() {
 
   if (threadPosts.length > 0) {
     $("send").textContent = t("composer.publish_thread", {count: threadPosts.length + 1});
+  } else if (reply) {
+    $("send").textContent = t("actions.reply") || "Responder";
   } else {
     $("send").textContent = t("composer.send");
   }
@@ -6107,12 +6807,7 @@ function loadDraftIntoComposer(draft, fromLibrary = false) {
   renderThreadPosts();
 
   reply = draft.reply || null;
-  if (reply) {
-    $("replying").hidden = false;
-    $("replyingTo").textContent = t("composer.replying_to", {name: reply.name || reply.handle, net: LABEL[reply.network] || ""});
-  } else {
-    $("replying").hidden = true;
-  }
+  renderReplyBox();
 
   quote = draft.quote || null;
   renderQuoteBox();
@@ -6153,7 +6848,8 @@ function discardCurrentComposer() {
   pollOptions = ["", ""];
   renderPoll();
   reply = null;
-  $("replying").hidden = true;
+  lastReplyAutoHandle = "";
+  renderReplyBox();
   quote = null;
   renderQuoteBox();
   try {
@@ -6318,6 +7014,107 @@ if ($("saveCurrentDraftBtn")) $("saveCurrentDraftBtn").onclick = saveCurrentComp
 if ($("clearAllDraftsBtn")) $("clearAllDraftsBtn").onclick = clearAllDrafts;
 if ($("discardComposerBtn")) $("discardComposerBtn").onclick = discardCurrentComposer;
 
+if ($("closePartialPost")) {
+  $("closePartialPost").onclick = () => {
+    closePartialPostModal();
+    if (pendingPartialData) {
+      const msg = $("msg");
+      if (msg) {
+        msg.className = "msg err";
+        msg.textContent = t("composer.partial_editing_note") || "Podes rever a tua publicação e reenviar apenas para a rede em falta.";
+      }
+      $("text").focus();
+    }
+  };
+}
+if ($("partialPostOverlay")) {
+  $("partialPostOverlay").onclick = (e) => {
+    if (e.target === $("partialPostOverlay")) {
+      closePartialPostModal();
+      if (pendingPartialData) {
+        const msg = $("msg");
+        if (msg) {
+          msg.className = "msg err";
+          msg.textContent = t("composer.partial_editing_note") || "Podes rever a tua publicação e reenviar apenas para a rede em falta.";
+        }
+      }
+    }
+  };
+}
+if ($("finishPartialPostBtn")) {
+  $("finishPartialPostBtn").onclick = () => {
+    if (pendingPartialData) {
+      clearComposer(pendingPartialData.threadPayload);
+      pendingPartialData = null;
+    }
+    closePartialPostModal();
+    const msg = $("msg");
+    if (msg) {
+      msg.className = "msg";
+      msg.textContent = t("composer.posted");
+    }
+  };
+}
+if ($("editPartialPostBtn")) {
+  $("editPartialPostBtn").onclick = () => {
+    closePartialPostModal();
+    const msg = $("msg");
+    if (msg) {
+      msg.className = "msg err";
+      msg.textContent = t("composer.partial_editing_note") || "Podes rever a tua publicação e reenviar apenas para a rede em falta.";
+    }
+    $("text").focus();
+  };
+}
+if ($("retryPartialPostBtn")) {
+  $("retryPartialPostBtn").onclick = async () => {
+    if (!pendingPartialData) return;
+    const { good, bad, bodyPayload, threadPayload } = pendingPartialData;
+    const retryTargets = bad.map(([n]) => n);
+    const retryBtn = $("retryPartialPostBtn");
+    const retryTxt = $("retryPartialPostText");
+
+    if (retryBtn) retryBtn.disabled = true;
+    if (retryTxt) retryTxt.textContent = t("composer.partial_retrying");
+
+    const retryBody = { ...bodyPayload, targets: retryTargets };
+    if (retryBody.reply && !retryTargets.includes(retryBody.reply.network)) {
+      delete retryBody.reply;
+    }
+
+    try {
+      const res = await api("/api/post", retryBody);
+      const newBad = Object.entries(res).filter(([, v]) => v !== "ok");
+      const newGood = Object.entries(res).filter(([, v]) => v === "ok");
+
+      if (newBad.length === 0) {
+        closePartialPostModal();
+        clearComposer(threadPayload);
+        const msg = $("msg");
+        if (msg) {
+          msg.className = "msg";
+          msg.textContent = threadPayload ? (t("composer.thread_published") || "Fio publicado com sucesso!") : t("composer.posted");
+        }
+        pendingPartialData = null;
+      } else {
+        const combinedGood = [...good, ...newGood];
+        pendingPartialData = { good: combinedGood, bad: newBad, bodyPayload, threadPayload };
+        openPartialPostModal(combinedGood, newBad, bodyPayload, threadPayload);
+      }
+    } catch (err) {
+      alert(err.message || "Erro ao reenviar.");
+      if (retryBtn) retryBtn.disabled = false;
+      if (retryTxt) {
+        if (retryTargets.length === 1) {
+          retryTxt.textContent = t("composer.partial_retry_btn", {net: LABEL[retryTargets[0]]});
+        } else {
+          retryTxt.textContent = t("composer.partial_retry_all_failed");
+        }
+      }
+    }
+  };
+}
+
 function closeBoostMenu() {
   if (activeBoostMenu) {
     activeBoostMenu.remove();
@@ -6388,6 +7185,44 @@ let crossPostTarget = null;
 let crossPostTheme = "cosmic";
 
 const FONT_SANS = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+function getCanvasWrappedLines(ctx, text, maxWidth, maxLines = 14) {
+  if (!text) return [];
+  const paragraphs = text.split(/\r?\n/);
+  const lines = [];
+
+  for (let p = 0; p < paragraphs.length; p++) {
+    const rawPara = paragraphs[p].trim();
+    if (!rawPara) {
+      if (lines.length > 0 && lines.length < maxLines) {
+        lines.push("");
+      }
+      continue;
+    }
+    const words = rawPara.split(/\s+/);
+    let currentLine = "";
+
+    for (let w = 0; w < words.length; w++) {
+      const testLine = currentLine ? (currentLine + " " + words[w]) : words[w];
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = words[w];
+        if (lines.length >= maxLines - 1) {
+          currentLine += " …";
+          break;
+        }
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    if (lines.length >= maxLines) break;
+  }
+  return lines;
+}
 
 function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 12) {
   const words = text.split(/\s+/);
@@ -6630,15 +7465,168 @@ async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH) {
   }
 }
 
+async function drawQuotedCard(ctx, quote, x, y, w, r = 16) {
+  if (!quote) return 0;
+  let qTxt = (quote.text || "").trim();
+  if (!qTxt && quote.html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = quote.html;
+    qTxt = (tmp.textContent || "").trim();
+  }
+
+  const pad = 20;
+  const innerW = w - pad * 2;
+  ctx.font = "20px " + FONT_SANS;
+  const qLines = qTxt ? getCanvasWrappedLines(ctx, qTxt, innerW, 6) : [];
+  const textH = qLines.length > 0 ? (qLines.length * 28 + 6) : 0;
+  const headH = 34;
+  const quoteH = pad * 2 + headH + 8 + textH;
+
+  // Fundo e contorno do cartão citado
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, quoteH, r);
+  ctx.fillStyle = "rgba(10, 16, 36, 0.72)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(77, 178, 255, 0.28)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Avatar circular do autor citado
+  const qAvR = 15;
+  const qAvX = x + pad;
+  const qAvY = y + pad;
+  const qAvImg = await loadImgSafe(quote.avatar);
+  if (qAvImg) {
+    try {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(qAvX + qAvR, qAvY + qAvR, qAvR, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(qAvImg, qAvX, qAvY, qAvR * 2, qAvR * 2);
+      ctx.restore();
+    } catch (_) {
+      ctx.beginPath();
+      ctx.arc(qAvX + qAvR, qAvY + qAvR, qAvR, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(77, 178, 255, 0.4)";
+      ctx.fill();
+    }
+  } else {
+    ctx.beginPath();
+    ctx.arc(qAvX + qAvR, qAvY + qAvR, qAvR, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(77, 178, 255, 0.4)";
+    ctx.fill();
+  }
+
+  // Nome e handle do autor citado
+  const qTextLeft = qAvX + qAvR * 2 + 10;
+  ctx.fillStyle = "#EEF0FF";
+  ctx.font = "bold 20px " + FONT_SANS;
+  ctx.fillText(quote.name || quote.handle || "Autor", qTextLeft, qAvY + 21);
+
+  const nameW = ctx.measureText(quote.name || quote.handle || "Autor").width;
+  ctx.fillStyle = "#8E96C8";
+  ctx.font = "16px " + FONT_SANS;
+  if (quote.handle) {
+    ctx.fillText(quote.handle + (quote.time ? " · " + ago(quote.time) : ""), qTextLeft + nameW + 8, qAvY + 21);
+  }
+
+  // Indicador de link / citação
+  ctx.fillStyle = "#4DB2FF";
+  ctx.font = "bold 18px " + FONT_SANS;
+  ctx.textAlign = "right";
+  ctx.fillText("↗", x + w - pad, qAvY + 21);
+  ctx.textAlign = "start";
+
+  // Texto da publicação citada
+  ctx.fillStyle = "#DDE2FF";
+  ctx.font = "20px " + FONT_SANS;
+  let lineY = qAvY + qAvR * 2 + 18;
+  for (const line of qLines) {
+    if (line) ctx.fillText(line, x + pad, lineY);
+    lineY += 28;
+  }
+
+  ctx.restore();
+  return quoteH;
+}
+
 async function renderCrossCanvas(it, theme = "cosmic") {
   const canvas = $("crossCanvas");
   const ctx = canvas.getContext("2d");
   const W = 1080;
-  const H = 1080;
+
+  // 1. Processa e mede o texto da publicação principal
+  let postTxt = (it.text || "").trim();
+  if (!postTxt && it.html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = it.html;
+    postTxt = (tmp.textContent || "").trim();
+  }
+
+  const cardX = 65;
+  const cardW = W - cardX * 2; // 950px
+  const pad = 40;
+  const availW = cardW - pad * 2; // 870px
+
+  ctx.font = "28px " + FONT_SANS;
+  const postLines = postTxt ? getCanvasWrappedLines(ctx, postTxt, availW, 14) : [];
+  const textLineH = 40;
+  const textH = postLines.length > 0 ? (postLines.length * textLineH + 12) : 0;
+
+  // 2. Processa e mede o post citado (se existir)
+  let quoteH = 0;
+  if (it.quote) {
+    let qTxt = (it.quote.text || "").trim();
+    if (!qTxt && it.quote.html) {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = it.quote.html;
+      qTxt = (tmp.textContent || "").trim();
+    }
+    ctx.font = "20px " + FONT_SANS;
+    const qLines = qTxt ? getCanvasWrappedLines(ctx, qTxt, availW - 40, 6) : [];
+    const qTextH = qLines.length > 0 ? (qLines.length * 28 + 6) : 0;
+    quoteH = 40 + 34 + 8 + qTextH;
+  }
+
+  // 3. Processa e mede anexos de media (se existirem)
+  const mediaList = (it.media || []).filter(m => {
+    if (!m) return false;
+    if (m.type === "external") return Boolean(m.thumb || m.url);
+    return Boolean(m.url || m.thumb);
+  });
+  const hasMedia = mediaList.length > 0;
+  let mediaH = 0;
+  if (hasMedia) {
+    if (mediaList.length === 1 && mediaList[0].type === "external" && !mediaList[0].thumb) {
+      mediaH = 170;
+    } else {
+      mediaH = 430;
+    }
+  }
+
+  // 4. Altura dinâmica do cartão ajustada ao conteúdo real
+  const cardPadTop = 36;
+  const headerH = 74; // Avatar (70px) + margens
+  const dividerH = 22;
+  const metricsH = 32;
+  const cardPadBottom = 26;
+
+  let innerH = textH;
+  if (quoteH > 0) innerH += (innerH > 0 ? 18 : 0) + quoteH;
+  if (mediaH > 0) innerH += (innerH > 0 ? 18 : 0) + mediaH;
+  if (innerH === 0) innerH = 75;
+
+  const cardH = cardPadTop + headerH + dividerH + innerH + 16 + metricsH + cardPadBottom;
+  const cardY = 50;
+  const footerH = 46;
+  // Limites proporcionais: min 540px (~2:1 banner compacto quando só há texto curto) até max 1350px (proporção 4:5 vertical ideal para feeds do Bluesky/Mastodon sem cortes)
+  const H = Math.max(540, Math.min(1350, cardY + cardH + 18 + footerH + 20));
+
   canvas.width = W;
   canvas.height = H;
 
-  // 1. Fundo do canvas com gradiente
+  // 5. Fundo com gradiente temático
   let grad;
   if (theme === "night") {
     grad = ctx.createLinearGradient(0, 0, W, H);
@@ -6656,7 +7644,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
     grad.addColorStop(1, "#0B1020");
   } else {
     // cosmic (padrão MastoSky)
-    grad = ctx.createRadialGradient(W * 0.75, H * 0.25, 60, W * 0.5, H * 0.5, W * 0.85);
+    grad = ctx.createRadialGradient(W * 0.75, H * 0.25, 60, W * 0.5, H * 0.5, W * 0.9);
     grad.addColorStop(0, "#2F1E72");
     grad.addColorStop(0.45, "#151B47");
     grad.addColorStop(1, "#080C1A");
@@ -6664,57 +7652,90 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // 2. Estrelas cósmicas no fundo
+  // 6. Céu estrelado no fundo (mais estrelas e brilhos cósmicos subtis)
   const starCoords = [
-    [100, 110, 2, "rgba(77,178,255,0.7)"],
-    [240, 70, 3, "rgba(255,214,107,0.85)"],
-    [380, 180, 1.5, "rgba(255,255,255,0.6)"],
-    [850, 120, 3.5, "rgba(77,178,255,0.9)"],
-    [980, 80, 2, "rgba(255,214,107,0.7)"],
-    [150, 960, 2, "rgba(255,255,255,0.6)"],
-    [940, 940, 2.5, "rgba(77,178,255,0.7)"],
-    [70, 520, 1.5, "rgba(255,214,107,0.6)"],
-    [1010, 500, 2, "rgba(255,255,255,0.7)"],
-    [890, 680, 1.5, "rgba(77,178,255,0.6)"],
-    [120, 750, 1.5, "rgba(77,178,255,0.5)"],
-    [970, 780, 2, "rgba(255,214,107,0.6)"]
+    [85, 30, 2.2, "rgba(77,178,255,0.75)"],
+    [195, 20, 2.8, "rgba(255,214,107,0.85)"],
+    [340, 42, 1.4, "rgba(255,255,255,0.65)"],
+    [520, 18, 2.0, "rgba(195,175,255,0.7)"],
+    [690, 36, 1.6, "rgba(77,178,255,0.8)"],
+    [850, 22, 3.2, "rgba(255,214,107,0.9)"],
+    [980, 40, 1.8, "rgba(255,255,255,0.7)"],
+    [1040, 24, 2.2, "rgba(77,178,255,0.65)"],
+    [26, 110, 1.8, "rgba(255,214,107,0.7)"],
+    [45, 230, 1.5, "rgba(77,178,255,0.6)"],
+    [18, 350, 2.6, "rgba(255,255,255,0.75)"],
+    [38, 480, 1.4, "rgba(195,175,255,0.6)"],
+    [22, 620, 2.2, "rgba(77,178,255,0.7)"],
+    [40, 760, 1.8, "rgba(255,214,107,0.65)"],
+    [20, 910, 2.5, "rgba(255,255,255,0.8)"],
+    [35, 1060, 1.6, "rgba(77,178,255,0.7)"],
+    [24, 1200, 2.0, "rgba(255,214,107,0.6)"],
+    [1055, 120, 2.2, "rgba(77,178,255,0.75)"],
+    [1035, 250, 1.6, "rgba(255,214,107,0.65)"],
+    [1058, 380, 3.0, "rgba(255,255,255,0.85)"],
+    [1038, 510, 1.5, "rgba(195,175,255,0.6)"],
+    [1054, 650, 2.4, "rgba(77,178,255,0.7)"],
+    [1032, 790, 1.7, "rgba(255,214,107,0.6)"],
+    [1050, 930, 2.5, "rgba(255,255,255,0.8)"],
+    [1035, 1070, 1.8, "rgba(77,178,255,0.7)"],
+    [1052, 1210, 2.2, "rgba(255,214,107,0.65)"],
+    [90, H - 20, 2.4, "rgba(77,178,255,0.75)"],
+    [240, H - 12, 1.8, "rgba(255,255,255,0.65)"],
+    [410, H - 24, 2.6, "rgba(255,214,107,0.8)"],
+    [580, H - 14, 1.5, "rgba(195,175,255,0.6)"],
+    [750, H - 22, 2.5, "rgba(77,178,255,0.75)"],
+    [910, H - 14, 3.0, "rgba(255,214,107,0.85)"],
+    [1020, H - 22, 1.6, "rgba(255,255,255,0.7)"]
   ];
   for (const [sx, sy, sr, sc] of starCoords) {
+    if (sy > H - 5) continue;
     ctx.beginPath();
     ctx.arc(sx, sy, sr, 0, Math.PI * 2);
     ctx.fillStyle = sc;
     ctx.fill();
+
+    // Brilho delicado em cruz (+) nas estrelas principais
+    if (sr >= 2.6) {
+      ctx.save();
+      ctx.strokeStyle = sc;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sx - sr * 2.2, sy);
+      ctx.lineTo(sx + sr * 2.2, sy);
+      ctx.moveTo(sx, sy - sr * 2.2);
+      ctx.lineTo(sx, sy + sr * 2.2);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
-  // 3. Cartão central
-  const cardX = 80;
-  const cardY = 75;
-  const cardW = 920;
-  const cardH = 880;
-  const radius = 28;
+  // 7. Cartão central proporcional
+  const radius = 26;
+  const actualCardH = H - cardY - 18 - footerH - 20;
 
-  // Sombra do cartão
+  // Sombra suave do cartão
   ctx.save();
   ctx.shadowColor = "rgba(0,0,0,0.55)";
-  ctx.shadowBlur = 40;
-  ctx.shadowOffsetY = 18;
+  ctx.shadowBlur = 36;
+  ctx.shadowOffsetY = 16;
   ctx.beginPath();
-  ctx.roundRect(cardX, cardY, cardW, cardH, radius);
+  ctx.roundRect(cardX, cardY, cardW, actualCardH, radius);
   ctx.fillStyle = "#121936";
   ctx.fill();
   ctx.restore();
 
-  // Borda do cartão
+  // Borda subtil do cartão
   ctx.beginPath();
-  ctx.roundRect(cardX, cardY, cardW, cardH, radius);
+  ctx.roundRect(cardX, cardY, cardW, actualCardH, radius);
   ctx.strokeStyle = "rgba(255,255,255,0.14)";
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // 4. Cabeçalho do post dentro do cartão (Avatar, Nome, Handle, Badge)
-  const avX = cardX + 45;
-  const avY = cardY + 40;
-  const avR = 36;
+  // 8. Cabeçalho do post dentro do cartão (Avatar, Nome, Handle, Badge)
+  const avX = cardX + 42;
+  const avY = cardY + 36;
+  const avR = 35;
 
   const avImg = await loadImgSafe(it.avatar);
   if (avImg) {
@@ -6751,17 +7772,17 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   ctx.textBaseline = "alphabetic";
 
   // Nome e handle
-  const textLeft = avX + avR * 2 + 20;
+  const textLeft = avX + avR * 2 + 18;
   ctx.fillStyle = "#EEF0FF";
   ctx.font = "bold 28px " + FONT_SANS;
-  ctx.fillText(it.name || it.handle, textLeft, avY + 32);
+  ctx.fillText(it.name || it.handle, textLeft, avY + 30);
 
   ctx.fillStyle = "#9AA0D6";
   ctx.font = "18px " + FONT_SANS;
-  ctx.fillText(it.handle + " · " + LABEL[it.network] + (it.time ? " · " + ago(it.time) : ""), textLeft, avY + 62);
+  ctx.fillText(it.handle + " · " + LABEL[it.network] + (it.time ? " · " + ago(it.time) : ""), textLeft, avY + 60);
 
-  // Distintivo da rede
-  const badgeNetX = cardX + cardW - 145;
+  // Distintivo da rede de origem
+  const badgeNetX = cardX + cardW - 142;
   const badgeNetY = avY + 12;
   ctx.fillStyle = it.network === "bluesky" ? "rgba(10,120,214,0.3)" : "rgba(91,75,219,0.3)";
   ctx.beginPath();
@@ -6773,93 +7794,89 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   ctx.fillText(it.network === "bluesky" ? "Bluesky" : "Mastodon", badgeNetX + 50, badgeNetY + 23);
   ctx.textAlign = "start";
 
-  // 5. Linha divisória
-  const dividerY = avY + avR * 2 + 20;
+  // 9. Linha divisória
+  const dividerY = avY + avR * 2 + 18;
   ctx.strokeStyle = "rgba(255,255,255,0.08)";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(cardX + 45, dividerY);
-  ctx.lineTo(cardX + cardW - 45, dividerY);
+  ctx.moveTo(cardX + 40, dividerY);
+  ctx.lineTo(cardX + cardW - 40, dividerY);
   ctx.stroke();
 
-  // 6. Conteúdo do post (Texto e/ou Media)
-  const mediaList = (it.media || []).filter(m => {
-    if (!m) return false;
-    if (m.type === "external") return Boolean(m.thumb || m.url);
-    return Boolean(m.url || m.thumb);
-  });
-  const hasMedia = mediaList.length > 0;
+  // 10. Conteúdo (Texto, Quote e/ou Media)
+  let curY = dividerY + 30;
+  const contentLeft = cardX + pad;
 
-  let postTxt = (it.text || "").trim();
-  if (!postTxt && it.html) {
-    const tmp = document.createElement("div");
-    tmp.innerHTML = it.html;
-    postTxt = (tmp.textContent || "").trim();
-  }
-
-  const contentLeft = cardX + 45;
-  const availW = cardW - 90;
-  const contentTop = dividerY + 25;
-  const metricsY = cardY + cardH - 35;
-  const contentBottom = metricsY - 25;
-  const availH = contentBottom - contentTop;
-
-  if (hasMedia) {
-    let imgBoxY = contentTop;
-    let imgBoxH = availH;
-
-    if (postTxt) {
-      ctx.fillStyle = "#FFFFFF";
-      ctx.font = "26px " + FONT_SANS;
-      const textEndY = wrapCanvasText(ctx, postTxt, contentLeft, contentTop + 24, availW, 36, 3);
-      imgBoxY = Math.min(textEndY + 16, contentTop + 140);
-      imgBoxH = contentBottom - imgBoxY;
-    }
-
-    await drawMediaGrid(ctx, mediaList, contentLeft, imgBoxY, availW, imgBoxH);
-  } else {
+  if (postLines.length > 0) {
     ctx.fillStyle = "#FFFFFF";
-    ctx.font = "30px " + FONT_SANS;
-    wrapCanvasText(ctx, postTxt || t("composer.no_text"), contentLeft, contentTop + 28, availW, 44, 13);
+    ctx.font = "28px " + FONT_SANS;
+    for (const line of postLines) {
+      if (line) ctx.fillText(line, contentLeft, curY);
+      curY += textLineH;
+    }
+    curY += 8;
   }
 
-  // 7. Rodapé de métricas no cartão
+  // Renderiza o post citado (se existir)
+  if (it.quote) {
+    const renderedQuoteH = await drawQuotedCard(ctx, it.quote, contentLeft, curY, availW);
+    curY += renderedQuoteH + 18;
+  }
+
+  // Renderiza a grelha de media (se existir)
+  if (hasMedia) {
+    await drawMediaGrid(ctx, mediaList, contentLeft, curY, availW, mediaH);
+    curY += mediaH + 18;
+  }
+
+  // 11. Rodapé de métricas no cartão
+  const metricsY = cardY + actualCardH - 30;
   ctx.fillStyle = "#7D85B2";
   ctx.font = "18px " + FONT_SANS;
   const metricsStr = `💬 ${Number(it.replies || 0)}   🔄 ${Number(it.boosts || 0)}   ❤️ ${Number(it.likes || 0)}`;
-  ctx.fillText(metricsStr, cardX + 45, metricsY);
+  ctx.fillText(metricsStr, cardX + pad, metricsY);
 
-  // 8. Rodapé fora do cartão (Branding MastoSky)
-  const footY = H - 35;
-  ctx.fillStyle = "#FFD66B";
-  ctx.beginPath();
-  const starX = cardX + 12;
-  const starY = footY - 8;
-  ctx.moveTo(starX, starY - 9);
-  ctx.lineTo(starX + 3, starY - 3);
-  ctx.lineTo(starX + 9, starY);
-  ctx.lineTo(starX + 3, starY + 3);
-  ctx.lineTo(starX, starY + 9);
-  ctx.lineTo(starX - 3, starY + 3);
-  ctx.lineTo(starX - 9, starY);
-  ctx.lineTo(starX - 3, starY - 3);
-  ctx.closePath();
-  ctx.fill();
+  // 12. Rodapé com destaque à marca MastoSky
+  const footY = H - 22;
+  const logoImg = await loadImgSafe("/brand/logo-lockup-dark.svg");
+  if (logoImg) {
+    const logoW = 150;
+    const logoH = 34;
+    ctx.drawImage(logoImg, cardX, footY - 26, logoW, logoH);
+  } else {
+    ctx.fillStyle = "#FFD66B";
+    ctx.beginPath();
+    const starX = cardX + 12;
+    const starY = footY - 8;
+    ctx.moveTo(starX, starY - 9);
+    ctx.lineTo(starX + 3, starY - 3);
+    ctx.lineTo(starX + 9, starY);
+    ctx.lineTo(starX + 3, starY + 3);
+    ctx.lineTo(starX, starY + 9);
+    ctx.lineTo(starX - 3, starY + 3);
+    ctx.lineTo(starX - 9, starY);
+    ctx.lineTo(starX - 3, starY - 3);
+    ctx.closePath();
+    ctx.fill();
 
-  ctx.fillStyle = "#EEF0FF";
-  ctx.font = "bold 22px " + FONT_SANS;
-  ctx.fillText("MastoSky", starX + 18, footY);
+    ctx.fillStyle = "#EEF0FF";
+    ctx.font = "bold 22px " + FONT_SANS;
+    ctx.fillText("Masto", starX + 18, footY);
+    const mw = ctx.measureText("Masto").width;
+    ctx.fillStyle = "#4DB2FF";
+    ctx.fillText("Sky", starX + 18 + mw, footY);
+  }
 
   ctx.fillStyle = "#8E96C8";
-  ctx.font = "16px " + FONT_SANS;
-  ctx.fillText(t("cross_post.branding_tagline"), starX + 125, footY);
+  ctx.font = "15px " + FONT_SANS;
+  ctx.fillText(t("cross_post.branding_tagline"), cardX + 165, footY - 5);
 
   if (it.url) {
     ctx.fillStyle = "#4DB2FF";
-    ctx.font = "16px " + FONT_SANS;
+    ctx.font = "15px " + FONT_SANS;
     ctx.textAlign = "right";
     const shortUrl = it.url.replace(/^https?:\/\//, "");
-    ctx.fillText(shortUrl.length > 40 ? shortUrl.slice(0, 38) + "..." : shortUrl, cardX + cardW, footY);
+    ctx.fillText(shortUrl.length > 38 ? shortUrl.slice(0, 36) + "..." : shortUrl, cardX + cardW, footY - 5);
     ctx.textAlign = "start";
   }
 
@@ -7012,20 +8029,193 @@ $("submitCrossPost").onclick = async () => {
   }
 };
 
-function startReply(it) {
-  reply = {network: it.network, ref: it.ref, name: it.name};
-  $("replying").hidden = false;
-  $("replyingTo").textContent = t("composer.replying_to", {name: it.name, net: LABEL[it.network]});
+let lastReplyAutoHandle = "";
+
+function renderReplyBox() {
+  const box = $("replyBox");
+  if (!box) return;
+  if (!reply) {
+    box.hidden = true;
+    if ($("replying")) $("replying").hidden = true;
+    if ($("targetSelect")) $("targetSelect").hidden = networks.length <= 1;
+    updateNetToggleUI();
+    if ($("deckComposeTitle")) $("deckComposeTitle").textContent = t("header.col_compose");
+    document.querySelectorAll(".post.is-reply-target").forEach(el => el.classList.remove("is-reply-target"));
+    document.querySelectorAll(".act-reply.active").forEach(el => el.classList.remove("active"));
+    return;
+  }
+
+  box.hidden = false;
+  if ($("replying")) $("replying").hidden = true;
   if ($("targetSelect")) $("targetSelect").hidden = true;
-  $("text").focus(); update();
+  updateNetToggleUI();
+  if ($("deckComposeTitle")) $("deckComposeTitle").textContent = t("actions.reply") || "Responder";
+
+  // Preencher dados do post original (pai)
+  const avatarEl = $("replyParentAvatar");
+  if (avatarEl) {
+    if (reply.avatar) {
+      avatarEl.src = su(reply.avatar) || "";
+      avatarEl.style.display = "block";
+    } else {
+      avatarEl.src = "";
+      avatarEl.style.display = "none";
+    }
+  }
+
+  const nameEl = $("replyParentName");
+  if (nameEl) {
+    if (reply.name_html) nameEl.innerHTML = reply.name_html;
+    else nameEl.textContent = reply.name || reply.handle || "";
+  }
+
+  const handleEl = $("replyParentHandle");
+  if (handleEl) handleEl.textContent = reply.handle ? (" " + reply.handle) : "";
+
+  const netEl = $("replyParentNet");
+  if (netEl) netEl.replaceChildren(netBadge(reply.network));
+
+  const bodyEl = $("replyParentBody");
+  if (bodyEl) {
+    bodyEl.replaceChildren();
+    if (reply.cw) {
+      const cwBadge = el("div", "reply-cw-tag", "⚠️ " + reply.cw);
+      bodyEl.append(cwBadge);
+    }
+    const contentDiv = el("div", "reply-body-text");
+    if (reply.html) {
+      contentDiv.innerHTML = reply.html;
+    } else {
+      contentDiv.textContent = reply.text || t("composer.no_text");
+    }
+    bodyEl.append(contentDiv);
+  }
+
+  const mediaEl = $("replyParentMedia");
+  if (mediaEl) {
+    mediaEl.replaceChildren();
+    if (reply.media && reply.media.length) {
+      mediaEl.hidden = false;
+      reply.media.forEach(m => {
+        const u = m.url || m.thumb || m.preview_url;
+        if (u) {
+          const img = el("img", "reply-thumb-img");
+          img.src = su(u);
+          img.alt = m.alt || "";
+          img.loading = "lazy";
+          mediaEl.append(img);
+        }
+      });
+    } else {
+      mediaEl.hidden = true;
+    }
+  }
+
+  // Preencher dados do utilizador que responde (autor atual)
+  updateReplyUserRow();
+
+  // Destaque do post e botão na timeline
+  const activeKey = getPostKey(reply);
+  document.querySelectorAll(".post").forEach(card => {
+    const isMatch = activeKey && card.dataset.postKey === activeKey;
+    card.classList.toggle("is-reply-target", Boolean(isMatch));
+    card.querySelectorAll(".act-reply").forEach(btn => btn.classList.toggle("active", Boolean(isMatch)));
+  });
+
+  // Ajuste de scroll/visibilidade no Deck ou Coluna Única
+  if (viewMode === "deck") {
+    if (!deckColumns.includes("compose")) {
+      addDeckColumn("compose");
+    }
+    $("colComposeBody")?.scrollTo({top: 0, behavior: "smooth"});
+  } else {
+    $("composeSection")?.scrollIntoView({behavior: "smooth", block: "nearest"});
+  }
 }
 
-$("cancelReply").onclick = () => {
-  reply = null;
-  $("replying").hidden = true;
-  if ($("targetSelect")) $("targetSelect").hidden = networks.length <= 1;
+function updateReplyUserRow() {
+  if (!reply) return;
+  const userAvatar = $("replyUserAvatar");
+  const userName = $("replyUserName");
+  const userHandle = $("replyUserHandle");
+
+  const myProfile = (profileData && profileData[reply.network]) || null;
+  if (myProfile) {
+    if (userAvatar) {
+      if (myProfile.avatar) {
+        userAvatar.src = su(myProfile.avatar) || "";
+        userAvatar.style.display = "block";
+      } else {
+        userAvatar.style.display = "none";
+      }
+    }
+    if (userName) userName.textContent = myProfile.name || myProfile.handle || "";
+    if (userHandle) userHandle.textContent = myProfile.handle || "";
+  } else {
+    if (userAvatar) userAvatar.style.display = "none";
+    if (userName) userName.textContent = LABEL[reply.network] || "";
+    if (userHandle) userHandle.textContent = "";
+    if (!profileLoaded) {
+      loadProfile(true).then(() => {
+        if (reply) updateReplyUserRow();
+      });
+    }
+  }
+}
+
+function startReply(it) {
+  // Se clicar no mesmo post que já está a ser respondido, cancela a resposta (toggle)
+  const incomingKey = getPostKey(it);
+  if (reply && getPostKey(reply) === incomingKey) {
+    cancelReply();
+    return;
+  }
+
+  reply = {
+    network: it.network,
+    ref: it.ref,
+    name: it.name,
+    name_html: it.name_html || null,
+    handle: it.handle,
+    avatar: it.avatar || "",
+    text: it.text || "",
+    html: it.html || "",
+    cw: it.cw || "",
+    media: it.media || [],
+    url: it.url || ""
+  };
+
+  renderReplyBox();
+
+  // No Mastodon, se o texto estiver vazio, adiciona a menção ao autor
+  if (it.network === "mastodon" && it.handle) {
+    const curVal = $("text").value;
+    if (!curVal.trim()) {
+      $("text").value = it.handle + " ";
+      lastReplyAutoHandle = it.handle + " ";
+    }
+  }
+
+  $("text").focus();
+  const len = $("text").value.length;
+  $("text").setSelectionRange(len, len);
+
   update();
-};
+  saveAutoDraft();
+}
+
+function cancelReply() {
+  if (lastReplyAutoHandle && $("text").value.trim() === lastReplyAutoHandle.trim()) {
+    $("text").value = "";
+  }
+  lastReplyAutoHandle = "";
+  reply = null;
+  renderReplyBox();
+  update();
+  saveAutoDraft();
+}
+
+if ($("cancelReply")) $("cancelReply").onclick = cancelReply;
 $("text").oninput = update;
 $("refresh").onclick = async () => {
   $("refresh").disabled = true;
@@ -7035,6 +8225,77 @@ $("refresh").onclick = async () => {
   await Promise.all(tasks);
   $("refresh").disabled = false;
 };
+
+function clearComposer(threadPayload) {
+  $("text").value = ""; images = []; renderPreviews();
+  threadPosts = []; renderThreadPosts();
+  hasCW = false; renderCW();
+  hasPoll = false; pollOptions = ["", ""]; renderPoll();
+  reply = null; lastReplyAutoHandle = "";
+  renderReplyBox();
+  quote = null; renderQuoteBox();
+  try { localStorage.removeItem("mastosky_autosave"); } catch (_) {}
+  if ($("draftIndicator")) $("draftIndicator").hidden = true;
+  setTimeout(load, 1200);
+  if (profileLoaded) setTimeout(() => loadProfileFeed(false), 1200);
+  if (threadIt) setTimeout(() => openThread(threadIt, true), 1500);
+}
+
+let pendingPartialData = null;
+
+function openPartialPostModal(good, bad, bodyPayload, threadPayload) {
+  pendingPartialData = { good, bad, bodyPayload, threadPayload };
+  const overlay = $("partialPostOverlay");
+  const listEl = $("partialPostList");
+  if (!overlay || !listEl) return;
+
+  listEl.replaceChildren();
+
+  for (const [net] of good) {
+    const item = el("div", "partial-post-item success");
+    const ico = el("span", "partial-post-status-icon", "✓");
+    const info = el("div", "partial-post-info");
+    const title = el("div", "partial-post-net-title");
+    title.append(netBadge(net), document.createTextNode(" " + LABEL[net]));
+    const msgEl = el("div", "partial-post-msg", t("composer.partial_success_label"));
+    info.append(title, msgEl);
+    item.append(ico, info);
+    listEl.append(item);
+  }
+
+  for (const [net, errText] of bad) {
+    const item = el("div", "partial-post-item failed");
+    const ico = el("span", "partial-post-status-icon", "✕");
+    const info = el("div", "partial-post-info");
+    const title = el("div", "partial-post-net-title");
+    title.append(netBadge(net), document.createTextNode(" " + LABEL[net]));
+    const msgEl = el("div", "partial-post-msg", t("composer.partial_fail_label") + (errText ? (": " + errText) : ""));
+    info.append(title, msgEl);
+    item.append(ico, info);
+    listEl.append(item);
+  }
+
+  const failedNets = bad.map(([n]) => n);
+  const retryBtn = $("retryPartialPostBtn");
+  const retryTxt = $("retryPartialPostText");
+  if (retryTxt) {
+    if (failedNets.length === 1) {
+      retryTxt.textContent = t("composer.partial_retry_btn", {net: LABEL[failedNets[0]]});
+    } else {
+      retryTxt.textContent = t("composer.partial_retry_all_failed");
+    }
+  }
+  if (retryBtn) retryBtn.disabled = false;
+
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closePartialPostModal() {
+  const overlay = $("partialPostOverlay");
+  if (overlay) overlay.hidden = true;
+  document.body.style.overflow = "";
+}
 
 $("send").onclick = async () => {
   $("send").disabled = true;
@@ -7058,30 +8319,34 @@ $("send").onclick = async () => {
     ];
   }
 
+  const replyPayload = reply ? { network: reply.network, ref: reply.ref } : null;
   const body = reply
-    ? {text: $("text").value, reply, images, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload}
+    ? {text: $("text").value, reply: replyPayload, images, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload}
     : {text: $("text").value, targets: selected(), images, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload};
 
   const res = await api("/api/post", body);
   const bad = Object.entries(res).filter(([, v]) => v !== "ok");
+  const good = Object.entries(res).filter(([, v]) => v === "ok");
   const msg = $("msg");
-  if (bad.length) {
+
+  if (good.length && bad.length) {
+    setTimeout(load, 1200);
+    if (profileLoaded) setTimeout(() => loadProfileFeed(false), 1200);
+
+    const failedNets = bad.map(([n]) => n);
+    if (failedNets.length === 1 && $("targetSelect")) {
+      $("targetSelect").value = failedNets[0];
+      updateNetToggleUI();
+    }
+
+    openPartialPostModal(good, bad, body, threadPayload);
+  } else if (bad.length) {
     msg.className = "msg err";
     msg.textContent = t("composer.post_failed", {err: bad.map(([n, v]) => LABEL[n] + " (" + v + ")").join("; ")});
   } else {
     msg.className = "msg";
     msg.textContent = threadPayload ? (t("composer.thread_published") || "Fio publicado com sucesso!") : t("composer.posted");
-    $("text").value = ""; images = []; renderPreviews();
-    threadPosts = []; renderThreadPosts();
-    hasCW = false; renderCW();
-    hasPoll = false; pollOptions = ["", ""]; renderPoll();
-    reply = null; $("replying").hidden = true;
-    quote = null; renderQuoteBox();
-    try { localStorage.removeItem("mastosky_autosave"); } catch (_) {}
-    if ($("draftIndicator")) $("draftIndicator").hidden = true;
-    setTimeout(load, 1200);
-    if (profileLoaded) setTimeout(() => loadProfileFeed(false), 1200);
-    if (threadIt) setTimeout(() => openThread(threadIt, true), 1500);
+    clearComposer(threadPayload);
   }
   update();
 };
@@ -7443,6 +8708,30 @@ async function triggerSelfUpdate() {
 if ($("checkUpdateBtn")) $("checkUpdateBtn").onclick = () => checkAppUpdate(true);
 if ($("selfUpdateBtn")) $("selfUpdateBtn").onclick = triggerSelfUpdate;
 
+function initNewPostsPillDismissers() {
+  const checkDismiss = (colId) => {
+    const sc = getColScrollContainer(colId);
+    const top = sc === window ? window.scrollY : sc.scrollTop;
+    if (top < 30) {
+      const pill = $(colId + "NewPostsPill");
+      if (pill && !pill.hidden) pill.hidden = true;
+    }
+  };
+
+  window.addEventListener("scroll", () => {
+    if (viewMode === "single") {
+      checkDismiss(tab || "timeline");
+    }
+  }, { passive: true });
+
+  ["timeline", "explore", "notifs"].forEach(c => {
+    const el = $("col" + c.charAt(0).toUpperCase() + c.slice(1) + "Body");
+    if (el) {
+      el.addEventListener("scroll", () => checkDismiss(c), { passive: true });
+    }
+  });
+}
+
 setNavMode(navMode);
 applyI18n();
 applyViewMode(viewMode);
@@ -7450,6 +8739,7 @@ updateDraftsBadge();
 checkAndRestoreAutoDraft();
 initSavedEvents();
 initDeckDragAndDrop();
+initNewPostsPillDismissers();
 
 const validTabs = ["timeline", "explore", "search", "saved", "notifs", "profile"];
 const hashTab = (location.hash || "").replace("#", "");
@@ -7460,6 +8750,7 @@ loadNotifs();
 if (initTab === "explore") loadExplore();
 if (initTab === "saved") renderSavedFeed();
 if (initTab === "profile") loadProfile();
+else loadProfile(true);
 checkAppUpdate(false);
 setInterval(() => {
   load();
