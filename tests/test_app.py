@@ -2124,8 +2124,9 @@ class ProxyImageTests(unittest.TestCase):
         m = re.search(r"<script>([\s\S]*?)</script>", html)
         self.assertIsNotNone(m, "Bloco <script> não encontrado no index.html")
         js_code = m.group(1)
-        res = subprocess.run([node_bin, "-e", "new Function(process.argv[1]);", js_code],
-                             capture_output=True, text=True)
+        # Passar código via stdin para evitar exceder o limite de argumentos do kernel Linux (MAX_ARG_STRLEN = 128KB)
+        res = subprocess.run([node_bin, "-e", "const fs = require('fs'); new Function(fs.readFileSync(0, 'utf-8'));"],
+                             input=js_code, capture_output=True, text=True)
         self.assertEqual(res.returncode, 0, f"Erro de sintaxe no JavaScript do index.html: {res.stderr}")
 
     def test_parse_semver(self):
