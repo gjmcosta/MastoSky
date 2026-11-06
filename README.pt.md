@@ -63,8 +63,10 @@ No primeiro arranque, acede a [http://127.0.0.1:8000](http://127.0.0.1:8000) (se
 
 ### Mastodon
 1. Na tua instância Mastodon, vai a **Preferências** → **Desenvolvimento** → **Nova aplicação**.
-2. Dá o nome `MastoSky`. Seleciona apenas as permissões necessárias: `read:statuses`, `read:notifications`, `write:statuses`, `write:media`, `write:favourites`.
-3. Guarda e copia o **Token de acesso**.
+2. Dá o nome `MastoSky`. Mantém o **Redirect URI** pré-definido (`urn:ietf:wg:oauth:2.0:oob`).
+3. Seleciona apenas as permissões necessárias: `read:statuses`, `read:notifications`, `write:statuses`, `write:media`, `write:favourites`.
+4. Clica em **Guardar**, abre a aplicação criada e copia o **Teu token de acesso** (*Your access token* — não copies a *Client key* nem o *Client secret*).
+5. No MastoSky, introduz apenas o domínio da tua instância (ex: `mastodon.social` ou `https://mastodon.social` — sem o teu `@utilizador`) e cola o token de acesso.
 
 ---
 

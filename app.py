@@ -210,7 +210,18 @@ def http(method, url, data=None, token=None, headers=None, timeout=30):
         try:
             with urllib.request.urlopen(req, body, timeout=timeout) as r:
                 raw = r.read()
-                return json.loads(raw) if raw else {}
+                if not raw:
+                    return {}
+                try:
+                    return json.loads(raw)
+                except (json.JSONDecodeError, ValueError) as err:
+                    ct = ""
+                    if hasattr(r, "headers") and hasattr(r.headers, "get"):
+                        ct = str(r.headers.get("Content-Type", ""))
+                    raw_start = raw.lstrip()[:100].lower()
+                    if "text/html" in ct.lower() or raw_start.startswith((b"<!doctype", b"<html", b"<head", b"<?xml", b"<")):
+                        raise ApiError(f"O servidor devolveu uma página Web (HTML) em vez de dados JSON. Verifica se o endereço da instância ({host}) está correto e não inclui o teu perfil (@utilizador) ou outros caminhos.")
+                    raise ApiError(f"Resposta inválida do servidor ({host}): {err}")
         except urllib.error.HTTPError as e:
             ra = _retry_after(e.headers)
             if e.code == 429 and method == "GET" and attempt == 0 and ra is not None and ra <= RETRY_MAX_WAIT:
@@ -1454,11 +1465,26 @@ class Bsky:
         return out, next_cursor
 
 
+def sanitize_masto_instance(inst):
+    """Normaliza o URL da instância Mastodon, aceitando 'exemplo.social', 'https://exemplo.social',
+    e limpando caminhos acidentais colados pelo utilizador (como /@utilizador, /web, /settings, etc.)."""
+    inst = (inst or "").strip()
+    if not inst:
+        return ""
+    if not inst.startswith(("http://", "https://")):
+        inst = "https://" + inst
+    p = urllib.parse.urlparse(inst)
+    netloc = p.netloc or p.path.split("/")[0]
+    scheme = p.scheme if p.netloc else "https"
+    return f"{scheme}://{netloc}".rstrip("/")
+
+
 class Masto:
     name = "mastodon"
 
     def __init__(self, c):
-        self.base, self.token = c["instance"].rstrip("/"), c["token"]
+        self.base = sanitize_masto_instance(c.get("instance", ""))
+        self.token = (c.get("token") or "").strip()
         self.cache = {}  # posts "pai" já obtidos
         self.cache_lock = threading.Lock()  # a cache é usada por várias threads em paralelo
         self.my_id = None
@@ -2335,11 +2361,9 @@ class H(BaseHTTPRequestHandler):
 
             if isinstance(d.get("mastodon"), dict):
                 m = d["mastodon"]
-                inst = (m.get("instance") or "").strip().rstrip("/")
+                inst = sanitize_masto_instance(m.get("instance"))
                 tok = (m.get("token") or "").strip()
                 if inst and tok:
-                    if not inst.startswith(("http://", "https://")):
-                        inst = "https://" + inst
                     new_cfg["mastodon"] = {"instance": inst, "token": tok}
                 elif not inst and not tok and "mastodon" in new_cfg:
                     new_cfg.pop("mastodon", None)

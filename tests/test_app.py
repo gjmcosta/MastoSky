@@ -606,6 +606,30 @@ class HttpErrorTests(unittest.TestCase):
                 app.http("GET", "https://bsky.social/x")
         self.assertIn("Sem ligação a bsky.social", str(cm.exception))
 
+    def test_http_html_response_raises_friendly_error(self):
+        from unittest import mock
+        resp = mock.MagicMock()
+        resp.read.return_value = b"<!DOCTYPE html><html><body>Error</body></html>"
+        resp.headers = {"Content-Type": "text/html; charset=utf-8"}
+        resp.__enter__.return_value = resp
+        with mock.patch("app.urllib.request.urlopen", return_value=resp):
+            with self.assertRaises(app.ApiError) as cm:
+                app.http("GET", "https://mastodon.social/api/v1/accounts/verify_credentials")
+        self.assertIn("O servidor devolveu uma página Web (HTML)", str(cm.exception))
+        self.assertIn("mastodon.social", str(cm.exception))
+
+
+class MastoSanitizeTests(unittest.TestCase):
+    def test_sanitize_masto_instance(self):
+        self.assertEqual(app.sanitize_masto_instance("mastodon.social"), "https://mastodon.social")
+        self.assertEqual(app.sanitize_masto_instance("https://mastodon.social/"), "https://mastodon.social")
+        self.assertEqual(app.sanitize_masto_instance("https://mastodon.social/@user"), "https://mastodon.social")
+        self.assertEqual(app.sanitize_masto_instance("mastodon.social/@user/12345"), "https://mastodon.social")
+        self.assertEqual(app.sanitize_masto_instance("https://mastodon.social/settings/applications/123"), "https://mastodon.social")
+        self.assertEqual(app.sanitize_masto_instance("http://localhost:3000/web"), "http://localhost:3000")
+        self.assertEqual(app.sanitize_masto_instance(""), "")
+        self.assertEqual(app.sanitize_masto_instance(None), "")
+
 
 class BskySessionTests(unittest.TestCase):
     def _client(self):

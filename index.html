@@ -1661,12 +1661,12 @@ body:not(.view-deck) .deck-col-body {
       <div class="setup-section">
         <div class="setup-sec-title"><span>🐘 Mastodon</span><span id="cfgMastoActive" class="star-badge" title="Sessão ativa" data-i18n-title="setup.active_session" hidden></span></div>
         <label><span data-i18n="setup.masto_inst_label">Instância:</span>
-          <input type="text" id="cfgMastoInst" placeholder="ex: https://masto.pt" autocomplete="off">
+          <input type="text" id="cfgMastoInst" placeholder="ex: mastodon.social" autocomplete="off">
         </label>
         <label><span data-i18n="setup.masto_token_label">Token de acesso:</span>
           <input type="password" id="cfgMastoToken" placeholder="O teu access token" autocomplete="off">
         </label>
-        <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt; Desenvolvimento &gt; Nova aplicação. Marca apenas os âmbitos: read:statuses, read:notifications, write:statuses, write:media, write:favourites.</small>
+        <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt; Desenvolvimento &gt; Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses, read:notifications, write:statuses, write:media, write:favourites. No campo Instância indica apenas o domínio (ex: mastodon.social).</small>
       </div>
 
       <div class="setup-section update-section" style="border-top:1px solid var(--line);padding-top:14px;margin-top:10px">
@@ -2170,7 +2170,7 @@ const I18N = {
       bsky_help: "Gera em bsky.app > Definições > Privacidade e Segurança > Palavras-passe da aplicação.",
       masto_inst_label: "Instância:",
       masto_token_label: "Token de acesso:",
-      masto_help: "Gera na tua instância em Preferências > Desenvolvimento > Nova aplicação. Marca apenas os âmbitos: read:statuses, read:notifications, write:statuses, write:media, write:favourites.",
+      masto_help: "Gera na tua instância em Preferências > Desenvolvimento > Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Indica apenas o domínio da instância (ex: mastodon.social), sem o teu @utilizador.",
       save_btn: "Guardar e Iniciar",
       saving_btn: "A verificar...",
       err_fill: "Preenche as credenciais de pelo menos uma rede.",
@@ -2548,7 +2548,7 @@ const I18N = {
       bsky_help: "Generate at bsky.app > Settings > Privacy and Security > App Passwords.",
       masto_inst_label: "Instance:",
       masto_token_label: "Access token:",
-      masto_help: "Generate in your instance Preferences > Development > New Application. Check only scopes: read:statuses, read:notifications, write:statuses, write:media, write:favourites.",
+      masto_help: "Generate in your instance Preferences > Development > New Application. Keep default Redirect URI and check scopes: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Enter only the instance domain (e.g. mastodon.social), without your @handle.",
       save_btn: "Save and Start",
       saving_btn: "Checking...",
       err_fill: "Fill in credentials for at least one network.",
