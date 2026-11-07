@@ -1,7 +1,7 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
-> **Data de atualização:** 6 de Novembro de 2026  
-> **Versão:** v0.6.0  
+> **Data de atualização:** 7 de Novembro de 2026  
+> **Versão:** v0.6.1  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
 > **Testes Automatizados:** 142 testes aprovados (`python3 -m unittest discover -s tests`)
 
@@ -42,6 +42,7 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 - Suporte a publicação de fios de publicações (*Threads*).
 - **Cartão de Publicação Cruzada Renovado (*Cross-post Card*):** Geração dinâmica de cartões visuais para partilhar publicações de uma rede na outra com melhorias substanciais:
   - *Altura dinâmica e formato vertical adaptável:* Em vez de um quadrado 1:1 fixo com grandes espaços vazios, a altura do cartão agora adapta-se com precisão ao volume de texto e anexos (desde ~2:1 compacto para posts curtos até 4:5 vertical — a proporção máxima exibida por inteiro nas timelines e apps do Bluesky e Mastodon sem qualquer corte).
+  - *Enquadramento inteligente sem cortes (Dynamic Aspect Ratio & Contain):* Pré-carregamento das imagens em anexo com deteção da relação de aspeto natural. Imagens isoladas (incluindo cartazes, pósteres verticais e ilustrações) utilizam agora renderização `contain` com altura dinâmica (até 760px) e fundo elegante em degradé escuro integrado, garantindo que 100% da imagem, textos e detalhes de topo e base são preservados na íntegra sem qualquer corte. O teto máximo do canvas foi expandido até 1500px para acomodar na perfeição cartazes verticais completos.
   - *Renderização de publicações citadas (*Quote Posts*):* Quando o post original cita outro post, é renderizado um cartão interno embutido elegante com o avatar, nome, handle, link e texto do autor citado.
   - *Preservação de quebras de linha:* Respeita parágrafos manuais, listas, IBANs e dados estruturados sem aglomerar o texto numa só linha.
   - *Céu estrelado enriquecido:* Fundo cósmico com 35+ estrelas e reflexos em cruz subtis sem poluição visual.
@@ -49,6 +50,20 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - *Botões de tema circulares perfeitos:* Ajuste nos estilos de `.swatch` para eliminar quaisquer contornos ou artefactos quadrados em todos os navegadores.
 - **Sistema de Rascunhos (*Drafts*):** Indicador de rascunho guardado automaticamente no `localStorage`.
 - **Resposta Integrada Encadeada (*Threaded Reply Composer* à semelhança do Mastodon):** Ao clicar em "Responder" em qualquer publicação da timeline ou notificações, o post original pai passa a ser renderizado de forma destacada no topo da coluna de novo post (com avatar, autor, texto completo e anexos), seguido de uma linha conetora vertical de fio de conversa até ao autor atual e um botão `✕` para cancelar a resposta e voltar imediatamente ao modo de "Novo post" normal. Inclui highlight reativo na timeline (`.is-reply-target`), alternância por clique duplo (*toggle*), preenchimento automático da menção do autor em respostas Mastodon, foco imediato e botão de envio dinâmico ("Responder" / "Publicar").
+
+### 🎨 Refinamentos Visuais e UX/UI (Tema, Pesquisa e Configurações)
+- **Modo Escuro, Modo Claro e Automático (*Dark / Light / Auto*):**
+  - Seletor de tema nas Configurações (Preferências: *Automático (Sistema)*, *Modo Escuro*, *Modo Claro*) com persistência no `localStorage`.
+  - Botão de alternância rápida no cabeçalho e na barra lateral com ícones reativos (sol, lua e monitor de sistema).
+  - Variáveis semânticas CSS completas para ambos os temas (`--bg`, `--card`, `--surface-2`, `--line`, `--ink`, `--muted`, `--accent`), garantindo alto contraste e leitura confortável.
+  - Alternância automática dos logótipos oficiais claro e escuro (`.brand-logo-dark` / `.brand-logo-light`) e brilhos da constelação cósmica.
+  - Script inline imediato no `<head>` com execução síncrona antes do primeiro render da página para eliminar a 100% qualquer *FOUC* (*Flash of Unstyled Content*).
+- **Novo Diálogo Aberto de Configurações (*Settings Screen*):**
+  - Transformação do antigo formulário estreito (480px) em coluna única num ecrã aberto e desafogado (`max-width: 960px`) com grelha de 2 colunas responsivas (`.settings-grid`, `.settings-col`), eliminando a necessidade de scroll vertical para aceder às opções de preferências, notificações e contas.
+  - Adição de botão de fechar no topo (`✕`), botão secundário "Cancelar" ao lado de "Guardar e Iniciar", e fecho prático com a tecla `Escape` ou clicando no fundo escurecido.
+- **Coluna de Pesquisa Otimizada e Alinhada:**
+  - Substituição do botão volumoso de texto "Pesquisar" por um botão compacto de ícone de lupa (`#searchBtn` com `#i-search`), libertando espaço para o campo de texto.
+  - Pílulas de filtro organizadas em grelhas consistentes: controlo segmentado em 4 colunas iguais para tipos de pesquisa (*Tudo*, *Publicações*, *Utilizadores*, *Hashtags*) e linha dedicada de 3 colunas para redes (*Ambas*, *Bluesky*, *Mastodon*) com as cores das marcas.
 
 ### 🗂️ Modos de Visualização: Deck View e Coluna Única
 - **Coluna Única:** Layout limpo e focado, com barra lateral flutuante de navegação rápida e alternador de abas.

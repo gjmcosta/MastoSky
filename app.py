@@ -47,7 +47,7 @@ MAX_BODY = 32 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens em base
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "0.6.0"
+VERSION = "0.6.1"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 

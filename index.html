@@ -6,6 +6,14 @@
 <meta name="csrf-token" content="">
 <title>MastoSky</title>
 <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
+<script>
+  (function(){
+    try {
+      var saved = localStorage.getItem("mastosky_theme") || "system";
+      document.documentElement.setAttribute("data-theme", saved);
+    } catch(e) {}
+  })();
+</script>
 <script src="/vendor/hls.min.js"></script>
 <style>
 :root{
@@ -16,14 +24,40 @@
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
   --serif:var(--sans);
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme: light;
 }
 @media (prefers-color-scheme:dark){
-  :root{
+  :root:not([data-theme="light"]){
     --bg:#0B1020; --card:#121936; --surface-2:#1A2247; --line:#2A3366;
     --ink:#EEF0FF; --muted:#A9B0D6; --accent:#9AA0FF; --star:#FFD66B;
     --bsky:#4DB2FF; --masto:#9AA0FF; --danger:#FF7B6B;
+    color-scheme: dark;
   }
 }
+html[data-theme="dark"]{
+  --bg:#0B1020; --card:#121936; --surface-2:#1A2247; --line:#2A3366;
+  --ink:#EEF0FF; --muted:#A9B0D6; --accent:#9AA0FF; --star:#FFD66B;
+  --bsky:#4DB2FF; --masto:#9AA0FF; --danger:#FF7B6B;
+  color-scheme: dark;
+}
+html[data-theme="light"]{
+  --bg:#F7F8FF; --card:#FFFFFF; --surface-2:#EEF0FF; --line:#D5D9F2;
+  --ink:#0B1020; --muted:#555C85; --accent:#5B4BDB; --star:#F0B400;
+  --bsky:#0A78D6; --masto:#5B4BDB; --danger:#D32F2F;
+  color-scheme: light;
+}
+
+.brand-logo-dark{display:none}
+.brand-logo-light{display:block}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .brand-logo-dark{display:block}
+  :root:not([data-theme="light"]) .brand-logo-light{display:none}
+}
+html[data-theme="dark"] .brand-logo-dark{display:block !important}
+html[data-theme="dark"] .brand-logo-light{display:none !important}
+html[data-theme="light"] .brand-logo-dark{display:none !important}
+html[data-theme="light"] .brand-logo-light{display:block !important}
+
 .star-badge{
   display:inline-block; width:0.9em; height:0.9em; background:var(--star);
   clip-path:polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
@@ -36,12 +70,18 @@ main{max-width:640px;margin:0 auto;padding:20px 14px 60px;position:relative;z-in
 .cosmos-bg{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .cosmos-glow{position:absolute;top:-120px;right:-100px;width:650px;height:650px;border-radius:50%;background:radial-gradient(circle,rgba(91,75,219,0.12) 0%,rgba(77,178,255,0.06) 45%,transparent 70%);filter:blur(40px)}
 @media (prefers-color-scheme:dark){
-  .cosmos-glow{background:radial-gradient(circle,rgba(91,75,219,0.22) 0%,rgba(77,178,255,0.12) 45%,transparent 70%)}
+  :root:not([data-theme="light"]) .cosmos-glow{background:radial-gradient(circle,rgba(91,75,219,0.22) 0%,rgba(77,178,255,0.12) 45%,transparent 70%)}
 }
+html[data-theme="dark"] .cosmos-glow{background:radial-gradient(circle,rgba(91,75,219,0.22) 0%,rgba(77,178,255,0.12) 45%,transparent 70%)}
+html[data-theme="light"] .cosmos-glow{background:radial-gradient(circle,rgba(91,75,219,0.12) 0%,rgba(77,178,255,0.06) 45%,transparent 70%)}
+
 .cosmos-mammoth{position:absolute;top:-20px;right:-30px;width:520px;height:520px;background-repeat:no-repeat;background-position:top right;background-size:contain;background-image:url(/brand/logo-mark-light.svg);opacity:.05;transition:opacity .3s}
 @media (prefers-color-scheme:dark){
-  .cosmos-mammoth{background-image:url(/brand/logo-mark-dark.svg);opacity:.085}
+  :root:not([data-theme="light"]) .cosmos-mammoth{background-image:url(/brand/logo-mark-dark.svg);opacity:.085}
 }
+html[data-theme="dark"] .cosmos-mammoth{background-image:url(/brand/logo-mark-dark.svg);opacity:.085}
+html[data-theme="light"] .cosmos-mammoth{background-image:url(/brand/logo-mark-light.svg);opacity:.05}
+
 .cosmos-stars{position:absolute;inset:0;background-image:
   radial-gradient(1.5px 1.5px at 40px 60px, var(--ms-sky), transparent),
   radial-gradient(1px 1px at 100px 180px, #ffffff, transparent),
@@ -66,8 +106,10 @@ main{max-width:640px;margin:0 auto;padding:20px 14px 60px;position:relative;z-in
   radial-gradient(2px 2px at 910px 420px, var(--ms-indigo), transparent);
   background-repeat:repeat;background-size:1200px 500px;opacity:.32}
 @media (prefers-color-scheme:dark){
-  .cosmos-stars{opacity:.48}
+  :root:not([data-theme="light"]) .cosmos-stars{opacity:.48}
 }
+html[data-theme="dark"] .cosmos-stars{opacity:.48}
+html[data-theme="light"] .cosmos-stars{opacity:.32}
 .quote-box{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:var(--bg);position:relative}
 .quote-box-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;color:var(--muted);font-weight:600}
 .quote-box-card{font-size:13px;line-height:1.4}
@@ -200,15 +242,28 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .partial-post-item.failed .partial-post-msg{color:var(--danger)}
 .partial-post-actions{display:flex;flex-direction:column;gap:8px;margin-top:16px}
 .search-box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
-.search-input-wrap{display:flex;align-items:center;gap:8px;background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:4px 8px 4px 12px;transition:border-color .15s}
+.search-input-wrap{display:flex;align-items:center;gap:6px;background:var(--surface-1);border:1px solid var(--line);border-radius:10px;padding:3px 3px 3px 12px;min-height:38px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s}
 .search-input-wrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 25%,transparent)}
-.search-ico{width:18px;height:18px;color:var(--muted);flex-shrink:0}
-.search-input-wrap input{flex:1;border:none;background:transparent;color:var(--ink);font:14.5px var(--sans);outline:none;padding:6px 0}
-.search-clear-btn{border:none;background:none;color:var(--muted);cursor:pointer;padding:4px 6px;font-size:12px;border-radius:50%}
-.search-clear-btn:hover{color:var(--ink)}
-.search-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
-.search-btn:hover{opacity:.9}
-.search-filters-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.search-input-wrap input{flex:1;min-width:0;border:none;background:transparent;color:var(--ink);font:14px var(--sans);outline:none;padding:5px 0}
+.search-clear-btn{border:none;background:none;color:var(--muted);cursor:pointer;padding:4px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;border-radius:50%;line-height:1;transition:all .15s}
+.search-clear-btn:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.search-btn{width:32px;height:32px;border-radius:8px;background:var(--accent);color:#fff;border:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:opacity .15s,transform .12s,background-color .15s}
+.search-btn:hover{opacity:.92;transform:scale(1.04)}
+.search-btn:active{transform:scale(0.96)}
+.search-btn .ico{width:16px;height:16px}
+.search-filters{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.search-type-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;background:var(--surface-1);padding:3px;border-radius:10px;border:1px solid var(--line)}
+.search-type-bar .filter-pill{background:transparent;border:none;border-radius:7px;padding:6px 2px;font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .15s}
+.search-type-bar .filter-pill:hover{color:var(--ink);background:color-mix(in srgb,var(--card) 60%,transparent)}
+.search-type-bar .filter-pill.active{background:var(--card);color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,0.22)}
+.search-net-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.search-net-bar .filter-pill{display:inline-flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:14px;padding:4px 8px;font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-net-bar .filter-pill:hover{color:var(--ink);border-color:var(--accent)}
+.search-net-bar .filter-pill.active{background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);border-color:var(--accent)}
+.search-net-bar .filter-pill[data-net="bluesky"].active{background:color-mix(in srgb,#0085FF 15%,var(--card));color:#0085FF;border-color:#0085FF}
+.search-net-bar .filter-pill[data-net="mastodon"].active{background:color-mix(in srgb,#6364FF 15%,var(--card));color:#6364FF;border-color:#6364FF}
+#savedFilterPills .filter-pill[data-saved-net="bluesky"].active{background:color-mix(in srgb,#0085FF 15%,var(--card));color:#0085FF;border-color:#0085FF}
+#savedFilterPills .filter-pill[data-saved-net="mastodon"].active{background:color-mix(in srgb,#6364FF 15%,var(--card));color:#6364FF;border-color:#6364FF}
 .search-pills{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .filter-pill{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:16px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
 .filter-pill:hover{color:var(--ink);border-color:var(--accent)}
@@ -387,6 +442,20 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .replyto .pv{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-family:var(--sans);font-size:13.5px}
 .setup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(5px);display:grid;place-items:center;z-index:999;padding:16px;overflow-y:auto}
 .setup-box{background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:480px;width:100%;padding:22px;box-shadow:0 16px 40px rgba(0,0,0,0.3);animation:popIn .2s ease-out}
+.setup-box.settings-dialog{max-width:960px;width:100%;padding:24px 28px;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,0.45)}
+.setup-box.settings-dialog .setup-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.setup-box.settings-dialog .setup-header h2{font:700 20px var(--sans);color:var(--ink);margin:0 0 4px}
+.setup-box.settings-dialog .setup-desc{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
+.setup-close-btn{width:32px;height:32px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;flex-shrink:0;transition:all .15s}
+.setup-close-btn:hover{background:var(--line);color:var(--ink);transform:scale(1.05)}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.settings-col{display:flex;flex-direction:column;gap:14px}
+.settings-col .setup-section{margin-bottom:0}
+.setup-box.settings-dialog .setup-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+@media (max-width:820px){
+  .setup-box.settings-dialog{padding:18px 16px;max-width:100%}
+  .settings-grid{grid-template-columns:1fr;gap:12px}
+}
 @keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
 .setup-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .setup-header h2{font:600 18px var(--sans);margin:0}
@@ -1011,6 +1080,8 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-reply" viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 18v-2a4 4 0 0 0-4-4H4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-repost" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11v-1a4 4 0 0 1 4-4h14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m7 22-4-4 4-4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v1a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -1043,6 +1114,7 @@ body:not(.view-deck) .deck-col-body {
     <button type="button" class="side-nav-btn side-nav-compose" id="sideComposeBtn" title="Novo post" data-i18n-title="nav.new_post" aria-label="Novo post">
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
     </button>
+    <button type="button" class="side-nav-btn side-nav-theme" id="sideThemeBtn" title="Alternar tema" data-i18n-title="header.theme_toggle_title" aria-label="Alternar tema"><svg class="ico" id="sideThemeIcon"><use href="#i-moon"/></svg></button>
     <button type="button" class="side-nav-btn" id="sideRefreshBtn" title="Atualizar" data-i18n-title="header.refresh" aria-label="Atualizar"><svg class="ico"><use href="#i-refresh"/></svg></button>
     <button type="button" class="side-nav-btn" id="sideSettingsBtn" title="Definições" data-i18n-title="header.settings_title" aria-label="Definições"><svg class="ico"><use href="#i-settings"/></svg></button>
     <button type="button" class="side-nav-btn side-nav-lang" id="sideLangBtn" title="Mudar idioma" data-i18n-title="header.lang_switch_title"><svg class="ico"><use href="#i-language"/></svg></button>
@@ -1053,15 +1125,16 @@ body:not(.view-deck) .deck-col-body {
 <main>
   <div id="topNavWrap" class="top-nav-wrap">
     <header>
-      <div style="display:flex;align-items:center;gap:10px">
-        <picture>
-          <source srcset="/brand/logo-lockup-dark.svg" media="(prefers-color-scheme: dark)">
-          <img src="/brand/logo-lockup-light.svg" alt="MastoSky" height="32" style="display:block">
-        </picture>
+      <div class="header-logo-wrap" style="display:flex;align-items:center;gap:10px">
+        <img class="brand-logo-light" src="/brand/logo-lockup-light.svg" alt="MastoSky" height="32" style="display:block">
+        <img class="brand-logo-dark" src="/brand/logo-lockup-dark.svg" alt="MastoSky" height="32" style="display:block">
       </div>
       <div class="header-actions">
         <button type="button" class="update-pill" id="headerUpdatePill" hidden>✨ Nova versão</button>
         <div class="header-nav-group">
+          <button type="button" class="header-nav-btn" id="themeToggleBtn" title="Alternar modo claro / escuro" data-i18n-title="header.theme_toggle_title" aria-label="Alternar tema">
+            <svg class="ico" id="themeToggleIcon" style="width:16px;height:16px"><use href="#i-moon"/></svg>
+          </button>
           <button type="button" class="header-nav-btn" id="viewToggleBtn" title="Mudar para vista em colunas" data-i18n-title="header.view_mode_single_title" aria-label="Mudar visualização">
             <svg class="ico" id="viewToggleIcon"><use href="#i-view-deck"/></svg>
           </button>
@@ -1317,19 +1390,20 @@ body:not(.view-deck) .deck-col-body {
         <div id="pSearch" hidden>
           <div class="search-box">
             <div class="search-input-wrap">
-              <svg class="ico search-ico"><use href="#i-search"/></svg>
               <input type="text" id="searchInput" placeholder="Pesquisar publicações, @utilizadores ou #hashtags..." data-i18n-ph="search.placeholder" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
               <button type="button" class="search-clear-btn" id="searchClearBtn" title="Limpar" hidden>✕</button>
-              <button type="button" class="search-btn" id="searchBtn" data-i18n="search.btn">Pesquisar</button>
+              <button type="button" class="search-btn" id="searchBtn" title="Pesquisar" data-i18n-title="search.btn" aria-label="Pesquisar" data-i18n-aria="search.btn">
+                <svg class="ico"><use href="#i-search"/></svg>
+              </button>
             </div>
-            <div class="search-filters-row">
-              <div class="search-pills" id="searchTypePills">
+            <div class="search-filters">
+              <div class="search-type-bar" id="searchTypePills" role="tablist">
                 <button type="button" class="filter-pill active" data-type="all" data-i18n="search.type_all">Tudo</button>
                 <button type="button" class="filter-pill" data-type="posts" data-i18n="search.type_posts">Publicações</button>
                 <button type="button" class="filter-pill" data-type="actors" data-i18n="search.type_actors">Utilizadores</button>
                 <button type="button" class="filter-pill" data-type="hashtags" data-i18n="search.type_hashtags">Hashtags</button>
               </div>
-              <div class="search-pills" id="searchNetPills">
+              <div class="search-net-bar" id="searchNetPills">
                 <button type="button" class="filter-pill active" data-net="all" data-i18n="search.net_all">Ambas</button>
                 <button type="button" class="filter-pill" data-net="bluesky">Bluesky</button>
                 <button type="button" class="filter-pill" data-net="mastodon">Mastodon</button>
@@ -1534,151 +1608,166 @@ body:not(.view-deck) .deck-col-body {
     </div>
   </div>
 
-  <div id="setupOverlay" class="setup-overlay" hidden>
-    <div class="setup-box">
+  <div id="setupOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="setupModalTitle">
+    <div class="setup-box settings-dialog">
       <div class="setup-header">
-        <h2 data-i18n="setup.title">Configuração do MastoSky</h2>
-        <button type="button" class="rm-sm" id="closeSetup" title="Fechar">✕</button>
-      </div>
-      <p class="setup-desc" data-i18n="setup.desc">Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.</p>
-
-      <div class="setup-section">
-        <div class="setup-sec-title"><span data-i18n="setup.pref_title">Preferências / Preferences</span></div>
-        <label><span data-i18n="setup.lang_label">Idioma da interface:</span>
-          <select id="cfgLangSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-            <option value="pt">Português (PT)</option>
-            <option value="en">English (EN)</option>
-          </select>
-        </label>
-        <label style="display:block;margin-top:10px"><span data-i18n="setup.nav_mode_label">Navegação no scroll:</span>
-          <select id="cfgNavModeSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-            <option id="optNavSidebar" value="sidebar">Barra lateral flutuante (Recomendado)</option>
-            <option id="optNavSticky" value="sticky">Cabeçalho fixo no topo</option>
-            <option id="optNavNone" value="none">Estático (Sem elementos fixos)</option>
-          </select>
-        </label>
-        <label style="display:block;margin-top:10px"><span data-i18n="setup.view_mode_label">Disposição da interface:</span>
-          <select id="cfgViewModeSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-            <option id="optViewSingle" value="single">Coluna única (Timeline simples)</option>
-            <option id="optViewDeck" value="deck">Colunas múltiplas (Deck View)</option>
-          </select>
-        </label>
-        <div id="deckColsConfig" style="margin-top:10px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line)" hidden>
-          <div style="font-size:12.5px;font-weight:600;margin-bottom:4px;color:var(--ink)" data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
-          <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px" data-i18n="setup.deck_col_order_tip">Podes arrastar as colunas ou usar as setas no cabeçalho do Deck para reordenar.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
-            <label class="setup-check-item"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Novo post</span></label>
-            <label class="setup-check-item"><input type="checkbox" id="chkColTimeline"> <span data-i18n="setup.deck_col_timeline">Timeline</span></label>
-            <label class="setup-check-item"><input type="checkbox" id="chkColExplore"> <span data-i18n="setup.deck_col_explore">Em Alta</span></label>
-            <label class="setup-check-item"><input type="checkbox" id="chkColSearch"> <span data-i18n="setup.deck_col_search">Pesquisa</span></label>
-            <label class="setup-check-item"><input type="checkbox" id="chkColSaved"> <span data-i18n="setup.deck_col_saved">Guardados</span></label>
-            <label class="setup-check-item"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
-            <label class="setup-check-item"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
-          </div>
+        <div class="setup-header-title-wrap">
+          <h2 id="setupModalTitle" data-i18n="setup.title">Configuração do MastoSky</h2>
+          <p class="setup-desc" data-i18n="setup.desc">Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.</p>
         </div>
+        <button type="button" class="setup-close-btn" id="closeSetup" title="Fechar" aria-label="Fechar">✕</button>
       </div>
 
-      <div class="setup-section">
-        <div class="setup-sec-title"><span>🔔 <span data-i18n="setup.notifs_sec_title">Alertas e Notificações</span></span></div>
-        <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;margin-top:8px">
-          <div>
-            <label class="setup-check-item" style="padding:0;font-weight:600">
-              <input type="checkbox" id="cfgNotifSound">
-              <span data-i18n="notifs.sound_title">Sons espaciais de notificação</span>
+      <div class="settings-grid">
+        <div class="settings-col">
+          <div class="setup-section">
+            <div class="setup-sec-title"><span>⚙️ <span data-i18n="setup.pref_title">Preferências</span></span></div>
+            <label><span data-i18n="setup.lang_label">Idioma da interface:</span>
+              <select id="cfgLangSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                <option value="pt">Português (PT)</option>
+                <option value="en">English (EN)</option>
+              </select>
             </label>
-            <div style="font-size:11.5px;color:var(--muted);margin:3px 0 8px 24px" data-i18n="notifs.sound_desc">
-              Efeitos sonoros cósmicos e discretos sintetizados via Web Audio.
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:24px">
-              <button type="button" class="notif-sound-btn" onclick="testSpatialSound('reply')" title="Ouvir som de resposta">
-                <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_reply">Resposta</span>
-              </button>
-              <button type="button" class="notif-sound-btn" onclick="testSpatialSound('like')" title="Ouvir som de gosto">
-                <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_like">Gosto</span>
-              </button>
-              <button type="button" class="notif-sound-btn" onclick="testSpatialSound('boost')" title="Ouvir som de partilha">
-                <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_boost">Partilha</span>
-              </button>
-              <button type="button" class="notif-sound-btn" onclick="testSpatialSound('follow')" title="Ouvir som de seguidor">
-                <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_follow">Seguidor</span>
-              </button>
-            </div>
-          </div>
-
-          <div style="border-top:1px solid var(--line);padding-top:10px">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-              <label class="setup-check-item" style="padding:0;font-weight:600">
-                <input type="checkbox" id="cfgNotifDesktop">
-                <span data-i18n="notifs.desktop_title">Notificações no ambiente de trabalho</span>
-              </label>
-              <span id="cfgDesktopNotifStatus" style="font-size:11.5px;font-weight:600"></span>
-            </div>
-            <div style="font-size:11.5px;color:var(--muted);margin:3px 0 6px 24px" data-i18n="notifs.desktop_desc">
-              Recebe avisos no ecrã quando chegam novas interações.
-            </div>
-            <div id="cfgDesktopNotifPermBox" style="margin-left:24px" hidden>
-              <button type="button" class="setup-secondary-btn" onclick="requestDesktopNotificationPermission()" data-i18n="notifs.desktop_req_btn">
-                Pedir autorização ao navegador
-              </button>
+            <label style="display:block;margin-top:10px"><span data-i18n="setup.theme_label">Tema da interface:</span>
+              <select id="cfgThemeSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                <option id="optThemeSys" value="system">Automático (Sistema)</option>
+                <option id="optThemeLight" value="light">Modo Claro</option>
+                <option id="optThemeDark" value="dark">Modo Escuro</option>
+              </select>
+            </label>
+            <label style="display:block;margin-top:10px"><span data-i18n="setup.nav_mode_label">Navegação no scroll:</span>
+              <select id="cfgNavModeSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                <option id="optNavSidebar" value="sidebar">Barra lateral flutuante (Recomendado)</option>
+                <option id="optNavSticky" value="sticky">Cabeçalho fixo no topo</option>
+                <option id="optNavNone" value="none">Estático (Sem elementos fixos)</option>
+              </select>
+            </label>
+            <label style="display:block;margin-top:10px"><span data-i18n="setup.view_mode_label">Disposição da interface:</span>
+              <select id="cfgViewModeSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                <option id="optViewSingle" value="single">Coluna única (Timeline simples)</option>
+                <option id="optViewDeck" value="deck">Colunas múltiplas (Deck View)</option>
+              </select>
+            </label>
+            <div id="deckColsConfig" style="margin-top:10px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line)" hidden>
+              <div style="font-size:12.5px;font-weight:600;margin-bottom:4px;color:var(--ink)" data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
+              <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px" data-i18n="setup.deck_col_order_tip">Podes arrastar as colunas ou usar as setas no cabeçalho do Deck para reordenar.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
+                <label class="setup-check-item"><input type="checkbox" id="chkColCompose"> <span data-i18n="setup.deck_col_compose">Novo post</span></label>
+                <label class="setup-check-item"><input type="checkbox" id="chkColTimeline"> <span data-i18n="setup.deck_col_timeline">Timeline</span></label>
+                <label class="setup-check-item"><input type="checkbox" id="chkColExplore"> <span data-i18n="setup.deck_col_explore">Em Alta</span></label>
+                <label class="setup-check-item"><input type="checkbox" id="chkColSearch"> <span data-i18n="setup.deck_col_search">Pesquisa</span></label>
+                <label class="setup-check-item"><input type="checkbox" id="chkColSaved"> <span data-i18n="setup.deck_col_saved">Guardados</span></label>
+                <label class="setup-check-item"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
+                <label class="setup-check-item"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
+              </div>
             </div>
           </div>
 
-          <div style="border-top:1px solid var(--line);padding-top:10px">
-            <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--ink)" data-i18n="notifs.types_title">Alertar para:</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
-              <label class="setup-check-item">
-                <input type="checkbox" id="cfgNotifTypeReplies" checked>
-                <span data-i18n="notifs.type_replies">Respostas & Menções</span>
-              </label>
-              <label class="setup-check-item">
-                <input type="checkbox" id="cfgNotifTypeLikes" checked>
-                <span data-i18n="notifs.type_likes">Gostos</span>
-              </label>
-              <label class="setup-check-item">
-                <input type="checkbox" id="cfgNotifTypeBoosts" checked>
-                <span data-i18n="notifs.type_boosts">Partilhas</span>
-              </label>
-              <label class="setup-check-item">
-                <input type="checkbox" id="cfgNotifTypeFollows" checked>
-                <span data-i18n="notifs.type_follows">Seguidores</span>
-              </label>
+          <div class="setup-section">
+            <div class="setup-sec-title"><span>🔔 <span data-i18n="setup.notifs_sec_title">Alertas e Notificações</span></span></div>
+            <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;margin-top:8px">
+              <div>
+                <label class="setup-check-item" style="padding:0;font-weight:600">
+                  <input type="checkbox" id="cfgNotifSound">
+                  <span data-i18n="notifs.sound_title">Sons espaciais de notificação</span>
+                </label>
+                <div style="font-size:11.5px;color:var(--muted);margin:3px 0 8px 24px" data-i18n="notifs.sound_desc">
+                  Efeitos sonoros cósmicos e discretos sintetizados via Web Audio.
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:24px">
+                  <button type="button" class="notif-sound-btn" onclick="testSpatialSound('reply')" title="Ouvir som de resposta">
+                    <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_reply">Resposta</span>
+                  </button>
+                  <button type="button" class="notif-sound-btn" onclick="testSpatialSound('like')" title="Ouvir som de gosto">
+                    <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_like">Gosto</span>
+                  </button>
+                  <button type="button" class="notif-sound-btn" onclick="testSpatialSound('boost')" title="Ouvir som de partilha">
+                    <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_boost">Partilha</span>
+                  </button>
+                  <button type="button" class="notif-sound-btn" onclick="testSpatialSound('follow')" title="Ouvir som de seguidor">
+                    <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_follow">Seguidor</span>
+                  </button>
+                </div>
+              </div>
+
+              <div style="border-top:1px solid var(--line);padding-top:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <label class="setup-check-item" style="padding:0;font-weight:600">
+                    <input type="checkbox" id="cfgNotifDesktop">
+                    <span data-i18n="notifs.desktop_title">Notificações no ambiente de trabalho</span>
+                  </label>
+                  <span id="cfgDesktopNotifStatus" style="font-size:11.5px;font-weight:600"></span>
+                </div>
+                <div style="font-size:11.5px;color:var(--muted);margin:3px 0 6px 24px" data-i18n="notifs.desktop_desc">
+                  Recebe avisos no ecrã quando chegam novas interações.
+                </div>
+                <div id="cfgDesktopNotifPermBox" style="margin-left:24px" hidden>
+                  <button type="button" class="setup-secondary-btn" onclick="requestDesktopNotificationPermission()" data-i18n="notifs.desktop_req_btn">
+                    Pedir autorização ao navegador
+                  </button>
+                </div>
+              </div>
+
+              <div style="border-top:1px solid var(--line);padding-top:10px">
+                <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--ink)" data-i18n="notifs.types_title">Alertar para:</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
+                  <label class="setup-check-item">
+                    <input type="checkbox" id="cfgNotifTypeReplies" checked>
+                    <span data-i18n="notifs.type_replies">Respostas & Menções</span>
+                  </label>
+                  <label class="setup-check-item">
+                    <input type="checkbox" id="cfgNotifTypeLikes" checked>
+                    <span data-i18n="notifs.type_likes">Gostos</span>
+                  </label>
+                  <label class="setup-check-item">
+                    <input type="checkbox" id="cfgNotifTypeBoosts" checked>
+                    <span data-i18n="notifs.type_boosts">Partilhas</span>
+                  </label>
+                  <label class="setup-check-item">
+                    <input type="checkbox" id="cfgNotifTypeFollows" checked>
+                    <span data-i18n="notifs.type_follows">Seguidores</span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="setup-section">
-        <div class="setup-sec-title"><span>🦋 Bluesky</span><span id="cfgBskyActive" class="star-badge" title="Sessão ativa" data-i18n-title="setup.active_session" hidden></span></div>
-        <label>Handle:
-          <input type="text" id="cfgBskyHandle" placeholder="ex: o-teu-nome.bsky.social" autocomplete="off">
-        </label>
-        <label><span data-i18n="setup.bsky_pass_label">Palavra-passe da aplicação (*App Password*):</span>
-          <input type="password" id="cfgBskyPass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off">
-        </label>
-        <small class="setup-help" data-i18n="setup.bsky_help">Gera em bsky.app &gt; Definições &gt; Privacidade e Segurança &gt; Palavras-passe da aplicação.</small>
-      </div>
-
-      <div class="setup-section">
-        <div class="setup-sec-title"><span>🐘 Mastodon</span><span id="cfgMastoActive" class="star-badge" title="Sessão ativa" data-i18n-title="setup.active_session" hidden></span></div>
-        <label><span data-i18n="setup.masto_inst_label">Instância:</span>
-          <input type="text" id="cfgMastoInst" placeholder="ex: mastodon.social" autocomplete="off">
-        </label>
-        <label><span data-i18n="setup.masto_token_label">Token de acesso:</span>
-          <input type="password" id="cfgMastoToken" placeholder="O teu access token" autocomplete="off">
-        </label>
-        <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt; Desenvolvimento &gt; Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses, read:notifications, write:statuses, write:media, write:favourites. No campo Instância indica apenas o domínio (ex: mastodon.social).</small>
-      </div>
-
-      <div class="setup-section update-section" style="border-top:1px solid var(--line);padding-top:14px;margin-top:10px">
-        <div class="setup-sec-title"><span data-i18n="update.section_title">🔄 Versão e Atualizações</span></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-          <div>
-            <div style="font-size:13px;font-weight:600;color:var(--ink)">MastoSky <span id="appVersionBadge" style="opacity:0.85">v0.3.0</span></div>
-            <div id="updateStatusText" style="font-size:12px;color:var(--muted);margin-top:2px" data-i18n="update.checking">A verificar atualizações...</div>
+        <div class="settings-col">
+          <div class="setup-section">
+            <div class="setup-sec-title"><span>🦋 Bluesky</span><span id="cfgBskyActive" class="star-badge" title="Sessão ativa" data-i18n-title="setup.active_session" hidden></span></div>
+            <label>Handle:
+              <input type="text" id="cfgBskyHandle" placeholder="ex: o-teu-nome.bsky.social" autocomplete="off">
+            </label>
+            <label><span data-i18n="setup.bsky_pass_label">Palavra-passe da aplicação (*App Password*):</span>
+              <input type="password" id="cfgBskyPass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off">
+            </label>
+            <small class="setup-help" data-i18n="setup.bsky_help">Gera em bsky.app &gt; Definições &gt; Privacidade e Segurança &gt; Palavras-passe da aplicação.</small>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <button type="button" class="ghost-sm" id="checkUpdateBtn" data-i18n="update.btn_check">Verificar</button>
-            <button type="button" class="send-sm" id="selfUpdateBtn" style="display:none" data-i18n="update.btn_update">Atualizar agora</button>
+
+          <div class="setup-section">
+            <div class="setup-sec-title"><span>🐘 Mastodon</span><span id="cfgMastoActive" class="star-badge" title="Sessão ativa" data-i18n-title="setup.active_session" hidden></span></div>
+            <label><span data-i18n="setup.masto_inst_label">Instância:</span>
+              <input type="text" id="cfgMastoInst" placeholder="ex: mastodon.social" autocomplete="off">
+            </label>
+            <label><span data-i18n="setup.masto_token_label">Token de acesso:</span>
+              <input type="password" id="cfgMastoToken" placeholder="O teu access token" autocomplete="off">
+            </label>
+            <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt; Desenvolvimento &gt; Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses, read:notifications, write:statuses, write:media, write:favourites. No campo Instância indica apenas o domínio (ex: mastodon.social).</small>
+          </div>
+
+          <div class="setup-section update-section">
+            <div class="setup-sec-title"><span>🔄 <span data-i18n="update.section_title">Versão e Atualizações</span></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--ink)">MastoSky <span id="appVersionBadge" style="opacity:0.85">v0.6.1</span></div>
+                <div id="updateStatusText" style="font-size:12px;color:var(--muted);margin-top:2px" data-i18n="update.checking">A verificar atualizações...</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button type="button" class="ghost-sm" id="checkUpdateBtn" data-i18n="update.btn_check">Verificar</button>
+                <button type="button" class="send-sm" id="selfUpdateBtn" style="display:none" data-i18n="update.btn_update">Atualizar agora</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1686,7 +1775,8 @@ body:not(.view-deck) .deck-col-body {
       <div id="setupMsg" class="msg"></div>
 
       <div class="setup-actions">
-        <button class="send" id="saveSetupBtn" data-i18n="setup.save_btn">Guardar e Iniciar</button>
+        <button type="button" class="ghost" id="cancelSetupBtn" onclick="closeSetup()" data-i18n="setup.cancel_btn">Cancelar</button>
+        <button type="button" class="send" id="saveSetupBtn" data-i18n="setup.save_btn">Guardar e Iniciar</button>
       </div>
     </div>
   </div>
@@ -1815,6 +1905,7 @@ body:not(.view-deck) .deck-col-body {
 const I18N = {
   pt: {
     header: {
+      theme_toggle_title: "Alternar tema (Claro / Escuro)",
       settings_title: "Definições / Contas",
       refresh: "Atualizar",
       lang_switch_title: "Mudar idioma / Switch language",
@@ -2147,6 +2238,10 @@ const I18N = {
       notifs_sec_title: "Alertas e Notificações",
       lang_title: "Idioma / Language",
       lang_label: "Idioma da interface:",
+      theme_label: "Tema da interface:",
+      theme_system: "Automático (Sistema)",
+      theme_light: "Modo Claro",
+      theme_dark: "Modo Escuro",
       nav_mode_title: "Navegação no Scroll",
       nav_mode_label: "Navegação ao fazer scroll:",
       nav_mode_sidebar: "Barra lateral flutuante (Recomendado)",
@@ -2171,6 +2266,7 @@ const I18N = {
       masto_inst_label: "Instância:",
       masto_token_label: "Token de acesso:",
       masto_help: "Gera na tua instância em Preferências > Desenvolvimento > Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Indica apenas o domínio da instância (ex: mastodon.social), sem o teu @utilizador.",
+      cancel_btn: "Cancelar",
       save_btn: "Guardar e Iniciar",
       saving_btn: "A verificar...",
       err_fill: "Preenche as credenciais de pelo menos uma rede.",
@@ -2193,6 +2289,7 @@ const I18N = {
   },
   en: {
     header: {
+      theme_toggle_title: "Toggle theme (Light / Dark)",
       settings_title: "Settings / Accounts",
       refresh: "Refresh",
       lang_switch_title: "Switch language / Mudar idioma",
@@ -2525,6 +2622,10 @@ const I18N = {
       notifs_sec_title: "Alerts & Notifications",
       lang_title: "Language / Idioma",
       lang_label: "Interface language:",
+      theme_label: "Interface theme:",
+      theme_system: "Automatic (System)",
+      theme_light: "Light Mode",
+      theme_dark: "Dark Mode",
       nav_mode_title: "Scroll Navigation",
       nav_mode_label: "Behavior when scrolling down:",
       nav_mode_sidebar: "Floating sidebar (Recommended)",
@@ -2549,6 +2650,7 @@ const I18N = {
       masto_inst_label: "Instance:",
       masto_token_label: "Access token:",
       masto_help: "Generate in your instance Preferences > Development > New Application. Keep default Redirect URI and check scopes: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Enter only the instance domain (e.g. mastodon.social), without your @handle.",
+      cancel_btn: "Cancel",
       save_btn: "Save and Start",
       saving_btn: "Checking...",
       err_fill: "Fill in credentials for at least one network.",
@@ -2572,6 +2674,44 @@ const I18N = {
 };
 
 let currentLang = localStorage.getItem("mastosky_lang") || ((navigator.language && navigator.language.startsWith("pt")) ? "pt" : "en");
+let currentTheme = localStorage.getItem("mastosky_theme") || "system";
+
+function getSystemTheme() {
+  return (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+}
+
+function getEffectiveTheme() {
+  return currentTheme === "system" ? getSystemTheme() : currentTheme;
+}
+
+function applyTheme(theme, save = true) {
+  currentTheme = theme;
+  if (save) {
+    try {
+      localStorage.setItem("mastosky_theme", theme);
+    } catch (_) {}
+  }
+  document.documentElement.setAttribute("data-theme", theme);
+  if ($("cfgThemeSelect")) $("cfgThemeSelect").value = theme;
+  updateThemeIcons();
+}
+
+function updateThemeIcons() {
+  const effective = getEffectiveTheme();
+  const iconHref = effective === "dark" ? "#i-sun" : "#i-moon";
+  if ($("themeToggleIcon")) {
+    $("themeToggleIcon").innerHTML = `<use href="${iconHref}"/>`;
+  }
+  if ($("sideThemeIcon")) {
+    $("sideThemeIcon").innerHTML = `<use href="${iconHref}"/>`;
+  }
+}
+
+function toggleThemeQuick() {
+  const effective = getEffectiveTheme();
+  const nextTheme = effective === "dark" ? "light" : "dark";
+  applyTheme(nextTheme, true);
+}
 let viewMode = localStorage.getItem("mastosky_view_mode") || "single";
 const ALL_DECK_COLS = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
 let deckColumns = (() => {
@@ -2649,6 +2789,14 @@ function applyI18n() {
   if (sideLangBtn) {
     sideLangBtn.title = t("header.lang_switch_title");
   }
+
+  if ($("optThemeSys")) $("optThemeSys").textContent = t("setup.theme_system");
+  if ($("optThemeLight")) $("optThemeLight").textContent = t("setup.theme_light");
+  if ($("optThemeDark")) $("optThemeDark").textContent = t("setup.theme_dark");
+  const themeBtn = $("themeToggleBtn");
+  if (themeBtn) themeBtn.title = t("header.theme_toggle_title");
+  const sideThemeBtn = $("sideThemeBtn");
+  if (sideThemeBtn) sideThemeBtn.title = t("header.theme_toggle_title");
 
   if ($("optNavSidebar")) $("optNavSidebar").textContent = t("setup.nav_mode_sidebar");
   if ($("optNavSticky")) $("optNavSticky").textContent = t("setup.nav_mode_sticky");
@@ -3167,6 +3315,10 @@ function closeImageLightbox() {
 
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    if ($("setupOverlay") && !$("setupOverlay").hidden && $("closeSetup") && !$("closeSetup").hidden) {
+      closeSetup();
+      return;
+    }
     if ($("partialPostOverlay") && !$("partialPostOverlay").hidden) {
       closePartialPostModal();
       return;
@@ -7277,7 +7429,7 @@ function loadImgSafe(url) {
   });
 }
 
-function drawRoundedImage(ctx, img, x, y, w, h, r = 16) {
+function drawRoundedImage(ctx, img, x, y, w, h, r = 16, fit = "cover") {
   if (!img) return;
   ctx.save();
   ctx.beginPath();
@@ -7288,19 +7440,43 @@ function drawRoundedImage(ctx, img, x, y, w, h, r = 16) {
   const nh = img.naturalHeight || img.height || 1;
   const imgRatio = nw / nh;
   const targetRatio = w / h;
-  let sx, sy, sw, sh;
-  if (imgRatio > targetRatio) {
-    sh = nh;
-    sw = sh * targetRatio;
-    sx = (nw - sw) / 2;
-    sy = 0;
+
+  if (fit === "contain") {
+    // Fundo elegante de contraste para imagens que não preenchem a totalidade da caixa
+    const bgGrad = ctx.createLinearGradient(x, y, x, y + h);
+    bgGrad.addColorStop(0, "rgba(8, 12, 26, 0.75)");
+    bgGrad.addColorStop(1, "rgba(4, 7, 16, 0.92)");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(x, y, w, h);
+
+    let dw, dh, dx, dy;
+    if (imgRatio > targetRatio) {
+      dw = w;
+      dh = dw / imgRatio;
+      dx = x;
+      dy = y + (h - dh) / 2;
+    } else {
+      dh = h;
+      dw = dh * imgRatio;
+      dx = x + (w - dw) / 2;
+      dy = y;
+    }
+    ctx.drawImage(img, 0, 0, nw, nh, dx, dy, dw, dh);
   } else {
-    sw = nw;
-    sh = sw / targetRatio;
-    sx = 0;
-    sy = (nh - sh) / 2;
+    let sx, sy, sw, sh;
+    if (imgRatio > targetRatio) {
+      sh = nh;
+      sw = sh * targetRatio;
+      sx = (nw - sw) / 2;
+      sy = 0;
+    } else {
+      sw = nw;
+      sh = sw / targetRatio;
+      sx = 0;
+      sy = (nh - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
   }
-  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
   ctx.restore();
 
   // Borda subtil
@@ -7364,12 +7540,12 @@ function drawMediaFallback(ctx, x, y, w, h, r = 16, label = "🖼️ Imagem") {
   ctx.restore();
 }
 
-async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH) {
+async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH, preloadedImgs = null) {
   const count = Math.min(mediaList.length, 4);
   const gap = 12;
   const radius = 18;
 
-  const loadedImgs = await Promise.all(
+  const loadedImgs = preloadedImgs || await Promise.all(
     mediaList.slice(0, count).map(m => {
       const src = (m.type === "external") ? m.thumb : (m.url || m.thumb);
       return loadImgSafe(src);
@@ -7379,7 +7555,9 @@ async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH) {
   if (count === 1) {
     const m0 = mediaList[0];
     if (loadedImgs[0]) {
-      drawRoundedImage(ctx, loadedImgs[0], boxX, boxY, boxW, boxH, radius);
+      // Para imagens normais (fotografias/posters) usa "contain" para evitar qualquer corte
+      const singleFit = (m0.type === "external") ? "cover" : "contain";
+      drawRoundedImage(ctx, loadedImgs[0], boxX, boxY, boxW, boxH, radius, singleFit);
       if (m0.type === "external") {
         const barH = 52;
         const barY = boxY + boxH - barH;
@@ -7597,9 +7775,37 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   });
   const hasMedia = mediaList.length > 0;
   let mediaH = 0;
+  let preloadedImgs = null;
   if (hasMedia) {
-    if (mediaList.length === 1 && mediaList[0].type === "external" && !mediaList[0].thumb) {
-      mediaH = 170;
+    // Pré-carrega as imagens para calcularmos a altura ideal proporcional sem cortes
+    preloadedImgs = await Promise.all(
+      mediaList.slice(0, 4).map(m => {
+        const src = (m.type === "external") ? m.thumb : (m.url || m.thumb);
+        return loadImgSafe(src);
+      })
+    );
+
+    if (mediaList.length === 1 && mediaList[0].type === "external") {
+      mediaH = mediaList[0].thumb ? 320 : 170;
+    } else if (mediaList.length === 1 && preloadedImgs[0]) {
+      const img0 = preloadedImgs[0];
+      const nw = img0.naturalWidth || img0.width || 1;
+      const nh = img0.naturalHeight || img0.height || 1;
+      const ratio = nw / nh;
+
+      if (ratio >= 1.6) {
+        // Paisagem panorâmica (ex: 16:9)
+        mediaH = Math.min(520, Math.max(300, Math.round(availW / ratio)));
+      } else if (ratio >= 1.15) {
+        // Paisagem clássica (ex: 4:3, 3:2)
+        mediaH = Math.min(580, Math.round(availW / ratio));
+      } else if (ratio >= 0.85) {
+        // Quase quadrado (1:1)
+        mediaH = 620;
+      } else {
+        // Retrato / Cartaz vertical (ex: 4:5, 2:3, 9:16)
+        mediaH = Math.min(760, Math.max(520, Math.round(availW / Math.max(0.68, ratio))));
+      }
     } else {
       mediaH = 430;
     }
@@ -7620,8 +7826,8 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   const cardH = cardPadTop + headerH + dividerH + innerH + 16 + metricsH + cardPadBottom;
   const cardY = 50;
   const footerH = 46;
-  // Limites proporcionais: min 540px (~2:1 banner compacto quando só há texto curto) até max 1350px (proporção 4:5 vertical ideal para feeds do Bluesky/Mastodon sem cortes)
-  const H = Math.max(540, Math.min(1350, cardY + cardH + 18 + footerH + 20));
+  // Limites proporcionais: min 540px até max 1500px (proporção vertical ideal para suportar cartazes verticais completos)
+  const H = Math.max(540, Math.min(1500, cardY + cardH + 18 + footerH + 20));
 
   canvas.width = W;
   canvas.height = H;
@@ -7825,7 +8031,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
 
   // Renderiza a grelha de media (se existir)
   if (hasMedia) {
-    await drawMediaGrid(ctx, mediaList, contentLeft, curY, availW, mediaH);
+    await drawMediaGrid(ctx, mediaList, contentLeft, curY, availW, mediaH, preloadedImgs);
     curY += mediaH + 18;
   }
 
@@ -8433,8 +8639,10 @@ async function deletePost(it, postEl) {
 async function openSetup(mandatory = false) {
   $("setupOverlay").hidden = false;
   $("closeSetup").hidden = mandatory;
+  if ($("cancelSetupBtn")) $("cancelSetupBtn").hidden = mandatory;
   $("setupMsg").textContent = "";
   $("setupMsg").className = "msg";
+  if ($("cfgThemeSelect")) $("cfgThemeSelect").value = currentTheme;
   if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
   if ($("cfgViewModeSelect")) $("cfgViewModeSelect").value = viewMode;
   if ($("deckColsConfig")) $("deckColsConfig").hidden = viewMode !== "deck";
@@ -8466,6 +8674,31 @@ function closeSetup() {
 
 $("settingsBtn").onclick = () => openSetup(false);
 $("closeSetup").onclick = closeSetup;
+if ($("cancelSetupBtn")) $("cancelSetupBtn").onclick = closeSetup;
+if ($("setupOverlay")) {
+  $("setupOverlay").addEventListener("click", (e) => {
+    if (e.target === $("setupOverlay") && $("closeSetup") && !$("closeSetup").hidden) {
+      closeSetup();
+    }
+  });
+}
+
+if ($("cfgThemeSelect")) {
+  $("cfgThemeSelect").onchange = (e) => {
+    applyTheme(e.target.value, true);
+  };
+}
+
+if ($("themeToggleBtn")) $("themeToggleBtn").onclick = toggleThemeQuick;
+if ($("sideThemeBtn")) $("sideThemeBtn").onclick = toggleThemeQuick;
+
+if (window.matchMedia) {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (currentTheme === "system") {
+      updateThemeIcons();
+    }
+  });
+}
 
 $("saveSetupBtn").onclick = async () => {
   const bskyHandle = $("cfgBskyHandle").value.trim();
@@ -8494,6 +8727,9 @@ $("saveSetupBtn").onclick = async () => {
   try {
     const res = await api("/api/setup", payload);
     if (res.ok) {
+      if ($("cfgThemeSelect")) {
+        applyTheme($("cfgThemeSelect").value, true);
+      }
       if ($("cfgNotifSound")) {
         notifSoundEnabled = $("cfgNotifSound").checked;
         localStorage.setItem("mastosky_notif_sound", notifSoundEnabled ? "true" : "false");
@@ -8734,6 +8970,7 @@ function initNewPostsPillDismissers() {
 
 setNavMode(navMode);
 applyI18n();
+applyTheme(currentTheme, false);
 applyViewMode(viewMode);
 updateDraftsBadge();
 checkAndRestoreAutoDraft();
