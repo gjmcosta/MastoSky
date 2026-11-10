@@ -17,7 +17,7 @@ O MastoSky corre localmente no teu computador e junta numa única janela a leitu
 ## Destaques
 
 - **Feeds unificados:** Vê os posts de quem segues no Bluesky e no Mastodon integrados por ordem cronológica, ou filtra por rede.
-- **Compositor e fios:** Escreve uma vez e publica no Bluesky, Mastodon ou em ambos. Suporta fios/threads encadeados, colagem direta de imagens (Cmd+V ou arrastar), rascunhos locais com auto-save, sondagens e avisos de conteúdo (CW).
+- **Compositor e fios:** Escreve uma vez e publica no Bluesky, Mastodon ou em ambos. Suporta upload de vídeo (MP4/WebM/MOV até 50MB com processamento assíncrono em ambas as redes), fios/threads encadeados, colagem direta de imagens (Cmd+V ou arrastar), rascunhos locais com auto-save, sondagens e avisos de conteúdo (CW).
 - **Pesquisa unificada:** Pesquisa publicações, perfis e hashtags em ambas as redes em simultâneo.
 - **Vista clássica e em colunas:** Alterna entre uma timeline única ou uma vista personalizável em várias colunas (estilo Deck View).
 - **Notificações e perfis:** Acompanha respostas, gostos, partilhas e consulta perfis e estatísticas de seguidores lado a lado.

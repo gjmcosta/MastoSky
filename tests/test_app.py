@@ -2167,6 +2167,90 @@ class ProxyImageTests(unittest.TestCase):
                              input=js_code, capture_output=True, text=True)
         self.assertEqual(res.returncode, 0, f"Erro de sintaxe no JavaScript do index.html: {res.stderr}")
 
+    def test_keyboard_shortcuts_feature(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        # Botões e modais na interface
+        self.assertIn('id="shortcutsBtn"', html)
+        self.assertIn('id="sideShortcutsBtn"', html)
+        self.assertIn('id="shortcutsOverlay"', html)
+        self.assertIn('id="closeShortcuts"', html)
+        self.assertIn('id="i-keyboard"', html)
+        self.assertIn('.post.is-keyboard-focused', html)
+        self.assertIn('<kbd>', html)
+
+        # Funções JavaScript de controlo de navegação e foco
+        self.assertIn("function setKeyboardFocusedPost(", html)
+        self.assertIn("function clearKeyboardFocusedPost(", html)
+        self.assertIn("function navigateKeyboardPost(", html)
+        self.assertIn("function replyToFocusedPost(", html)
+        self.assertIn("function likeFocusedPost(", html)
+        self.assertIn("function boostFocusedPost(", html)
+        self.assertIn("function saveFocusedPost(", html)
+        self.assertIn("function openFocusedPostThread(", html)
+        self.assertIn("function openShortcutsModal(", html)
+        self.assertIn("function closeShortcutsModal(", html)
+
+        # Suporte a traduções PT e EN
+        self.assertIn('shortcuts_title: "Atalhos de teclado (?)"', html)
+        self.assertIn('shortcuts_title: "Keyboard shortcuts (?)"', html)
+        self.assertIn('title: "Atalhos de Teclado"', html)
+        self.assertIn('title: "Keyboard Shortcuts"', html)
+
+    def test_backup_and_restore_feature(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        # Elementos de backup e restauro na interface
+        self.assertIn('id="backupSection"', html)
+        self.assertIn('id="exportBackupBtn"', html)
+        self.assertIn('id="importBackupBtn"', html)
+        self.assertIn('id="importBackupFileInput"', html)
+        self.assertIn('id="exportDraftsBtn"', html)
+        self.assertIn('id="backupFeedbackMsg"', html)
+
+        # Funções JavaScript de exportação e importação
+        self.assertIn("function exportBackupData(", html)
+        self.assertIn("function importBackupData(", html)
+
+        # Suporte a traduções em PT e EN
+        self.assertIn('backup_title: "Cópia de Segurança & Dados"', html)
+        self.assertIn('backup_title: "Backup & Data"', html)
+        self.assertIn('backup_export_btn: "Exportar Backup (JSON)"', html)
+        self.assertIn('backup_export_btn: "Export Backup (JSON)"', html)
+        self.assertIn('backup_import_btn: "Restaurar Backup"', html)
+        self.assertIn('backup_import_btn: "Restore Backup"', html)
+
+    def test_connectivity_and_rate_limit_indicator(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        # Elementos visuais da pílula de estado
+        self.assertIn('id="netStatusPill"', html)
+        self.assertIn('id="netStatusIcon"', html)
+        self.assertIn('id="netStatusText"', html)
+        self.assertIn('id="netStatusCloseBtn"', html)
+        self.assertIn('.net-status-pill.offline', html)
+        self.assertIn('.net-status-pill.reconnecting', html)
+        self.assertIn('.net-status-pill.ratelimit', html)
+        self.assertIn('.net-status-pill.online-restored', html)
+
+        # Funções de controlo e captura de eventos
+        self.assertIn("function showNetStatus(", html)
+        self.assertIn("function hideNetStatus(", html)
+        self.assertIn("function handleServerDisconnect(", html)
+        self.assertIn("function handleServerReconnect(", html)
+        self.assertIn('window.addEventListener("offline"', html)
+        self.assertIn('window.addEventListener("online"', html)
+
+        # Tratamento de 429 e rate limit na função api()
+        self.assertIn("r.status === 429", html)
+        self.assertIn("limite de pedidos", html)
+
+        # Traduções PT e EN
+        self.assertIn('offline: "Sem ligação à Internet — Modo offline"', html)
+        self.assertIn('offline: "No Internet connection — Offline mode"', html)
+        self.assertIn('server_disconnected: "A aguardar pelo servidor local MastoSky..."', html)
+        self.assertIn('server_disconnected: "Waiting for local MastoSky server..."', html)
+
     def test_parse_semver(self):
         self.assertEqual(app.parse_semver("0.3.0"), [0, 3, 0])
         self.assertEqual(app.parse_semver("v1.2.3"), [1, 2, 3])
@@ -2421,6 +2505,96 @@ class ProxyImageTests(unittest.TestCase):
         self.assertEqual(body_entry[0], 200)
         self.assertTrue(body_entry[1].get("ok"))
         self.assertEqual(body_entry[1].get("alt"), "Descrição gerada com IA")
+
+    def test_bsky_upload_video(self):
+        bsky = app.Bsky({"handle": "user.bsky.social", "app_password": "app-pass"})
+        bsky.jwt = "fake_jwt"
+        bsky.did = "did:plc:fake123"
+
+        def fake_http(method, url, **kwargs):
+            if "getServiceAuth" in url:
+                return {"token": "service_token_abc"}
+            if "uploadVideo" in url:
+                return {"jobId": "job_123"}
+            if "getJobStatus" in url:
+                return {
+                    "jobStatus": {
+                        "jobId": "job_123",
+                        "state": "JOB_STATE_COMPLETED",
+                        "blob": {"$type": "blob", "ref": {"$link": "bafkreiblob123"}}
+                    }
+                }
+            return {}
+
+        with mock.patch("app.http", side_effect=fake_http):
+            blob = bsky.upload_video(b"fake_video_bytes", mime="video/mp4", name="test.mp4")
+            self.assertEqual(blob["ref"]["$link"], "bafkreiblob123")
+
+    def test_bsky_post_video(self):
+        bsky = app.Bsky({"handle": "user.bsky.social", "app_password": "app-pass"})
+        bsky.jwt = "fake_jwt"
+        bsky.did = "did:plc:fake123"
+
+        fake_blob = {"$type": "blob", "ref": {"$link": "bafkreiblob456"}}
+        with mock.patch.object(bsky, "upload_video", return_value=fake_blob):
+            with mock.patch.object(bsky, "call", return_value={"uri": "at://fake/post/1", "cid": "cid123"}) as mock_call:
+                vid_data = {
+                    "bytes": b"fake_vid",
+                    "mime": "video/mp4",
+                    "alt": "Vídeo demonstrativo",
+                    "aspectRatio": {"width": 1920, "height": 1080}
+                }
+                bsky.post("Publicação com vídeo", video=vid_data)
+                mock_call.assert_called_once()
+                rec = mock_call.call_args[0][2]["record"]
+                self.assertIn("embed", rec)
+                self.assertEqual(rec["embed"]["$type"], "app.bsky.embed.video")
+                self.assertEqual(rec["embed"]["video"], fake_blob)
+                self.assertEqual(rec["embed"]["alt"], "Vídeo demonstrativo")
+                self.assertEqual(rec["embed"]["aspectRatio"], {"width": 1920, "height": 1080})
+
+    def test_masto_post_video(self):
+        masto = app.Masto({"instance": "https://masto.pt", "token": "fake_token"})
+        with mock.patch.object(masto, "upload_media", return_value="media_vid_123") as mock_upload:
+            with mock.patch.object(masto, "wait_for_media_processing", return_value="media_vid_123") as mock_wait:
+                with mock.patch.object(masto, "call", return_value={"id": "status_123"}) as mock_call:
+                    vid_data = {
+                        "bytes": b"fake_vid",
+                        "mime": "video/mp4",
+                        "alt": "Vídeo no Mastodon"
+                    }
+                    masto.post("Vídeo teste", video=vid_data)
+                    mock_upload.assert_called_once_with(b"fake_vid", "video/mp4", "Vídeo no Mastodon")
+                    mock_wait.assert_called_once_with("media_vid_123")
+                    mock_call.assert_called_once()
+                    self.assertEqual(mock_call.call_args[0][2]["media_ids"], ["media_vid_123"])
+
+    def test_post_video_mutual_exclusivity(self):
+        h = object.__new__(app.H)
+        h.path = "/api/post"
+        h.headers = {
+            "Host": f"127.0.0.1:{app.PORT}",
+            "X-CSRF-Token": app.SESSION_TOKEN
+        }
+        h.wfile = io.BytesIO()
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        h._read_json = lambda: ({
+            "text": "Tentativa de imagens + vídeo",
+            "targets": ["bluesky"],
+            "images": [{"data": "data:image/jpeg;base64,aGVsbG8="}],
+            "video": {"data": "data:video/mp4;base64,d29ybGQ="}
+        }, None)
+        h.send = lambda code, body, ctype="application/json": h.sent.append(("body", code, body))
+
+        with mock.patch.dict(app.CLIENTS, {"bluesky": mock.MagicMock()}):
+            h._do_post()
+
+        body_entry = [v for k, *v in h.sent if k == "body"][0]
+        self.assertEqual(body_entry[0], 400)
+        self.assertIn("Não é possível publicar imagens e vídeo no mesmo post", body_entry[1].get("error", ""))
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ MastoSky runs locally on your machine and gives you a single tab to read feeds, 
 ## Highlights
 
 - **Unified Feeds:** View posts from people you follow on Bluesky and Mastodon merged chronologically, or filter by network.
-- **Cross-Posting & Threads:** Compose once and post to Bluesky, Mastodon, or both. Includes thread composition, image pasting (Cmd+V / drag-and-drop), local drafts with auto-save, polls, and content warnings.
+- **Cross-Posting & Threads:** Compose once and post to Bluesky, Mastodon, or both. Includes video upload (MP4/WebM/MOV up to 50MB with async processing on both networks), image pasting (Cmd+V / drag-and-drop), thread composition, local drafts with auto-save, polls, and content warnings.
 - **Unified Search:** Query posts, user profiles, and hashtags across both networks simultaneously.
 - **Deck & Single-Column Views:** Switch between a compact single feed and a customizable multi-column layout (Deck View).
 - **Notifications & Profiles:** Track likes, reposts, mentions, and inspect profiles side-by-side.

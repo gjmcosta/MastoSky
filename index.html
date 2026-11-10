@@ -169,6 +169,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .poll-dur select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px}
 .previews{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px;padding:8px;background:rgba(255,255,255,0.02);border:1px dashed var(--line);border-radius:10px}
 .prev-card{position:relative;display:flex;flex-direction:column;gap:6px;width:130px;background:var(--surface-1);border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 2px 6px rgba(0,0,0,0.18);transition:border-color .15s}
+.prev-card.prev-card-video{width:220px}
 .prev-card:hover{border-color:var(--accent)}
 .prev-card img{width:100%;height:85px;object-fit:cover;border-radius:5px;background:#000;display:block}
 .prev-card input{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;padding:4px 6px;font-size:11.5px;width:100%;outline:none}
@@ -1046,6 +1047,139 @@ body:not(.view-deck) .deck-col-body {
 .lightbox-link:hover {
   text-decoration: underline;
 }
+
+/* Foco de teclado e navegação rápida (Power User) */
+.post.is-keyboard-focused {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: -2px;
+  box-shadow: 0 0 0 3px rgba(91, 75, 219, 0.28), 0 4px 14px rgba(0, 0, 0, 0.12) !important;
+  position: relative;
+  z-index: 2;
+  transition: outline 0.12s ease, box-shadow 0.12s ease;
+}
+html[data-theme="dark"] .post.is-keyboard-focused {
+  box-shadow: 0 0 0 3px rgba(154, 160, 255, 0.32), 0 4px 18px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Modal de Atalhos de Teclado */
+.setup-box.shortcuts-box {
+  max-width: 680px;
+  width: 100%;
+}
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+.shortcuts-section {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.shortcuts-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--ink);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.12);
+}
+.shortcut-row:last-child {
+  border-bottom: none;
+}
+.shortcut-keys {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.shortcut-or, .shortcut-hyphen {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0 2px;
+}
+kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  font: 700 11px var(--mono);
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1), inset 0 -1px 0 rgba(0,0,0,0.1);
+  min-width: 22px;
+  text-align: center;
+}
+
+/* Pílula flutuante de estado de rede e conectividade */
+.net-status-pill {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  max-width: 440px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  backdrop-filter: blur(12px);
+}
+.net-status-pill.offline {
+  background: rgba(211, 47, 47, 0.94);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.net-status-pill.reconnecting {
+  background: rgba(240, 180, 0, 0.96);
+  color: #1A1200;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+.net-status-pill.ratelimit {
+  background: rgba(91, 75, 219, 0.95);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.net-status-pill.online-restored {
+  background: rgba(46, 125, 50, 0.95);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.net-status-close {
+  background: transparent;
+  border: none;
+  color: currentColor;
+  opacity: 0.7;
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 14px;
+  margin-left: 4px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.net-status-close:hover {
+  opacity: 1;
+}
 </style>
 </head>
 <body>
@@ -1073,6 +1207,7 @@ body:not(.view-deck) .deck-col-body {
   <symbol id="i-thread" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="1.75" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-draft" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="9" x2="8" y2="9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="6.5" y1="9.5" x2="6.51" y2="9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="9.5" x2="10.01" y2="9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="13.5" y1="9.5" x2="13.51" y2="9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="9.5" x2="17.01" y2="9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="6.5" y1="13" x2="6.51" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="13" x2="17.01" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="14" x2="13.5" y2="14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-bookmark-fill" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-arrow-left" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="12 19 5 12 12 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -1123,6 +1258,7 @@ body:not(.view-deck) .deck-col-body {
     <button type="button" class="side-nav-btn side-nav-theme" id="sideThemeBtn" title="Alternar tema" data-i18n-title="header.theme_toggle_title" aria-label="Alternar tema"><svg class="ico" id="sideThemeIcon"><use href="#i-moon"/></svg></button>
     <button type="button" class="side-nav-btn" id="sideRefreshBtn" title="Atualizar" data-i18n-title="header.refresh" aria-label="Atualizar"><svg class="ico"><use href="#i-refresh"/></svg></button>
     <button type="button" class="side-nav-btn" id="sideSettingsBtn" title="Definições" data-i18n-title="header.settings_title" aria-label="Definições"><svg class="ico"><use href="#i-settings"/></svg></button>
+    <button type="button" class="side-nav-btn" id="sideShortcutsBtn" title="Atalhos de teclado (?)" data-i18n-title="header.shortcuts_title" aria-label="Atalhos de teclado"><svg class="ico"><use href="#i-keyboard"/></svg></button>
     <button type="button" class="side-nav-btn side-nav-lang" id="sideLangBtn" title="Mudar idioma" data-i18n-title="header.lang_switch_title"><svg class="ico"><use href="#i-language"/></svg></button>
     <button type="button" class="side-nav-btn side-nav-top" id="sideScrollTopBtn" title="Ir para o topo" data-i18n-title="nav.scroll_top" aria-label="Ir para o topo"><svg class="ico"><use href="#i-arrow-up"/></svg></button>
   </div>
@@ -1138,6 +1274,9 @@ body:not(.view-deck) .deck-col-body {
       <div class="header-actions">
         <button type="button" class="update-pill" id="headerUpdatePill" hidden>✨ Nova versão</button>
         <div class="header-nav-group">
+          <button type="button" class="header-nav-btn" id="shortcutsBtn" title="Atalhos de teclado (?)" data-i18n-title="header.shortcuts_title" aria-label="Atalhos de teclado">
+            <svg class="ico"><use href="#i-keyboard"/></svg>
+          </button>
           <button type="button" class="header-nav-btn" id="themeToggleBtn" title="Alternar modo claro / escuro" data-i18n-title="header.theme_toggle_title" aria-label="Alternar tema">
             <svg class="ico" id="themeToggleIcon" style="width:16px;height:16px"><use href="#i-moon"/></svg>
           </button>
@@ -1241,10 +1380,10 @@ body:not(.view-deck) .deck-col-body {
               <svg class="ico"><use href="#i-thread"/></svg>
               <span class="tool-label" data-i18n="composer.add_thread">+ Fio</span>
             </button>
-            <button type="button" class="tool" id="attachBtn" title="Anexar imagens (máx. 4)" data-i18n-title="composer.attach_title" aria-label="Anexar imagens">
+            <button type="button" class="tool" id="attachBtn" title="Anexar imagens ou vídeo" data-i18n-title="composer.attach_title" aria-label="Anexar imagens ou vídeo">
               <svg class="ico"><use href="#i-image"/></svg>
             </button>
-            <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none">
+            <input type="file" id="mediaInput" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" multiple style="display:none">
             <button type="button" class="tool" id="pasteImgBtn" title="Colar imagem da área de transferência (Cmd+V)" data-i18n-title="composer.paste_img_title" aria-label="Colar imagem">
               <svg class="ico"><use href="#i-clipboard"/></svg>
             </button>
@@ -1737,6 +1876,23 @@ body:not(.view-deck) .deck-col-body {
               </div>
             </div>
           </div>
+
+          <div class="setup-section" id="backupSection">
+            <div class="setup-sec-title"><span>💾 <span data-i18n="setup.backup_title">Cópia de Segurança & Dados</span></span></div>
+            <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45" data-i18n="setup.backup_desc">
+              Exporta ou restaura os teus rascunhos, posts guardados, preferências e ordem das colunas num ficheiro JSON seguro.
+            </p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <button type="button" class="setup-secondary-btn" id="exportBackupBtn" style="display:inline-flex;align-items:center;gap:6px">
+                <span>⬇️</span> <span data-i18n="setup.backup_export_btn">Exportar Backup (JSON)</span>
+              </button>
+              <button type="button" class="setup-secondary-btn" id="importBackupBtn" style="display:inline-flex;align-items:center;gap:6px">
+                <span>⬆️</span> <span data-i18n="setup.backup_import_btn">Restaurar Backup</span>
+              </button>
+              <input type="file" id="importBackupFileInput" accept=".json,application/json" style="display:none">
+            </div>
+            <div id="backupFeedbackMsg" class="msg" style="margin-top:8px"></div>
+          </div>
         </div>
 
         <div class="settings-col">
@@ -1838,7 +1994,7 @@ body:not(.view-deck) .deck-col-body {
             <div class="setup-sec-title"><span>🔄 <span data-i18n="update.section_title">Versão e Atualizações</span></span></div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
               <div>
-                <div style="font-size:13px;font-weight:600;color:var(--ink)">MastoSky <span id="appVersionBadge" style="opacity:0.85">v0.7.0</span></div>
+                <div style="font-size:13px;font-weight:600;color:var(--ink)">MastoSky <span id="appVersionBadge" style="opacity:0.85">v0.8.0</span></div>
                 <div id="updateStatusText" style="font-size:12px;color:var(--muted);margin-top:2px" data-i18n="update.checking">A verificar atualizações...</div>
               </div>
               <div style="display:flex;gap:8px;align-items:center">
@@ -1908,6 +2064,9 @@ body:not(.view-deck) .deck-col-body {
 
       <div class="drafts-top-bar">
         <button type="button" class="send-sm" id="saveCurrentDraftBtn" data-i18n="drafts.save_current">+ Guardar rascunho atual</button>
+        <button type="button" class="ghost-sm" id="exportDraftsBtn" title="Exportar dados (JSON)" style="margin-left:auto;display:inline-flex;align-items:center;gap:4px">
+          <span>💾</span> <span data-i18n="setup.backup_export_btn">Exportar</span>
+        </button>
         <span id="draftsCountText" class="drafts-count-info">0 rascunhos</span>
       </div>
 
@@ -1961,6 +2120,101 @@ body:not(.view-deck) .deck-col-body {
     </div>
   </div>
 
+  <div id="shortcutsOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="shortcutsModalTitle">
+    <div class="setup-box shortcuts-box">
+      <div class="setup-header">
+        <h2 id="shortcutsModalTitle" style="display:inline-flex;align-items:center;gap:8px">
+          <svg class="ico" style="width:20px;height:20px"><use href="#i-keyboard"/></svg>
+          <span data-i18n="shortcuts.title">Atalhos de Teclado</span>
+        </h2>
+        <button type="button" class="rm-sm" id="closeShortcuts" title="Fechar (Esc)">✕</button>
+      </div>
+      <p class="setup-desc" data-i18n="shortcuts.desc">Navega e interage no MastoSky rapidamente sem tirar as mãos do teclado.</p>
+
+      <div class="shortcuts-grid">
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">
+            <span>🧭</span> <span data-i18n="shortcuts.sec_nav">Navegação</span>
+          </div>
+          <div class="shortcut-row">
+            <span data-i18n="shortcuts.next_post">Post seguinte</span>
+            <span class="shortcut-keys"><kbd>J</kbd> <span class="shortcut-or">/</span> <kbd>↓</kbd></span>
+          </div>
+          <div class="shortcut-row">
+            <span data-i18n="shortcuts.prev_post">Post anterior</span>
+            <span class="shortcut-keys"><kbd>K</kbd> <span class="shortcut-or">/</span> <kbd>↑</kbd></span>
+          </div>
+          <div class="shortcut-row">
+            <span data-i18n="shortcuts.open_thread">Abrir conversa / detalhes</span>
+            <span class="shortcut-keys"><kbd>Enter</kbd> <span class="shortcut-or">/</span> <kbd>O</kbd></span>
+          </div>
+          <div class="shortcut-row">
+            <span data-i18n="shortcuts.scroll_top">Ir para o topo da coluna</span>
+            <span class="shortcut-keys"><kbd>.</kbd></span>
+          </div>
+          <div class="shortcut-row">
+            <span data-i18n="shortcuts.jump_col">Mudar de coluna / aba</span>
+            <span class="shortcut-keys"><kbd>1</kbd> <span class="shortcut-hyphen">–</span> <kbd>6</kbd></span>
+          </div>
+        </div>
+
+        <div class="shortcuts-section">
+          <div class="shortcuts-section-title">
+            <span>⚡</span> <span data-i18n="shortcuts.sec_actions">Ações no Post</span>
+          </div>
+          <div class="shortcut-row">
+            <span data-i18n="shortcuts.like">Gosto / Curtir</span>
+            <span class="shortcut-keys"><kbd>L</kbd></span>
+          </div>
+          <div class="shortcut-row">
+            <span data-i18n="shortcuts.boost">Partilhar / Repostar</span>
+            <span class="shortcut-keys"><kbd>T</kbd></span>
+          </div>
+          <div class="shortcut-row">
+            <span data-i18n="shortcuts.reply">Responder ao post</span>
+            <span class="shortcut-keys"><kbd>R</kbd></span>
+          </div>
+          <div class="shortcut-row">
+            <span data-i18n="shortcuts.save">Guardar / Marcador</span>
+            <span class="shortcut-keys"><kbd>S</kbd></span>
+          </div>
+        </div>
+
+        <div class="shortcuts-section" style="grid-column: 1 / -1">
+          <div class="shortcuts-section-title">
+            <span>⚙️</span> <span data-i18n="shortcuts.sec_general">Geral & Compositor</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0 18px">
+            <div class="shortcut-row">
+              <span data-i18n="shortcuts.compose">Novo post (focar compositor)</span>
+              <span class="shortcut-keys"><kbd>N</kbd> <span class="shortcut-or">/</span> <kbd>C</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span data-i18n="shortcuts.search">Pesquisar</span>
+              <span class="shortcut-keys"><kbd>/</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span data-i18n="shortcuts.send">Publicar post (no compositor)</span>
+              <span class="shortcut-keys"><kbd>⌘/Ctrl</kbd> + <kbd>Enter</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span data-i18n="shortcuts.theme">Alternar tema (Claro / Escuro)</span>
+              <span class="shortcut-keys"><kbd>M</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span data-i18n="shortcuts.help">Ver esta folha de atalhos</span>
+              <span class="shortcut-keys"><kbd>?</kbd></span>
+            </div>
+            <div class="shortcut-row">
+              <span data-i18n="shortcuts.close">Fechar modal / conversa / foco</span>
+              <span class="shortcut-keys"><kbd>Esc</kbd></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="imageLightbox" class="lightbox-overlay" hidden role="dialog" aria-modal="true" aria-label="Pré-visualização de imagem">
     <div class="lightbox-backdrop" onclick="closeImageLightbox()"></div>
     <div class="lightbox-container">
@@ -1978,6 +2232,12 @@ body:not(.view-deck) .deck-col-body {
     </div>
   </div>
 </main>
+
+  <div id="netStatusPill" class="net-status-pill" hidden role="status" aria-live="polite">
+    <span id="netStatusIcon" class="net-status-icon"></span>
+    <span id="netStatusText" class="net-status-text"></span>
+    <button type="button" id="netStatusCloseBtn" class="net-status-close" title="Fechar" aria-label="Fechar">✕</button>
+  </div>
 
 <script>
 const I18N = {
@@ -1998,7 +2258,8 @@ const I18N = {
       col_thread: "Conversa",
       col_user: "Perfil de utilizador",
       col_search: "Pesquisa",
-      col_saved: "Guardados"
+      col_saved: "Guardados",
+      shortcuts_title: "Atalhos de teclado (?)"
     },
     tabs: {
       timeline: "Timeline",
@@ -2034,7 +2295,16 @@ const I18N = {
       poll_dur_3d: "3 dias",
       poll_dur_7d: "7 dias",
       attach_img: "Imagem",
-      attach_title: "Anexar imagens (máx. 4)",
+      attach_title: "Anexar imagens ou vídeo",
+      video_remove: "Remover vídeo",
+      video_alt_ph: "Descrição acessível do vídeo (alt text)...",
+      video_loading: "A carregar vídeo...",
+      video_too_large: "O vídeo excede o tamanho máximo de 50 MB.",
+      video_duration_too_long: "O vídeo excede a duração máxima de 10 minutos.",
+      video_disabled_images: "Não é possível misturar imagens e vídeo no mesmo post.",
+      video_disabled_poll: "Não é possível ter vídeo e sondagem no mesmo post.",
+      video_disabled_max: "Só é permitido 1 vídeo por publicação.",
+      video_processing_msg: "A enviar e a processar vídeo nos servidores... Aguarda um momento.",
       poll_btn: "Sondagem",
       poll_title: "Criar sondagem",
       poll_remove_opt: "Remover opção",
@@ -2378,7 +2648,22 @@ const I18N = {
       saving_msg: "A validar e a guardar...",
       success: "Guardado com sucesso!",
       err_save: "Erro: {err}",
-      err_server: "Erro de ligação ao servidor local."
+      err_server: "Erro de ligação ao servidor local.",
+      backup_title: "Cópia de Segurança & Dados",
+      backup_desc: "Exporta ou restaura os teus rascunhos, posts guardados, preferências e ordem das colunas num ficheiro JSON seguro.",
+      backup_export_btn: "Exportar Backup (JSON)",
+      backup_import_btn: "Restaurar Backup",
+      backup_exported_ok: "Backup exportado com sucesso ({drafts} rascunhos, {saved} guardados)!",
+      backup_imported_ok: "Backup restaurado com sucesso ({drafts} novos rascunhos, {saved} novos guardados)!",
+      backup_invalid_err: "Ficheiro inválido. Seleciona um backup JSON do MastoSky.",
+      backup_parse_err: "Erro ao ler ficheiro de backup"
+    },
+    status: {
+      offline: "Sem ligação à Internet — Modo offline",
+      online_restored: "Ligação à Internet restabelecida ✓",
+      server_disconnected: "A aguardar pelo servidor local MastoSky...",
+      server_reconnected: "Servidor local reconectado ✓",
+      rate_limit: "Limite de pedidos temporário atingido — aguarda um momento"
     },
     time: {
       now: "agora",
@@ -2390,6 +2675,28 @@ const I18N = {
       close: "Fechar (Esc)",
       prev: "Anterior (←)",
       next: "Seguinte (→)"
+    },
+    shortcuts: {
+      title: "Atalhos de Teclado",
+      desc: "Navega e interage no MastoSky rapidamente sem tirar as mãos do teclado.",
+      sec_nav: "Navegação",
+      sec_actions: "Ações no Post",
+      sec_general: "Geral & Compositor",
+      next_post: "Post seguinte",
+      prev_post: "Post anterior",
+      open_thread: "Abrir conversa / detalhes",
+      scroll_top: "Ir para o topo da coluna",
+      jump_col: "Mudar de coluna / aba",
+      like: "Gosto / Curtir",
+      boost: "Partilhar / Repostar",
+      reply: "Responder ao post",
+      save: "Guardar / Marcador",
+      compose: "Novo post (focar compositor)",
+      search: "Pesquisar",
+      send: "Publicar post (no compositor)",
+      theme: "Alternar tema (Claro / Escuro)",
+      help: "Ver esta folha de atalhos",
+      close: "Fechar modal / conversa / foco"
     }
   },
   en: {
@@ -2409,7 +2716,8 @@ const I18N = {
       col_thread: "Thread",
       col_user: "User profile",
       col_search: "Search",
-      col_saved: "Saved"
+      col_saved: "Saved",
+      shortcuts_title: "Keyboard shortcuts (?)"
     },
     tabs: {
       timeline: "Timeline",
@@ -2445,7 +2753,16 @@ const I18N = {
       poll_dur_3d: "3 days",
       poll_dur_7d: "7 days",
       attach_img: "Image",
-      attach_title: "Attach images (max. 4)",
+      attach_title: "Attach images or video",
+      video_remove: "Remove video",
+      video_alt_ph: "Video accessibility description (alt text)...",
+      video_loading: "Loading video...",
+      video_too_large: "Video exceeds maximum limit of 50 MB.",
+      video_duration_too_long: "Video exceeds maximum duration of 10 minutes.",
+      video_disabled_images: "Cannot mix images and video in the same post.",
+      video_disabled_poll: "Cannot have video and poll in the same post.",
+      video_disabled_max: "Only 1 video is allowed per post.",
+      video_processing_msg: "Uploading and processing video on servers... Please wait.",
       poll_btn: "Poll",
       poll_title: "Create poll",
       poll_remove_opt: "Remove option",
@@ -2789,7 +3106,22 @@ const I18N = {
       saving_msg: "Validating and saving...",
       success: "Saved successfully!",
       err_save: "Error: {err}",
-      err_server: "Error connecting to local server."
+      err_server: "Error connecting to local server.",
+      backup_title: "Backup & Data",
+      backup_desc: "Export or restore your drafts, saved posts, preferences and deck columns in a secure JSON file.",
+      backup_export_btn: "Export Backup (JSON)",
+      backup_import_btn: "Restore Backup",
+      backup_exported_ok: "Backup exported successfully ({drafts} drafts, {saved} saved)!",
+      backup_imported_ok: "Backup restored successfully ({drafts} new drafts, {saved} new saved)!",
+      backup_invalid_err: "Invalid file. Please select a valid MastoSky JSON backup.",
+      backup_parse_err: "Error reading backup file"
+    },
+    status: {
+      offline: "No Internet connection — Offline mode",
+      online_restored: "Internet connection restored ✓",
+      server_disconnected: "Waiting for local MastoSky server...",
+      server_reconnected: "Local server reconnected ✓",
+      rate_limit: "Temporary rate limit reached — please wait a moment"
     },
     time: {
       now: "now",
@@ -2801,6 +3133,28 @@ const I18N = {
       close: "Close (Esc)",
       prev: "Previous (←)",
       next: "Next (→)"
+    },
+    shortcuts: {
+      title: "Keyboard Shortcuts",
+      desc: "Navigate and interact with MastoSky quickly without leaving your keyboard.",
+      sec_nav: "Navigation",
+      sec_actions: "Post Actions",
+      sec_general: "General & Composer",
+      next_post: "Next post",
+      prev_post: "Previous post",
+      open_thread: "Open thread / details",
+      scroll_top: "Scroll column to top",
+      jump_col: "Switch column / tab",
+      like: "Like / Unlike",
+      boost: "Share / Repost",
+      reply: "Reply to post",
+      save: "Save / Bookmark",
+      compose: "New post (focus composer)",
+      search: "Search",
+      send: "Publish post (in composer)",
+      theme: "Toggle theme (Light / Dark)",
+      help: "Open this shortcuts help",
+      close: "Close modal / thread / focus"
     }
   }
 };
@@ -3267,7 +3621,7 @@ function applyViewMode(mode) {
 function closeDeckDetail() {
   closeDeckThread();
 }
-let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], hasPoll = false, pollOptions = ["", ""], hasCW = false;
+let networks = [], reply = null, quote = null, activeBoostMenu = null, items = [], exploreItems = [], notifs = null, tab = "timeline", images = [], attachedVideo = null, hasPoll = false, pollOptions = ["", ""], hasCW = false;
 let threadPosts = [], nextThreadId = 1;
 let profileLoaded = false, profileData = null, profileItems = [], profileFilter = "all", profileCursors = {};
 
@@ -3280,12 +3634,119 @@ function getCsrfToken() {
   return CSRF_TOKEN;
 }
 
+let isServerOffline = false;
+let serverReconnectTimer = null;
+let netStatusDismissTimer = null;
+
+function showNetStatus(type, message, autoDismissMs = 0) {
+  const pill = $("netStatusPill");
+  const txt = $("netStatusText");
+  const ico = $("netStatusIcon");
+  if (!pill || !txt) return;
+
+  if (netStatusDismissTimer) {
+    clearTimeout(netStatusDismissTimer);
+    netStatusDismissTimer = null;
+  }
+
+  pill.className = "net-status-pill " + type;
+  txt.textContent = message;
+
+  const icons = {
+    offline: "📡",
+    reconnecting: "⚠️",
+    ratelimit: "⏳",
+    "online-restored": "✅"
+  };
+  if (ico) ico.textContent = icons[type] || "ℹ️";
+
+  pill.hidden = false;
+
+  if (autoDismissMs > 0) {
+    netStatusDismissTimer = setTimeout(() => {
+      hideNetStatus();
+    }, autoDismissMs);
+  }
+}
+
+function hideNetStatus() {
+  const pill = $("netStatusPill");
+  if (!pill) return;
+  pill.style.opacity = "0";
+  pill.style.transform = "translateY(8px)";
+  setTimeout(() => {
+    pill.hidden = true;
+    pill.style.opacity = "";
+    pill.style.transform = "";
+  }, 250);
+}
+
+function handleServerDisconnect() {
+  if (!isServerOffline) {
+    isServerOffline = true;
+    showNetStatus("reconnecting", t("status.server_disconnected"));
+  }
+  if (!serverReconnectTimer) {
+    serverReconnectTimer = setInterval(async () => {
+      try {
+        const r = await fetch("/api/csrf");
+        if (r.ok) {
+          clearInterval(serverReconnectTimer);
+          serverReconnectTimer = null;
+          handleServerReconnect();
+        }
+      } catch (_) {}
+    }, 3000);
+  }
+}
+
+function handleServerReconnect() {
+  isServerOffline = false;
+  if (serverReconnectTimer) {
+    clearInterval(serverReconnectTimer);
+    serverReconnectTimer = null;
+  }
+  showNetStatus("online-restored", t("status.server_reconnected"), 3500);
+  fetch("/api/csrf").then(r => r.json()).then(j => {
+    if (j.token) {
+      CSRF_TOKEN = j.token;
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      if (meta) meta.setAttribute("content", CSRF_TOKEN);
+    }
+    if (typeof load === "function") load();
+  }).catch(() => {});
+}
+
+window.addEventListener("offline", () => {
+  showNetStatus("offline", t("status.offline"));
+});
+
+window.addEventListener("online", () => {
+  showNetStatus("online-restored", t("status.online_restored"), 3500);
+  if (typeof load === "function") load();
+});
+
 async function api(path, body) {
   let token = getCsrfToken();
   const headers = {"Content-Type": "application/json"};
   if (token) headers["X-CSRF-Token"] = token;
-  let r = await fetch(path, body ? {method: "POST", headers, body: JSON.stringify(body)} : {});
+  let r;
+  try {
+    r = await fetch(path, body ? {method: "POST", headers, body: JSON.stringify(body)} : {});
+  } catch (err) {
+    handleServerDisconnect();
+    return { error: t("status.server_disconnected") };
+  }
+
+  if (isServerOffline) {
+    handleServerReconnect();
+  }
+
   let data = await r.json().catch(() => ({}));
+
+  if (r.status === 429 || (data && data.error && (data.error.includes("limite de pedidos") || data.error.toLowerCase().includes("rate limit")))) {
+    showNetStatus("ratelimit", data.error || t("status.rate_limit"), 7000);
+  }
 
   // Se o serviço foi reiniciado com a página aberta, o token mudou.
   // Recarrega o token fresco do servidor e tenta novamente 1 vez.
@@ -3445,8 +3906,291 @@ function closeImageLightbox() {
   document.body.style.overflow = "";
 }
 
+/* ==========================================================================
+   NAVEGAÇÃO POR ATALHOS DE TECLADO (POWER USER / TWEETDECK EXPERIENCE)
+   ========================================================================== */
+
+let currentFocusedPost = null;
+let activeDeckCol = "timeline";
+
+function setKeyboardFocusedPost(postEl, shouldScroll = true) {
+  if (currentFocusedPost && currentFocusedPost !== postEl) {
+    currentFocusedPost.classList.remove("is-keyboard-focused");
+  }
+  currentFocusedPost = postEl;
+  if (currentFocusedPost) {
+    currentFocusedPost.classList.add("is-keyboard-focused");
+    const col = currentFocusedPost.closest(".deck-col");
+    if (col && col.dataset.col) {
+      activeDeckCol = col.dataset.col;
+    }
+    if (shouldScroll) {
+      currentFocusedPost.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }
+}
+
+function clearKeyboardFocusedPost() {
+  if (currentFocusedPost) {
+    currentFocusedPost.classList.remove("is-keyboard-focused");
+    currentFocusedPost = null;
+  }
+}
+
+function getActivePostsContainer() {
+  if (viewMode === "deck") {
+    if ($("colThread") && !$("colThread").hidden && (activeDeckCol === "thread" || (currentFocusedPost && $("colThread").contains(currentFocusedPost)))) {
+      return $("deckThreadContent");
+    }
+    const map = {
+      timeline: $("feed"),
+      explore: $("efeed"),
+      search: $("sfeed"),
+      saved: $("savedFeed"),
+      notifs: $("nfeed"),
+      profile: $("profilePosts"),
+      thread: $("deckThreadContent")
+    };
+    return map[activeDeckCol] || $("feed");
+  } else {
+    const capTab = tab.charAt(0).toUpperCase() + tab.slice(1);
+    const th = $("thread" + capTab);
+    if (th && !th.hidden && th.children.length > 0) {
+      return th;
+    }
+    const map = {
+      timeline: $("feed"),
+      explore: $("efeed"),
+      search: $("sfeed"),
+      saved: $("savedFeed"),
+      notifs: $("nfeed"),
+      profile: $("profilePosts")
+    };
+    return map[tab] || $("feed");
+  }
+}
+
+function navigateKeyboardPost(direction) {
+  const container = getActivePostsContainer();
+  if (!container) return;
+  const posts = Array.from(container.querySelectorAll("article.post")).filter(p => !p.hidden && p.offsetParent !== null);
+  if (!posts.length) return;
+
+  let nextIndex = 0;
+  if (currentFocusedPost && posts.includes(currentFocusedPost)) {
+    const curIdx = posts.indexOf(currentFocusedPost);
+    nextIndex = curIdx + direction;
+    if (nextIndex < 0) nextIndex = 0;
+    if (nextIndex >= posts.length) nextIndex = posts.length - 1;
+  } else {
+    const viewportTop = viewMode === "deck" && container.parentElement ? container.parentElement.getBoundingClientRect().top : 0;
+    const found = posts.find(p => {
+      const r = p.getBoundingClientRect();
+      return r.bottom > viewportTop + 50 && r.top < window.innerHeight;
+    });
+    const startIdx = found ? posts.indexOf(found) : 0;
+    nextIndex = direction > 0 ? startIdx : Math.max(0, startIdx - 1);
+  }
+
+  setKeyboardFocusedPost(posts[nextIndex], true);
+}
+
+function replyToFocusedPost() {
+  if (!currentFocusedPost) return;
+  const replyBtn = currentFocusedPost.querySelector(".act-reply");
+  if (replyBtn) {
+    replyBtn.click();
+    setTimeout(() => {
+      const txt = $("text");
+      if (txt) {
+        txt.focus();
+        txt.selectionStart = txt.selectionEnd = txt.value.length;
+      }
+    }, 60);
+  }
+}
+
+function likeFocusedPost() {
+  if (!currentFocusedPost) return;
+  const likeBtn = currentFocusedPost.querySelector(".act-like");
+  if (likeBtn) likeBtn.click();
+}
+
+function boostFocusedPost() {
+  if (!currentFocusedPost) return;
+  const boostBtn = currentFocusedPost.querySelector(".act-boost");
+  if (boostBtn) boostBtn.click();
+}
+
+function saveFocusedPost() {
+  if (!currentFocusedPost) return;
+  const saveBtn = currentFocusedPost.querySelector(".act-save");
+  if (saveBtn) saveBtn.click();
+}
+
+function openFocusedPostThread() {
+  if (!currentFocusedPost) return;
+  const threadBtn = currentFocusedPost.querySelector(".act-thread");
+  if (threadBtn) {
+    threadBtn.click();
+  } else {
+    currentFocusedPost.click();
+  }
+}
+
+function focusComposer() {
+  if (viewMode === "deck") {
+    const colCompose = $("colCompose");
+    if (colCompose) {
+      if (colCompose.hidden) colCompose.hidden = false;
+      colCompose.scrollIntoView({ behavior: "smooth", inline: "start" });
+    }
+  }
+  const txt = $("text");
+  if (txt) {
+    txt.focus();
+    txt.selectionStart = txt.selectionEnd = txt.value.length;
+  }
+}
+
+function focusSearch() {
+  if (viewMode === "deck") {
+    const colSearch = $("colSearch");
+    if (colSearch) {
+      if (colSearch.hidden) colSearch.hidden = false;
+      colSearch.scrollIntoView({ behavior: "smooth", inline: "start" });
+    }
+  } else {
+    setTab("search");
+  }
+  const inp = $("searchInput");
+  if (inp) {
+    setTimeout(() => {
+      inp.focus();
+      inp.select();
+    }, 50);
+  }
+}
+
+function scrollActiveColTop() {
+  if (viewMode === "deck") {
+    const map = {
+      timeline: $("colTimelineBody"),
+      explore: $("colExploreBody"),
+      search: $("colSearchBody"),
+      saved: $("colSavedBody"),
+      notifs: $("colNotifsBody"),
+      profile: $("colProfileBody"),
+      thread: $("colThreadBody")
+    };
+    const b = map[activeDeckCol];
+    if (b) b.scrollTo({ top: 0, behavior: "smooth" });
+    const pillMap = {
+      timeline: $("timelineNewPostsPill"),
+      explore: $("exploreNewPostsPill"),
+      notifs: $("notifsNewPostsPill")
+    };
+    if (pillMap[activeDeckCol] && !pillMap[activeDeckCol].hidden) {
+      pillMap[activeDeckCol].click();
+    }
+  } else {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    const pillMap = {
+      timeline: $("timelineNewPostsPill"),
+      explore: $("exploreNewPostsPill"),
+      notifs: $("notifsNewPostsPill")
+    };
+    if (pillMap[tab] && !pillMap[tab].hidden) {
+      pillMap[tab].click();
+    }
+  }
+}
+
+function jumpToColumnOrTab(key) {
+  const colMap = {
+    "1": "timeline",
+    "2": "explore",
+    "3": "search",
+    "4": "saved",
+    "5": "notifs",
+    "6": "profile"
+  };
+  const target = colMap[key];
+  if (!target) return;
+  setTab(target);
+  activeDeckCol = target;
+  clearKeyboardFocusedPost();
+}
+
+function openShortcutsModal() {
+  const overlay = $("shortcutsOverlay");
+  if (!overlay) return;
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+}
+
+function closeShortcutsModal() {
+  const overlay = $("shortcutsOverlay");
+  if (!overlay) return;
+  overlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+function isAnyModalOpen() {
+  const modalIds = [
+    "setupOverlay",
+    "partialPostOverlay",
+    "userProfileOverlay",
+    "draftsOverlay",
+    "crossPostOverlay",
+    "shortcutsOverlay",
+    "imageLightbox"
+  ];
+  return modalIds.some(id => {
+    const el = $(id);
+    return el && !el.hidden;
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const post = e.target.closest("article.post");
+  if (post) {
+    setKeyboardFocusedPost(post, false);
+  }
+  const col = e.target.closest(".deck-col");
+  if (col && col.dataset.col) {
+    activeDeckCol = col.dataset.col;
+  }
+}, true);
+
 window.addEventListener("keydown", (e) => {
+  // 1. Atalho universal de submissão (Cmd+Enter / Ctrl+Enter) dentro de campos de composição
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+    if (document.activeElement === $("text")) {
+      e.preventDefault();
+      const sendBtn = $("send");
+      if (sendBtn && !sendBtn.disabled) sendBtn.click();
+      return;
+    }
+    if (document.activeElement === $("crossComment")) {
+      e.preventDefault();
+      const submitBtn = $("submitCrossPost");
+      if (submitBtn && !submitBtn.disabled) submitBtn.click();
+      return;
+    }
+  }
+
+  // 2. Tecla Escape: fecho contextual em cascata
   if (e.key === "Escape") {
+    const lightbox = $("imageLightbox");
+    if (lightbox && !lightbox.hidden) {
+      closeImageLightbox();
+      return;
+    }
+    if ($("shortcutsOverlay") && !$("shortcutsOverlay").hidden) {
+      closeShortcutsModal();
+      return;
+    }
     if ($("setupOverlay") && !$("setupOverlay").hidden && $("closeSetup") && !$("closeSetup").hidden) {
       closeSetup();
       return;
@@ -3463,19 +4207,110 @@ window.addEventListener("keydown", (e) => {
       closeDraftsModal();
       return;
     }
+    if ($("crossPostOverlay") && !$("crossPostOverlay").hidden) {
+      closeCrossPostModal();
+      return;
+    }
     if (viewMode === "deck" && $("colThread") && !$("colThread").hidden) {
       closeDeckThread();
       return;
     }
+    if (viewMode !== "deck") {
+      const capTab = tab.charAt(0).toUpperCase() + tab.slice(1);
+      const th = $("thread" + capTab);
+      if (th && !th.hidden && th.children.length > 0) {
+        closeColumnThread(tab);
+        return;
+      }
+    }
+    if (currentFocusedPost) {
+      clearKeyboardFocusedPost();
+      return;
+    }
+    if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) {
+      document.activeElement.blur();
+      return;
+    }
   }
-  const overlay = $("imageLightbox");
-  if (!overlay || overlay.hidden) return;
-  if (e.key === "Escape") {
-    closeImageLightbox();
-  } else if (e.key === "ArrowLeft") {
-    prevLightboxImage();
-  } else if (e.key === "ArrowRight") {
-    nextLightboxImage();
+
+  // 3. Navegação do Lightbox de imagens
+  const lightbox = $("imageLightbox");
+  if (lightbox && !lightbox.hidden) {
+    if (e.key === "ArrowLeft") {
+      prevLightboxImage();
+    } else if (e.key === "ArrowRight") {
+      nextLightboxImage();
+    }
+    return;
+  }
+
+  // 4. Se algum modal estiver aberto, não processar atalhos de navegação
+  if (isAnyModalOpen()) return;
+
+  // 5. Se o utilizador estiver a escrever num campo de texto ou formulário, não intercetar
+  const activeEl = document.activeElement;
+  if (activeEl) {
+    const tag = activeEl.tagName ? activeEl.tagName.toLowerCase() : "";
+    if (tag === "input" || tag === "textarea" || tag === "select" || activeEl.isContentEditable) {
+      return;
+    }
+  }
+
+  // 6. Não interferir com atalhos de sistema/navegador que utilizem Cmd/Ctrl/Alt
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+  // 7. Processamento dos atalhos de navegação e ações
+  const k = e.key.toLowerCase();
+
+  if (e.key === "j" || e.key === "ArrowDown") {
+    e.preventDefault();
+    navigateKeyboardPost(1);
+  } else if (e.key === "k" || e.key === "ArrowUp") {
+    e.preventDefault();
+    navigateKeyboardPost(-1);
+  } else if (e.key === "Enter" || k === "o") {
+    if (currentFocusedPost) {
+      e.preventDefault();
+      openFocusedPostThread();
+    }
+  } else if (k === "r") {
+    if (currentFocusedPost) {
+      e.preventDefault();
+      replyToFocusedPost();
+    }
+  } else if (k === "l") {
+    if (currentFocusedPost) {
+      e.preventDefault();
+      likeFocusedPost();
+    }
+  } else if (k === "t") {
+    if (currentFocusedPost) {
+      e.preventDefault();
+      boostFocusedPost();
+    }
+  } else if (k === "s") {
+    if (currentFocusedPost) {
+      e.preventDefault();
+      saveFocusedPost();
+    }
+  } else if (k === "n" || k === "c") {
+    e.preventDefault();
+    focusComposer();
+  } else if (e.key === "/") {
+    e.preventDefault();
+    focusSearch();
+  } else if (e.key === ".") {
+    e.preventDefault();
+    scrollActiveColTop();
+  } else if (e.key >= "1" && e.key <= "6") {
+    e.preventDefault();
+    jumpToColumnOrTab(e.key);
+  } else if (k === "m") {
+    e.preventDefault();
+    toggleThemeQuick();
+  } else if (e.key === "?") {
+    e.preventDefault();
+    openShortcutsModal();
   }
 });
 
@@ -6087,6 +6922,54 @@ async function processImage(file) {
   });
 }
 
+function isVideoFile(file) {
+  if (!file) return false;
+  if (file.type && file.type.startsWith("video/")) return true;
+  const name = (file.name || "").toLowerCase();
+  return name.endsWith(".mp4") || name.endsWith(".webm") || name.endsWith(".mov") || name.endsWith(".m4v");
+}
+
+async function processVideo(file) {
+  if (file.size > 50 * 1024 * 1024) {
+    throw new Error(t("composer.video_too_large") || "O vídeo excede o tamanho máximo de 50 MB.");
+  }
+  const dataUrl = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(new Error("Falha ao ler o ficheiro de vídeo."));
+    r.readAsDataURL(file);
+  });
+
+  return new Promise((resolve) => {
+    const vid = document.createElement("video");
+    vid.preload = "metadata";
+    vid.onloadedmetadata = () => {
+      let w = vid.videoWidth || 1280;
+      let h = vid.videoHeight || 720;
+      let dur = vid.duration || 0;
+      resolve({
+        data: dataUrl,
+        mime: file.type || "video/mp4",
+        name: file.name || "video.mp4",
+        alt: "",
+        duration: dur,
+        aspectRatio: { width: Math.round(w), height: Math.round(h) }
+      });
+    };
+    vid.onerror = () => {
+      resolve({
+        data: dataUrl,
+        mime: file.type || "video/mp4",
+        name: file.name || "video.mp4",
+        alt: "",
+        duration: 0,
+        aspectRatio: { width: 16, height: 9 }
+      });
+    };
+    vid.src = dataUrl;
+  });
+}
+
 let aiConfig = {
   provider: "none",
   lang: "pt-pt",
@@ -6249,6 +7132,45 @@ function renderPreviews() {
   const box = $("previews");
   box.replaceChildren();
   const btn = $("attachBtn") || $("attachLabel");
+
+  if (attachedVideo) {
+    box.hidden = false;
+    if (btn) btn.setAttribute("disabled", "true");
+    if ($("pasteImgBtn")) $("pasteImgBtn").setAttribute("disabled", "true");
+    if ($("pollBtn")) $("pollBtn").setAttribute("disabled", "true");
+
+    const card = el("div", "prev-card prev-card-video");
+    const vidEl = document.createElement("video");
+    vidEl.src = attachedVideo.data;
+    vidEl.controls = true;
+    vidEl.playsInline = true;
+    vidEl.muted = true;
+    vidEl.style.width = "100%";
+    vidEl.style.maxHeight = "180px";
+    vidEl.style.borderRadius = "6px";
+    vidEl.style.background = "#000";
+
+    const rm = el("button", "rm", "✕");
+    rm.title = t("composer.video_remove") || "Remover vídeo";
+    rm.onclick = () => {
+      attachedVideo = null;
+      renderPreviews();
+      update();
+    };
+
+    const inpWrap = el("div", "prev-alt-wrap");
+    const inp = el("input");
+    inp.type = "text";
+    inp.placeholder = t("composer.video_alt_ph") || "Descrição acessível do vídeo (alt text)...";
+    inp.value = attachedVideo.alt || "";
+    inp.oninput = () => { attachedVideo.alt = inp.value; };
+
+    inpWrap.append(inp);
+    card.append(vidEl, inpWrap, rm);
+    box.append(card);
+    return;
+  }
+
   if (!images.length) {
     box.hidden = true;
     if (btn) btn.removeAttribute("disabled");
@@ -6297,6 +7219,48 @@ function renderPreviews() {
 
 async function handleImageFiles(files) {
   if (!files || !files.length) return;
+  const vidFile = Array.from(files).find(isVideoFile);
+  const imgFiles = Array.from(files).filter(f => !isVideoFile(f));
+
+  if (vidFile) {
+    if (hasPoll) {
+      $("msg").className = "msg err";
+      $("msg").textContent = t("composer.video_disabled_poll");
+      return;
+    }
+    if (images.length > 0 || imgFiles.length > 0) {
+      $("msg").className = "msg err";
+      $("msg").textContent = t("composer.video_disabled_images");
+      return;
+    }
+    if (vidFile.size > 50 * 1024 * 1024) {
+      $("msg").className = "msg err";
+      $("msg").textContent = t("composer.video_too_large");
+      return;
+    }
+    $("msg").className = "msg";
+    $("msg").textContent = t("composer.video_loading");
+    try {
+      const vObj = await processVideo(vidFile);
+      if (vObj.duration > 600) {
+        throw new Error(t("composer.video_duration_too_long"));
+      }
+      attachedVideo = vObj;
+      $("msg").textContent = "";
+    } catch (err) {
+      $("msg").className = "msg err";
+      $("msg").textContent = err.message || "Erro ao processar vídeo.";
+    }
+    renderPreviews();
+    update();
+    return;
+  }
+
+  if (attachedVideo) {
+    $("msg").className = "msg err";
+    $("msg").textContent = t("composer.video_disabled_images");
+    return;
+  }
   if (hasPoll) {
     $("msg").className = "msg err";
     $("msg").textContent = t("composer.attach_disabled_poll");
@@ -6308,7 +7272,7 @@ async function handleImageFiles(files) {
     $("msg").textContent = t("composer.attach_disabled_max");
     return;
   }
-  const toProcess = Array.from(files).slice(0, remaining);
+  const toProcess = Array.from(imgFiles).slice(0, remaining);
   $("msg").className = "msg";
   $("msg").textContent = t("composer.img_processing");
   const newlyAdded = [];
@@ -6821,7 +7785,7 @@ function renderThreadPosts() {
     attachBtn.innerHTML = '<svg class="ico"><use href="#i-image"/></svg>';
     const fileInp = el("input");
     fileInp.type = "file";
-    fileInp.accept = "image/jpeg,image/png,image/webp,image/gif";
+    fileInp.accept = "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime";
     fileInp.multiple = true;
     fileInp.hidden = true;
     fileInp.onchange = async (e) => {
@@ -6841,6 +7805,40 @@ function renderThreadPosts() {
 
 function renderThreadItemPreviews(post, wrap) {
   wrap.innerHTML = "";
+  if (post.video) {
+    wrap.hidden = false;
+    const card = el("div", "prev-card prev-card-video");
+    const vidEl = document.createElement("video");
+    vidEl.src = post.video.data;
+    vidEl.controls = true;
+    vidEl.playsInline = true;
+    vidEl.muted = true;
+    vidEl.style.width = "100%";
+    vidEl.style.maxHeight = "160px";
+    vidEl.style.borderRadius = "6px";
+    vidEl.style.background = "#000";
+
+    const rm = el("button", "rm", "✕");
+    rm.title = t("composer.video_remove") || "Remover vídeo";
+    rm.onclick = () => {
+      post.video = null;
+      renderThreadItemPreviews(post, wrap);
+      update();
+    };
+
+    const inpWrap = el("div", "prev-alt-wrap");
+    const inp = el("input");
+    inp.type = "text";
+    inp.placeholder = t("composer.video_alt_ph") || "Descrição acessível do vídeo (alt text)...";
+    inp.value = post.video.alt || "";
+    inp.oninput = () => { post.video.alt = inp.value; };
+
+    inpWrap.append(inp);
+    card.append(vidEl, inpWrap, rm);
+    wrap.append(card);
+    return;
+  }
+
   if (!post.images || !post.images.length) {
     wrap.hidden = true;
     return;
@@ -6881,15 +7879,60 @@ function renderThreadItemPreviews(post, wrap) {
 
 async function handleThreadImages(post, files) {
   if (!files || !files.length) return;
+  const vidFile = Array.from(files).find(isVideoFile);
+  const imgFiles = Array.from(files).filter(f => !isVideoFile(f));
+
+  if (vidFile) {
+    if (post.images && post.images.length) {
+      $("msg").className = "msg err";
+      $("msg").textContent = t("composer.video_disabled_images");
+      return;
+    }
+    if (vidFile.size > 50 * 1024 * 1024) {
+      $("msg").className = "msg err";
+      $("msg").textContent = t("composer.video_too_large");
+      return;
+    }
+    $("msg").className = "msg";
+    $("msg").textContent = t("composer.video_loading");
+    try {
+      const vObj = await processVideo(vidFile);
+      if (vObj.duration > 600) {
+        throw new Error(t("composer.video_duration_too_long"));
+      }
+      post.video = vObj;
+      post.images = [];
+      $("msg").textContent = "";
+    } catch (err) {
+      $("msg").className = "msg err";
+      $("msg").textContent = err.message || "Erro ao processar vídeo.";
+    }
+    const wrap = $("threadPreviews_" + post.id);
+    if (wrap) renderThreadItemPreviews(post, wrap);
+    update();
+    return;
+  }
+
+  if (post.video) {
+    $("msg").className = "msg err";
+    $("msg").textContent = t("composer.video_disabled_images");
+    return;
+  }
+
   post.images = post.images || [];
   const remaining = 4 - post.images.length;
   if (remaining <= 0) return;
-  const toProcess = Array.from(files).slice(0, remaining);
+  const toProcess = Array.from(imgFiles).slice(0, remaining);
   const newlyAdded = [];
-  for (const f of toProcess) {
-    const proc = await processImage(f);
-    post.images.push(proc);
-    newlyAdded.push(proc);
+  try {
+    for (const f of toProcess) {
+      const proc = await processImage(f);
+      post.images.push(proc);
+      newlyAdded.push(proc);
+    }
+  } catch (err) {
+    $("msg").className = "msg err";
+    $("msg").textContent = err.message || t("composer.img_err");
   }
   const wrap = $("threadPreviews_" + post.id);
   if (wrap) renderThreadItemPreviews(post, wrap);
@@ -6941,8 +7984,8 @@ function update() {
   $("count").textContent = effectiveLen + " / " + limit;
   $("count").classList.toggle("over", effectiveLen > limit);
 
-  // Exclusividade mútua entre Sondagem e Imagens
-  if (images.length > 0) {
+  // Exclusividade mútua entre Sondagem, Imagens e Vídeo
+  if (images.length > 0 || attachedVideo) {
     $("pollBtn").setAttribute("disabled", "true");
     $("pollBtn").title = t("composer.poll_disabled_img");
   } else {
@@ -6955,6 +7998,9 @@ function update() {
     if (hasPoll) {
       attachEl.setAttribute("disabled", "true");
       attachEl.title = t("composer.attach_disabled_poll");
+    } else if (attachedVideo) {
+      attachEl.setAttribute("disabled", "true");
+      attachEl.title = t("composer.video_disabled_max");
     } else if (images.length >= 4) {
       attachEl.setAttribute("disabled", "true");
       attachEl.title = t("composer.attach_disabled_max");
@@ -6962,13 +8008,13 @@ function update() {
       attachEl.removeAttribute("disabled");
       attachEl.title = t("composer.attach_title");
     }
-    attachEl.classList.toggle("active", images.length > 0);
-    attachEl.setAttribute("aria-pressed", images.length > 0 ? "true" : "false");
+    attachEl.classList.toggle("active", images.length > 0 || Boolean(attachedVideo));
+    attachEl.setAttribute("aria-pressed", (images.length > 0 || Boolean(attachedVideo)) ? "true" : "false");
   }
 
   const pasteEl = $("pasteImgBtn");
   if (pasteEl) {
-    if (hasPoll || images.length >= 4) {
+    if (hasPoll || images.length >= 4 || attachedVideo) {
       pasteEl.setAttribute("disabled", "true");
     } else {
       pasteEl.removeAttribute("disabled");
@@ -6976,13 +8022,13 @@ function update() {
   }
 
   const pollValid = !hasPoll || filledOpts.length >= 2;
-  const hasContent = lenText > 0 || images.length > 0 || (hasPoll && filledOpts.length >= 2) || Boolean(quote);
+  const hasContent = lenText > 0 || images.length > 0 || Boolean(attachedVideo) || (hasPoll && filledOpts.length >= 2) || Boolean(quote);
 
   let threadValid = true;
   if (threadPosts.length > 0) {
     threadValid = threadPosts.every(p => {
       const pLen = [...(p.text || "")].length;
-      const hasPostContent = (p.text || "").trim().length > 0 || (p.images && p.images.length > 0);
+      const hasPostContent = (p.text || "").trim().length > 0 || (p.images && p.images.length > 0) || Boolean(p.video);
       return hasPostContent && pLen <= limit;
     });
   }
@@ -7468,6 +8514,162 @@ function renderDraftsList() {
     list.append(card);
   });
 }
+
+function exportBackupData() {
+  const data = {
+    app: "MastoSky",
+    format_version: 1,
+    exported_at: new Date().toISOString(),
+    drafts: getSavedDrafts(),
+    saved_posts: getSavedPosts(),
+    deck_columns: (typeof deckColumns !== "undefined") ? deckColumns : [],
+    preferences: {
+      theme: currentTheme,
+      lang: currentLang,
+      view_mode: viewMode,
+      nav_mode: (typeof navMode !== "undefined") ? navMode : "sidebar",
+      notif_sound: (typeof notifSoundEnabled !== "undefined") ? notifSoundEnabled : true,
+      notif_desktop: (typeof notifDesktopEnabled !== "undefined") ? notifDesktopEnabled : false,
+      notif_types: (typeof notifTypesEnabled !== "undefined") ? notifTypesEnabled : {}
+    }
+  };
+
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const dateStr = new Date().toISOString().split("T")[0];
+  a.href = url;
+  a.download = `mastosky-backup-${dateStr}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  const fb = $("backupFeedbackMsg");
+  if (fb) {
+    fb.className = "msg success";
+    fb.textContent = t("setup.backup_exported_ok", {
+      drafts: data.drafts.length,
+      saved: data.saved_posts.length
+    });
+  }
+}
+
+function importBackupData(file) {
+  const fb = $("backupFeedbackMsg");
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed || (parsed.app !== "MastoSky" && !parsed.drafts && !parsed.saved_posts)) {
+        if (fb) {
+          fb.className = "msg err";
+          fb.textContent = t("setup.backup_invalid_err");
+        }
+        return;
+      }
+
+      let restoredDrafts = 0;
+      let restoredSaved = 0;
+
+      // 1. Restaurar Rascunhos (mesclar sem duplicados)
+      if (Array.isArray(parsed.drafts)) {
+        const existingDrafts = getSavedDrafts();
+        const existingIds = new Set(existingDrafts.map(d => d.id));
+        const toAdd = parsed.drafts.filter(d => d && d.id && !existingIds.has(d.id));
+        if (toAdd.length) {
+          const merged = existingDrafts.concat(toAdd);
+          persistSavedDrafts(merged);
+          restoredDrafts = toAdd.length;
+          updateDraftsBadge();
+          if ($("draftsOverlay") && !$("draftsOverlay").hidden) {
+            renderDraftsList();
+          }
+        }
+      }
+
+      // 2. Restaurar Guardados (mesclar sem duplicados)
+      if (Array.isArray(parsed.saved_posts)) {
+        const existingSaved = getSavedPosts();
+        const existingKeys = new Set(existingSaved.map(s => getPostKey(s)).filter(Boolean));
+        const toAdd = parsed.saved_posts.filter(s => {
+          const k = getPostKey(s);
+          return k && !existingKeys.has(k);
+        });
+        if (toAdd.length) {
+          const merged = existingSaved.concat(toAdd);
+          persistSavedPosts(merged);
+          restoredSaved = toAdd.length;
+          renderSavedFeed();
+        }
+      }
+
+      // 3. Restaurar Colunas do Deck se fornecidas
+      if (Array.isArray(parsed.deck_columns) && parsed.deck_columns.length) {
+        const valid = parsed.deck_columns.filter(c => ALL_DECK_COLS.includes(c));
+        if (valid.length) {
+          deckColumns = Array.from(new Set(valid));
+          localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
+          applyDeckColumnVisibility();
+          syncDeckColsCheckboxes();
+        }
+      }
+
+      // 4. Restaurar Preferências
+      if (parsed.preferences && typeof parsed.preferences === "object") {
+        const p = parsed.preferences;
+        if (p.theme && ["system", "light", "dark"].includes(p.theme)) {
+          applyTheme(p.theme, true);
+          if ($("cfgThemeSelect")) $("cfgThemeSelect").value = p.theme;
+        }
+        if (p.lang && ["pt", "en"].includes(p.lang)) {
+          currentLang = p.lang;
+          localStorage.setItem("mastosky_lang", p.lang);
+          applyI18n();
+          if ($("cfgLangSelect")) $("cfgLangSelect").value = p.lang;
+        }
+        if (p.nav_mode && ["sidebar", "sticky", "none"].includes(p.nav_mode)) {
+          setNavMode(p.nav_mode);
+        }
+        if (typeof p.notif_sound === "boolean") {
+          notifSoundEnabled = p.notif_sound;
+          localStorage.setItem("mastosky_notif_sound", String(notifSoundEnabled));
+          if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+        }
+      }
+
+      if (fb) {
+        fb.className = "msg success";
+        fb.textContent = t("setup.backup_imported_ok", {
+          drafts: restoredDrafts,
+          saved: restoredSaved
+        });
+      }
+    } catch (err) {
+      if (fb) {
+        fb.className = "msg err";
+        fb.textContent = t("setup.backup_parse_err") + ": " + (err.message || err);
+      }
+    }
+  };
+  reader.readAsText(file);
+}
+
+if ($("exportBackupBtn")) $("exportBackupBtn").onclick = exportBackupData;
+if ($("importBackupBtn") && $("importBackupFileInput")) {
+  $("importBackupBtn").onclick = () => $("importBackupFileInput").click();
+  $("importBackupFileInput").onchange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      importBackupData(e.target.files[0]);
+      e.target.value = "";
+    }
+  };
+}
+if ($("exportDraftsBtn")) $("exportDraftsBtn").onclick = exportBackupData;
+if ($("netStatusCloseBtn")) $("netStatusCloseBtn").onclick = hideNetStatus;
 
 if ($("draftsBtn")) $("draftsBtn").onclick = openDraftsModal;
 if ($("closeDrafts")) $("closeDrafts").onclick = closeDraftsModal;
@@ -8753,7 +9955,7 @@ $("refresh").onclick = async () => {
 };
 
 function clearComposer(threadPayload) {
-  $("text").value = ""; images = []; renderPreviews();
+  $("text").value = ""; images = []; attachedVideo = null; renderPreviews();
   threadPosts = []; renderThreadPosts();
   hasCW = false; renderCW();
   hasPoll = false; pollOptions = ["", ""]; renderPoll();
@@ -8837,18 +10039,24 @@ $("send").onclick = async () => {
   let threadPayload = null;
   if (threadPosts.length > 0) {
     threadPayload = [
-      { text: $("text").value.trim(), images, spoiler, poll, quote },
+      { text: $("text").value.trim(), images, video: attachedVideo, spoiler, poll, quote },
       ...threadPosts.map(p => ({
         text: (p.text || "").trim(),
-        images: p.images || []
+        images: p.images || [],
+        video: p.video || null
       }))
     ];
   }
 
   const replyPayload = reply ? { network: reply.network, ref: reply.ref } : null;
   const body = reply
-    ? {text: $("text").value, reply: replyPayload, images, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload}
-    : {text: $("text").value, targets: selected(), images, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload};
+    ? {text: $("text").value, reply: replyPayload, images, video: attachedVideo, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload}
+    : {text: $("text").value, targets: selected(), images, video: attachedVideo, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload};
+
+  if (attachedVideo || (threadPayload && threadPayload.some(p => p.video))) {
+    $("msg").className = "msg";
+    $("msg").textContent = t("composer.video_processing_msg");
+  }
 
   const res = await api("/api/post", body);
   const bad = Object.entries(res).filter(([, v]) => v !== "ok");
@@ -9024,6 +10232,15 @@ if ($("setupOverlay")) {
     if (e.target === $("setupOverlay") && $("closeSetup") && !$("closeSetup").hidden) {
       closeSetup();
     }
+  });
+}
+
+if ($("shortcutsBtn")) $("shortcutsBtn").onclick = openShortcutsModal;
+if ($("sideShortcutsBtn")) $("sideShortcutsBtn").onclick = openShortcutsModal;
+if ($("closeShortcuts")) $("closeShortcuts").onclick = closeShortcutsModal;
+if ($("shortcutsOverlay")) {
+  $("shortcutsOverlay").addEventListener("click", (e) => {
+    if (e.target === $("shortcutsOverlay")) closeShortcutsModal();
   });
 }
 

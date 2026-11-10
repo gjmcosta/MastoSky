@@ -43,11 +43,11 @@ def load_cfg():
     return {}
 
 
-MAX_BODY = 32 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens em base64)
+MAX_BODY = 70 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens e vídeos em base64 até 50MB)
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "0.7.0"
+VERSION = "0.8.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
@@ -1135,7 +1135,61 @@ class Bsky:
         r = self._authed(lambda jwt: http("POST", url, data=raw_bytes, token=jwt, headers={"Content-Type": mime}))
         return r["blob"]
 
-    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, quote=None):
+    def upload_video(self, raw_bytes, mime="video/mp4", name="video.mp4", max_wait=120):
+        """Faz upload de vídeo para o microsserviço do Bluesky (video.bsky.app) e aguarda conclusão."""
+        self._ensure()
+        # 1. Obter serviceAuth token com escopo para did:web:video.bsky.app
+        auth_url = f"{self.host}/xrpc/com.atproto.server.getServiceAuth"
+        auth_res = self._authed(lambda jwt: http(
+            "GET",
+            auth_url + "?aud=did:web:video.bsky.app&lxm=com.atproto.repo.uploadBlob",
+            token=jwt
+        ))
+        service_token = auth_res.get("token")
+        if not service_token:
+            raise ApiError("Não foi possível obter autorização para o serviço de vídeo do Bluesky.")
+
+        # 2. Upload do vídeo binário para video.bsky.app
+        did_param = urllib.parse.quote(self.did)
+        name_param = urllib.parse.quote(name or "video.mp4")
+        upload_url = f"https://video.bsky.app/xrpc/app.bsky.video.uploadVideo?did={did_param}&name={name_param}"
+        upload_headers = {
+            "Content-Type": mime or "video/mp4",
+            "Content-Length": str(len(raw_bytes))
+        }
+        res = http("POST", upload_url, data=raw_bytes, token=service_token, headers=upload_headers, timeout=120)
+        job_id = res.get("jobId") or (res.get("jobStatus") or {}).get("jobId")
+        if not job_id:
+            if "jobStatus" in res and res["jobStatus"].get("blob"):
+                return res["jobStatus"]["blob"]
+            raise ApiError("O serviço de vídeo do Bluesky não devolveu identificador de processamento (jobId).")
+
+        # 3. Consultar getJobStatus até terminar o processamento
+        status_url = f"https://video.bsky.app/xrpc/app.bsky.video.getJobStatus?jobId={urllib.parse.quote(job_id)}"
+        start_t = time.time()
+        while time.time() - start_t < max_wait:
+            time.sleep(2)
+            try:
+                st = http("GET", status_url, timeout=15)
+                job_st = st.get("jobStatus") or {}
+                state = (job_st.get("state") or "").upper()
+                if "COMPLETE" in state or state == "JOB_STATE_COMPLETED":
+                    blob = job_st.get("blob")
+                    if blob:
+                        return blob
+                    raise ApiError("O processamento do vídeo terminou mas o blob não foi devolvido.")
+                elif "FAIL" in state or state == "JOB_STATE_FAILED":
+                    err = job_st.get("error") or job_st.get("message") or "Falha na codificação do vídeo."
+                    raise ApiError(f"Erro no processamento do vídeo no Bluesky: {err}")
+            except ApiError as e:
+                if "Erro no processamento" in str(e):
+                    raise
+            except Exception:
+                pass
+
+        raise ApiError("O processamento do vídeo no Bluesky excedeu o tempo limite (máx. 2 minutos).")
+
+    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, quote=None, video=None):
         self._ensure()
         final_text = (text or "").strip()
         if poll and poll.get("options"):
@@ -1182,30 +1236,43 @@ class Bsky:
         if ref:
             rec["reply"] = {"root": ref["root"], "parent": {"uri": ref["uri"], "cid": ref["cid"]}}
         
-        embed_imgs = []
-        if images:
+        embed_media = None
+        if video and video.get("bytes"):
+            v_blob = self.upload_video(video["bytes"], video.get("mime", "video/mp4"), video.get("name", "video.mp4"))
+            embed_media = {
+                "$type": "app.bsky.embed.video",
+                "video": v_blob
+            }
+            if video.get("alt"):
+                embed_media["alt"] = video["alt"]
+            if video.get("aspectRatio"):
+                embed_media["aspectRatio"] = video["aspectRatio"]
+        elif images:
+            embed_imgs = []
             for img in images:
                 blob = self.upload_blob(img["bytes"], img.get("mime", "image/jpeg"))
                 item = {"alt": img.get("alt", "") or "", "image": blob}
                 if img.get("aspectRatio"):
                     item["aspectRatio"] = img["aspectRatio"]
                 embed_imgs.append(item)
+            if embed_imgs:
+                embed_media = {"$type": "app.bsky.embed.images", "images": embed_imgs}
 
         if quote and quote.get("network") == "bluesky" and quote.get("ref", {}).get("uri"):
             q_record = {
                 "$type": "app.bsky.embed.record",
                 "record": {"uri": quote["ref"]["uri"], "cid": quote["ref"]["cid"]}
             }
-            if embed_imgs:
+            if embed_media:
                 rec["embed"] = {
                     "$type": "app.bsky.embed.recordWithMedia",
                     "record": q_record,
-                    "media": {"$type": "app.bsky.embed.images", "images": embed_imgs}
+                    "media": embed_media
                 }
             else:
                 rec["embed"] = q_record
         elif quote and quote.get("network") == "mastodon":
-            if not embed_imgs and quote.get("url"):
+            if not embed_media and quote.get("url"):
                 title = quote.get("name") or "Publicação no Mastodon"
                 if quote.get("handle"):
                     title += f" ({quote['handle']})"
@@ -1217,12 +1284,12 @@ class Bsky:
                         "description": (quote.get("text") or "")[:300]
                     }
                 }
-            elif embed_imgs:
-                rec["embed"] = {"$type": "app.bsky.embed.images", "images": embed_imgs}
+            elif embed_media:
+                rec["embed"] = embed_media
                 if quote.get("url") and quote["url"] not in rec["text"]:
                     rec["text"] = (rec["text"] + "\n\n" + quote["url"]).strip()
-        elif embed_imgs:
-            rec["embed"] = {"$type": "app.bsky.embed.images", "images": embed_imgs}
+        elif embed_media:
+            rec["embed"] = embed_media
 
         return self.call("POST", "com.atproto.repo.createRecord",
                {"repo": self.did, "collection": "app.bsky.feed.post", "record": rec})
@@ -1766,15 +1833,34 @@ class Masto:
 
     def upload_media(self, raw_bytes, mime="image/jpeg", description=""):
         ext = mime.split("/")[-1] if "/" in mime else "jpg"
+        if ext == "quicktime":
+            ext = "mov"
         data, ctype = multipart_encode({"description": description or ""},
                                        {"file": (f"media.{ext}", raw_bytes, mime)})
         r = http("POST", self.base + "/api/v2/media", data=data, token=self.token,
                  headers={"Content-Type": ctype})
         return r["id"]
 
-    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, visibility=None, quote=None):
+    def wait_for_media_processing(self, media_id, max_wait=60):
+        """No Mastodon, vídeos necessitam de processamento assíncrono antes da publicação do post."""
+        start = time.time()
+        while time.time() - start < max_wait:
+            try:
+                r = http("GET", f"{self.base}/api/v1/media/{media_id}", token=self.token, timeout=10)
+                if r.get("url"):
+                    return media_id
+            except Exception:
+                pass
+            time.sleep(2)
+        return media_id
+
+    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, visibility=None, quote=None, video=None):
         media_ids = []
-        if images:
+        if video and video.get("bytes"):
+            mid = self.upload_media(video["bytes"], video.get("mime", "video/mp4"), video.get("alt", ""))
+            self.wait_for_media_processing(mid)
+            media_ids.append(mid)
+        elif images:
             for img in images:
                 mid = self.upload_media(img["bytes"], img.get("mime", "image/jpeg"), img.get("alt", ""))
                 media_ids.append(mid)
@@ -2580,6 +2666,34 @@ class H(BaseHTTPRequestHandler):
                     })
                 return parsed
 
+            def _parse_video(raw_video):
+                if not raw_video:
+                    return None
+                if not isinstance(raw_video, dict):
+                    raise ValueError("Vídeo inválido.")
+                raw_data = raw_video.get("data", "")
+                if not isinstance(raw_data, str) or not raw_data.strip():
+                    raise ValueError("Dados do vídeo em falta.")
+                if "," in raw_data:
+                    hdr, b64 = raw_data.split(",", 1)
+                    mime = hdr.split(";")[0].replace("data:", "") or "video/mp4"
+                else:
+                    mime = raw_video.get("mime") or "video/mp4"
+                    b64 = raw_data
+                try:
+                    vid_bytes = base64.b64decode(b64, validate=True)
+                except (binascii.Error, ValueError):
+                    raise ValueError("Vídeo com codificação base64 inválida.")
+                if len(vid_bytes) > 50 * 1024 * 1024:
+                    raise ValueError("O ficheiro de vídeo excede o tamanho máximo de 50 MB.")
+                return {
+                    "bytes": vid_bytes,
+                    "mime": mime,
+                    "name": raw_video.get("name") or "video.mp4",
+                    "alt": raw_video.get("alt", "") or "",
+                    "aspectRatio": raw_video.get("aspectRatio")
+                }
+
             if raw_thread is not None:
                 if not isinstance(raw_thread, list) or not raw_thread:
                     return self.send(400, {"error": "Fio inválido."})
@@ -2592,13 +2706,17 @@ class H(BaseHTTPRequestHandler):
                     item_text = (item.get("text") or "").strip()
                     try:
                         item_imgs = _parse_imgs(item.get("images") or [])
+                        item_vid = _parse_video(item.get("video"))
                     except ValueError as ve:
                         return self.send(400, {"error": str(ve)})
-                    if not item_text and not item_imgs:
+                    if item_imgs and item_vid:
+                        return self.send(400, {"error": f"O post #{idx+1} do fio não pode conter imagens e vídeo simultaneamente."})
+                    if not item_text and not item_imgs and not item_vid:
                         return self.send(400, {"error": f"O post #{idx+1} do fio não tem conteúdo."})
                     thread_items.append({
                         "text": item_text,
                         "images": item_imgs,
+                        "video": item_vid,
                         "spoiler": (item.get("spoiler") or "").strip() or spoiler,
                         "poll": item.get("poll") if idx == 0 else None,
                         "quote": item.get("quote") if idx == 0 else quote
@@ -2606,11 +2724,17 @@ class H(BaseHTTPRequestHandler):
             else:
                 try:
                     parsed_images = _parse_imgs(d.get("images") or [])
+                    parsed_video = _parse_video(d.get("video"))
                 except ValueError as ve:
                     return self.send(400, {"error": str(ve)})
+                if parsed_images and parsed_video:
+                    return self.send(400, {"error": "Não é possível publicar imagens e vídeo no mesmo post."})
+                if not text and not parsed_images and not parsed_video and not poll and not quote:
+                    return self.send(400, {"error": "A publicação não tem conteúdo."})
                 thread_items = [{
                     "text": text,
                     "images": parsed_images,
+                    "video": parsed_video,
                     "spoiler": spoiler,
                     "poll": poll,
                     "quote": quote
@@ -2626,10 +2750,11 @@ class H(BaseHTTPRequestHandler):
                     for idx, item in enumerate(thread_items):
                         item_text = item["text"]
                         item_imgs = item["images"]
+                        item_vid = item.get("video")
                         item_spoiler = item["spoiler"]
                         item_poll = item["poll"]
                         item_quote = item["quote"]
-                        kwargs = {"spoiler": item_spoiler, "poll": item_poll, "lang": lang, "quote": item_quote}
+                        kwargs = {"spoiler": item_spoiler, "poll": item_poll, "lang": lang, "quote": item_quote, "video": item_vid}
                         if t == "mastodon" and visibility:
                             kwargs["visibility"] = visibility
 

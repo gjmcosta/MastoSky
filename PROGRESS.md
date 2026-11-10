@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
 > **Data de atualização:** 10 de Novembro de 2026  
-> **Versão:** v0.7.0  
+> **Versão:** v0.8.0  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 149 testes aprovados (`python3 -m unittest discover -s tests`)
+> **Testes Automatizados:** 159 testes aprovados (`python3 -m unittest discover -s tests`)
 
 ---
 
@@ -39,6 +39,15 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 - Suporte a avisos de conteúdo (*Content Warning* / Spoiler).
 - Sondagens nativas no Mastodon e renderizadas no Bluesky.
 - Upload de imagens (até 4) com pré-visualização, legendas (*alt text*) e colar da área de transferência (`Cmd+V` / arrastar e largar).
+- **Upload de Vídeo Nativo:** Suporte completo para vídeos (MP4, WebM, MOV até 50MB e 10 minutos) com publicação no Bluesky e Mastodon:
+  - *Bluesky:* Obtenção automática de token JWT com escopo restrito (`com.atproto.server.getServiceAuth` com audiência `did:web:video.bsky.app`), upload binário para o serviço dedicado `video.bsky.app` e acompanhamento assíncrono do job de encoding até conclusão (`JOB_STATE_COMPLETED`). Suporte a proporção de aspeto natural (`aspectRatio`) e legenda acessível (`alt`).
+  - *Mastodon:* Upload via `/api/v2/media` com polling assíncrono em `/api/v1/media/{id}` até o vídeo estar processado e com URL público antes de submeter o status.
+  - *Frontend e Interface:* Pré-visualização com leitor `<video controls>`, indicação de duração formatada, botão de remoção rápida e campo de descrição acessível. Exclusão mútua automática com imagens e sondagens. Suporte a publicação direta ou em fios (*Threads*).
+- **Geração de Legendas Acessíveis (Alt-Text) com IA Aprimorada:**
+  - Cascata de fallback de modelos Gemini (`gemini-3.5-flash` $\rightarrow$ `gemini-3.5-flash-lite` $\rightarrow$ `gemini-3.8-flash` $\rightarrow$ `gemini-flash-latest`), eliminando falhas por descontinuação de modelos antigos (404) ou congestionamento transitório da API gratuita (503).
+  - Desativação de tokens de raciocínio interno (`thinkingBudget: 0`) e teto de saída calibrado para respostas ágeis sem truncamento.
+  - Redimensionamento automático de imagens no cliente (máx 1024px) reduzindo tráfego de rede e prevenindo timeouts.
+  - Instruções de sistema restritas e sanitização backend (`clean_alt_text()`), garantindo descrições WCAG limpas no idioma escolhido (Português de Portugal por omissão), sem asteriscos ou formatações Markdown indesejadas.
 - Suporte a publicação de fios de publicações (*Threads*).
 - **Cartão de Publicação Cruzada Renovado (*Cross-post Card*):** Geração dinâmica de cartões visuais para partilhar publicações de uma rede na outra com melhorias substanciais:
   - *Altura dinâmica e formato vertical adaptável:* Em vez de um quadrado 1:1 fixo com grandes espaços vazios, a altura do cartão agora adapta-se com precisão ao volume de texto e anexos (desde ~2:1 compacto para posts curtos até 4:5 vertical — a proporção máxima exibida por inteiro nas timelines e apps do Bluesky e Mastodon sem qualquer corte).
@@ -93,6 +102,14 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - É exibida uma pílula flutuante animada e com estilo unificado (`↑ X novas publicações` / `↑ X novas notificações`).
   - Clicar na pílula leva o utilizador com suavidade ao topo (`scrollColToTop`), tanto no modo Deck (na respetiva coluna) como no modo de Coluna Única (`window.scrollTo({top: 0, behavior: "smooth"})`).
   - O desaparecimento da pílula é feito via fade gradual com transição CSS para evitar o cancelamento precoce da animação de scroll em navegadores baseados em WebKit/Blink, e inclui auto-dispensa inteligente quando o utilizador faz scroll manual até às imediações do topo (<30px).
+- **⚡ Atalhos de Teclado Globais (Experiência Power User / TweetDeck):**
+  - *Navegação de Posts:* Teclas `J` / `↓` e `K` / `↑` para navegar continuamente entre publicações na coluna ativa com auto-scroll suave e deteção inteligente do primeiro post visível.
+  - *Realce Visual:* Classe `.is-keyboard-focused` com anel luminoso de alto contraste e sombra volumétrica sem sobreposição.
+  - *Ações Imediatas no Post em Foco:* `L` para gosto/unlike, `T` para partilhar/repost, `R` para responder encadeadamente (com foco e cursor no compositor), `S` para marcar/guardar nos favoritos e `Enter` / `O` para abrir a conversa completa.
+  - *Geral e Compositor:* `N` ou `C` para novo post (rola até ao compositor e foca o texto), `/` para pesquisar, `.` para saltar para o topo da coluna, `1` a `6` para alternar colunas/abas diretamente, `M` para alternar modo claro/escuro e `⌘+Enter` / `Ctrl+Enter` para publicar instantaneamente.
+  - *Teclas de Escape Contextual:* Tecla `Escape` para fechar progressivamente modais, o visualizador de imagens, a coluna lateral de conversa, desfazer o foco do post atual ou desfocar caixas de texto.
+  - *Modal de Ajuda dos Atalhos (*Cheat Sheet*):* Modal elegante aberto via tecla `?` ou pelos novos botões dedicados na barra de cabeçalho (`#shortcutsBtn`) e barra lateral (`#sideShortcutsBtn`), com suporte bilingue completo (PT/EN) e tags `<kbd>` personalizadas.
+  - *Segurança de Digitação:* Desativação automática de atalhos de tecla única sempre que o utilizador está a escrever em qualquer `input`, `textarea`, `select` ou campo editável.
 
 ### 💬 Citações e Fios de Conversa (*Threads*)
 - **Ícones Claros e Inconfundíveis:** Diferenciação visual total entre "Responder" (seta curva ↩️, padrão Mastodon/web) e "Ver conversa" (fio vertical com nós conetores 🧵).
@@ -132,6 +149,18 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - *Seguidores:* Feixe ascendente de entrada em órbita (392Hz $\rightarrow$ 523Hz $\rightarrow$ 784Hz).
 - **Alertas de Desktop:** Notificações nativas do sistema operativo com botão para autorizar no navegador e clique para abrir a coluna diretamente.
 - **Deteção inteligente em segundo plano:** Polling de 2 minutos que deteta novas notificações e toca apenas para novos eventos (sem alertas no carregamento inicial).
+
+### 🛠️ Refinamentos de UX, Robustez & Conectividade
+- **Cópia de Segurança & Restauro Local (Backup JSON):**
+  - Secção dedicada nas Definições (`#setupOverlay`) e atalho no modal de rascunhos para exportar e restaurar todos os dados locais num ficheiro JSON estruturado (`mastosky-backup-YYYY-MM-DD.json`).
+  - Cobre rascunhos de publicações, posts guardados nos marcadores, ordem e visibilidade das colunas do Deck, e preferências completas de interface (tema, idioma, modo de navegação e notificações).
+  - Importação resiliente com deduplicação automática (por ID de rascunho e chave única de post), garantindo que rascunhos ou posts guardados existentes não são repetidos.
+  - Mensagens informativas de feedback em tempo real com contagem exata de itens restaurados.
+- **Sinalização de Conectividade em Tempo Real & Rate Limit:**
+  - Pílula flutuante animada (`#netStatusPill`) para alertas contextuais imediatos:
+    - *Modo Offline:* Deteta corte de rede via `window.offline` (`📡 Sem ligação à Internet — Modo offline`) e auto-recupera ao restabelecer ligação (`window.online`), recarregando os feeds em background.
+    - *Servidor Local Desligado:* Deteta falhas de rede no cliente HTTP (`api()`), informa o utilizador (`⚠️ A aguardar pelo servidor local MastoSky...`) e mantém um *ping* periódico automático na rota de verificação, reconectando e atualizando o token CSRF assim que o servidor `app.py` for reiniciado.
+    - *Limite de Taxa (Rate Limit 429):* Captura avisos de taxa limite do Bluesky ou Mastodon e exibe aviso claro e discreto (`⏳ Limite de pedidos temporário atingido — aguarda um momento`).
 
 ---
 
