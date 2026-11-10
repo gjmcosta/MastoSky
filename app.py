@@ -1919,6 +1919,25 @@ CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 
        "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 
 
+def clean_alt_text(txt):
+    """Limpa o texto alternativo: remove formatação markdown, tópicos, prefixos redundantes e quebras de linha."""
+    if not isinstance(txt, str) or not txt.strip():
+        return ""
+    t = txt.replace("**", "").replace("*", "").replace("`", "").replace("##", "").replace("#", "")
+    lines = []
+    for line in t.splitlines():
+        line = re.sub(r"^\s*[\*\-•\d\.]+\s*", "", line).strip()
+        if line:
+            lines.append(line)
+    t = " ".join(lines).strip()
+    for pfx in ("Foto de ", "Imagem de ", "Esta foto mostra ", "Esta imagem mostra ", "Alt text: ", "Alt-text: ", "Alt: ", "Description: "):
+        if t.lower().startswith(pfx.lower()):
+            t = t[len(pfx):].strip()
+            if t:
+                t = t[0].upper() + t[1:]
+    return t
+
+
 def generate_alt_text(image_data, lang=None, cfg=None):
     """Gera texto alternativo (alt-text) para uma imagem usando IA (Gemini, Ollama ou OpenAI)."""
     if cfg is None:
@@ -1949,31 +1968,37 @@ def generate_alt_text(image_data, lang=None, cfg=None):
         raise ValueError(f"Codificação base64 de imagem inválida: {err}")
 
     if target_lang in ("en", "english"):
-        prompt = (
-            "Generate a concise, accurate alt text description for this image for web accessibility in English.\n"
-            "WCAG guidelines:\n"
-            "- Be direct and objective: describe the subject and key visual elements.\n"
+        sys_prompt = (
+            "You are a web accessibility assistant. Your sole purpose is to generate concise HTML alt-text descriptions for images in English.\n"
+            "STRICT RULES:\n"
+            "- Write ONLY in English.\n"
+            "- Write 1 to 2 clear, continuous sentences in plain text.\n"
+            "- Do NOT use bullet points, asterisks, bold, or markdown formatting.\n"
             "- Do not start with 'Image of', 'Photo of', or 'Picture of'.\n"
-            "- If the image contains important visible text (signs, titles, memes, labels), quote it accurately.\n"
-            "- Keep it between 1 to 3 clear, natural sentences."
+            "- Accurately transcribe any readable text visible in the image."
         )
+        user_prompt = "Describe this image concisely in English for web accessibility alt text."
+        prompt = sys_prompt + "\n\n" + user_prompt
     else:
         lang_names = {
             "pt-pt": "português de Portugal",
             "pt-br": "português do Brasil",
             "pt": "português",
-            "es": "espanhol (Español)",
-            "fr": "francês (Français)",
+            "es": "espanhol",
+            "fr": "francês",
         }
         lang_desc = lang_names.get(target_lang, target_lang)
-        prompt = (
-            f"Gera uma descrição concisa e precisa desta imagem para texto alternativo (alt text) de acessibilidade em {lang_desc}.\n"
-            "Diretrizes WCAG essenciais:\n"
-            "- Sê direto e objetivo: descreve o sujeito e a ação ou elemento central.\n"
+        sys_prompt = (
+            f"És um assistente especializado em acessibilidade web. A tua única função é gerar texto alternativo (alt-text) para imagens OBRIGATORIAMENTE em {lang_desc}.\n"
+            "REGRAS ESTRITAS:\n"
+            f"- Responde EXCLUSIVAMENTE em {lang_desc}. Não uses inglês sob circunstância alguma.\n"
+            "- Escreve apenas 1 a 2 frases corridas em texto simples e natural.\n"
+            "- NUNCA uses tópicos, listas, asteriscos, negrito nem qualquer formatação Markdown.\n"
             "- Não comeces com 'Foto de', 'Imagem de' ou 'Esta imagem mostra'.\n"
-            "- Se a imagem contiver texto legível relevante (títulos, cartazes, memes, diagramas), transcreve-o entre aspas.\n"
-            "- Mantém o texto entre 1 a 3 frases claras e naturais."
+            "- Se a imagem contiver texto visível relevante (rótulos, embalagens, títulos), transcreve-o com precisão."
         )
+        user_prompt = f"Descreve esta imagem em {lang_desc} para texto alternativo (alt text) de acessibilidade web."
+        prompt = sys_prompt + "\n\n" + user_prompt
 
     if provider == "gemini":
         key = (ai_cfg.get("gemini_key") or "").strip()
@@ -1981,6 +2006,9 @@ def generate_alt_text(image_data, lang=None, cfg=None):
             raise ValueError("A chave de API do Google Gemini não está configurada nas Definições.")
         configured_model = (ai_cfg.get("gemini_model") or "gemini-3.5-flash").strip()
         payload = {
+            "system_instruction": {
+                "parts": [{"text": sys_prompt}]
+            },
             "contents": [
                 {
                     "parts": [
@@ -1991,14 +2019,15 @@ def generate_alt_text(image_data, lang=None, cfg=None):
                             }
                         },
                         {
-                            "text": prompt
+                            "text": user_prompt
                         }
                     ]
                 }
             ],
             "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": 300
+                "temperature": 0.1,
+                "maxOutputTokens": 800,
+                "thinkingConfig": {"thinkingBudget": 0}
             }
         }
 
@@ -2019,6 +2048,18 @@ def generate_alt_text(image_data, lang=None, cfg=None):
                 used_model = current_model
                 break
             except ApiError as e:
+                # Se o modelo falhar por não suportar thinkingConfig, retenta sem esse campo
+                err_lower = str(e).lower()
+                if "thinkingconfig" in err_lower or "thinking_config" in err_lower:
+                    try:
+                        p_no_think = json.loads(json.dumps(payload))
+                        p_no_think.get("generationConfig", {}).pop("thinkingConfig", None)
+                        res = http("POST", url, data=p_no_think, timeout=60)
+                        used_model = current_model
+                        break
+                    except Exception:
+                        pass
+
                 raw_body = getattr(e, "body", "") or ""
                 err_str = str(e)
                 clean_msg = err_str
@@ -2085,8 +2126,9 @@ def generate_alt_text(image_data, lang=None, cfg=None):
             candidates = res.get("candidates") or []
             if candidates and candidates[0].get("content", {}).get("parts"):
                 txt = candidates[0]["content"]["parts"][0].get("text", "").strip()
-                if txt:
-                    return txt
+                cleaned = clean_alt_text(txt)
+                if cleaned:
+                    return cleaned
         except Exception:
             pass
         if "error" in res:
@@ -2110,8 +2152,9 @@ def generate_alt_text(image_data, lang=None, cfg=None):
             raise ValueError(f"Erro ao ligar ao Ollama ({e}). Verifica se o servidor local está em execução em {base_url}.")
 
         txt = (res.get("response") or "").strip()
-        if txt:
-            return txt
+        cleaned = clean_alt_text(txt)
+        if cleaned:
+            return cleaned
         if "error" in res:
             raise ValueError(f"Erro Ollama: {res['error']}")
         raise ValueError("Ollama não devolveu texto para esta imagem. Verifica se o modelo suporta visão.")
@@ -2156,8 +2199,9 @@ def generate_alt_text(image_data, lang=None, cfg=None):
             choices = res.get("choices") or []
             if choices and choices[0].get("message", {}).get("content"):
                 txt = choices[0]["message"]["content"].strip()
-                if txt:
-                    return txt
+                cleaned = clean_alt_text(txt)
+                if cleaned:
+                    return cleaned
         except Exception:
             pass
         if "error" in res:

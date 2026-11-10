@@ -2242,6 +2242,16 @@ class ProxyImageTests(unittest.TestCase):
             try: os.unlink(tmp_path)
             except OSError: pass
 
+    def test_clean_alt_text(self):
+        sample = """* **Subject:** Duas caixas verdes.\n* **Text:** "Película transparente".\n* **Background:** Madeira."""
+        cleaned = app.clean_alt_text(sample)
+        self.assertNotIn("*", cleaned)
+        self.assertNotIn("\n", cleaned)
+        self.assertEqual(cleaned, 'Subject: Duas caixas verdes. Text: "Película transparente". Background: Madeira.')
+
+        boilerplate = "Foto de um gato preto na rua."
+        self.assertEqual(app.clean_alt_text(boilerplate), "Um gato preto na rua.")
+
     def test_generate_alt_text_disabled(self):
         cfg = {"ai": {"provider": "none"}}
         with self.assertRaises(ValueError) as ctx:
