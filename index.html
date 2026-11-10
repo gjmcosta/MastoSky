@@ -1792,10 +1792,10 @@ body:not(.view-deck) .deck-col-body {
               </label>
               <label style="margin-top:8px"><span data-i18n="setup.ai_gemini_model_label">Modelo Gemini:</span>
                 <select id="cfgAiGeminiModel" style="width:100%;margin-top:4px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-                  <option value="gemini-2.5-flash">Gemini 2.5 Flash (Rápido e Estável)</option>
+                  <option value="gemini-3.5-flash">Gemini 3.5 Flash (Recomendado - Mais Estável)</option>
+                  <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Mais Rápido e Leve)</option>
                   <option value="gemini-3.8-flash">Gemini 3.8 Flash (Mais Recente)</option>
-                  <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                  <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B (Mais Leve)</option>
+                  <option value="gemini-flash-latest">Gemini Flash (Versão Automática)</option>
                 </select>
               </label>
               <small class="setup-help" data-i18n="setup.ai_gemini_help">Gera gratuitamente em aistudio.google.com &gt; Get API key. Não requer cartão de crédito.</small>
@@ -6092,7 +6092,7 @@ let aiConfig = {
   lang: "pt-pt",
   auto: false,
   gemini_key: "",
-  gemini_model: "gemini-3.8-flash",
+  gemini_model: "gemini-3.5-flash",
   ollama_url: "http://localhost:11434",
   ollama_model: "llama3.2-vision",
   openai_url: "https://api.openai.com/v1",
@@ -8991,7 +8991,7 @@ async function openSetup(mandatory = false) {
       if ($("cfgAiAuto")) $("cfgAiAuto").checked = Boolean(s.ai.auto);
       if ($("cfgAiGeminiKey")) $("cfgAiGeminiKey").value = s.ai.gemini_key || "";
       if ($("cfgAiGeminiModel")) {
-        const m = s.ai.gemini_model || "gemini-3.8-flash";
+        const m = s.ai.gemini_model || "gemini-3.5-flash";
         let opt = Array.from($("cfgAiGeminiModel").options).find(o => o.value === m);
         if (!opt) {
           opt = document.createElement("option");
@@ -9074,7 +9074,7 @@ $("saveSetupBtn").onclick = async () => {
       lang: $("cfgAiLang")?.value || "pt-pt",
       auto: Boolean($("cfgAiAuto")?.checked),
       gemini_key: $("cfgAiGeminiKey")?.value.trim() || "",
-      gemini_model: $("cfgAiGeminiModel")?.value || "gemini-3.8-flash",
+      gemini_model: $("cfgAiGeminiModel")?.value || "gemini-3.5-flash",
       ollama_url: $("cfgAiOllamaUrl")?.value.trim() || "http://localhost:11434",
       ollama_model: $("cfgAiOllamaModel")?.value.trim() || "llama3.2-vision",
       openai_url: $("cfgAiOpenAiUrl")?.value.trim() || "https://api.openai.com/v1",

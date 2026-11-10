@@ -1979,7 +1979,7 @@ def generate_alt_text(image_data, lang=None, cfg=None):
         key = (ai_cfg.get("gemini_key") or "").strip()
         if not key:
             raise ValueError("A chave de API do Google Gemini não está configurada nas Definições.")
-        configured_model = (ai_cfg.get("gemini_model") or "gemini-3.8-flash").strip()
+        configured_model = (ai_cfg.get("gemini_model") or "gemini-3.5-flash").strip()
         payload = {
             "contents": [
                 {
@@ -2004,7 +2004,7 @@ def generate_alt_text(image_data, lang=None, cfg=None):
 
         # Modelos candidatos em caso de descontinuação ou sobrecarga temporária
         models_to_try = [configured_model]
-        for fallback_m in ("gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-2.0-flash"):
+        for fallback_m in ("gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"):
             if fallback_m not in models_to_try:
                 models_to_try.append(fallback_m)
 
@@ -2279,7 +2279,7 @@ class H(BaseHTTPRequestHandler):
                 "lang": CFG.get("ai", {}).get("lang", "pt-pt"),
                 "auto": CFG.get("ai", {}).get("auto", False),
                 "gemini_key": CFG.get("ai", {}).get("gemini_key", ""),
-                "gemini_model": CFG.get("ai", {}).get("gemini_model", "gemini-3.8-flash"),
+                "gemini_model": CFG.get("ai", {}).get("gemini_model", "gemini-3.5-flash"),
                 "ollama_url": CFG.get("ai", {}).get("ollama_url", "http://localhost:11434"),
                 "ollama_model": CFG.get("ai", {}).get("ollama_model", "llama3.2-vision"),
                 "openai_url": CFG.get("ai", {}).get("openai_url", "https://api.openai.com/v1"),
@@ -2702,7 +2702,7 @@ class H(BaseHTTPRequestHandler):
                         "lang": str(ai.get("lang") or "pt-pt").strip(),
                         "auto": bool(ai.get("auto", False)),
                         "gemini_key": str(ai.get("gemini_key") or "").strip(),
-                        "gemini_model": str(ai.get("gemini_model") or "gemini-3.8-flash").strip(),
+                        "gemini_model": str(ai.get("gemini_model") or "gemini-3.5-flash").strip(),
                         "ollama_url": str(ai.get("ollama_url") or "http://localhost:11434").strip(),
                         "ollama_model": str(ai.get("ollama_model") or "llama3.2-vision").strip(),
                         "openai_url": str(ai.get("openai_url") or "https://api.openai.com/v1").strip(),
