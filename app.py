@@ -59,6 +59,13 @@ def create_ssl_context():
     except Exception:
         pass
 
+    cert_file = os.environ.get("SSL_CERT_FILE")
+    if cert_file and os.path.exists(cert_file):
+        try:
+            return ssl.create_default_context(cafile=cert_file)
+        except Exception:
+            pass
+
     ctx = ssl.create_default_context()
     # No macOS, o bundle do sistema em /etc/ssl/cert.pem resolve a ausência de CA no Python padrão
     for ca_path in ("/etc/ssl/cert.pem", "/etc/pki/tls/certs/ca-bundle.crt", "/etc/ssl/certs/ca-certificates.crt"):
@@ -211,25 +218,30 @@ RETRY_MAX_WAIT = 5  # segundos: só repete um GET num 429 se o servidor pedir me
 
 
 def http(method, url, data=None, token=None, headers=None, timeout=30):
-    req = urllib.request.Request(url, method=method)
-    req.add_header("User-Agent", "MastoSky/1.0")
-    if token:
-        req.add_header("Authorization", "Bearer " + token)
-    if headers:
-        for k, v in headers.items():
-            req.add_header(k, v)
-    body = None
-    if data is not None:
-        if isinstance(data, (bytes, bytearray)):
-            body = data
-            if not headers or "Content-Type" not in headers:
-                req.add_header("Content-Type", "application/octet-stream")
-        else:
-            body = json.dumps(data).encode()
-            if not headers or "Content-Type" not in headers:
-                req.add_header("Content-Type", "application/json")
+    """Executa um pedido HTTP. Faz 1 retry se receber 429 com Retry-After razoável."""
+    def _make_req():
+        r = urllib.request.Request(url, method=method)
+        r.add_header("User-Agent", "MastoSky/1.0")
+        if token:
+            r.add_header("Authorization", "Bearer " + token)
+        if headers:
+            for k, v in headers.items():
+                r.add_header(k, v)
+        b = None
+        if data is not None:
+            if isinstance(data, (bytes, bytearray)):
+                b = data
+                if not headers or "Content-Type" not in headers:
+                    r.add_header("Content-Type", "application/octet-stream")
+            else:
+                b = json.dumps(data).encode()
+                if not headers or "Content-Type" not in headers:
+                    r.add_header("Content-Type", "application/json")
+        return r, b
+
     host = urllib.parse.urlparse(url).netloc
     for attempt in (0, 1):
+        req, body = _make_req()
         try:
             with urllib.request.urlopen(req, body, timeout=timeout, context=SSL_CTX) as r:
                 raw = r.read()
@@ -258,7 +270,8 @@ def http(method, url, data=None, token=None, headers=None, timeout=30):
             if isinstance(e, urllib.error.URLError) and "certificate verify failed" in str(e).lower() and attempt == 0:
                 try:
                     unverified_ctx = ssl._create_unverified_context()
-                    with urllib.request.urlopen(req, body, timeout=timeout, context=unverified_ctx) as r:
+                    retry_req, retry_body = _make_req()
+                    with urllib.request.urlopen(retry_req, retry_body, timeout=timeout, context=unverified_ctx) as r:
                         raw = r.read()
                         if not raw:
                             return {}
