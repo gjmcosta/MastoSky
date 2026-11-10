@@ -1928,7 +1928,7 @@ def generate_alt_text(image_data, lang=None, cfg=None):
         key = (ai_cfg.get("gemini_key") or "").strip()
         if not key:
             raise ValueError("A chave de API do Google Gemini não está configurada nas Definições.")
-        model = (ai_cfg.get("gemini_model") or "gemini-2.0-flash").strip()
+        model = (ai_cfg.get("gemini_model") or "gemini-1.5-flash").strip()
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
         payload = {
             "contents": [
@@ -1951,7 +1951,31 @@ def generate_alt_text(image_data, lang=None, cfg=None):
                 "maxOutputTokens": 300
             }
         }
-        res = http("POST", url, data=payload, timeout=25)
+        try:
+            res = http("POST", url, data=payload, timeout=25)
+        except ApiError as e:
+            err_str = str(e)
+            clean_msg = err_str
+            try:
+                if ": " in err_str:
+                    _, raw_json = err_str.split(": ", 1)
+                    parsed_err = json.loads(raw_json)
+                    if isinstance(parsed_err, dict) and "error" in parsed_err:
+                        err_obj = parsed_err["error"]
+                        clean_msg = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+            except Exception:
+                pass
+
+            # Fallback automático para gemini-1.5-flash se outro modelo falhar
+            if model != "gemini-1.5-flash" and ("not found" in clean_msg.lower() or "404" in err_str):
+                try:
+                    fallback_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
+                    res = http("POST", fallback_url, data=payload, timeout=25)
+                except Exception:
+                    raise ValueError(f"Erro Gemini API: {clean_msg}")
+            else:
+                raise ValueError(f"Erro Gemini API: {clean_msg}")
+
         try:
             candidates = res.get("candidates") or []
             if candidates and candidates[0].get("content", {}).get("parts"):
@@ -1975,7 +1999,11 @@ def generate_alt_text(image_data, lang=None, cfg=None):
             "images": [b64],
             "stream": False
         }
-        res = http("POST", url, data=payload, timeout=45)
+        try:
+            res = http("POST", url, data=payload, timeout=45)
+        except ApiError as e:
+            raise ValueError(f"Erro ao ligar ao Ollama ({e}). Verifica se o servidor local está em execução em {base_url}.")
+
         txt = (res.get("response") or "").strip()
         if txt:
             return txt
@@ -2004,7 +2032,21 @@ def generate_alt_text(image_data, lang=None, cfg=None):
             ],
             "max_tokens": 300
         }
-        res = http("POST", url, data=payload, headers=headers, timeout=30)
+        try:
+            res = http("POST", url, data=payload, headers=headers, timeout=30)
+        except ApiError as e:
+            err_str = str(e)
+            clean_msg = err_str
+            try:
+                if ": " in err_str:
+                    _, raw_json = err_str.split(": ", 1)
+                    parsed_err = json.loads(raw_json)
+                    if isinstance(parsed_err, dict) and "error" in parsed_err:
+                        err_obj = parsed_err["error"]
+                        clean_msg = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+            except Exception:
+                pass
+            raise ValueError(f"Erro OpenAI API: {clean_msg}")
         try:
             choices = res.get("choices") or []
             if choices and choices[0].get("message", {}).get("content"):
