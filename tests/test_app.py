@@ -2315,6 +2315,40 @@ class ProxyImageTests(unittest.TestCase):
             self.assertEqual(res, "Descrição gerada pelo modelo fallback 3.8.")
             self.assertGreaterEqual(call_count[0], 2)
 
+    def test_generate_alt_text_gemini_high_demand_fallback(self):
+        cfg = {
+            "ai": {
+                "provider": "gemini",
+                "gemini_key": "fake_key",
+                "gemini_model": "gemini-3.8-flash",
+                "lang": "pt-pt"
+            }
+        }
+        b64 = base64.b64encode(b"fake_image_bytes").decode()
+        fake_resp = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "Descrição gerada com sucesso pelo fallback."}]
+                    }
+                }
+            ]
+        }
+        err_msg = '503: { "error": { "code": 503, "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later." } }'
+        api_err = app.ApiError(err_msg, status=503, body=err_msg.split(": ", 1)[1])
+
+        call_count = [0]
+        def fake_http(method, url, **kwargs):
+            call_count[0] += 1
+            if "gemini-3.8-flash" in url:
+                raise api_err
+            return fake_resp
+
+        with mock.patch("app.http", side_effect=fake_http):
+            res = app.generate_alt_text(f"data:image/jpeg;base64,{b64}", cfg=cfg)
+            self.assertEqual(res, "Descrição gerada com sucesso pelo fallback.")
+            self.assertGreaterEqual(call_count[0], 2)
+
     def test_generate_alt_text_ollama(self):
         cfg = {
             "ai": {

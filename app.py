@@ -2002,9 +2002,9 @@ def generate_alt_text(image_data, lang=None, cfg=None):
             }
         }
 
-        # Modelos candidatos em caso de descontinuação (ex: 2.0 -> 3.8)
+        # Modelos candidatos em caso de descontinuação ou sobrecarga temporária
         models_to_try = [configured_model]
-        for fallback_m in ("gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"):
+        for fallback_m in ("gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-2.0-flash"):
             if fallback_m not in models_to_try:
                 models_to_try.append(fallback_m)
 
@@ -2047,25 +2047,33 @@ def generate_alt_text(image_data, lang=None, cfg=None):
                     if sugg not in models_to_try:
                         models_to_try.append(sugg)
 
-                # Se for modelo indisponível/descontinuado/404, tenta o próximo modelo candidato
-                is_unavailable = (
-                    getattr(e, "status", None) == 404
+                # Se for modelo indisponível/descontinuado (404) ou com sobrecarga/alta procura (503, 429 high demand)
+                is_unavailable_or_busy = (
+                    getattr(e, "status", None) in (404, 429, 503)
                     or "404" in err_str
+                    or "503" in err_str
                     or "not found" in clean_msg.lower()
                     or "no longer available" in clean_msg.lower()
                     or "deprecated" in clean_msg.lower()
+                    or "high demand" in clean_msg.lower()
+                    or "overloaded" in clean_msg.lower()
+                    or "try again later" in clean_msg.lower()
+                    or "resource has been exhausted" in clean_msg.lower()
                 )
-                if is_unavailable:
+                if is_unavailable_or_busy:
+                    time.sleep(0.5)
                     continue
                 else:
-                    # Erro fatal de autenticação, quota (429) ou argumento inválido: abortar
+                    # Erro fatal de autenticação, chave inválida ou argumento errado: abortar
                     raise ValueError(f"Erro Gemini API: {clean_msg}")
 
         if res is None:
+            if "high demand" in last_err_msg.lower() or "overloaded" in last_err_msg.lower():
+                raise ValueError("Os servidores do Google Gemini estão com tráfego elevado temporário. Aguarda alguns segundos e tenta novamente.")
             raise ValueError(f"Erro Gemini API: {last_err_msg}")
 
-        # Se mudámos para um modelo funcional mais recente, guarda nas definições
-        if used_model != configured_model:
+        # Se mudámos de modelo devido a descontinuação definitiva, guarda nas definições
+        if used_model != configured_model and ("no longer available" in last_err_msg.lower() or "deprecated" in last_err_msg.lower() or "not found" in last_err_msg.lower()):
             try:
                 if "ai" in CFG:
                     CFG["ai"]["gemini_model"] = used_model
