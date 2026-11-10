@@ -21,6 +21,7 @@ O MastoSky corre localmente no teu computador e junta numa única janela a leitu
 - **Pesquisa unificada:** Pesquisa publicações, perfis e hashtags em ambas as redes em simultâneo.
 - **Vista clássica e em colunas:** Alterna entre uma timeline única ou uma vista personalizável em várias colunas (estilo Deck View).
 - **Notificações e perfis:** Acompanha respostas, gostos, partilhas e consulta perfis e estatísticas de seguidores lado a lado.
+- **Alt-Text com IA:** Geração automática de descrições acessíveis (diretrizes WCAG) para imagens via Google Gemini (grátis), Ollama (100% local) ou endpoints compatíveis com OpenAI, com idioma configurável.
 - **Zero dependências externas:** O backend usa apenas a biblioteca padrão do Python 3; o frontend é HTML, CSS e JavaScript puros. Sem `pip install`, sem Node.js.
 - **Privacidade e execução local:** Corre exclusivamente em `127.0.0.1`. As tuas credenciais nunca saem da tua máquina.
 

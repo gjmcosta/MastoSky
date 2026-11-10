@@ -1,4 +1,5 @@
 """Testes unitários dos parsers do MastoSky. Sem rede e sem config.json."""
+import base64
 import io
 import json
 import os
@@ -2017,6 +2018,19 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("function addDeckColumn(", html)
         self.assertIn("function reorderDeckColumn(", html)
         self.assertIn("function initDeckDragAndDrop(", html)
+
+    def test_index_contains_ai_alt_elements(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn('id="cfgAiProvider"', html)
+        self.assertIn('id="cfgAiLang"', html)
+        self.assertIn('id="cfgAiGeminiKey"', html)
+        self.assertIn('id="cfgAiOllamaUrl"', html)
+        self.assertIn('id="cfgAiOpenAiUrl"', html)
+        self.assertIn('id="cfgAiAuto"', html)
+        self.assertIn(".prev-ai-btn", html)
+        self.assertIn("requestAiAltForImage", html)
+        self.assertIn('api("/api/generate_alt"', html)
         self.assertIn("function closeColumnThread(", html)
         self.assertIn("view_mode_single", html)
         self.assertIn("view_mode_deck", html)
@@ -2227,6 +2241,108 @@ class ProxyImageTests(unittest.TestCase):
             import os
             try: os.unlink(tmp_path)
             except OSError: pass
+
+    def test_generate_alt_text_disabled(self):
+        cfg = {"ai": {"provider": "none"}}
+        with self.assertRaises(ValueError) as ctx:
+            app.generate_alt_text("data:image/png;base64,aGVsbG8=", cfg=cfg)
+        self.assertIn("não está ativado", str(ctx.exception))
+
+    def test_generate_alt_text_invalid_image(self):
+        cfg = {"ai": {"provider": "gemini", "gemini_key": "test"}}
+        with self.assertRaises(ValueError):
+            app.generate_alt_text("", cfg=cfg)
+        with self.assertRaises(ValueError):
+            app.generate_alt_text("not_base64!!!", cfg=cfg)
+
+    def test_generate_alt_text_gemini(self):
+        cfg = {
+            "ai": {
+                "provider": "gemini",
+                "gemini_key": "fake_key",
+                "gemini_model": "gemini-2.0-flash",
+                "lang": "pt-pt"
+            }
+        }
+        b64 = base64.b64encode(b"fake_image_bytes").decode()
+        fake_resp = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "Um gato preto a ler um livro numa biblioteca."}]
+                    }
+                }
+            ]
+        }
+        with mock.patch("app.http", return_value=fake_resp) as mock_http:
+            res = app.generate_alt_text(f"data:image/jpeg;base64,{b64}", cfg=cfg)
+            self.assertEqual(res, "Um gato preto a ler um livro numa biblioteca.")
+            mock_http.assert_called_once()
+            called_url = mock_http.call_args[0][1]
+            self.assertIn("gemini-2.0-flash:generateContent?key=fake_key", called_url)
+
+    def test_generate_alt_text_ollama(self):
+        cfg = {
+            "ai": {
+                "provider": "ollama",
+                "ollama_url": "http://127.0.0.1:11434",
+                "ollama_model": "llama3.2-vision",
+                "lang": "en"
+            }
+        }
+        b64 = base64.b64encode(b"fake_image_bytes").decode()
+        fake_resp = {"response": "A black cat reading a book in front of a library."}
+        with mock.patch("app.http", return_value=fake_resp) as mock_http:
+            res = app.generate_alt_text(f"data:image/jpeg;base64,{b64}", lang="en", cfg=cfg)
+            self.assertEqual(res, "A black cat reading a book in front of a library.")
+            mock_http.assert_called_once()
+            self.assertEqual(mock_http.call_args[0][1], "http://127.0.0.1:11434/api/generate")
+
+    def test_generate_alt_text_openai_compatible(self):
+        cfg = {
+            "ai": {
+                "provider": "openai",
+                "openai_url": "https://api.openai.com/v1",
+                "openai_key": "sk-fake",
+                "openai_model": "gpt-4o-mini",
+                "lang": "pt-pt"
+            }
+        }
+        b64 = base64.b64encode(b"fake_image_bytes").decode()
+        fake_resp = {
+            "choices": [
+                {"message": {"content": "Cartaz com texto 'Biblioteca pública'."}}
+            ]
+        }
+        with mock.patch("app.http", return_value=fake_resp) as mock_http:
+            res = app.generate_alt_text(f"data:image/png;base64,{b64}", cfg=cfg)
+            self.assertEqual(res, "Cartaz com texto 'Biblioteca pública'.")
+            mock_http.assert_called_once()
+            self.assertEqual(mock_http.call_args[0][1], "https://api.openai.com/v1/chat/completions")
+
+    def test_api_generate_alt_endpoint(self):
+        b64 = base64.b64encode(b"fake_image_bytes").decode()
+        h = object.__new__(app.H)
+        h.path = "/api/generate_alt"
+        h.headers = {
+            "Host": f"127.0.0.1:{app.PORT}",
+            "X-CSRF-Token": app.SESSION_TOKEN
+        }
+        h.wfile = io.BytesIO()
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        h._read_json = lambda: ({"image": f"data:image/jpeg;base64,{b64}", "lang": "pt-pt"}, None)
+        h.send = lambda code, body, ctype="application/json": h.sent.append(("body", code, body))
+
+        with mock.patch("app.generate_alt_text", return_value="Descrição gerada com IA"):
+            h._do_post()
+
+        body_entry = [v for k, *v in h.sent if k == "body"][0]
+        self.assertEqual(body_entry[0], 200)
+        self.assertTrue(body_entry[1].get("ok"))
+        self.assertEqual(body_entry[1].get("alt"), "Descrição gerada com IA")
 
 
 if __name__ == "__main__":

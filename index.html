@@ -173,6 +173,12 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .prev-card img{width:100%;height:85px;object-fit:cover;border-radius:5px;background:#000;display:block}
 .prev-card input{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;padding:4px 6px;font-size:11.5px;width:100%;outline:none}
 .prev-card input:focus{border-color:var(--accent)}
+.prev-alt-wrap{position:relative;display:flex;align-items:center;width:100%}
+.prev-alt-wrap input{padding-right:24px;box-sizing:border-box}
+.prev-ai-btn{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:20px;height:20px;border:0;background:transparent;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);transition:all .15s;padding:0;line-height:1}
+.prev-ai-btn:hover{color:var(--accent);background:var(--surface-2);transform:translateY(-50%) scale(1.15)}
+.prev-ai-btn.loading{animation:spin 1s linear infinite;pointer-events:none;opacity:0.7}
+@keyframes spin{from{transform:translateY(-50%) rotate(0deg)}to{transform:translateY(-50%) rotate(360deg)}}
 .prev-card .rm{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--danger, #e53935);color:#fff;border:2px solid var(--card);display:grid;place-items:center;font-size:11px;font-weight:700;line-height:1;cursor:pointer;transition:transform .1s}
 .prev-card .rm:hover{transform:scale(1.1)}
 .compose.drag-over{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 5%,var(--card))}
@@ -1756,11 +1762,81 @@ body:not(.view-deck) .deck-col-body {
             <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt; Desenvolvimento &gt; Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses, read:notifications, write:statuses, write:media, write:favourites. No campo Instância indica apenas o domínio (ex: mastodon.social).</small>
           </div>
 
+          <div class="setup-section" id="aiConfigSection">
+            <div class="setup-sec-title"><span>🤖 <span data-i18n="setup.ai_title">Acessibilidade & IA (Alt-Text)</span></span></div>
+            <label><span data-i18n="setup.ai_provider_label">Fornecedor de IA:</span>
+              <select id="cfgAiProvider" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                <option value="none" data-i18n="setup.ai_prov_none">Desativado (Manual)</option>
+                <option value="gemini" data-i18n="setup.ai_prov_gemini">Google Gemini (Grátis - Recomendado)</option>
+                <option value="ollama" data-i18n="setup.ai_prov_ollama">Ollama (100% Local)</option>
+                <option value="openai" data-i18n="setup.ai_prov_openai">Compatível OpenAI / LocalAI</option>
+              </select>
+            </label>
+
+            <label style="display:block;margin-top:10px">
+              <span data-i18n="setup.ai_lang_label">Idioma do Alt-Text:</span>
+              <select id="cfgAiLang" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                <option value="pt-pt" data-i18n="setup.ai_lang_pt_pt">Português (Portugal)</option>
+                <option value="pt-br" data-i18n="setup.ai_lang_pt_br">Português (Brasil)</option>
+                <option value="en" data-i18n="setup.ai_lang_en">Inglês (English)</option>
+                <option value="es" data-i18n="setup.ai_lang_es">Espanhol (Español)</option>
+                <option value="fr" data-i18n="setup.ai_lang_fr">Francês (Français)</option>
+                <option value="ui" data-i18n="setup.ai_lang_ui">Seguir idioma da interface</option>
+              </select>
+            </label>
+
+            <!-- Gemini Fields -->
+            <div id="aiGeminiBox" style="margin-top:10px" hidden>
+              <label><span data-i18n="setup.ai_gemini_key_label">Chave de API do Google AI Studio (*API Key*):</span>
+                <input type="password" id="cfgAiGeminiKey" placeholder="AIzaSy..." autocomplete="off">
+              </label>
+              <label style="margin-top:8px"><span data-i18n="setup.ai_gemini_model_label">Modelo Gemini:</span>
+                <select id="cfgAiGeminiModel" style="width:100%;margin-top:4px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash (Mais rápido e recente)</option>
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                </select>
+              </label>
+              <small class="setup-help" data-i18n="setup.ai_gemini_help">Gera gratuitamente em aistudio.google.com &gt; Get API key. Não requer cartão de crédito.</small>
+            </div>
+
+            <!-- Ollama Fields -->
+            <div id="aiOllamaBox" style="margin-top:10px" hidden>
+              <label><span data-i18n="setup.ai_ollama_url_label">Endereço do Ollama (Local):</span>
+                <input type="text" id="cfgAiOllamaUrl" placeholder="http://localhost:11434" autocomplete="off">
+              </label>
+              <label style="margin-top:8px"><span data-i18n="setup.ai_ollama_model_label">Nome do Modelo com Visão:</span>
+                <input type="text" id="cfgAiOllamaModel" placeholder="llama3.2-vision ou moondream" autocomplete="off">
+              </label>
+              <small class="setup-help" data-i18n="setup.ai_ollama_help">Certifica-te que o Ollama está a correr com um modelo de visão (ex: 'ollama run llama3.2-vision').</small>
+            </div>
+
+            <!-- OpenAI Compatible Fields -->
+            <div id="aiOpenAiBox" style="margin-top:10px" hidden>
+              <label><span data-i18n="setup.ai_openai_url_label">URL Base da API:</span>
+                <input type="text" id="cfgAiOpenAiUrl" placeholder="https://api.openai.com/v1" autocomplete="off">
+              </label>
+              <label style="margin-top:8px"><span data-i18n="setup.ai_openai_key_label">Chave de API (opcional para modelos locais):</span>
+                <input type="password" id="cfgAiOpenAiKey" placeholder="sk-..." autocomplete="off">
+              </label>
+              <label style="margin-top:8px"><span data-i18n="setup.ai_openai_model_label">Modelo:</span>
+                <input type="text" id="cfgAiOpenAiModel" placeholder="gpt-4o-mini" autocomplete="off">
+              </label>
+            </div>
+
+            <!-- Auto Generate Checkbox -->
+            <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:10px">
+              <label class="setup-check-item" style="padding:0;font-weight:500">
+                <input type="checkbox" id="cfgAiAuto">
+                <span data-i18n="setup.ai_auto_label">Gerar Alt-Text automaticamente ao anexar imagens</span>
+              </label>
+            </div>
+          </div>
+
           <div class="setup-section update-section">
             <div class="setup-sec-title"><span>🔄 <span data-i18n="update.section_title">Versão e Atualizações</span></span></div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
               <div>
-                <div style="font-size:13px;font-weight:600;color:var(--ink)">MastoSky <span id="appVersionBadge" style="opacity:0.85">v0.6.1</span></div>
+                <div style="font-size:13px;font-weight:600;color:var(--ink)">MastoSky <span id="appVersionBadge" style="opacity:0.85">v0.7.0</span></div>
                 <div id="updateStatusText" style="font-size:12px;color:var(--muted);margin-top:2px" data-i18n="update.checking">A verificar atualizações...</div>
               </div>
               <div style="display:flex;gap:8px;align-items:center">
@@ -1984,6 +2060,10 @@ const I18N = {
       img_view: "Ver imagem",
       img_remove: "Remover imagem",
       img_alt_ph: "Descrição (alt text)...",
+      ai_alt_btn_title: "Gerar Alt-Text com IA",
+      ai_alt_loading: "A gerar descrição com IA...",
+      ai_alt_err: "Não foi possível gerar a descrição com IA. Verifica as Definições.",
+      ai_alt_not_configured: "Configura o fornecedor de IA nas Definições para gerar Alt-Text automático.",
       img_processing: "A processar imagens...",
       img_err: "Erro ao processar imagem.",
       paste_img_title: "Colar imagem da área de transferência (Cmd+V)",
@@ -2266,6 +2346,29 @@ const I18N = {
       masto_inst_label: "Instância:",
       masto_token_label: "Token de acesso:",
       masto_help: "Gera na tua instância em Preferências > Desenvolvimento > Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Indica apenas o domínio da instância (ex: mastodon.social), sem o teu @utilizador.",
+      ai_title: "Acessibilidade & IA (Alt-Text)",
+      ai_provider_label: "Fornecedor de IA:",
+      ai_prov_none: "Desativado (Manual)",
+      ai_prov_gemini: "Google Gemini (Grátis - Recomendado)",
+      ai_prov_ollama: "Ollama (100% Local)",
+      ai_prov_openai: "Compatível OpenAI / LocalAI",
+      ai_lang_label: "Idioma do Alt-Text:",
+      ai_lang_pt_pt: "Português (Portugal)",
+      ai_lang_pt_br: "Português (Brasil)",
+      ai_lang_en: "Inglês (English)",
+      ai_lang_es: "Espanhol (Español)",
+      ai_lang_fr: "Francês (Français)",
+      ai_lang_ui: "Seguir idioma da interface",
+      ai_gemini_key_label: "Chave de API do Google AI Studio (*API Key*):",
+      ai_gemini_model_label: "Modelo Gemini:",
+      ai_gemini_help: "Gera gratuitamente em aistudio.google.com > Get API key. Não requer cartão de crédito.",
+      ai_ollama_url_label: "Endereço do Ollama (Local):",
+      ai_ollama_model_label: "Nome do Modelo com Visão:",
+      ai_ollama_help: "Certifica-te que o Ollama está a correr com um modelo de visão (ex: 'ollama run llama3.2-vision').",
+      ai_openai_url_label: "URL Base da API:",
+      ai_openai_key_label: "Chave de API (opcional para modelos locais):",
+      ai_openai_model_label: "Modelo:",
+      ai_auto_label: "Gerar Alt-Text automaticamente ao anexar imagens",
       cancel_btn: "Cancelar",
       save_btn: "Guardar e Iniciar",
       saving_btn: "A verificar...",
@@ -2368,6 +2471,10 @@ const I18N = {
       img_view: "View image",
       img_remove: "Remove image",
       img_alt_ph: "Description (alt text)...",
+      ai_alt_btn_title: "Generate Alt-Text with AI",
+      ai_alt_loading: "Generating description with AI...",
+      ai_alt_err: "Could not generate description with AI. Check Settings.",
+      ai_alt_not_configured: "Configure the AI provider in Settings to generate automatic Alt-Text.",
       img_processing: "Processing images...",
       img_err: "Error processing image.",
       paste_img_title: "Paste image from clipboard (Cmd+V)",
@@ -2650,6 +2757,29 @@ const I18N = {
       masto_inst_label: "Instance:",
       masto_token_label: "Access token:",
       masto_help: "Generate in your instance Preferences > Development > New Application. Keep default Redirect URI and check scopes: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Enter only the instance domain (e.g. mastodon.social), without your @handle.",
+      ai_title: "Accessibility & AI (Alt-Text)",
+      ai_provider_label: "AI Provider:",
+      ai_prov_none: "Disabled (Manual)",
+      ai_prov_gemini: "Google Gemini (Free - Recommended)",
+      ai_prov_ollama: "Ollama (100% Local)",
+      ai_prov_openai: "OpenAI Compatible / LocalAI",
+      ai_lang_label: "Alt-Text Language:",
+      ai_lang_pt_pt: "Portuguese (Portugal)",
+      ai_lang_pt_br: "Portuguese (Brazil)",
+      ai_lang_en: "English",
+      ai_lang_es: "Spanish",
+      ai_lang_fr: "French",
+      ai_lang_ui: "Follow interface language",
+      ai_gemini_key_label: "Google AI Studio API Key:",
+      ai_gemini_model_label: "Gemini Model:",
+      ai_gemini_help: "Generate for free at aistudio.google.com > Get API key. No credit card required.",
+      ai_ollama_url_label: "Ollama Address (Local):",
+      ai_ollama_model_label: "Vision Model Name:",
+      ai_ollama_help: "Ensure Ollama is running with a vision model (e.g. 'ollama run llama3.2-vision').",
+      ai_openai_url_label: "API Base URL:",
+      ai_openai_key_label: "API Key (optional for local models):",
+      ai_openai_model_label: "Model:",
+      ai_auto_label: "Generate Alt-Text automatically when attaching images",
       cancel_btn: "Cancel",
       save_btn: "Save and Start",
       saving_btn: "Checking...",
@@ -5955,6 +6085,127 @@ async function processImage(file) {
   });
 }
 
+let aiConfig = {
+  provider: "none",
+  lang: "pt-pt",
+  auto: false,
+  gemini_key: "",
+  gemini_model: "gemini-2.0-flash",
+  ollama_url: "http://localhost:11434",
+  ollama_model: "llama3.2-vision",
+  openai_url: "https://api.openai.com/v1",
+  openai_key: "",
+  openai_model: "gpt-4o-mini"
+};
+
+async function syncStatusAndAiConfig() {
+  try {
+    const s = await api("/api/status");
+    if (s && s.ai) {
+      aiConfig = Object.assign({}, aiConfig, s.ai);
+    }
+    return s;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function requestAiAltForImage(imgObj, inpEl, btnEl) {
+  if (!imgObj || !imgObj.data) return;
+  if (!aiConfig || !aiConfig.provider || aiConfig.provider === "none") {
+    $("msg").className = "msg err";
+    $("msg").textContent = t("composer.ai_alt_not_configured");
+    setTimeout(() => {
+      if ($("msg").textContent === t("composer.ai_alt_not_configured")) $("msg").textContent = "";
+    }, 4500);
+    return;
+  }
+
+  if (btnEl) {
+    btnEl.classList.add("loading");
+    btnEl.disabled = true;
+  }
+
+  let reqLang = aiConfig.lang || "pt-pt";
+  if (reqLang === "ui") {
+    reqLang = currentLang === "pt" ? "pt-pt" : "en";
+  }
+
+  try {
+    const res = await api("/api/generate_alt", {
+      image: imgObj.data,
+      lang: reqLang
+    });
+
+    if (res && res.ok && res.alt) {
+      inpEl.value = res.alt;
+      imgObj.alt = res.alt;
+      inpEl.dispatchEvent(new Event("input", { bubbles: true }));
+      inpEl.style.transition = "box-shadow 0.3s";
+      inpEl.style.boxShadow = "0 0 0 2px var(--accent)";
+      setTimeout(() => { inpEl.style.boxShadow = ""; }, 1200);
+    } else {
+      const errMsg = res?.error || t("composer.ai_alt_err");
+      $("msg").className = "msg err";
+      $("msg").textContent = errMsg;
+      setTimeout(() => {
+        if ($("msg").textContent === errMsg) $("msg").textContent = "";
+      }, 5000);
+    }
+  } catch (err) {
+    const msg = "Erro ao gerar Alt-Text: " + err.message;
+    $("msg").className = "msg err";
+    $("msg").textContent = msg;
+    setTimeout(() => {
+      if ($("msg").textContent === msg) $("msg").textContent = "";
+    }, 5000);
+  } finally {
+    if (btnEl) {
+      btnEl.classList.remove("loading");
+      btnEl.disabled = false;
+    }
+  }
+}
+
+function triggerAutoAltForMainImages(newlyAdded) {
+  const cards = $("previews").querySelectorAll(".prev-card");
+  images.forEach((img, idx) => {
+    if (newlyAdded.includes(img) && !img.alt) {
+      const card = cards[idx];
+      if (card) {
+        const inp = card.querySelector("input");
+        const btn = card.querySelector(".prev-ai-btn");
+        if (inp && btn) {
+          requestAiAltForImage(img, inp, btn);
+        }
+      }
+    }
+  });
+}
+
+function triggerAutoAltForThreadImages(post, wrap, newlyAdded) {
+  const cards = wrap.querySelectorAll(".prev-card");
+  (post.images || []).forEach((img, idx) => {
+    if (newlyAdded.includes(img) && !img.alt) {
+      const card = cards[idx];
+      if (card) {
+        const inp = card.querySelector("input");
+        const btn = card.querySelector(".prev-ai-btn");
+        if (inp && btn) {
+          requestAiAltForImage(img, inp, btn);
+        }
+      }
+    }
+  });
+}
+
+function updateAiProviderBoxes() {
+  const p = $("cfgAiProvider")?.value || "none";
+  if ($("aiGeminiBox")) $("aiGeminiBox").hidden = (p !== "gemini");
+  if ($("aiOllamaBox")) $("aiOllamaBox").hidden = (p !== "ollama");
+  if ($("aiOpenAiBox")) $("aiOpenAiBox").hidden = (p !== "openai");
+}
+
 function renderPreviews() {
   const box = $("previews");
   box.replaceChildren();
@@ -5986,12 +6237,21 @@ function renderPreviews() {
       renderPreviews();
       update();
     };
+    const inpWrap = el("div", "prev-alt-wrap");
     const inp = el("input");
     inp.type = "text";
     inp.placeholder = t("composer.img_alt_ph");
     inp.value = img.alt || "";
     inp.oninput = () => { img.alt = inp.value; };
-    card.append(thumb, inp, rm);
+
+    const aiBtn = el("button", "prev-ai-btn");
+    aiBtn.type = "button";
+    aiBtn.textContent = "✨";
+    aiBtn.title = t("composer.ai_alt_btn_title");
+    aiBtn.onclick = () => requestAiAltForImage(img, inp, aiBtn);
+
+    inpWrap.append(inp, aiBtn);
+    card.append(thumb, inpWrap, rm);
     box.append(card);
   });
 }
@@ -6012,10 +6272,12 @@ async function handleImageFiles(files) {
   const toProcess = Array.from(files).slice(0, remaining);
   $("msg").className = "msg";
   $("msg").textContent = t("composer.img_processing");
+  const newlyAdded = [];
   try {
     for (const f of toProcess) {
       const proc = await processImage(f);
       images.push(proc);
+      newlyAdded.push(proc);
     }
     $("msg").textContent = "";
   } catch (err) {
@@ -6024,6 +6286,10 @@ async function handleImageFiles(files) {
   }
   renderPreviews();
   update();
+
+  if (aiConfig && aiConfig.provider && aiConfig.provider !== "none" && aiConfig.auto && newlyAdded.length) {
+    triggerAutoAltForMainImages(newlyAdded);
+  }
 }
 
 function isImageCandidate(f) {
@@ -6555,12 +6821,21 @@ function renderThreadItemPreviews(post, wrap) {
       renderThreadItemPreviews(post, wrap);
       update();
     };
+    const inpWrap = el("div", "prev-alt-wrap");
     const inp = el("input");
     inp.type = "text";
     inp.placeholder = t("composer.img_alt_ph");
     inp.value = img.alt || "";
     inp.oninput = () => { img.alt = inp.value; };
-    card.append(thumb, inp, rm);
+
+    const aiBtn = el("button", "prev-ai-btn");
+    aiBtn.type = "button";
+    aiBtn.textContent = "✨";
+    aiBtn.title = t("composer.ai_alt_btn_title");
+    aiBtn.onclick = () => requestAiAltForImage(img, inp, aiBtn);
+
+    inpWrap.append(inp, aiBtn);
+    card.append(thumb, inpWrap, rm);
     wrap.append(card);
   });
 }
@@ -6571,13 +6846,19 @@ async function handleThreadImages(post, files) {
   const remaining = 4 - post.images.length;
   if (remaining <= 0) return;
   const toProcess = Array.from(files).slice(0, remaining);
+  const newlyAdded = [];
   for (const f of toProcess) {
     const proc = await processImage(f);
     post.images.push(proc);
+    newlyAdded.push(proc);
   }
   const wrap = $("threadPreviews_" + post.id);
   if (wrap) renderThreadItemPreviews(post, wrap);
   update();
+
+  if (aiConfig && aiConfig.provider && aiConfig.provider !== "none" && aiConfig.auto && newlyAdded.length && wrap) {
+    triggerAutoAltForThreadImages(post, wrap, newlyAdded);
+  }
 }
 
 function addThreadPost() {
@@ -8664,6 +8945,20 @@ async function openSetup(mandatory = false) {
     if (s.mastodon && s.mastodon.instance) $("cfgMastoInst").value = s.mastodon.instance;
     if ($("cfgBskyActive")) $("cfgBskyActive").hidden = !s.bluesky?.configured;
     if ($("cfgMastoActive")) $("cfgMastoActive").hidden = !s.mastodon?.configured;
+    if (s.ai) {
+      aiConfig = Object.assign({}, aiConfig, s.ai);
+      if ($("cfgAiProvider")) $("cfgAiProvider").value = s.ai.provider || "none";
+      if ($("cfgAiLang")) $("cfgAiLang").value = s.ai.lang || "pt-pt";
+      if ($("cfgAiAuto")) $("cfgAiAuto").checked = Boolean(s.ai.auto);
+      if ($("cfgAiGeminiKey")) $("cfgAiGeminiKey").value = s.ai.gemini_key || "";
+      if ($("cfgAiGeminiModel")) $("cfgAiGeminiModel").value = s.ai.gemini_model || "gemini-2.0-flash";
+      if ($("cfgAiOllamaUrl")) $("cfgAiOllamaUrl").value = s.ai.ollama_url || "http://localhost:11434";
+      if ($("cfgAiOllamaModel")) $("cfgAiOllamaModel").value = s.ai.ollama_model || "llama3.2-vision";
+      if ($("cfgAiOpenAiUrl")) $("cfgAiOpenAiUrl").value = s.ai.openai_url || "https://api.openai.com/v1";
+      if ($("cfgAiOpenAiKey")) $("cfgAiOpenAiKey").value = s.ai.openai_key || "";
+      if ($("cfgAiOpenAiModel")) $("cfgAiOpenAiModel").value = s.ai.openai_model || "gpt-4o-mini";
+      updateAiProviderBoxes();
+    }
   } catch (_) {}
   checkAppUpdate(false);
 }
@@ -8700,13 +8995,17 @@ if (window.matchMedia) {
   });
 }
 
+if ($("cfgAiProvider")) {
+  $("cfgAiProvider").onchange = updateAiProviderBoxes;
+}
+
 $("saveSetupBtn").onclick = async () => {
   const bskyHandle = $("cfgBskyHandle").value.trim();
   const bskyPass = $("cfgBskyPass").value.trim();
   const mastoInst = $("cfgMastoInst").value.trim();
   const mastoToken = $("cfgMastoToken").value.trim();
 
-  if (!bskyHandle && !bskyPass && !mastoInst && !mastoToken) {
+  if (!bskyHandle && !bskyPass && !mastoInst && !mastoToken && (!networks || !networks.length)) {
     $("setupMsg").className = "msg err";
     $("setupMsg").textContent = t("setup.err_fill");
     return;
@@ -8718,6 +9017,21 @@ $("saveSetupBtn").onclick = async () => {
   }
   if (mastoInst || mastoToken) {
     payload.mastodon = { instance: mastoInst, token: mastoToken };
+  }
+
+  if ($("cfgAiProvider")) {
+    payload.ai = {
+      provider: $("cfgAiProvider").value,
+      lang: $("cfgAiLang")?.value || "pt-pt",
+      auto: Boolean($("cfgAiAuto")?.checked),
+      gemini_key: $("cfgAiGeminiKey")?.value.trim() || "",
+      gemini_model: $("cfgAiGeminiModel")?.value || "gemini-2.0-flash",
+      ollama_url: $("cfgAiOllamaUrl")?.value.trim() || "http://localhost:11434",
+      ollama_model: $("cfgAiOllamaModel")?.value.trim() || "llama3.2-vision",
+      openai_url: $("cfgAiOpenAiUrl")?.value.trim() || "https://api.openai.com/v1",
+      openai_key: $("cfgAiOpenAiKey")?.value.trim() || "",
+      openai_model: $("cfgAiOpenAiModel")?.value.trim() || "gpt-4o-mini"
+    };
   }
 
   $("saveSetupBtn").disabled = true;
@@ -8743,6 +9057,9 @@ $("saveSetupBtn").onclick = async () => {
         if (chk) notifTypesEnabled[kind.toLowerCase()] = chk.checked;
       });
       localStorage.setItem("mastosky_notif_types", JSON.stringify(notifTypesEnabled));
+      if (payload.ai) {
+        aiConfig = Object.assign({}, aiConfig, payload.ai);
+      }
 
       $("setupMsg").textContent = t("setup.success");
       setTimeout(() => {
@@ -8977,6 +9294,7 @@ checkAndRestoreAutoDraft();
 initSavedEvents();
 initDeckDragAndDrop();
 initNewPostsPillDismissers();
+syncStatusAndAiConfig();
 
 const validTabs = ["timeline", "explore", "search", "saved", "notifs", "profile"];
 const hashTab = (location.hash || "").replace("#", "");

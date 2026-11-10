@@ -47,7 +47,7 @@ MAX_BODY = 32 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens em base
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "0.6.1"
+VERSION = "0.7.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
@@ -1868,6 +1868,160 @@ CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 
        "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 
 
+def generate_alt_text(image_data, lang=None, cfg=None):
+    """Gera texto alternativo (alt-text) para uma imagem usando IA (Gemini, Ollama ou OpenAI)."""
+    if cfg is None:
+        cfg = CFG
+    ai_cfg = cfg.get("ai") or {}
+    provider = (ai_cfg.get("provider") or "none").lower()
+    if provider == "none":
+        raise ValueError("O serviço de IA para Alt-Text não está ativado nas Configurações.")
+
+    target_lang = (lang or ai_cfg.get("lang") or "pt-pt").lower().strip()
+
+    if not isinstance(image_data, str) or not image_data.strip():
+        raise ValueError("Dados de imagem inválidos ou ausentes.")
+
+    raw = image_data.strip()
+    if "," in raw:
+        hdr, b64 = raw.split(",", 1)
+        mime = hdr.split(";")[0].replace("data:", "") or "image/jpeg"
+    else:
+        mime = "image/jpeg"
+        b64 = raw
+
+    try:
+        raw_bytes = base64.b64decode(b64, validate=True)
+        if len(raw_bytes) > 20 * 1024 * 1024:
+            raise ValueError("Imagem demasiado grande para processamento por IA (máx. 20MB).")
+    except (binascii.Error, ValueError) as err:
+        raise ValueError(f"Codificação base64 de imagem inválida: {err}")
+
+    if target_lang in ("en", "english"):
+        prompt = (
+            "Generate a concise, accurate alt text description for this image for web accessibility in English.\n"
+            "WCAG guidelines:\n"
+            "- Be direct and objective: describe the subject and key visual elements.\n"
+            "- Do not start with 'Image of', 'Photo of', or 'Picture of'.\n"
+            "- If the image contains important visible text (signs, titles, memes, labels), quote it accurately.\n"
+            "- Keep it between 1 to 3 clear, natural sentences."
+        )
+    else:
+        lang_names = {
+            "pt-pt": "português de Portugal",
+            "pt-br": "português do Brasil",
+            "pt": "português",
+            "es": "espanhol (Español)",
+            "fr": "francês (Français)",
+        }
+        lang_desc = lang_names.get(target_lang, target_lang)
+        prompt = (
+            f"Gera uma descrição concisa e precisa desta imagem para texto alternativo (alt text) de acessibilidade em {lang_desc}.\n"
+            "Diretrizes WCAG essenciais:\n"
+            "- Sê direto e objetivo: descreve o sujeito e a ação ou elemento central.\n"
+            "- Não comeces com 'Foto de', 'Imagem de' ou 'Esta imagem mostra'.\n"
+            "- Se a imagem contiver texto legível relevante (títulos, cartazes, memes, diagramas), transcreve-o entre aspas.\n"
+            "- Mantém o texto entre 1 a 3 frases claras e naturais."
+        )
+
+    if provider == "gemini":
+        key = (ai_cfg.get("gemini_key") or "").strip()
+        if not key:
+            raise ValueError("A chave de API do Google Gemini não está configurada nas Definições.")
+        model = (ai_cfg.get("gemini_model") or "gemini-2.0-flash").strip()
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "inline_data": {
+                                "mime_type": mime,
+                                "data": b64
+                            }
+                        },
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 300
+            }
+        }
+        res = http("POST", url, data=payload, timeout=25)
+        try:
+            candidates = res.get("candidates") or []
+            if candidates and candidates[0].get("content", {}).get("parts"):
+                txt = candidates[0]["content"]["parts"][0].get("text", "").strip()
+                if txt:
+                    return txt
+        except Exception:
+            pass
+        if "error" in res:
+            err_msg = res["error"].get("message") if isinstance(res["error"], dict) else str(res["error"])
+            raise ValueError(f"Erro Gemini API: {err_msg}")
+        raise ValueError("A API do Gemini não devolveu texto para esta imagem.")
+
+    elif provider == "ollama":
+        base_url = (ai_cfg.get("ollama_url") or "http://localhost:11434").strip().rstrip("/")
+        model = (ai_cfg.get("ollama_model") or "llama3.2-vision").strip()
+        url = f"{base_url}/api/generate"
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "images": [b64],
+            "stream": False
+        }
+        res = http("POST", url, data=payload, timeout=45)
+        txt = (res.get("response") or "").strip()
+        if txt:
+            return txt
+        if "error" in res:
+            raise ValueError(f"Erro Ollama: {res['error']}")
+        raise ValueError("Ollama não devolveu texto para esta imagem. Verifica se o modelo suporta visão.")
+
+    elif provider in ("openai", "openai_compatible", "compativel"):
+        base_url = (ai_cfg.get("openai_url") or "https://api.openai.com/v1").strip().rstrip("/")
+        key = (ai_cfg.get("openai_key") or "").strip()
+        model = (ai_cfg.get("openai_model") or "gpt-4o-mini").strip()
+        url = f"{base_url}/chat/completions"
+        headers = {}
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
+        payload = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
+                    ]
+                }
+            ],
+            "max_tokens": 300
+        }
+        res = http("POST", url, data=payload, headers=headers, timeout=30)
+        try:
+            choices = res.get("choices") or []
+            if choices and choices[0].get("message", {}).get("content"):
+                txt = choices[0]["message"]["content"].strip()
+                if txt:
+                    return txt
+        except Exception:
+            pass
+        if "error" in res:
+            err_msg = res["error"].get("message") if isinstance(res["error"], dict) else str(res["error"])
+            raise ValueError(f"Erro OpenAI API: {err_msg}")
+        raise ValueError("A API compatível não devolveu texto para esta imagem.")
+
+    else:
+        raise ValueError(f"Fornecedor de IA desconhecido: '{provider}'.")
+
+
 class H(BaseHTTPRequestHandler):
     verbose = False
 
@@ -1973,6 +2127,18 @@ class H(BaseHTTPRequestHandler):
                 return self.send(400, {"error": "Ficheiro demasiado grande (máx 15MB)."})
             return self.send(200, p.read_bytes(), valid_exts[ext])
         if path == "/api/status":
+            ai_data = {
+                "provider": CFG.get("ai", {}).get("provider", "none"),
+                "lang": CFG.get("ai", {}).get("lang", "pt-pt"),
+                "auto": CFG.get("ai", {}).get("auto", False),
+                "gemini_key": CFG.get("ai", {}).get("gemini_key", ""),
+                "gemini_model": CFG.get("ai", {}).get("gemini_model", "gemini-2.0-flash"),
+                "ollama_url": CFG.get("ai", {}).get("ollama_url", "http://localhost:11434"),
+                "ollama_model": CFG.get("ai", {}).get("ollama_model", "llama3.2-vision"),
+                "openai_url": CFG.get("ai", {}).get("openai_url", "https://api.openai.com/v1"),
+                "openai_key": CFG.get("ai", {}).get("openai_key", ""),
+                "openai_model": CFG.get("ai", {}).get("openai_model", "gpt-4o-mini"),
+            }
             return self.send(200, {
                 "configured": bool(CLIENTS),
                 "networks": list(CLIENTS),
@@ -1983,7 +2149,8 @@ class H(BaseHTTPRequestHandler):
                 "mastodon": {
                     "configured": "mastodon" in CLIENTS,
                     "instance": CFG.get("mastodon", {}).get("instance", "")
-                }
+                },
+                "ai": ai_data
             })
         if path == "/api/profile":
             profiles, errors = {}, {}
@@ -2345,6 +2512,18 @@ class H(BaseHTTPRequestHandler):
                     return self.send(200, {"ok": True, "following": False})
             except Exception as e:
                 return self.send(200, {"ok": False, "error": str(e)})
+        if self.path == "/api/generate_alt":
+            img_data = d.get("image")
+            if not img_data or not isinstance(img_data, str):
+                return self.send(400, {"ok": False, "error": "Imagem em falta ou inválida."})
+            lang = d.get("lang")
+            if lang is not None and not isinstance(lang, str):
+                return self.send(400, {"ok": False, "error": "Idioma inválido."})
+            try:
+                alt_text = generate_alt_text(img_data, lang=lang)
+                return self.send(200, {"ok": True, "alt": alt_text})
+            except Exception as e:
+                return self.send(200, {"ok": False, "error": str(e)})
         if self.path == "/api/setup":
             new_cfg = dict(CFG)
             new_cfg["port"] = PORT
@@ -2367,6 +2546,24 @@ class H(BaseHTTPRequestHandler):
                     new_cfg["mastodon"] = {"instance": inst, "token": tok}
                 elif not inst and not tok and "mastodon" in new_cfg:
                     new_cfg.pop("mastodon", None)
+
+            if "ai" in d:
+                ai = d.get("ai")
+                if isinstance(ai, dict):
+                    new_cfg["ai"] = {
+                        "provider": str(ai.get("provider") or "none").strip(),
+                        "lang": str(ai.get("lang") or "pt-pt").strip(),
+                        "auto": bool(ai.get("auto", False)),
+                        "gemini_key": str(ai.get("gemini_key") or "").strip(),
+                        "gemini_model": str(ai.get("gemini_model") or "gemini-2.0-flash").strip(),
+                        "ollama_url": str(ai.get("ollama_url") or "http://localhost:11434").strip(),
+                        "ollama_model": str(ai.get("ollama_model") or "llama3.2-vision").strip(),
+                        "openai_url": str(ai.get("openai_url") or "https://api.openai.com/v1").strip(),
+                        "openai_key": str(ai.get("openai_key") or "").strip(),
+                        "openai_model": str(ai.get("openai_model") or "gpt-4o-mini").strip(),
+                    }
+                elif ai is None and "ai" in new_cfg:
+                    new_cfg.pop("ai", None)
 
             test_clients = init_clients(new_cfg)
             if not test_clients:

@@ -21,6 +21,7 @@ MastoSky runs locally on your machine and gives you a single tab to read feeds, 
 - **Unified Search:** Query posts, user profiles, and hashtags across both networks simultaneously.
 - **Deck & Single-Column Views:** Switch between a compact single feed and a customizable multi-column layout (Deck View).
 - **Notifications & Profiles:** Track likes, reposts, mentions, and inspect profiles side-by-side.
+- **AI-Powered Alt-Text:** Automatic, WCAG-compliant image descriptions via Google Gemini (free), Ollama (100% local), or OpenAI-compatible endpoints, with customizable output language.
 - **Zero Runtime Dependencies:** Backend uses Python 3 standard library only; frontend is vanilla HTML/CSS/JS. No `pip install`, no Node.js.
 - **Privacy & Local-First:** Binds strictly to `127.0.0.1`. Credentials never leave your machine.
 

@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
-> **Data de atualização:** 7 de Novembro de 2026  
-> **Versão:** v0.6.1  
+> **Data de atualização:** 10 de Novembro de 2026  
+> **Versão:** v0.7.0  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 142 testes aprovados (`python3 -m unittest discover -s tests`)
+> **Testes Automatizados:** 149 testes aprovados (`python3 -m unittest discover -s tests`)
 
 ---
 
@@ -50,6 +50,19 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - *Botões de tema circulares perfeitos:* Ajuste nos estilos de `.swatch` para eliminar quaisquer contornos ou artefactos quadrados em todos os navegadores.
 - **Sistema de Rascunhos (*Drafts*):** Indicador de rascunho guardado automaticamente no `localStorage`.
 - **Resposta Integrada Encadeada (*Threaded Reply Composer* à semelhança do Mastodon):** Ao clicar em "Responder" em qualquer publicação da timeline ou notificações, o post original pai passa a ser renderizado de forma destacada no topo da coluna de novo post (com avatar, autor, texto completo e anexos), seguido de uma linha conetora vertical de fio de conversa até ao autor atual e um botão `✕` para cancelar a resposta e voltar imediatamente ao modo de "Novo post" normal. Inclui highlight reativo na timeline (`.is-reply-target`), alternância por clique duplo (*toggle*), preenchimento automático da menção do autor em respostas Mastodon, foco imediato e botão de envio dinâmico ("Responder" / "Publicar").
+
+### 🤖 Acessibilidade e Geração Automática de Alt-Text com IA
+- **Fornecedores Múltiplos e Configuráveis:**
+  - *Google Gemini (Recomendado / Nuvem Gratuita):* Suporte nativo aos modelos `gemini-2.0-flash` e `gemini-1.5-flash` via Google AI Studio API (gratuito, resposta rápida e excelente compreensão visual em Português).
+  - *Ollama (100% Local e Privado):* Execução local no computador do utilizador (porta `11434`) com modelos de visão como `llama3.2-vision` ou `moondream`, sem envio de dados para a nuvem.
+  - *Compatível com OpenAI:* Suporte a qualquer endpoint compatível (LocalAI, LM Studio, Groq, etc.).
+- **Seletor de Idioma Dedicado:** Opção nas Configurações para escolher o idioma do Alt-Text (*Português (PT)*, *Português (BR)*, *Inglês*, *Espanhol*, *Francês* ou seguir automaticamente o idioma da interface).
+- **Prompt Especializado em Acessibilidade (Diretrizes WCAG):** Instruções rigorosas à IA para produzir descrições concisas (1 a 3 frases), focadas na ação e elemento central, sem chavões como "Foto de" ou "Imagem de", e com transcrição precisa de textos visíveis entre aspas.
+- **Experiência Fluida no Compositor (UX):**
+  - Botão discreto com ícone de varinha mágica `✨` embutido no campo de texto alternativo de cada imagem (tanto na publicação principal como em publicações de fios/threads).
+  - Animação de carregamento subtil durante a geração.
+  - Opção de automação: *"Gerar Alt-Text automaticamente ao anexar imagens"*, preenchendo as descrições assim que as imagens são carregadas ou coladas via clipboard (`Cmd+V` / drag & drop).
+  - Campo 100% editável para que o utilizador possa rever, ajustar ou apagar o texto gerado a qualquer momento antes da publicação.
 
 ### 🎨 Refinamentos Visuais e UX/UI (Tema, Pesquisa e Configurações)
 - **Modo Escuro, Modo Claro e Automático (*Dark / Light / Auto*):**
