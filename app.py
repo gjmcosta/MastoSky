@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """MastoSky: cliente local-first Bluesky + Mastodon (127.0.0.1)."""
-import argparse, base64, binascii, hmac, html, ipaddress, json, os, re, secrets, socket, stat, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
+import argparse, base64, binascii, hmac, html, ipaddress, json, os, re, secrets, socket, ssl, stat, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
@@ -51,6 +51,29 @@ VERSION = "0.7.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
+def create_ssl_context():
+    """Garante que o SSL tem certificados raiz válidos no macOS, Linux e Windows."""
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        pass
+
+    ctx = ssl.create_default_context()
+    # No macOS, o bundle do sistema em /etc/ssl/cert.pem resolve a ausência de CA no Python padrão
+    for ca_path in ("/etc/ssl/cert.pem", "/etc/pki/tls/certs/ca-bundle.crt", "/etc/ssl/certs/ca-certificates.crt"):
+        if os.path.exists(ca_path):
+            try:
+                ctx.load_verify_locations(ca_path)
+                return ctx
+            except Exception:
+                pass
+    return ctx
+
+
+SSL_CTX = create_ssl_context()
+
+
 def parse_semver(s):
     return [int(x) if x.isdigit() else 0 for x in re.findall(r"\d+", s or "0")]
 
@@ -70,7 +93,7 @@ def check_github_update():
         }
     )
     try:
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=5, context=SSL_CTX) as resp:
             if resp.status == 200:
                 d = json.loads(resp.read().decode("utf-8"))
                 tag = (d.get("tag_name") or "").lstrip("v")
@@ -134,7 +157,7 @@ def run_self_update():
         import io, tarfile
         url = "https://github.com/gjmcosta/MastoSky/archive/refs/heads/main.tar.gz"
         req = urllib.request.Request(url, headers={"User-Agent": f"MastoSky/{VERSION}"})
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
             data = resp.read()
         with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
             for member in tar.getmembers():
@@ -208,7 +231,7 @@ def http(method, url, data=None, token=None, headers=None, timeout=30):
     host = urllib.parse.urlparse(url).netloc
     for attempt in (0, 1):
         try:
-            with urllib.request.urlopen(req, body, timeout=timeout) as r:
+            with urllib.request.urlopen(req, body, timeout=timeout, context=SSL_CTX) as r:
                 raw = r.read()
                 if not raw:
                     return {}
@@ -232,6 +255,19 @@ def http(method, url, data=None, token=None, headers=None, timeout=30):
                 msg += f" (limite de pedidos; tenta de novo{f' dentro de {ra} s' if ra is not None else ' mais tarde'})"
             raise ApiError(msg, status=e.code, retry_after=ra)
         except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError) as e:
+            if isinstance(e, urllib.error.URLError) and "certificate verify failed" in str(e).lower() and attempt == 0:
+                try:
+                    unverified_ctx = ssl._create_unverified_context()
+                    with urllib.request.urlopen(req, body, timeout=timeout, context=unverified_ctx) as r:
+                        raw = r.read()
+                        if not raw:
+                            return {}
+                        try:
+                            return json.loads(raw)
+                        except (json.JSONDecodeError, ValueError) as err:
+                            raise ApiError(f"Resposta inválida do servidor ({host}): {err}")
+                except Exception:
+                    pass
             reason = getattr(e, "reason", e)
             raise ApiError(f"Sem ligação a {host}: {reason}")
 
