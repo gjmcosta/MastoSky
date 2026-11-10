@@ -2015,13 +2015,16 @@ def generate_alt_text(image_data, lang=None, cfg=None):
         for current_model in list(models_to_try):
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={key}"
             try:
-                res = http("POST", url, data=payload, timeout=25)
+                res = http("POST", url, data=payload, timeout=60)
                 used_model = current_model
                 break
             except ApiError as e:
                 raw_body = getattr(e, "body", "") or ""
                 err_str = str(e)
                 clean_msg = err_str
+
+                if "timed out" in err_str.lower():
+                    clean_msg = "O pedido ao Google Gemini excedeu o tempo limite (timeout). Tenta novamente."
 
                 # Tentar extrair mensagem do JSON devolvido pela Google API
                 for source in (raw_body, err_str.split(": ", 1)[-1] if ": " in err_str else ""):
