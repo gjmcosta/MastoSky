@@ -169,7 +169,20 @@ button:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px soli
 .poll-dur select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 6px;font-size:12px}
 .previews{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px;padding:8px;background:rgba(255,255,255,0.02);border:1px dashed var(--line);border-radius:10px}
 .prev-card{position:relative;display:flex;flex-direction:column;gap:6px;width:130px;background:var(--surface-1);border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 2px 6px rgba(0,0,0,0.18);transition:border-color .15s}
-.prev-card.prev-card-video{width:220px}
+.prev-card.prev-card-video{width:280px;max-width:100%}
+.prev-card.prev-card-loading{width:260px;flex-direction:row;align-items:center;gap:12px;padding:12px 14px}
+.prev-video-status{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:2px;flex-wrap:wrap}
+.prev-video-badge-ready{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;background:rgba(46,160,67,0.18);color:#3fb950;font-weight:600;font-size:11px;border:1px solid rgba(46,160,67,0.35)}
+.prev-video-meta{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.prev-video-player-wrap{position:relative;width:100%;background:#000;border-radius:6px;overflow:hidden}
+.prev-video-fallback{padding:14px;background:var(--surface-2);border-radius:6px;text-align:center;font-size:12px;color:var(--ink);line-height:1.4}
+.prev-video-name{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:1px 2px}
+.prev-video-spinner{color:var(--accent);display:flex;align-items:center;justify-content:center}
+.prev-video-loading-info{display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.prev-video-loading-title{font-size:12px;font-weight:600;color:var(--ink)}
+.prev-video-loading-meta{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spin-anim{animation:spin-rotate 1s linear infinite}
+@keyframes spin-rotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .prev-card:hover{border-color:var(--accent)}
 .prev-card img{width:100%;height:85px;object-fit:cover;border-radius:5px;background:#000;display:block}
 .prev-card input{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:4px;padding:4px 6px;font-size:11.5px;width:100%;outline:none}
@@ -2296,6 +2309,7 @@ const I18N = {
       poll_dur_7d: "7 dias",
       attach_img: "Imagem",
       attach_title: "Anexar imagens ou vídeo",
+      video_ready: "Vídeo pronto para publicar",
       video_remove: "Remover vídeo",
       video_alt_ph: "Descrição acessível do vídeo (alt text)...",
       video_loading: "A carregar vídeo...",
@@ -2754,6 +2768,7 @@ const I18N = {
       poll_dur_7d: "7 days",
       attach_img: "Image",
       attach_title: "Attach images or video",
+      video_ready: "Video ready to publish",
       video_remove: "Remove video",
       video_alt_ph: "Video accessibility description (alt text)...",
       video_loading: "Loading video...",
@@ -6922,6 +6937,19 @@ async function processImage(file) {
   });
 }
 
+function formatFileSize(bytes) {
+  if (!bytes || bytes <= 0) return "";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}
+
+function formatDuration(sec) {
+  if (!sec || isNaN(sec) || sec <= 0) return "";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
 function isVideoFile(file) {
   if (!file) return false;
   if (file.type && file.type.startsWith("video/")) return true;
@@ -6933,41 +6961,90 @@ async function processVideo(file) {
   if (file.size > 50 * 1024 * 1024) {
     throw new Error(t("composer.video_too_large") || "O vídeo excede o tamanho máximo de 50 MB.");
   }
-  const dataUrl = await new Promise((resolve, reject) => {
+
+  // Blob URL nativo para reprodução imediata e aceleração de hardware (Safari, Chrome, Firefox)
+  const objectUrl = URL.createObjectURL(file);
+
+  const readDataPromise = new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => resolve(r.result);
     r.onerror = () => reject(new Error("Falha ao ler o ficheiro de vídeo."));
     r.readAsDataURL(file);
   });
 
-  return new Promise((resolve) => {
+  const metaPromise = new Promise((resolve) => {
     const vid = document.createElement("video");
-    vid.preload = "metadata";
-    vid.onloadedmetadata = () => {
+    vid.preload = "auto";
+    vid.muted = true;
+    vid.playsInline = true;
+
+    let done = false;
+    const finish = (poster = "") => {
+      if (done) return;
+      done = true;
       let w = vid.videoWidth || 1280;
       let h = vid.videoHeight || 720;
       let dur = vid.duration || 0;
       resolve({
-        data: dataUrl,
-        mime: file.type || "video/mp4",
-        name: file.name || "video.mp4",
-        alt: "",
         duration: dur,
-        aspectRatio: { width: Math.round(w), height: Math.round(h) }
+        width: Math.round(w),
+        height: Math.round(h),
+        poster: poster
       });
     };
+
+    const safetyTimer = setTimeout(() => {
+      finish("");
+    }, 4000);
+
+    const tryCapture = () => {
+      try {
+        if (vid.videoWidth && vid.videoHeight) {
+          const c = document.createElement("canvas");
+          c.width = vid.videoWidth;
+          c.height = vid.videoHeight;
+          const ctx = c.getContext("2d");
+          ctx.drawImage(vid, 0, 0, c.width, c.height);
+          const p = c.toDataURL("image/jpeg", 0.8);
+          clearTimeout(safetyTimer);
+          finish(p);
+          return;
+        }
+      } catch (_) {}
+      clearTimeout(safetyTimer);
+      finish("");
+    };
+
+    vid.onloadeddata = tryCapture;
+    vid.onloadedmetadata = () => {
+      try {
+        if (vid.duration > 0.5) vid.currentTime = 0.1;
+      } catch (_) {}
+    };
+    vid.onseeked = tryCapture;
     vid.onerror = () => {
-      resolve({
-        data: dataUrl,
-        mime: file.type || "video/mp4",
-        name: file.name || "video.mp4",
-        alt: "",
-        duration: 0,
-        aspectRatio: { width: 16, height: 9 }
-      });
+      clearTimeout(safetyTimer);
+      finish("");
     };
-    vid.src = dataUrl;
+
+    vid.src = objectUrl;
+    try { vid.load(); } catch (_) {}
   });
+
+  const [dataUrl, meta] = await Promise.all([readDataPromise, metaPromise]);
+
+  return {
+    file: file,
+    data: dataUrl,
+    objectUrl: objectUrl,
+    poster: meta.poster || "",
+    mime: file.type || "video/mp4",
+    name: file.name || "video.mp4",
+    size: file.size,
+    duration: meta.duration || 0,
+    aspectRatio: { width: meta.width || 16, height: meta.height || 9 },
+    alt: ""
+  };
 }
 
 let aiConfig = {
@@ -7128,6 +7205,24 @@ function updateAiProviderBoxes() {
   if ($("aiOpenAiBox")) $("aiOpenAiBox").hidden = (p !== "openai");
 }
 
+function renderVideoLoadingPreview(container, file) {
+  if (!container) return;
+  container.hidden = false;
+  container.replaceChildren();
+  const card = el("div", "prev-card prev-card-video prev-card-loading");
+  
+  const spinWrap = el("div", "prev-video-spinner");
+  spinWrap.innerHTML = `<svg class="ico spin-anim" style="width:22px;height:22px"><use href="#i-refresh"/></svg>`;
+  
+  const info = el("div", "prev-video-loading-info");
+  const tTitle = el("div", "prev-video-loading-title", t("composer.video_loading") || "A carregar vídeo...");
+  const tMeta = el("div", "prev-video-loading-meta", `${file.name} (${formatFileSize(file.size)})`);
+  info.append(tTitle, tMeta);
+  
+  card.append(spinWrap, info);
+  container.append(card);
+}
+
 function renderPreviews() {
   const box = $("previews");
   box.replaceChildren();
@@ -7140,19 +7235,63 @@ function renderPreviews() {
     if ($("pollBtn")) $("pollBtn").setAttribute("disabled", "true");
 
     const card = el("div", "prev-card prev-card-video");
+
+    const statusRow = el("div", "prev-video-status");
+    const readyBadge = el("span", "prev-video-badge-ready", "✓ " + (t("composer.video_ready") || "Vídeo pronto para publicar"));
+    
+    const metaParts = [];
+    if (attachedVideo.duration > 0) metaParts.push(formatDuration(attachedVideo.duration));
+    if (attachedVideo.size > 0) metaParts.push(formatFileSize(attachedVideo.size));
+    if (attachedVideo.aspectRatio && attachedVideo.aspectRatio.width) {
+      metaParts.push(attachedVideo.aspectRatio.width + "×" + attachedVideo.aspectRatio.height);
+    }
+    const metaSpan = el("span", "prev-video-meta", metaParts.join(" • "));
+    statusRow.append(readyBadge, metaSpan);
+
+    const vidWrap = el("div", "prev-video-player-wrap");
     const vidEl = document.createElement("video");
-    vidEl.src = attachedVideo.data;
+    vidEl.src = attachedVideo.objectUrl || attachedVideo.data;
+    if (attachedVideo.poster) vidEl.poster = attachedVideo.poster;
     vidEl.controls = true;
     vidEl.playsInline = true;
-    vidEl.muted = true;
+    vidEl.preload = "auto";
     vidEl.style.width = "100%";
-    vidEl.style.maxHeight = "180px";
+    vidEl.style.maxHeight = "190px";
     vidEl.style.borderRadius = "6px";
     vidEl.style.background = "#000";
+    vidEl.style.display = "block";
+
+    vidEl.addEventListener("loadeddata", () => {
+      if (!attachedVideo.poster && vidEl.videoWidth) {
+        try {
+          const c = document.createElement("canvas");
+          c.width = vidEl.videoWidth;
+          c.height = vidEl.videoHeight;
+          c.getContext("2d").drawImage(vidEl, 0, 0, c.width, c.height);
+          attachedVideo.poster = c.toDataURL("image/jpeg", 0.8);
+          vidEl.poster = attachedVideo.poster;
+        } catch (_) {}
+      }
+    });
+
+    vidEl.onerror = () => {
+      vidWrap.innerHTML = "";
+      const fb = el("div", "prev-video-fallback");
+      fb.innerHTML = `🎥 <strong>${attachedVideo.name || "Vídeo"}</strong><br><span style="font-size:11px;color:var(--muted)">Pré-visualização não suportada pelo navegador, pronto para envio</span>`;
+      vidWrap.append(fb);
+    };
+
+    vidWrap.append(vidEl);
+
+    const fileLabel = el("div", "prev-video-name", attachedVideo.name || "video.mp4");
+    fileLabel.title = attachedVideo.name || "video.mp4";
 
     const rm = el("button", "rm", "✕");
     rm.title = t("composer.video_remove") || "Remover vídeo";
     rm.onclick = () => {
+      if (attachedVideo && attachedVideo.objectUrl) {
+        try { URL.revokeObjectURL(attachedVideo.objectUrl); } catch (_) {}
+      }
       attachedVideo = null;
       renderPreviews();
       update();
@@ -7166,7 +7305,7 @@ function renderPreviews() {
     inp.oninput = () => { attachedVideo.alt = inp.value; };
 
     inpWrap.append(inp);
-    card.append(vidEl, inpWrap, rm);
+    card.append(rm, statusRow, vidWrap, fileLabel, inpWrap);
     box.append(card);
     return;
   }
@@ -7238,8 +7377,10 @@ async function handleImageFiles(files) {
       $("msg").textContent = t("composer.video_too_large");
       return;
     }
-    $("msg").className = "msg";
-    $("msg").textContent = t("composer.video_loading");
+    if (attachedVideo && attachedVideo.objectUrl) {
+      try { URL.revokeObjectURL(attachedVideo.objectUrl); } catch (_) {}
+    }
+    renderVideoLoadingPreview($("previews"), vidFile);
     try {
       const vObj = await processVideo(vidFile);
       if (vObj.duration > 600) {
@@ -7587,7 +7728,7 @@ if ($("composeSection")) {
   $("composeSection").addEventListener("drop", async (e) => {
     $("composeSection").classList.remove("drag-over");
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-      const imgFiles = Array.from(e.dataTransfer.files).filter(f => isImageCandidate(f));
+      const imgFiles = Array.from(e.dataTransfer.files).filter(f => isImageCandidate(f) || isVideoFile(f));
       if (imgFiles.length) {
         e.preventDefault();
         await handleImageFiles(imgFiles);
@@ -7808,19 +7949,63 @@ function renderThreadItemPreviews(post, wrap) {
   if (post.video) {
     wrap.hidden = false;
     const card = el("div", "prev-card prev-card-video");
+
+    const statusRow = el("div", "prev-video-status");
+    const readyBadge = el("span", "prev-video-badge-ready", "✓ " + (t("composer.video_ready") || "Vídeo pronto para publicar"));
+    
+    const metaParts = [];
+    if (post.video.duration > 0) metaParts.push(formatDuration(post.video.duration));
+    if (post.video.size > 0) metaParts.push(formatFileSize(post.video.size));
+    if (post.video.aspectRatio && post.video.aspectRatio.width) {
+      metaParts.push(post.video.aspectRatio.width + "×" + post.video.aspectRatio.height);
+    }
+    const metaSpan = el("span", "prev-video-meta", metaParts.join(" • "));
+    statusRow.append(readyBadge, metaSpan);
+
+    const vidWrap = el("div", "prev-video-player-wrap");
     const vidEl = document.createElement("video");
-    vidEl.src = post.video.data;
+    vidEl.src = post.video.objectUrl || post.video.data;
+    if (post.video.poster) vidEl.poster = post.video.poster;
     vidEl.controls = true;
     vidEl.playsInline = true;
-    vidEl.muted = true;
+    vidEl.preload = "auto";
     vidEl.style.width = "100%";
-    vidEl.style.maxHeight = "160px";
+    vidEl.style.maxHeight = "170px";
     vidEl.style.borderRadius = "6px";
     vidEl.style.background = "#000";
+    vidEl.style.display = "block";
+
+    vidEl.addEventListener("loadeddata", () => {
+      if (!post.video.poster && vidEl.videoWidth) {
+        try {
+          const c = document.createElement("canvas");
+          c.width = vidEl.videoWidth;
+          c.height = vidEl.videoHeight;
+          c.getContext("2d").drawImage(vidEl, 0, 0, c.width, c.height);
+          post.video.poster = c.toDataURL("image/jpeg", 0.8);
+          vidEl.poster = post.video.poster;
+        } catch (_) {}
+      }
+    });
+
+    vidEl.onerror = () => {
+      vidWrap.innerHTML = "";
+      const fb = el("div", "prev-video-fallback");
+      fb.innerHTML = `🎥 <strong>${post.video.name || "Vídeo"}</strong><br><span style="font-size:11px;color:var(--muted)">Pré-visualização não suportada pelo navegador, pronto para envio</span>`;
+      vidWrap.append(fb);
+    };
+
+    vidWrap.append(vidEl);
+
+    const fileLabel = el("div", "prev-video-name", post.video.name || "video.mp4");
+    fileLabel.title = post.video.name || "video.mp4";
 
     const rm = el("button", "rm", "✕");
     rm.title = t("composer.video_remove") || "Remover vídeo";
     rm.onclick = () => {
+      if (post.video && post.video.objectUrl) {
+        try { URL.revokeObjectURL(post.video.objectUrl); } catch (_) {}
+      }
       post.video = null;
       renderThreadItemPreviews(post, wrap);
       update();
@@ -7834,7 +8019,7 @@ function renderThreadItemPreviews(post, wrap) {
     inp.oninput = () => { post.video.alt = inp.value; };
 
     inpWrap.append(inp);
-    card.append(vidEl, inpWrap, rm);
+    card.append(rm, statusRow, vidWrap, fileLabel, inpWrap);
     wrap.append(card);
     return;
   }
@@ -7893,8 +8078,11 @@ async function handleThreadImages(post, files) {
       $("msg").textContent = t("composer.video_too_large");
       return;
     }
-    $("msg").className = "msg";
-    $("msg").textContent = t("composer.video_loading");
+    if (post.video && post.video.objectUrl) {
+      try { URL.revokeObjectURL(post.video.objectUrl); } catch (_) {}
+    }
+    const wrap = $("threadPreviews_" + post.id);
+    if (wrap) renderVideoLoadingPreview(wrap, vidFile);
     try {
       const vObj = await processVideo(vidFile);
       if (vObj.duration > 600) {
@@ -7907,7 +8095,6 @@ async function handleThreadImages(post, files) {
       $("msg").className = "msg err";
       $("msg").textContent = err.message || "Erro ao processar vídeo.";
     }
-    const wrap = $("threadPreviews_" + post.id);
     if (wrap) renderThreadItemPreviews(post, wrap);
     update();
     return;
@@ -9955,6 +10142,16 @@ $("refresh").onclick = async () => {
 };
 
 function clearComposer(threadPayload) {
+  if (attachedVideo && attachedVideo.objectUrl) {
+    try { URL.revokeObjectURL(attachedVideo.objectUrl); } catch (_) {}
+  }
+  if (threadPosts && threadPosts.length) {
+    threadPosts.forEach(p => {
+      if (p.video && p.video.objectUrl) {
+        try { URL.revokeObjectURL(p.video.objectUrl); } catch (_) {}
+      }
+    });
+  }
   $("text").value = ""; images = []; attachedVideo = null; renderPreviews();
   threadPosts = []; renderThreadPosts();
   hasCW = false; renderCW();
