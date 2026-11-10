@@ -2281,6 +2281,40 @@ class ProxyImageTests(unittest.TestCase):
             called_url = mock_http.call_args[0][1]
             self.assertIn("gemini-2.0-flash:generateContent?key=fake_key", called_url)
 
+    def test_generate_alt_text_gemini_deprecation_fallback(self):
+        cfg = {
+            "ai": {
+                "provider": "gemini",
+                "gemini_key": "fake_key",
+                "gemini_model": "gemini-2.0-flash",
+                "lang": "pt-pt"
+            }
+        }
+        b64 = base64.b64encode(b"fake_image_bytes").decode()
+        fake_resp = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "Descrição gerada pelo modelo fallback 3.8."}]
+                    }
+                }
+            ]
+        }
+        err_msg = '404: { "error": { "code": 404, "message": "This model models/gemini-3.8-flash is recommended. models/gemini-2.0-flash is no longer available. Please update your code to use models/gemini-3.8-flash for the latest features and improvements" } }'
+        api_err = app.ApiError(err_msg, status=404, body=err_msg.split(": ", 1)[1])
+
+        call_count = [0]
+        def fake_http(method, url, **kwargs):
+            call_count[0] += 1
+            if "gemini-2.0-flash" in url:
+                raise api_err
+            return fake_resp
+
+        with mock.patch("app.http", side_effect=fake_http):
+            res = app.generate_alt_text(f"data:image/jpeg;base64,{b64}", cfg=cfg)
+            self.assertEqual(res, "Descrição gerada pelo modelo fallback 3.8.")
+            self.assertGreaterEqual(call_count[0], 2)
+
     def test_generate_alt_text_ollama(self):
         cfg = {
             "ai": {

@@ -200,10 +200,11 @@ def multipart_encode(fields, files):
 
 class ApiError(RuntimeError):
     """Erro de API. `str(e)` mantém o formato "{código}: ..." de que o resto do código depende."""
-    def __init__(self, message, status=None, retry_after=None):
+    def __init__(self, message, status=None, retry_after=None, body=None):
         super().__init__(message)
         self.status = status
         self.retry_after = retry_after
+        self.body = body
 
 
 def _retry_after(headers):
@@ -262,10 +263,11 @@ def http(method, url, data=None, token=None, headers=None, timeout=30):
             if e.code == 429 and method == "GET" and attempt == 0 and ra is not None and ra <= RETRY_MAX_WAIT:
                 time.sleep(ra)
                 continue
-            msg = f"{e.code}: {e.read()[:200].decode(errors='replace')}"
+            raw_err = e.read()[:8192].decode(errors='replace')
+            msg = f"{e.code}: {raw_err[:200]}"
             if e.code == 429:
                 msg += f" (limite de pedidos; tenta de novo{f' dentro de {ra} s' if ra is not None else ' mais tarde'})"
-            raise ApiError(msg, status=e.code, retry_after=ra)
+            raise ApiError(msg, status=e.code, retry_after=ra, body=raw_err)
         except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError) as e:
             if isinstance(e, urllib.error.URLError) and "certificate verify failed" in str(e).lower() and attempt == 0:
                 try:
@@ -1977,8 +1979,7 @@ def generate_alt_text(image_data, lang=None, cfg=None):
         key = (ai_cfg.get("gemini_key") or "").strip()
         if not key:
             raise ValueError("A chave de API do Google Gemini não está configurada nas Definições.")
-        model = (ai_cfg.get("gemini_model") or "gemini-1.5-flash").strip()
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+        configured_model = (ai_cfg.get("gemini_model") or "gemini-3.8-flash").strip()
         payload = {
             "contents": [
                 {
@@ -2000,30 +2001,74 @@ def generate_alt_text(image_data, lang=None, cfg=None):
                 "maxOutputTokens": 300
             }
         }
-        try:
-            res = http("POST", url, data=payload, timeout=25)
-        except ApiError as e:
-            err_str = str(e)
-            clean_msg = err_str
+
+        # Modelos candidatos em caso de descontinuação (ex: 2.0 -> 3.8)
+        models_to_try = [configured_model]
+        for fallback_m in ("gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"):
+            if fallback_m not in models_to_try:
+                models_to_try.append(fallback_m)
+
+        last_err_msg = ""
+        res = None
+        used_model = configured_model
+
+        for current_model in list(models_to_try):
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={key}"
             try:
-                if ": " in err_str:
-                    _, raw_json = err_str.split(": ", 1)
-                    parsed_err = json.loads(raw_json)
-                    if isinstance(parsed_err, dict) and "error" in parsed_err:
-                        err_obj = parsed_err["error"]
-                        clean_msg = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+                res = http("POST", url, data=payload, timeout=25)
+                used_model = current_model
+                break
+            except ApiError as e:
+                raw_body = getattr(e, "body", "") or ""
+                err_str = str(e)
+                clean_msg = err_str
+
+                # Tentar extrair mensagem do JSON devolvido pela Google API
+                for source in (raw_body, err_str.split(": ", 1)[-1] if ": " in err_str else ""):
+                    if source:
+                        try:
+                            parsed_err = json.loads(source)
+                            if isinstance(parsed_err, dict) and "error" in parsed_err:
+                                err_obj = parsed_err["error"]
+                                clean_msg = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+                                break
+                        except Exception:
+                            pass
+
+                last_err_msg = clean_msg
+
+                # Se a API sugerir explicitamente um modelo alternativo (ex: "Please update your code to use models/gemini-3.8-flash")
+                suggested_match = re.search(r"models/([a-zA-Z0-9\.\-_]+)", clean_msg)
+                if suggested_match:
+                    sugg = suggested_match.group(1)
+                    if sugg not in models_to_try:
+                        models_to_try.append(sugg)
+
+                # Se for modelo indisponível/descontinuado/404, tenta o próximo modelo candidato
+                is_unavailable = (
+                    getattr(e, "status", None) == 404
+                    or "404" in err_str
+                    or "not found" in clean_msg.lower()
+                    or "no longer available" in clean_msg.lower()
+                    or "deprecated" in clean_msg.lower()
+                )
+                if is_unavailable:
+                    continue
+                else:
+                    # Erro fatal de autenticação, quota (429) ou argumento inválido: abortar
+                    raise ValueError(f"Erro Gemini API: {clean_msg}")
+
+        if res is None:
+            raise ValueError(f"Erro Gemini API: {last_err_msg}")
+
+        # Se mudámos para um modelo funcional mais recente, guarda nas definições
+        if used_model != configured_model:
+            try:
+                if "ai" in CFG:
+                    CFG["ai"]["gemini_model"] = used_model
+                    write_config(CFG)
             except Exception:
                 pass
-
-            # Fallback automático para gemini-1.5-flash se outro modelo falhar
-            if model != "gemini-1.5-flash" and ("not found" in clean_msg.lower() or "404" in err_str):
-                try:
-                    fallback_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
-                    res = http("POST", fallback_url, data=payload, timeout=25)
-                except Exception:
-                    raise ValueError(f"Erro Gemini API: {clean_msg}")
-            else:
-                raise ValueError(f"Erro Gemini API: {clean_msg}")
 
         try:
             candidates = res.get("candidates") or []
@@ -2223,7 +2268,7 @@ class H(BaseHTTPRequestHandler):
                 "lang": CFG.get("ai", {}).get("lang", "pt-pt"),
                 "auto": CFG.get("ai", {}).get("auto", False),
                 "gemini_key": CFG.get("ai", {}).get("gemini_key", ""),
-                "gemini_model": CFG.get("ai", {}).get("gemini_model", "gemini-2.0-flash"),
+                "gemini_model": CFG.get("ai", {}).get("gemini_model", "gemini-3.8-flash"),
                 "ollama_url": CFG.get("ai", {}).get("ollama_url", "http://localhost:11434"),
                 "ollama_model": CFG.get("ai", {}).get("ollama_model", "llama3.2-vision"),
                 "openai_url": CFG.get("ai", {}).get("openai_url", "https://api.openai.com/v1"),
@@ -2646,7 +2691,7 @@ class H(BaseHTTPRequestHandler):
                         "lang": str(ai.get("lang") or "pt-pt").strip(),
                         "auto": bool(ai.get("auto", False)),
                         "gemini_key": str(ai.get("gemini_key") or "").strip(),
-                        "gemini_model": str(ai.get("gemini_model") or "gemini-2.0-flash").strip(),
+                        "gemini_model": str(ai.get("gemini_model") or "gemini-3.8-flash").strip(),
                         "ollama_url": str(ai.get("ollama_url") or "http://localhost:11434").strip(),
                         "ollama_model": str(ai.get("ollama_model") or "llama3.2-vision").strip(),
                         "openai_url": str(ai.get("openai_url") or "https://api.openai.com/v1").strip(),
