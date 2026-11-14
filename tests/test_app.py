@@ -218,6 +218,7 @@ class SafeUrlTests(unittest.TestCase):
         it = app.Masto({"instance": "https://x", "token": "t"}).item(st)
         self.assertIn("Olá mundo fediverso", it["text"])
         self.assertIn("[Aviso]", it["text"])
+        self.assertEqual(it["cw"], "Aviso")
 
 
 class ConfigPermsTests(unittest.TestCase):
@@ -1677,6 +1678,20 @@ class ProfileTests(unittest.TestCase):
             self.assertIn("<br>", prof["bio"])
             self.assertIn('href="https://example.com"', prof["bio"])
 
+    def test_bsky_user_profile_unquotes_percent_encoded_did(self):
+        b = app.Bsky({"handle": "alice.bsky.social", "app_password": "pass"})
+        b.did = "did:plc:alice"
+        b.jwt = "jwt"
+        with mock.patch.object(b, "call") as mock_call:
+            mock_call.return_value = {
+                "displayName": "Target User",
+                "handle": "target.bsky.social",
+                "did": "did:plc:target123"
+            }
+            prof = b.user_profile("did%3Aplc%3Atarget123")
+            mock_call.assert_called_once_with("GET", "app.bsky.actor.getProfile", params={"actor": "did:plc:target123"})
+            self.assertEqual(prof["name"], "Target User")
+
     def test_masto_profile(self):
         m = app.Masto({"instance": "https://masto.pt", "token": "tok"})
         with mock.patch.object(m, "call") as mock_call:
@@ -1904,6 +1919,10 @@ class ProfileTests(unittest.TestCase):
         self.assertTrue(prof["is_following"])
         self.assertEqual(b_calls[0][2], {"actor": "user.bsky.social"})
 
+        # Resolução de URL completo de perfil Bluesky
+        prof_url = b.user_profile("https://bsky.app/profile/alice.bsky.social")
+        self.assertEqual(b_calls[-1][2], {"actor": "alice.bsky.social"})
+
         m = app.Masto({"instance": "https://m.pt", "token": "tok"})
         m.my_id = "99999"
         m_calls = []
@@ -1911,6 +1930,11 @@ class ProfileTests(unittest.TestCase):
             m_calls.append((mth, pth, params))
             if pth.startswith("/api/v1/accounts/relationships"):
                 return [{"id": "12345", "following": True}]
+            if pth.startswith("/api/v2/search"):
+                return {"accounts": [{
+                    "id": 12345, "username": "cameraderie", "acct": "cameraderie@mastodon.social",
+                    "display_name": "Cameraderie", "statuses_count": 50
+                }]}
             return {
                 "id": 12345, "username": "bob", "acct": "bob@inst", "display_name": "Bob",
                 "statuses_count": 10
@@ -1923,6 +1947,10 @@ class ProfileTests(unittest.TestCase):
         self.assertTrue(prof_m["is_following"])
         self.assertEqual(len(m_calls), 2)
         self.assertEqual(m_calls[1][1], "/api/v1/accounts/relationships")
+
+        # Resolução de URL completo de perfil Mastodon via search fallback
+        prof_m_url = m.user_profile("https://mastodon.social/@cameraderie")
+        self.assertEqual(prof_m_url["name"], "Cameraderie")
         self.assertEqual(m_calls[1][2], {"id[]": ["12345"]})
 
     def test_masto_call_doseq_encoding(self):
@@ -2595,6 +2623,1001 @@ class ProxyImageTests(unittest.TestCase):
         body_entry = [v for k, *v in h.sent if k == "body"][0]
         self.assertEqual(body_entry[0], 400)
         self.assertIn("Não é possível publicar imagens e vídeo no mesmo post", body_entry[1].get("error", ""))
+
+    def test_clean_translated_text(self):
+        # Remove wrappers ```
+        raw_code = "```\nTexto traduzido aqui.\n```"
+        self.assertEqual(app.clean_translated_text(raw_code), "Texto traduzido aqui.")
+
+        # Remove prefixo de tradução
+        raw_pfx = "Translation: Olá mundo!"
+        self.assertEqual(app.clean_translated_text(raw_pfx), "Olá mundo!")
+
+        raw_pt_pfx = "Tradução: Bom dia a todos!"
+        self.assertEqual(app.clean_translated_text(raw_pt_pfx), "Bom dia a todos!")
+
+        # Remove aspas exteriores
+        raw_quotes = '"Isto é uma citação traduzida."'
+        self.assertEqual(app.clean_translated_text(raw_quotes), "Isto é uma citação traduzida.")
+
+        raw_curly = '“Citação com aspas curvas.”'
+        self.assertEqual(app.clean_translated_text(raw_curly), "Citação com aspas curvas.")
+
+        self.assertEqual(app.clean_translated_text(""), "")
+        self.assertEqual(app.clean_translated_text(None), "")
+
+    def test_translate_text_disabled(self):
+        cfg = {"ai": {"provider": "none"}}
+        with self.assertRaises(ValueError) as ctx:
+            app.translate_text("Hello world", cfg=cfg)
+        self.assertIn("não está ativado", str(ctx.exception))
+
+    def test_translate_text_invalid_input(self):
+        cfg = {"ai": {"provider": "gemini", "gemini_key": "test"}}
+        with self.assertRaises(ValueError):
+            app.translate_text("", cfg=cfg)
+        with self.assertRaises(ValueError):
+            app.translate_text("   ", cfg=cfg)
+        with self.assertRaises(ValueError):
+            app.translate_text(None, cfg=cfg)
+
+    def test_translate_text_gemini(self):
+        cfg = {
+            "ai": {
+                "provider": "gemini",
+                "gemini_key": "fake_gemini_key",
+                "gemini_model": "gemini-3.5-flash",
+                "lang": "pt"
+            }
+        }
+        fake_resp = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "Olá mundo a partir do Bluesky!"}]
+                    }
+                }
+            ]
+        }
+        with mock.patch("app.http", return_value=fake_resp) as mock_http:
+            res = app.translate_text("Hello world from Bluesky!", target_lang="pt", cfg=cfg)
+            self.assertEqual(res, "Olá mundo a partir do Bluesky!")
+            mock_http.assert_called_once()
+            called_url = mock_http.call_args[0][1]
+            self.assertIn("gemini-3.5-flash", called_url)
+            self.assertIn("fake_gemini_key", called_url)
+
+    def test_translate_text_gemini_invalid_argument_fallback(self):
+        cfg = {
+            "ai": {
+                "provider": "gemini",
+                "gemini_key": "fake_gemini_key",
+                "gemini_model": "gemini-3.5-flash",
+                "lang": "pt"
+            }
+        }
+        fake_resp = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": "Exatamente, é o efeito manada."}]
+                    }
+                }
+            ]
+        }
+        err_msg = '400: { "error": { "code": 400, "message": "Request contains an invalid argument.", "status": "INVALID_ARGUMENT" } }'
+        api_err = app.ApiError(err_msg, status=400, body=err_msg.split(": ", 1)[1])
+
+        call_count = [0]
+        def fake_http(method, url, **kwargs):
+            call_count[0] += 1
+            if "gemini-3.5-flash" in url:
+                raise api_err
+            return fake_resp
+
+        with mock.patch("app.http", side_effect=fake_http):
+            res = app.translate_text("Exact, herd mentality.", target_lang="pt", cfg=cfg)
+            self.assertEqual(res, "Exatamente, é o efeito manada.")
+            self.assertGreaterEqual(call_count[0], 2)
+
+    def test_translate_text_ollama(self):
+        cfg = {
+            "ai": {
+                "provider": "ollama",
+                "ollama_url": "http://localhost:11434",
+                "ollama_model": "llama3.2"
+            }
+        }
+        fake_resp = {"response": "Isto é um teste de tradução com Ollama."}
+        with mock.patch("app.http", return_value=fake_resp) as mock_http:
+            res = app.translate_text("This is a translation test with Ollama.", target_lang="pt", cfg=cfg)
+            self.assertEqual(res, "Isto é um teste de tradução com Ollama.")
+            mock_http.assert_called_once()
+            payload = mock_http.call_args[1]["data"]
+            self.assertEqual(payload["model"], "llama3.2")
+            self.assertEqual(payload["prompt"], "This is a translation test with Ollama.")
+
+    def test_translate_text_openai(self):
+        cfg = {
+            "ai": {
+                "provider": "openai",
+                "openai_url": "https://api.openai.com/v1",
+                "openai_key": "sk-test",
+                "openai_model": "gpt-4o-mini"
+            }
+        }
+        fake_resp = {
+            "choices": [
+                {"message": {"content": "Bonjour le monde!"}}
+            ]
+        }
+        with mock.patch("app.http", return_value=fake_resp) as mock_http:
+            res = app.translate_text("Hello world!", target_lang="fr", cfg=cfg)
+            self.assertEqual(res, "Bonjour le monde!")
+            mock_http.assert_called_once()
+            headers = mock_http.call_args[1]["headers"]
+            self.assertEqual(headers["Authorization"], "Bearer sk-test")
+
+    def test_api_translate_endpoint(self):
+        h = object.__new__(app.H)
+        h.path = "/api/translate"
+        h.headers = {
+            "Host": f"127.0.0.1:{app.PORT}",
+            "X-CSRF-Token": app.SESSION_TOKEN
+        }
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        h.send = lambda code, body, ctype="application/json": h.sent.append(("body", code, body))
+
+        # 1. Falha sem texto
+        h._read_json = lambda: ({"text": ""}, None)
+        h._do_post()
+        entry = [v for k, *v in h.sent if k == "body"][-1]
+        self.assertEqual(entry[0], 400)
+
+        # 2. Sucesso com texto
+        h._read_json = lambda: ({"text": "Hello world", "target_lang": "pt"}, None)
+        with mock.patch("app.translate_text", return_value="Olá mundo"):
+            h._do_post()
+            entry2 = [v for k, *v in h.sent if k == "body"][-1]
+            self.assertEqual(entry2[0], 200)
+            self.assertTrue(entry2[1]["ok"])
+            self.assertEqual(entry2[1]["translated"], "Olá mundo")
+
+    def test_index_contains_translation_features(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+
+        # Funções e elementos visuais de tradução
+        self.assertIn("function attachPostTranslator(", html)
+        self.assertIn(".post-translate-wrap", html)
+        self.assertIn(".post-translate-link", html)
+        self.assertIn(".post-translated-box", html)
+        self.assertIn(".post-translated-badge", html)
+        self.assertIn(".acts button.act-translate", html)
+        self.assertIn("act-btn act-translate", html)
+        self.assertIn("ICONS.translate", html)
+        self.assertIn('/api/translate', html)
+
+        # Suporte a traduções nas ações do post
+        self.assertIn('translate: "Traduzir com IA"', html)
+        self.assertIn('translate: "Translate with AI"', html)
+        self.assertIn('translated_with_ai: "Traduzido com IA"', html)
+        self.assertIn('translated_with_ai: "Translated with AI"', html)
+
+
+class MobileAndLanAccessTests(unittest.TestCase):
+    def _handler(self, host, origin=None):
+        import io
+        h = object.__new__(app.H)
+        h.headers = {"Host": host}
+        if origin:
+            h.headers["Origin"] = origin
+        h.sent = []
+        h.wfile = io.BytesIO()
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        return h
+
+    def test_is_private_or_local_host(self):
+        # Local / Loopback
+        self.assertTrue(app.is_private_or_local_host("127.0.0.1"))
+        self.assertTrue(app.is_private_or_local_host("127.0.0.1:8000"))
+        self.assertTrue(app.is_private_or_local_host("localhost"))
+        self.assertTrue(app.is_private_or_local_host("localhost:8000"))
+        self.assertTrue(app.is_private_or_local_host("::1"))
+
+        # RFC 1918 Private IPv4
+        self.assertTrue(app.is_private_or_local_host("192.168.1.150"))
+        self.assertTrue(app.is_private_or_local_host("192.168.1.150:8000"))
+        self.assertTrue(app.is_private_or_local_host("10.0.0.5:8000"))
+        self.assertTrue(app.is_private_or_local_host("172.20.10.2:8000"))
+
+        # Link-local & mDNS .local
+        self.assertTrue(app.is_private_or_local_host("169.254.10.20:8000"))
+        self.assertTrue(app.is_private_or_local_host("my-macbook.local:8000"))
+
+        # Public / External hosts rejected
+        self.assertFalse(app.is_private_or_local_host("evil.example"))
+        self.assertFalse(app.is_private_or_local_host("8.8.8.8:8000"))
+        self.assertFalse(app.is_private_or_local_host("1.1.1.1"))
+        self.assertFalse(app.is_private_or_local_host(""))
+        self.assertFalse(app.is_private_or_local_host(None))
+
+    def test_allowed_in_lan_mode(self):
+        p = app.PORT
+        old_lan = app.LAN_MODE
+        try:
+            app.LAN_MODE = True
+            # Permite LAN IP
+            self.assertTrue(self._handler("192.168.1.50:%d" % p).allowed())
+            self.assertTrue(self._handler("192.168.1.50:%d" % p, "http://192.168.1.50:%d" % p).allowed())
+            self.assertTrue(self._handler("ipad.local:%d" % p).allowed())
+            # Continua a permitir localhost
+            self.assertTrue(self._handler("127.0.0.1:%d" % p).allowed())
+            self.assertTrue(self._handler("localhost:%d" % p).allowed())
+
+            # Rejeita sites externos
+            self.assertFalse(self._handler("evil.com").allowed())
+            self.assertFalse(self._handler("192.168.1.50:%d" % p, "https://evil.com").allowed())
+            # Rejeita porta errada
+            self.assertFalse(self._handler("192.168.1.50:9999").allowed())
+        finally:
+            app.LAN_MODE = old_lan
+
+    def test_manifest_endpoint(self):
+        h = self._handler("127.0.0.1:%d" % app.PORT)
+        h.path = "/manifest.json"
+        h.do_GET()
+        headers = dict(h.sent)
+        self.assertIn("application/manifest+json", headers.get("Content-Type", ""))
+        manifest_data = json.loads(h.wfile.getvalue())
+        self.assertEqual(manifest_data.get("name"), "MastoSky")
+        self.assertEqual(manifest_data.get("display"), "standalone")
+        self.assertTrue(len(manifest_data.get("icons", [])) >= 1)
+
+    def test_lan_endpoint(self):
+        h = self._handler("127.0.0.1:%d" % app.PORT)
+        h.path = "/api/lan"
+        h.do_GET()
+        res = json.loads(h.wfile.getvalue())
+        self.assertIn("lan", res)
+        self.assertIn("local_ip", res)
+        self.assertIn("url", res)
+        self.assertIn("qr_svg", res)
+        self.assertIn("<svg", res["qr_svg"])
+
+    def test_qr_code_generation(self):
+        url = "http://192.168.1.150:8000"
+        matrix = app.generate_qr_matrix(url, level='M')
+        self.assertTrue(len(matrix) >= 21)
+        self.assertTrue(len(matrix[0]) >= 21)
+
+        # Test ASCII export
+        ascii_qr = app.qr_to_ascii(matrix)
+        self.assertIn("█", ascii_qr)
+
+        # Test SVG export
+        svg_qr = app.qr_to_svg(matrix)
+        self.assertIn("<svg", svg_qr)
+        self.assertIn("viewBox=", svg_qr)
+
+    def test_index_contains_mobile_and_pwa_features(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+
+        # PWA Meta Tags
+        self.assertIn('viewport-fit=cover', html)
+        self.assertIn('apple-mobile-web-app-capable', html)
+        self.assertIn('apple-touch-icon', html)
+        self.assertIn('/manifest.json', html)
+
+        # Modal e controlos de ligação de telemóvel/iPad
+        self.assertIn('id="mobileConnectBtn"', html)
+        self.assertIn('id="mobileModalOverlay"', html)
+        self.assertIn('id="mobileQrSvg"', html)
+        self.assertIn('id="mobileUrlText"', html)
+        self.assertIn('id="mobileCopyBtn"', html)
+        self.assertIn('function openMobileModal(', html)
+        self.assertIn('function closeMobileModal(', html)
+        self.assertIn('function updateLanBadges(', html)
+        self.assertIn('/api/lan', html)
+
+        # Navegação móvel e abas fixas estáveis (não dançam)
+        self.assertIn('.tab .tab-ico', html)
+        self.assertIn('.tab .tab-label', html)
+        self.assertIn('tab-notif-wrap', html)
+        self.assertIn('touch-action: pan-y', html)
+
+        # Interceção de hashtags e menções @user nos posts
+        self.assertIn('function handlePostHtmlClicks(', html)
+        self.assertIn('tabScrolls', html)
+        self.assertIn('setSearchType("posts")', html)
+
+
+class CasaOSTailscaleAndSyncTests(unittest.TestCase):
+    def _api_handler(self, path, host="127.0.0.1:8000", origin=None, body=None):
+        h = object.__new__(app.H)
+        h.path = path
+        h.headers = {"Host": host, "X-CSRF-Token": app.SESSION_TOKEN}
+        if origin:
+            h.headers["Origin"] = origin
+        h.sent = []
+        h.wfile = io.BytesIO()
+        if body is not None:
+            raw = json.dumps(body).encode("utf-8")
+            h.rfile = io.BytesIO(raw)
+            h.headers["Content-Length"] = str(len(raw))
+            h.headers["Content-Type"] = "application/json"
+        else:
+            h.rfile = io.BytesIO()
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        return h
+
+    def test_tailscale_and_allowed_hosts(self):
+        for ok_host in (
+            "100.64.0.1",
+            "100.100.50.25:8000",
+            "100.127.255.254",
+            "[::ffff:100.80.1.2]:8000",
+            "casaos.tail1234.ts.net",
+            "casaos.tail1234.ts.net:8000",
+            "casaos.tail1234.ts.net.",
+        ):
+            self.assertTrue(app.is_private_or_local_host(ok_host), f"Deveria aceitar {ok_host}")
+
+        for bad_host in ("100.63.255.255", "100.128.0.1", "ts.net", "evil.com", "8.8.8.8"):
+            self.assertFalse(app.is_private_or_local_host(bad_host), f"Deveria rejeitar {bad_host}")
+
+        with mock.patch.dict(os.environ, {"MASTOSKY_ALLOWED_HOSTS": "mastosky.meudominio.pt, nas.casa "}):
+            self.assertTrue(app.is_private_or_local_host("mastosky.meudominio.pt:8000"))
+            self.assertTrue(app.is_private_or_local_host("NAS.CASA"))
+            self.assertFalse(app.is_private_or_local_host("outro.meudominio.pt"))
+
+        old_lan = app.LAN_MODE
+        try:
+            app.LAN_MODE = True
+            self.assertTrue(self._api_handler("/", host="casaos.tail1234.ts.net:8000", origin="http://casaos.tail1234.ts.net:8000").allowed())
+            self.assertTrue(self._api_handler("/", host="100.80.10.20:8000", origin="http://100.80.10.20:8000").allowed())
+            self.assertFalse(self._api_handler("/", host="casaos.tail1234.ts.net:8000", origin="http://evil.com").allowed())
+        finally:
+            app.LAN_MODE = old_lan
+
+    def test_get_tailscale_url_env_and_lan_endpoint(self):
+        old_lan = app.LAN_MODE
+        try:
+            app.LAN_MODE = True
+            with mock.patch.dict(os.environ, {"MASTOSKY_TAILSCALE_HOST": "casaos.tail123.ts.net"}, clear=False):
+                os.environ.pop("MASTOSKY_TAILSCALE_URL", None)
+                self.assertEqual(app.get_tailscale_ip(), "casaos.tail123.ts.net")
+                self.assertEqual(app.get_tailscale_url(8000), "http://casaos.tail123.ts.net:8000")
+
+                h = self._api_handler("/api/lan", host="casaos.tail123.ts.net:8000")
+                with mock.patch.object(app, "get_local_ip", return_value="192.168.1.50"):
+                    h.do_GET()
+                data = json.loads(h.wfile.getvalue().decode("utf-8"))
+                self.assertEqual(data["tailscale_ip"], "casaos.tail123.ts.net")
+                self.assertEqual(data["tailscale_url"], "http://casaos.tail123.ts.net:8000")
+                self.assertIn("<svg", data["tailscale_qr_svg"])
+
+            with mock.patch.dict(os.environ, {"MASTOSKY_TAILSCALE_URL": "https://mastosky.tail123.ts.net/"}):
+                self.assertEqual(app.get_tailscale_url(8000), "https://mastosky.tail123.ts.net")
+        finally:
+            app.LAN_MODE = old_lan
+
+    def test_user_data_persistence_and_api_endpoints(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ud_path = Path(tmpdir) / "sub" / "user_data.json"
+            old_path = app.USER_DATA_PATH
+            try:
+                app.USER_DATA_PATH = ud_path
+                initial = app.load_user_data()
+                self.assertEqual(initial["saved_posts"], [])
+                self.assertEqual(initial["updated_at"], 0)
+
+                # POST /api/user_data guarda e faz merge parcial de preferências
+                h_post1 = self._api_handler("/api/user_data", body={
+                    "saved_posts": [{"network": "bluesky", "id": "at://1", "text": "ola"}],
+                    "muted_words": [" Spoiler ", "spoiler", "Crypto"],
+                    "mute_mode": "hide",
+                    "preferences": {"theme": "dark", "view_mode": "deck"}
+                })
+                h_post1.do_POST()
+                res1 = json.loads(h_post1.wfile.getvalue().decode("utf-8"))
+                self.assertTrue(res1["ok"])
+                self.assertEqual(res1["data"]["muted_words"], ["spoiler", "crypto"])
+                self.assertEqual(res1["data"]["mute_mode"], "hide")
+                self.assertEqual(res1["data"]["preferences"]["theme"], "dark")
+                self.assertGreater(res1["data"]["updated_at"], 0)
+                if os.name == "posix":
+                    self.assertEqual(stat.S_IMODE(os.stat(ud_path).st_mode) & 0o077, 0)
+
+                # Segundo POST parcial preserva campos existentes
+                h_post2 = self._api_handler("/api/user_data", body={
+                    "drafts": [{"id": "d1", "text": "rascunho"}],
+                    "preferences": {"lang": "pt"}
+                })
+                h_post2.do_POST()
+                h_get = self._api_handler("/api/user_data")
+                h_get.do_GET()
+                got = json.loads(h_get.wfile.getvalue().decode("utf-8"))
+                self.assertTrue(got["ok"])
+                self.assertEqual(len(got["data"]["saved_posts"]), 1)
+                self.assertEqual(len(got["data"]["drafts"]), 1)
+                self.assertEqual(got["data"]["preferences"]["theme"], "dark")
+                self.assertEqual(got["data"]["preferences"]["lang"], "pt")
+
+                # Validação de payload inválido devolve 400
+                h_bad = self._api_handler("/api/user_data", body={"mute_mode": "invalid"})
+                h_bad.do_POST()
+                self.assertIn(("code", 400), h_bad.sent)
+            finally:
+                app.USER_DATA_PATH = old_path
+
+    def test_docker_casaos_files_and_frontend_sync(self):
+        root = Path(__file__).resolve().parent.parent
+        dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+        compose = (root / "docker-compose.yml").read_text(encoding="utf-8")
+        dockerignore = (root / ".dockerignore").read_text(encoding="utf-8")
+        html = (root / "index.html").read_text(encoding="utf-8")
+
+        self.assertIn("python:3.12-alpine", dockerfile)
+        self.assertIn("MASTOSKY_DATA_DIR=/data", dockerfile)
+        self.assertIn("/data/app_update", dockerfile)
+        self.assertIn('VOLUME ["/data"]', dockerfile)
+        self.assertIn("EXPOSE 8000", dockerfile)
+        self.assertIn("--lan", dockerfile)
+
+        self.assertIn("x-casaos:", compose)
+        self.assertIn("MASTOSKY_DATA_DIR=/data", compose)
+        self.assertIn("/DATA/AppData/mastosky:/data", compose)
+        self.assertIn('"8000:8000"', compose)
+
+        self.assertIn("config.json", dockerignore)
+        self.assertIn("user_data.json", dockerignore)
+
+        self.assertIn('id="mobileTailscaleWrap"', html)
+        self.assertIn('id="mobileTailscaleUrlText"', html)
+        self.assertIn('id="mobileCopyTailscaleBtn"', html)
+        self.assertIn("function pullUserDataFromServer(", html)
+        self.assertIn("function scheduleServerSync(", html)
+        self.assertIn("function applySyncedUserData(", html)
+        self.assertIn("function initServerSync(", html)
+        self.assertIn("/api/user_data", html)
+        self.assertIn("/api/version?force=1", html)
+
+    def test_self_update_persists_to_data_dir_and_restarts(self):
+        import tarfile, tempfile
+        buf = io.BytesIO()
+        files = {
+            "MastoSky-main/index.html": b"<html>updated</html>",
+            "MastoSky-main/app.py": b"# updated app\n",
+            "MastoSky-main/config.json": b'{"overwritten": true}',
+            "MastoSky-main/user_data.json": b'{"overwritten": true}',
+        }
+        with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+            for name, content in files.items():
+                info = tarfile.TarInfo(name=name)
+                info.size = len(content)
+                tar.addfile(info, io.BytesIO(content))
+        archive_bytes = buf.getvalue()
+
+        mock_resp = mock.MagicMock()
+        mock_resp.read.return_value = archive_bytes
+        mock_resp.__enter__ = lambda s: mock_resp
+        mock_resp.__exit__ = lambda s, *a: False
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            app_dir = root / "app"
+            data_dir = root / "data"
+            app_dir.mkdir()
+            data_dir.mkdir()
+            (app_dir / "config.json").write_text('{"keep": "cfg"}', encoding="utf-8")
+            (app_dir / "user_data.json").write_text('{"keep": "ud"}', encoding="utf-8")
+
+            with mock.patch.object(app, "DIR", app_dir), \
+                 mock.patch.object(app, "DATA_DIR", data_dir), \
+                 mock.patch.object(app, "schedule_process_restart") as mock_restart, \
+                 mock.patch("urllib.request.urlopen", return_value=mock_resp):
+                h = self._api_handler("/api/self_update", body={})
+                h.do_POST()
+
+            code = [v for k, v in h.sent if k == "code"][0]
+            self.assertEqual(code, 200)
+            res = json.loads(h.wfile.getvalue().decode("utf-8"))
+            self.assertTrue(res["ok"])
+            self.assertTrue(res["restarting"])
+            mock_restart.assert_called_once()
+
+            self.assertEqual((app_dir / "index.html").read_bytes(), b"<html>updated</html>")
+            self.assertEqual((app_dir / "app.py").read_bytes(), b"# updated app\n")
+            self.assertEqual((data_dir / "app_update" / "index.html").read_bytes(), b"<html>updated</html>")
+            self.assertEqual((data_dir / "app_update" / "app.py").read_bytes(), b"# updated app\n")
+            self.assertEqual((app_dir / "config.json").read_text(encoding="utf-8"), '{"keep": "cfg"}')
+            self.assertEqual((app_dir / "user_data.json").read_text(encoding="utf-8"), '{"keep": "ud"}')
+            self.assertFalse((data_dir / "app_update" / "config.json").exists())
+            self.assertFalse((data_dir / "app_update" / "user_data.json").exists())
+
+
+class DirectMessagesTests(unittest.TestCase):
+    def test_build_bsky_facets(self):
+        text = "Visita https://example.com e segue @alice.bsky.social com a tag #mastosky!"
+        def mock_resolve(h):
+            return "did:plc:alice123" if h == "alice.bsky.social" else None
+
+        facets = app.build_bsky_facets(text, mock_resolve)
+        self.assertEqual(len(facets), 3)
+
+        # Link facet
+        self.assertEqual(facets[0]["features"][0]["$type"], "app.bsky.richtext.facet#link")
+        self.assertEqual(facets[0]["features"][0]["uri"], "https://example.com")
+
+        # Mention facet
+        self.assertEqual(facets[1]["features"][0]["$type"], "app.bsky.richtext.facet#mention")
+        self.assertEqual(facets[1]["features"][0]["did"], "did:plc:alice123")
+
+        # Tag facet
+        self.assertEqual(facets[2]["features"][0]["$type"], "app.bsky.richtext.facet#tag")
+        self.assertEqual(facets[2]["features"][0]["tag"], "mastosky")
+
+        # Vazio ou sem facets
+        self.assertEqual(app.build_bsky_facets(""), [])
+        self.assertEqual(app.build_bsky_facets("Olá mundo!"), [])
+
+    def test_bsky_conversations_list_and_messages(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "pass"})
+        b.jwt = "fake_jwt"
+        b.did = "did:plc:me123"
+
+        chat_calls = []
+        def mock_call_chat(method, nsid, data=None, params=None):
+            chat_calls.append((method, nsid, data, params))
+            if nsid == "chat.bsky.convo.listConvos":
+                return {
+                    "cursor": "cur1",
+                    "convos": [
+                        {
+                            "id": "c1",
+                            "unreadCount": 2,
+                            "status": "accepted",
+                            "members": [
+                                {"did": "did:plc:me123", "handle": "me.bsky.social"},
+                                {"did": "did:plc:bob456", "handle": "bob.bsky.social", "displayName": "Bob", "avatar": "https://img/bob.png"}
+                            ],
+                            "lastMessage": {
+                                "id": "m1",
+                                "text": "Olá MastoSky!",
+                                "sentAt": "2026-11-11T12:00:00.000Z"
+                            }
+                        }
+                    ]
+                }
+            if nsid == "chat.bsky.convo.getMessages":
+                return {
+                    "cursor": "cur2",
+                    "messages": [
+                        {
+                            "id": "m2",
+                            "sender": {"did": "did:plc:bob456"},
+                            "text": "Segunda mensagem",
+                            "sentAt": "2026-11-11T12:05:00.000Z"
+                        },
+                        {
+                            "id": "m1",
+                            "sender": {"did": "did:plc:me123"},
+                            "text": "Primeira mensagem",
+                            "sentAt": "2026-11-11T12:00:00.000Z"
+                        }
+                    ]
+                }
+            if nsid == "chat.bsky.convo.sendMessage":
+                return {
+                    "id": "m3",
+                    "sentAt": "2026-11-11T12:10:00.000Z"
+                }
+            if nsid == "chat.bsky.convo.updateRead":
+                return {"convo": {"id": params.get("convoId") if params else "c1"}}
+            if nsid == "chat.bsky.convo.getConvoForMembers":
+                return {"convo": {"id": "c_new"}}
+            return {}
+
+        b.call_chat = mock_call_chat
+
+        # 1. List convos
+        conv_res = b.list_conversations(limit=10)
+        self.assertEqual(len(conv_res["convos"]), 1)
+        c = conv_res["convos"][0]
+        self.assertEqual(c["id"], "c1")
+        self.assertEqual(c["network"], "bluesky")
+        self.assertTrue(c["unread"])
+        self.assertEqual(c["unread_count"], 2)
+        self.assertEqual(c["peer"]["name"], "Bob")
+        self.assertEqual(c["peer"]["handle"], "@bob.bsky.social")
+        self.assertEqual(c["last_text"], "Olá MastoSky!")
+
+        # 2. Get messages (verificar ordenação cronológica)
+        msg_res = b.get_conversation_messages("c1")
+        self.assertEqual(len(msg_res["messages"]), 2)
+        self.assertEqual(msg_res["messages"][0]["id"], "m1")
+        self.assertTrue(msg_res["messages"][0]["is_own"])
+        self.assertEqual(msg_res["messages"][1]["id"], "m2")
+        self.assertFalse(msg_res["messages"][1]["is_own"])
+
+        # 3. Send message
+        sent = b.send_message("c1", "Tudo bem?")
+        self.assertEqual(sent["id"], "m3")
+        self.assertTrue(sent["is_own"])
+        self.assertEqual(sent["text"], "Tudo bem?")
+
+        # 4. Mark as read
+        b.mark_as_read("c1")
+        self.assertEqual(chat_calls[-1][1], "chat.bsky.convo.updateRead")
+
+        # 5. Start conversation
+        b.resolve_handle = lambda h: "did:plc:bob456"
+        start_res = b.start_conversation("bob.bsky.social", text="Início")
+        self.assertEqual(start_res["convo_id"], "c_new")
+        self.assertEqual(start_res["message"]["text"], "Início")
+
+    def test_bsky_chat_permission_error(self):
+        b = app.Bsky({"handle": "me.bsky.social", "app_password": "pass"})
+        b.jwt = "fake_jwt"
+
+        def mock_call(method, nsid, data=None, params=None, headers=None):
+            raise RuntimeError("AuthFactorTokenRequired: Token lacks chat capability")
+
+        b.call = mock_call
+        with self.assertRaises(app.ApiError) as ctx:
+            b.list_conversations()
+        self.assertIn("Direct Messages", str(ctx.exception))
+
+    def test_masto_conversations_list_and_messages(self):
+        m = app.Masto({"instance": "https://masto.pt", "token": "tok"})
+        m.my_id = "100"
+
+        m_calls = []
+        def mock_call(method, path, data=None, params=None, timeout=30):
+            m_calls.append((method, path, data, params))
+            if path == "/api/v1/conversations":
+                return [
+                    {
+                        "id": "1",
+                        "unread": True,
+                        "accounts": [
+                            {"id": "100", "username": "me", "acct": "me"},
+                            {"id": "200", "username": "alice", "acct": "alice@fediverse.org", "display_name": "Alice"}
+                        ],
+                        "last_status": {
+                            "id": "999",
+                            "created_at": "2026-11-11T14:00:00.000Z",
+                            "content": "<p>Olá do Mastodon!</p>",
+                            "account": {"id": "200", "username": "alice", "acct": "alice@fediverse.org"}
+                        }
+                    }
+                ]
+            if path == "/api/v1/statuses/999/context":
+                return {
+                    "ancestors": [
+                        {
+                            "id": "998",
+                            "created_at": "2026-11-11T13:50:00.000Z",
+                            "content": "<p>@alice primeira mensagem</p>",
+                            "account": {"id": "100", "username": "me", "acct": "me"}
+                        }
+                    ],
+                    "descendants": []
+                }
+            if path == "/api/v1/statuses/999":
+                return {
+                    "id": "999",
+                    "created_at": "2026-11-11T14:00:00.000Z",
+                    "content": "<p>Olá do Mastodon!</p>",
+                    "account": {"id": "200", "username": "alice", "acct": "alice@fediverse.org"}
+                }
+            if path == "/api/v1/statuses":
+                return {
+                    "id": "1000",
+                    "created_at": "2026-11-11T14:05:00.000Z",
+                    "content": f"<p>{data.get('status')}</p>",
+                    "account": {"id": "100", "username": "me", "acct": "me"}
+                }
+            if path == "/api/v1/conversations/1/read":
+                return {"id": "1", "unread": False}
+            return {}
+
+        m.call = mock_call
+
+        # 1. List convos
+        conv_res = m.list_conversations(limit=10)
+        self.assertEqual(len(conv_res["convos"]), 1)
+        c = conv_res["convos"][0]
+        self.assertEqual(c["id"], "1")
+        self.assertEqual(c["network"], "mastodon")
+        self.assertTrue(c["unread"])
+        self.assertEqual(c["peer"]["name"], "Alice")
+        self.assertEqual(c["peer"]["handle"], "@alice@fediverse.org")
+        self.assertIn("Olá do Mastodon!", c["last_text"])
+
+        # 2. Get messages
+        msg_res = m.get_conversation_messages("1", last_status_id="999")
+        self.assertEqual(len(msg_res["messages"]), 2)
+        self.assertEqual(msg_res["messages"][0]["id"], "998")
+        self.assertTrue(msg_res["messages"][0]["is_own"])
+        self.assertEqual(msg_res["messages"][1]["id"], "999")
+        self.assertFalse(msg_res["messages"][1]["is_own"])
+
+        # 3. Send message
+        sent = m.send_message("1", "Resposta", recipient="@alice@fediverse.org")
+        self.assertEqual(sent["id"], "1000")
+        self.assertTrue(sent["is_own"])
+        self.assertIn("@alice@fediverse.org Resposta", sent["text"])
+
+        # 4. Mark as read
+        m.mark_as_read("1")
+        self.assertEqual(m_calls[-1][1], "/api/v1/conversations/1/read")
+
+        # 5. Start conversation
+        start_res = m.start_conversation("https://fediverse.org/@alice", "Nova mensagem")
+        self.assertEqual(start_res["network"], "mastodon")
+        self.assertIn("Nova mensagem", start_res["message"]["text"])
+
+    def test_masto_chat_scope_error(self):
+        m = app.Masto({"instance": "https://masto.pt", "token": "tok"})
+        def mock_call(method, path, data=None, params=None, timeout=30):
+            raise RuntimeError("This action is outside authorized scopes (need read:conversations)")
+
+        m.call = mock_call
+        with self.assertRaises(app.ApiError) as ctx:
+            m.list_conversations()
+        self.assertIn("read:conversations", str(ctx.exception))
+
+
+class DirectMessagesEndpointsTests(unittest.TestCase):
+    def _handler(self, path, method="GET", body=None, host="127.0.0.1:8000"):
+        import io
+        h = object.__new__(app.H)
+        h.path = path
+        h.headers = {"Host": host, "X-CSRF-Token": app.SESSION_TOKEN}
+        h.sent = []
+        h.wfile = io.BytesIO()
+        if body is not None:
+            raw = json.dumps(body).encode("utf-8")
+            h.rfile = io.BytesIO(raw)
+            h.headers["Content-Length"] = str(len(raw))
+            h.headers["Content-Type"] = "application/json"
+        else:
+            h.rfile = io.BytesIO()
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        return h
+
+    def test_conversations_api_get_and_post(self):
+        old_clients = app.CLIENTS
+        try:
+            mock_bsky = mock.MagicMock()
+            mock_bsky.name = "bluesky"
+            mock_bsky.list_conversations.return_value = {
+                "convos": [
+                    {
+                        "id": "b_c1",
+                        "network": "bluesky",
+                        "unread": True,
+                        "last_time": "2026-11-11T12:00:00.000Z",
+                        "last_text": "Hey from bsky"
+                    }
+                ]
+            }
+            mock_bsky.get_conversation_messages.return_value = {
+                "id": "b_c1",
+                "network": "bluesky",
+                "messages": [{"id": "m1", "text": "Hey from bsky", "time": "2026-11-11T12:00:00.000Z"}]
+            }
+            mock_bsky.send_message.return_value = {"id": "m2", "text": "Reply", "time": "2026-11-11T12:01:00.000Z"}
+            mock_bsky.mark_as_read.return_value = {"ok": True}
+            mock_bsky.start_conversation.return_value = {"convo_id": "b_c2", "message": {"id": "m3", "text": "Start"}}
+
+            mock_masto = mock.MagicMock()
+            mock_masto.name = "mastodon"
+            mock_masto.list_conversations.return_value = {
+                "convos": [
+                    {
+                        "id": "m_c1",
+                        "network": "mastodon",
+                        "unread": False,
+                        "last_time": "2026-11-11T12:30:00.000Z",
+                        "last_text": "Hey from masto"
+                    }
+                ]
+            }
+
+            app.CLIENTS = {"bluesky": mock_bsky, "mastodon": mock_masto}
+
+            # 1. GET /api/conversations (unificadas e ordenadas por last_time)
+            h = self._handler("/api/conversations")
+            h.do_GET()
+            res = json.loads(h.wfile.getvalue())
+            self.assertEqual(len(res["conversations"]), 2)
+            # mastodon é mais recente (12:30 vs 12:00)
+            self.assertEqual(res["conversations"][0]["id"], "m_c1")
+            self.assertEqual(res["conversations"][1]["id"], "b_c1")
+            self.assertEqual(res["total_unread"], 1)
+
+            # 2. GET /api/conversations?network=bluesky
+            h2 = self._handler("/api/conversations?network=bluesky")
+            h2.do_GET()
+            res2 = json.loads(h2.wfile.getvalue())
+            self.assertEqual(len(res2["conversations"]), 1)
+            self.assertEqual(res2["conversations"][0]["id"], "b_c1")
+
+            # 3. GET /api/conversation?network=bluesky&id=b_c1
+            h3 = self._handler("/api/conversation?network=bluesky&id=b_c1")
+            h3.do_GET()
+            res3 = json.loads(h3.wfile.getvalue())
+            self.assertEqual(res3["id"], "b_c1")
+            self.assertEqual(len(res3["messages"]), 1)
+
+            # 4. POST /api/conversation/send
+            h4 = self._handler("/api/conversation/send", method="POST", body={
+                "network": "bluesky",
+                "convo_id": "b_c1",
+                "text": "Reply"
+            })
+            h4.do_POST()
+            res4 = json.loads(h4.wfile.getvalue())
+            self.assertTrue(res4["ok"])
+            self.assertEqual(res4["message"]["text"], "Reply")
+
+            # 5. POST /api/conversation/read
+            h5 = self._handler("/api/conversation/read", method="POST", body={
+                "network": "bluesky",
+                "convo_id": "b_c1"
+            })
+            h5.do_POST()
+            res5 = json.loads(h5.wfile.getvalue())
+            self.assertTrue(res5["ok"])
+
+            # 6. POST /api/conversation/start
+            h6 = self._handler("/api/conversation/start", method="POST", body={
+                "network": "bluesky",
+                "recipient": "bob.bsky.social",
+                "text": "Start"
+            })
+            h6.do_POST()
+            res6 = json.loads(h6.wfile.getvalue())
+            self.assertTrue(res6["ok"])
+            self.assertEqual(res6["convo_id"], "b_c2")
+        finally:
+            app.CLIENTS = old_clients
+
+
+class DirectMessagesFrontendTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        index_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "index.html")
+        with open(index_path, "r", encoding="utf-8") as f:
+            cls.html = f.read()
+
+    def test_direct_messages_elements_present(self):
+        self.assertIn('id="colMessages"', self.html)
+        self.assertIn('id="pMessages"', self.html)
+        self.assertIn('id="colMessagesBody"', self.html)
+        self.assertIn('data-tab="messages"', self.html)
+        self.assertIn('id="messagesBadge"', self.html)
+        self.assertIn('id="sideMessagesBadge"', self.html)
+        self.assertIn('id="deckMessagesBadge"', self.html)
+        self.assertIn('id="convoListView"', self.html)
+        self.assertIn('id="convoThreadView"', self.html)
+        self.assertIn('id="newConvoModalOverlay"', self.html)
+        self.assertIn('id="chkColMessages"', self.html)
+        self.assertIn('id="openNewConvoBtn"', self.html)
+
+    def test_direct_messages_scripts_present(self):
+        self.assertIn("function loadConversations(", self.html)
+        self.assertIn("function renderConversationList(", self.html)
+        self.assertIn("function openConvo(", self.html)
+        self.assertIn("function closeConvoThread(", self.html)
+        self.assertIn("function sendCurrentConvoMessage(", self.html)
+        self.assertIn("function openNewConvoModal(", self.html)
+        self.assertIn("function closeNewConvoModal(", self.html)
+        self.assertIn("function submitStartConvo(", self.html)
+        self.assertIn("function initConvoEvents(", self.html)
+        self.assertIn("updateMessagesBadge", self.html)
+        self.assertIn("initConvoEvents()", self.html)
+
+    def test_direct_messages_i18n_present(self):
+        self.assertIn('"tabs.messages"', self.html)
+        self.assertIn('"messages.new_btn"', self.html)
+        self.assertIn('"messages.new_short"', self.html)
+        self.assertIn('"messages.no_convos"', self.html)
+        self.assertIn('"header.col_messages"', self.html)
+
+
+class UiRefinementsAndCwTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        index_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "index.html")
+        with open(index_path, "r", encoding="utf-8") as f:
+            cls.html = f.read()
+
+    def test_masto_item_and_quote_cw_extraction(self):
+        client = app.Masto({"instance": "https://x", "token": "t"})
+        st_plain = {
+            "id": "10",
+            "account": {"username": "u", "acct": "u@inst"},
+            "content": "<p>Normal post</p>",
+            "spoiler_text": "   ",
+            "created_at": "2026-01-01T00:00:00Z",
+        }
+        self.assertEqual(client.item(st_plain)["cw"], "")
+
+        st_quoted = {
+            "id": "11",
+            "account": {"username": "u2", "acct": "u2@inst"},
+            "content": "<p>Look at this</p>",
+            "spoiler_text": "  Alerta principal  ",
+            "created_at": "2026-01-01T00:00:00Z",
+            "quote": {
+                "quoted_status": {
+                    "id": "9",
+                    "account": {"username": "q", "acct": "q@inst"},
+                    "content": "<p>Quoted body</p>",
+                    "spoiler_text": "Spoiler citado",
+                    "created_at": "2026-01-01T00:00:00Z",
+                }
+            },
+        }
+        it = client.item(st_quoted)
+        self.assertEqual(it["cw"], "Alerta principal")
+        self.assertIsNotNone(it["quote"])
+        self.assertEqual(it["quote"]["cw"], "Spoiler citado")
+
+    def test_frontend_ui_refinements_present(self):
+        required = [
+            "--surface:",
+            "--surface-1:",
+            'id="closeCrossPost"',
+            'id="closeUserProfileModal"',
+            'id="closePartialPost"',
+            'id="confirmModalOverlay"',
+            "function askConfirm(",
+            "function showAppAlert(",
+            "function fullDateStr(",
+            "media-alt-badge",
+            "media-alt-popover",
+            "cw-banner",
+            "cw-toggle-btn",
+            'id="mutedWordsSection"',
+            "function getMutedMatch(",
+            "function updateActiveDeckColUI(",
+            ".deck-col.is-active-col",
+            'id="convoPeerInfo"',
+            't("actions.load_more")',
+            'data-tab="messages"',
+            "<kbd>7</kbd>",
+            ".tab-notif-wrap .badge{position:absolute;",
+            "flex-direction:column;align-items:center;justify-content:center",
+            "white-space:nowrap;overflow:hidden;text-overflow:ellipsis",
+            ".notif-header-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px;background:var(--surface-1,var(--card));border:1px solid var(--line);border-radius:12px;margin-bottom:12px;box-sizing:border-box}",
+            '"notif:" + it.network + ":" + getNotifKey(it)',
+            "p.dataset.notifKey || p.dataset.postKey",
+        ]
+        for marker in required:
+            self.assertIn(marker, self.html)
+
+        import re
+        bare_dialogs = [
+            line for line in self.html.splitlines()
+            if re.search(r'(?<!window\.)\b(?:confirm|alert)\(', line)
+        ]
+        self.assertEqual(bare_dialogs, [])
 
 
 if __name__ == "__main__":

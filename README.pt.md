@@ -20,6 +20,7 @@ O MastoSky corre localmente no teu computador e junta numa única janela a leitu
 - **Compositor e fios:** Escreve uma vez e publica no Bluesky, Mastodon ou em ambos. Suporta upload de vídeo (MP4/WebM/MOV até 50MB com processamento assíncrono em ambas as redes), fios/threads encadeados, colagem direta de imagens (Cmd+V ou arrastar), rascunhos locais com auto-save, sondagens e avisos de conteúdo (CW).
 - **Pesquisa unificada:** Pesquisa publicações, perfis e hashtags em ambas as redes em simultâneo.
 - **Vista clássica e em colunas:** Alterna entre uma timeline única ou uma vista personalizável em várias colunas (estilo Deck View).
+- **Mensagens diretas e conversas privadas:** Consulta conversas do Bluesky (via AT Protocol Chat) e Mastodon (mensagens com visibilidade direta), envia novas mensagens e responde em tempo real com indicador de não lidas.
 - **Notificações e perfis:** Acompanha respostas, gostos, partilhas e consulta perfis e estatísticas de seguidores lado a lado.
 - **Alt-Text com IA:** Geração automática de descrições acessíveis (diretrizes WCAG) para imagens via Google Gemini (grátis), Ollama (100% local) ou endpoints compatíveis com OpenAI, com idioma configurável.
 - **Zero dependências externas:** O backend usa apenas a biblioteca padrão do Python 3; o frontend é HTML, CSS e JavaScript puros. Sem `pip install`, sem Node.js.
@@ -52,6 +53,20 @@ python3 app.py --open
 ```
 
 No primeiro arranque, acede a [http://127.0.0.1:8000](http://127.0.0.1:8000) (se não abrir automaticamente) para configurar as contas.
+
+### Utilização no Telemóvel e iPad (Rede Local & PWA)
+
+Para acederes a partir do teu iPhone, iPad ou Android na mesma rede Wi-Fi:
+
+```bash
+python3 app.py --lan
+```
+
+- O terminal mostra o endereço da rede local e imprime um **QR Code ASCII** para leitura instantânea pela câmara.
+- No computador podes também clicar no ícone `📱` no cabeçalho do MastoSky para ver o QR Code em alta definição e instruções:
+  - **iPhone & iPad (Safari):** Toca em *Partilhar* $\rightarrow$ *«Adicionar ao Ecrã Principal»* para correr em ecrã inteiro como uma app nativa.
+  - **Android (Chrome):** Toca no menu (⋮) $\rightarrow$ *«Instalar aplicação»* ou *«Adicionar ao ecrã principal»*.
+- Acesso seguro protegido por verificação de IPs privados (RFC 1918), validação de origem e tokens CSRF de sessão.
 
 ---
 

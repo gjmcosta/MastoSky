@@ -1,0 +1,56 @@
+name: mastosky
+services:
+  mastosky:
+    image: mastosky:latest
+    build: .
+    container_name: mastosky
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MASTOSKY_DATA_DIR=/data
+      # Opcional: define o IP Tailscale (100.x.y.z) ou nome MagicDNS (ex.: casaos.tail123.ts.net)
+      # para aparecer no modal "Telemovel / LAN" mesmo com o contentor em modo bridge.
+      # - MASTOSKY_TAILSCALE_HOST=
+      # - MASTOSKY_ALLOWED_HOSTS=
+    volumes:
+      - /DATA/AppData/mastosky:/data
+    x-casaos:
+      envs:
+        - container: MASTOSKY_DATA_DIR
+          description:
+            en_us: Directory inside the container for config.json and user_data.json
+            pt_pt: Diretoria no contentor para config.json e user_data.json
+        - container: MASTOSKY_TAILSCALE_HOST
+          description:
+            en_us: Optional Tailscale IP or MagicDNS hostname (e.g. casaos.tail123.ts.net)
+            pt_pt: Opcional - IP ou hostname MagicDNS do Tailscale (ex. casaos.tail123.ts.net)
+      ports:
+        - container: "8000"
+          description:
+            en_us: MastoSky Web UI port
+            pt_pt: Porta da interface Web do MastoSky
+      volumes:
+        - container: /data
+          description:
+            en_us: Persistent storage for credentials, saved posts, drafts, and settings
+            pt_pt: Armazenamento persistente de credenciais, guardados, rascunhos e preferencias
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: mastosky
+  description:
+    en_us: Unified web client for Mastodon and Bluesky with cross-posting, Deck view, and LAN/Tailscale support.
+    pt_pt: Cliente web unificado para Mastodon e Bluesky com publicacao simultanea, modo Deck e suporte LAN/Tailscale.
+  tagline:
+    en_us: Unified Mastodon & Bluesky client
+    pt_pt: Cliente unificado para Mastodon e Bluesky
+  title:
+    en_us: MastoSky
+  index: /
+  port_map: "8000"
+  scheme: http
+  store_app_id: mastosky
+

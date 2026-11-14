@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
-> **Data de atualização:** 10 de Novembro de 2026  
-> **Versão:** v0.8.0  
+> **Data de atualização:** 14 de Novembro de 2026  
+> **Versão:** v0.8.4  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 159 testes aprovados (`python3 -m unittest discover -s tests`)
+> **Testes Automatizados:** 191 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -44,7 +44,8 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - *Mastodon:* Upload via `/api/v2/media` com polling assíncrono em `/api/v1/media/{id}` até o vídeo estar processado e com URL público antes de submeter o status.
   - *Frontend e Interface:* Pré-visualização com leitor `<video controls>`, indicação de duração formatada, botão de remoção rápida e campo de descrição acessível. Exclusão mútua automática com imagens e sondagens. Suporte a publicação direta ou em fios (*Threads*).
 - **Geração de Legendas Acessíveis (Alt-Text) com IA Aprimorada:**
-  - Cascata de fallback de modelos Gemini (`gemini-3.5-flash` $\rightarrow$ `gemini-3.5-flash-lite` $\rightarrow$ `gemini-3.8-flash` $\rightarrow$ `gemini-flash-latest`), eliminando falhas por descontinuação de modelos antigos (404) ou congestionamento transitório da API gratuita (503).
+  - Cascata de fallback de modelos Gemini atualizada para a nova geração (`gemini-3.5-flash-lite` $\rightarrow$ `gemini-3.1-flash-lite` $\rightarrow$ `gemini-flash-lite-latest` $\rightarrow$ `gemini-3.5-flash` $\rightarrow$ `gemini-3.8-flash`), eliminando o bloqueio por descontinuação dos modelos 2.0/2.5 antigos (404) e prevenindo exaustão de quota diária por modelo na camada gratuita.
+  - Feedback visual no input de alt-text durante o carregamento (`✨ A gerar descrição com IA...`) e indicação imediata de erros caso ocorra algum problema de quota ou conectividade.
   - Desativação de tokens de raciocínio interno (`thinkingBudget: 0`) e teto de saída calibrado para respostas ágeis sem truncamento.
   - Redimensionamento automático de imagens no cliente (máx 1024px) reduzindo tráfego de rede e prevenindo timeouts.
   - Instruções de sistema restritas e sanitização backend (`clean_alt_text()`), garantindo descrições WCAG limpas no idioma escolhido (Português de Portugal por omissão), sem asteriscos ou formatações Markdown indesejadas.
@@ -72,6 +73,30 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - Animação de carregamento subtil durante a geração.
   - Opção de automação: *"Gerar Alt-Text automaticamente ao anexar imagens"*, preenchendo as descrições assim que as imagens são carregadas ou coladas via clipboard (`Cmd+V` / drag & drop).
   - Campo 100% editável para que o utilizador possa rever, ajustar ou apagar o texto gerado a qualquer momento antes da publicação.
+- **Tradução Instantânea de Publicações com IA (1 clique):**
+  - Ícone de ação nativo `ICONS.translate` (globo Feather SVG em stroke 2) integrado diretamente na barra de ações dos posts (`.acts`), alinhado de forma elegante com os restantes ícones (responder, partilhar, gostar, guardar e ver fio).
+  - Animação de rotação contínua (`spin-rotate`) durante a tradução assíncrona com feedback visual e tratamento gracioso de erros.
+  - Reutilização inteligente do fornecedor de IA configurado (Google Gemini, Ollama ou OpenAI-compatible), com deteção e tradução para o idioma ativo da interface (Português ou Inglês).
+  - Suporte resiliente para a API do Google Gemini com modelos atualizados (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemini-3.8-flash`), eliminando falhas por descontinuação de modelos antigos ou exaustão de quota.
+  - Suporte completo a publicações com citações / reposts citados (*Quote Posts*): tradução independente do cartão citado e da publicação de topo.
+  - Caixa de tradução contextual elegante (`.post-translated-box`) com realce luminoso, preservando na totalidade o post original, menções, hashtags, hiperligações e quebras de linha.
+  - Opção rápida para alternar / ocultar a tradução a qualquer momento com realce ativo (`.act-translate.on`).
+  - Regras estritas de prompt engineering para assegurar que a IA devolve apenas a tradução pura, sem preâmbulos ou aspas desnecessárias.
+  - Endpoint seguro e protegido contra CSRF no backend: `/api/translate`.
+
+### 📱 Acesso Móvel, iPad e Otimização para iOS/Android
+- **Navegação Inteligente de Hashtags e Menções @Utilizador (In-App):**
+  - **Pesquisa Instantânea de Hashtags:** Ao tocar em qualquer `#hashtag` num post, o MastoSky muda automaticamente para a coluna/aba de Pesquisa, define o tipo de filtro como "Publicações" e executa a pesquisa em ambas as redes (`Bluesky` e `Mastodon`), apresentando de imediato os posts correspondentes e rolando com suavidade até à caixa de resultados.
+  - **Abertura Interna de Menções (@user):** Clicar em qualquer menção `@utilizador` dentro do texto das publicações agora abre diretamente o perfil nativo no modal interno do MastoSky (`openUserProfile`), resolvendo utilizadores de ambas as redes ou do Fediverso sem encaminhar para o browser externo ou para as aplicações oficiais. Suporte a URLs completos de perfis e resolução remota no Mastodon.
+  - **Memória de Posição de Leitura Entre Abas (*Scroll Restoration*):** A posição de scroll de cada feed (`timeline`, `explore`, `search`, `saved`, `notifs`, `profile`) é preservada individualmente via `tabScrolls`. Ao voltar atrás de uma hashtag ou pesquisa para a Timeline (ou ao alternar entre abas e utilizar o gesto de retroceder no iOS/Android via `popstate`), o feed recorda exatamente o post onde o utilizador se encontrava, eliminando o salto indesejado para o topo.
+- **Barra de Abas Fixa e Imutável no Topo Mobile (Sem Scroll Instável):**
+  - Eliminação do scroll horizontal (`overflow-x: auto`) e efeito elástico (*rubber-banding*) na linha de abas do topo móvel que provocava instabilidade ("dança" ao arrastar com o polegar) e dificultava o toque.
+  - Distribuição fixa e proporcional a 100% da largura (`flex: 1 1 0; min-width: 0`), bloqueio de gestos horizontais espúrios com `touch-action: pan-y` e `overflow-x: hidden`.
+  - Apresentação em controlo segmentado ergonómico com ícones Feather SVG verticais (18px) centrados e etiquetas inferiores concisas com tamanho adaptativo (10px / 9px em ecrãs muito compactos).
+  - Emblema numérico de notificações (*badge*) integrado no canto superior do ícone de sino, com realce ativo e transições suaves ao selecionar qualquer aba.
+- **PWA e Otimização para Ecrãs Táteis:**
+  - Suporte completo a PWA com `manifest.json`, ícone de aplicação para iOS (`apple-touch-icon`), temas com suporte a `viewport-fit=cover` e respeito integral pelas *Safe Area Insets* (entalhe / Dynamic Island e barra de início inferior).
+  - Modo LAN dedicado (`python3 app.py --lan`) com geração automática de QR Code em SVG para emparelhamento instantâneo de telemóveis e tablets na mesma rede Wi-Fi local sem configurações manuais de IP.
 
 ### 🎨 Refinamentos Visuais e UX/UI (Tema, Pesquisa e Configurações)
 - **Modo Escuro, Modo Claro e Automático (*Dark / Light / Auto*):**
@@ -127,6 +152,7 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 - Modal dedicado de perfil ao clicar no avatar ou autor de qualquer post, preservando a coluna de Composição intacta.
 - **Seguir e Deixar de Seguir (*Follow / Unfollow*):** Suporte nativo completo a seguir e deixar de seguir perfis no Bluesky (`app.bsky.graph.follow` via AT Protocol) e Mastodon (`/api/v1/accounts/:id/follow` e `unfollow`), com deteção fidedigna do estado de relação (`viewer.following` no Bluesky e consulta a `/api/v1/accounts/relationships` com codificação robusta de arrays no Mastodon), botão dinâmico (*Follow* / *Following* com transição para *Unfollow* em *hover*), cores personalizadas por rede (azul `#0085FF` para Bluesky e roxo `#6364FF` oficial para Mastodon), cápsula perfeitamente alinhada e coerente com o botão "Ver na web / View on web ↗", atualização reativa do contador de seguidores e proteção CSRF no endpoint `/api/follow`.
 - Gestão de contas ativas e alternância de sessão.
+- **Normalização de DIDs e Menções no Perfil:** Decodificação e desaninhamento resiliente de DIDs percent-encoded (`did%3Aplc...` $\rightarrow$ `did:plc...`) no frontend e backend (`Bsky.user_profile` e `Bsky.user_feed`), prevenindo erros 400 (`Invalid AT identifier`) ao clicar em menções de publicações cujos identificadores AT vinham codificados por URLs.
 - **Resiliência e Onboarding Mastodon:** Sanitização automática do URL da instância (`sanitize_masto_instance`), aceitando formatos brutos e removendo caminhos acidentais colados pelos utilizadores (ex: `/@utilizador`, `/settings`, `/web`), e captura informativa de respostas HTML no cliente HTTP (`http()`), substituindo o erro padrão e críptico de JSON (`Expecting value: line 1 column 1 (char 0)`) por uma mensagem amigável que explica exatamente o formato esperado da instância. Documentação atualizada para esclarecer o uso do Redirect URI pré-definido (`urn:ietf:wg:oauth:2.0:oob`) e a seleção exclusiva de *Your access token*.
 
 ### 🔔 Sistema de Notificações Avançado
@@ -151,25 +177,94 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 - **Deteção inteligente em segundo plano:** Polling de 2 minutos que deteta novas notificações e toca apenas para novos eventos (sem alertas no carregamento inicial).
 
 ### 🛠️ Refinamentos de UX, Robustez & Conectividade
+- **Alojamento em CasaOS (Docker), Acesso Remoto Tailscale e Sincronização (`user_data.json`):**
+  - `Dockerfile` baseado em `python:3.12-alpine` (zero dependências externas), `.dockerignore` (protege `config.json` e `user_data.json` locais) e `docker-compose.yml` pronto para **CasaOS** (metadados `x-casaos`, volume `/DATA/AppData/mastosky:/data` e variável `MASTOSKY_DATA_DIR=/data`).
+  - Suporte nativo em `app.py` para `MASTOSKY_DATA_DIR` (guardando `config.json` e `user_data.json` no volume persistente com permissões `0600`) e validação de rede privada alargada em `is_private_or_local_host()` para gama CGNAT Tailscale (`100.64.0.0/10`, incluindo IPv4-mapped IPv6), domínios `.ts.net` (MagicDNS) e `MASTOSKY_ALLOWED_HOSTS`.
+  - Deteção automática de URL Tailscale (`get_tailscale_ip()` / `get_tailscale_url()` / `MASTOSKY_TAILSCALE_HOST`) em `GET /api/lan` e secção dedicada **Acesso Remoto (Tailscale)** no modal `#mobileModalOverlay`.
+  - Novos endpoints autenticados com CSRF `GET /api/user_data` e `POST /api/user_data` (escrita atómica thread-safe em `user_data.json`) e motor de sincronização automática no `index.html` (`pullUserDataFromServer`, `scheduleServerSync`, `applySyncedUserData`, `initServerSync`) para sincronizar Guardados, Rascunhos, Palavras Silenciadas, Colunas do Deck e Preferências entre dispositivos.
+  - **Atualização persistente com 1 clique no CasaOS/Docker (`run_self_update`, `schedule_process_restart`):** Descarrega o código de `main` do GitHub preservando `config.json` e `user_data.json`, persiste uma cópia em `/data/app_update` (restaurada automaticamente no arranque pelo `Dockerfile`), agenda reinício automático do processo Python em `POST /api/self_update` e mantém `#selfUpdateBtn` visível nas Definições (com `GET /api/version?force=1` ao clicar em "Verificar").
 - **Cópia de Segurança & Restauro Local (Backup JSON):**
   - Secção dedicada nas Definições (`#setupOverlay`) e atalho no modal de rascunhos para exportar e restaurar todos os dados locais num ficheiro JSON estruturado (`mastosky-backup-YYYY-MM-DD.json`).
   - Cobre rascunhos de publicações, posts guardados nos marcadores, ordem e visibilidade das colunas do Deck, e preferências completas de interface (tema, idioma, modo de navegação e notificações).
   - Importação resiliente com deduplicação automática (por ID de rascunho e chave única de post), garantindo que rascunhos ou posts guardados existentes não são repetidos.
   - Mensagens informativas de feedback em tempo real com contagem exata de itens restaurados.
+- **🔇 Silenciamento de Palavras-chave e Filtros de Conteúdo (Muted Words):**
+  - Secção dedicada `#mutedWordsSection` nas Definições (`#setupOverlay`) para gerir palavras-chave e `#hashtags` silenciadas.
+  - Adição rápida por botão ou tecla `Enter`, com etiquetas removíveis em `.muted-chips-list` / `.muted-chip`.
+  - Dois modos configuráveis: *Mostrar aviso colapsável* (`.muted-post-banner` com botão mostrar/ocultar em `.muted-post-content`) e *Ocultar completamente*.
+  - Correspondência Unicode com limites de palavra (`getMutedMatch`) aplicada em texto e `cw` na Timeline, Em Alta, Guardados e Pesquisa, e persistida nos backups JSON (`muted_words` e `mute_mode`).
+- **🎨 Polimento Visual e Refinamentos de UX/UI:**
+  - Definição explícita de `--surface` e `--surface-1` em ambos os temas (claro e escuro).
+  - Unificação de todos os botões de fecho (`✕`) dos modais em `.setup-close-btn` e adição do modal customizado `#confirmModalOverlay` (`askConfirm` / `showAppAlert`), eliminando `window.confirm` e `window.alert` nativos.
+  - Crachá interativo `ALT` nas imagens do feed (`.media-alt-badge` + `.media-alt-popover`), *Content Warning* (`cw` extraído no backend em `app.py`) colapsável em `.cw-banner` e *tooltips* com data/hora completa (`fullDateStr`) nos carimbos temporais (`.when`, citações, notificações e mensagens).
+  - Tradução com IA disponível também nas notificações (`.act-translate` em `renderNotifs`).
+  - Melhorias em Mensagens Diretas (correção de altura e duplo scroll em `.msg-thread-wrap`, cabeçalho `#convoPeerInfo` clicável para abrir o perfil do contacto e coluna `messages` sincronizada na configuração do Deck e na Dock Bar mobile com ordens 1–8).
+  - Destaque visual da coluna ativa no Deck (`.deck-col.is-active-col`), tabs mobile adaptadas a ecrãs estreitos, menu de topo em modo de coluna única reorganizado em 7 abas simétricas com ícone superior + etiqueta fixa sem quebras de linha nem transbordamento (`flex: 1 1 0`), uniformização do sub-cabeçalho de filtros da coluna de Notificações (`.notif-header-bar` / `.notif-filter-pills` em cartão enquadrado com 5 controlos simétricos sem sobreposição no scroll), atalhos de teclado atualizados para `1 – 7` e internacionalização completa em `renderLoadMore` e `#newConvoModalOverlay`.
+  - Correção da atualização em tempo real da coluna de Notificações após alerta sonoro: `dedupSort()` passou a deduplicar notificações pelo identificador único (`getNotifKey`) em vez do URL do post alvo (evitando descartar novos gostos/partilhas sobre o mesmo post), `captureScrollAnchor()` / `restoreScrollAnchor()` priorizam `data-notif-key` e `initNotifObserver()` deixou de limpar automaticamente `.fresh` e os crachás 600ms após renderização passiva no Deck.
 - **Sinalização de Conectividade em Tempo Real & Rate Limit:**
   - Pílula flutuante animada (`#netStatusPill`) para alertas contextuais imediatos:
     - *Modo Offline:* Deteta corte de rede via `window.offline` (`📡 Sem ligação à Internet — Modo offline`) e auto-recupera ao restabelecer ligação (`window.online`), recarregando os feeds em background.
     - *Servidor Local Desligado:* Deteta falhas de rede no cliente HTTP (`api()`), informa o utilizador (`⚠️ A aguardar pelo servidor local MastoSky...`) e mantém um *ping* periódico automático na rota de verificação, reconectando e atualizando o token CSRF assim que o servidor `app.py` for reiniciado.
     - *Limite de Taxa (Rate Limit 429):* Captura avisos de taxa limite do Bluesky ou Mastodon e exibe aviso claro e discreto (`⏳ Limite de pedidos temporário atingido — aguarda um momento`).
+- **📱 Acesso Móvel (iPhone, Android, iPad), Rede Local & PWA:**
+  - *Opção de Rede Local (`--lan` e `--host`):* O servidor pode agora escutar na rede Wi-Fi/LAN com deteção automática do IP local (`get_local_ip()`) e suporte a mDNS (`.local`).
+  - *QR Code no Terminal em Puro Python:* Ao arrancar com `--lan`, o terminal imprime a URL local e um **QR Code ASCII** legível pela câmara do telemóvel, implementado de raiz em Python 3 standard (zero dependências externas / sem `pip`).
+  - *Segurança Estrita em Rede:* O método `allowed()` valida endereços IP privados (RFC 1918: `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`), link-local e mDNS, rejeitando qualquer domínio externo ou porta incorreta, e mantém verificação criptográfica de CSRF em todos os pedidos POST.
+  - *Progressive Web App (PWA):*
+    - Ficheiro `manifest.json` com `display: standalone`, ícones oficiais em SVG (`/brand/app-icon.svg`), cores de tema dinâmicas e scope configurado.
+    - Meta-tags específicas para Apple iOS/iPadOS (`apple-mobile-web-app-capable`, `apple-touch-icon`, `viewport-fit=cover`).
+    - Ajustes de CSS para áreas de segurança (Safe Area insets) em ecrãs com entalhe (*notch* / *Dynamic Island*) e barras de gestos (`env(safe-area-inset-*)`).
+  - *Interface de Ligação Rápida no Frontend:*
+    - Botão dedicado `📱` no cabeçalho com crachá luminoso reativo `[LAN]` quando o servidor corre com `--lan`.
+    - Diálogo visual com SVG de alta definição do QR Code, botão de cópia de URL em 1 clique e guias passo a passo ilustrados para Safari (iOS) e Chrome (Android).
+    - Deteção de estado desligado com botão de copiar comando (`python3 app.py --lan`).
+    - Secção de acesso móvel integrada nas Definições (`#setupOverlay`).
+  - *Otimização Responsiva para Mobile (iOS / Android):*
+    - **Correção do Logótipo Duplo:** Remoção do estilo inline `display:block` e adição de regras com `!important` para o seletor de tema claro/escuro/sistema, garantindo que apenas um logótipo é renderizado independentemente da preferência do sistema operativo.
+    - **Header Compacto em Ecrãs Móveis:** Ocultação automática de botões supérfluos no telemóvel (`#mobileConnectBtn` e `#shortcutsBtn`), redução do espaçamento e do tamanho dos ícones na barra de navegação superior para evitar transbordamento horizontal (*overflow*).
+    - **Tabs com Scroll Horizontal Suave:** As abas de navegação principal (`.tabs`) passam a ter scroll horizontal touch nativo (`-webkit-overflow-scrolling: touch`) e `white-space: nowrap`, impedindo a quebra feia de linhas de texto (ex: "Em Alta") e prevenindo o encolhimento da coluna de conteúdo no iPhone/Android.
+    - **Largura Total de Coluna & Scroll Nativo:** Ajuste do elemento `<main>` para 100% da largura útil e substituição de `overflow-x: hidden` no HTML por `overflow-x: clip` no body, eliminando o bloqueio de scroll vertical do WebKit/iOS Safari.
+    - **Topo Fixo e Protegido da Dynamic Island/Notch:** O cabeçalho completo (`#topNavWrap`), contendo o logótipo, os botões de opções (Tema, Alternar Colunas/Única, Atualizar e Definições) e as abas, passa a ser fixo no topo (`position: sticky`) com efeito de desfoque (*backdrop-filter: blur*), margem segura de topo (`env(safe-area-inset-top)`) e estilo de status bar `default`, impedindo que os ícones fiquem ocultos ou sobrepostos pelo relógio/entalhe do iPhone.
+    - **Barra Flutuante de Navegação Rápida (Dock Bar) no Mobile:** Reformulação da barra flutuante (`.side-nav-rail`) quando exibida no telemóvel ao fazer scroll:
+      - Ocultação dos botões redundantes e de desktop (`#sideThemeBtn`, `#sideRefreshBtn`, `#sideSettingsBtn`, `#sideShortcutsBtn`, `#sideLangBtn`).
+      - Limitação da largura a `calc(100vw - 24px)` (máx 380px) centrada no ecrã com margem de segurança contra corte nas laterais.
+      - Botão de novo post (`#sideComposeBtn`) destacado e centralizado entre as abas de navegação.
+      - Distribuição uniforme das opções com alvos de toque generosos (38-44px) e respeito pela área segura inferior (`env(safe-area-inset-bottom)`).
+
+### 💬 Mensagens Diretas e Conversas Privadas (Concluído: Backend + Frontend)
+- **Suporte Nativo ao Serviço de Chat do Bluesky (AT Protocol):**
+  - Implementação completa do namespace `chat.bsky.convo.*` com roteamento pelo proxy dedicado (`atproto-proxy: did:web:api.bsky.chat#bsky_chat`).
+  - Deteção e resolução dinâmica do PDS específico do utilizador (`#atproto_pds` / `serviceEndpoint` via `didDoc`), direcionando as chamadas de chat para o nó PDS correto (evitando o erro `501 MethodNotImplemented` que a porta genérica `bsky.social` devolve por não ser o host PDS onde a conta está alojada).
+  - Listagem de conversas (`list_conversations`), obtenção de mensagens em ordem cronológica (`get_conversation_messages`), envio com extração e parsing automático de facets (`send_message`), marcação como lida (`mark_as_read`) e início de novas conversas (`start_conversation`).
+  - Tratamento resiliente e amigável caso a App Password do utilizador não tenha a opção de Direct Messages ativada.
+- **Suporte a Conversas Diretas do Mastodon (REST API):**
+  - Listagem de conversas agregadas (`GET /api/v1/conversations`) com identificação automática do interlocutor e estado de leitura.
+  - Reconstrução completa do histórico de mensagens a partir do contexto de statuses (`/api/v1/statuses/:id/context`: ancestrais + status atual + descendentes) deduplicados e ordenados cronologicamente.
+  - Envio de mensagens com visibilidade direta (`visibility: "direct"`), garantia de menção explícita ao destinatário e encadeamento de `in_reply_to_id`.
+  - Tratamento de permissões com aviso claro em caso de ausência do escopo `read:conversations`.
+- **Endpoints REST Unificados no Backend (`app.py`):**
+  - `GET /api/conversations`: agrega conversas de ambas as redes em paralelo com contagem de não lidas (`total_unread`) e ordenação por data da última mensagem.
+  - `GET /api/conversation?network=&id=`: obtém o histórico completo de mensagens normalizado.
+  - `POST /api/conversation/send`: envio de mensagem protegido contra CSRF.
+  - `POST /api/conversation/read`: marcação de conversa como lida.
+  - `POST /api/conversation/start`: criação ou procura de nova conversa.
+- **Interface e Experiência de Utilizador (Frontend `index.html`):**
+  - **Aba e Coluna Dedicada no Deck:** Nova aba "Mensagens" e coluna `#colMessages` com reordenação por drag-and-drop e alternância de visibilidade nas Definições.
+  - **Lista de Conversas Agregada:** Exibição com fotos de perfil, nome, handle, crachá da rede social (`Bluesky` / `Mastodon`), pré-visualização do último snippet e data relativa (`ago()`).
+  - **Filtros por Rede:** Pílulas de filtro rápido (*Ambas*, *Bluesky*, *Mastodon*) na barra de cabeçalho das mensagens.
+  - **Vista de Conversa e Balões de Chat:** Ecrã dedicado de fio de mensagens com balões estilizados (mensagens enviadas à direita com acento de cor, mensagens recebidas à esquerda com fundo suave), carimbos de data/hora, avatares e rolagem suave automática para a mensagem mais recente.
+  - **Formulário de Envio Instantâneo:** Campo de digitação com envio via `Enter` ou botão de avião de papel, feedback de estado e sanitização.
+  - **Modal de Nova Mensagem:** Acesso pelo botão `+ Nova Mensagem` ou diretamente nos perfis de utilizador ("💬 Mensagem"), permitindo selecionar a rede, introduzir o handle e redigir a mensagem inicial.
+  - **Crachás de Mensagens Não Lidas (Badges):** Indicadores numéricos em tempo real na aba móvel/desktop, no dock lateral flutuante e no cabeçalho da coluna do Deck, atualizados no arranque e em polling de segundo plano a cada 2 minutos.
+  - **Atalhos e Acessibilidade:** Tecla `6` para saltar diretamente para a coluna/aba de Mensagens, tecla `Escape` para fechar o modal ou voltar à lista a partir de uma conversa aberta, e traduções integrais em Português e Inglês.
+  - **Refinamento Visual do Subheader e Estado Vazio:** Barra de ferramentas unificada com pílulas e botão de nova mensagem perfeitamente alinhados (altura exata de 28px, geometria arredondada contínua, adaptação responsiva no Deck View para "Nova" e etiqueta completa em ecrãs largos, sem quebras de linha espúrias), contraste ideal no tema escuro/claro, renderização corrigida do estado vazio com ícone SVG estilizado e adição do botão de ação rápida `+` no cabeçalho superior da coluna do Deck.
 
 ---
 
 ## 📋 4. Próximos Passos e Roadmap Pendente
 
-1. **Acesso no iPad / Rede Local (LAN):**
-   - Adicionar opção `--lan` ou `--host 0.0.0.0` no `app.py` para permitir que o iPad aceda ao MastoSky na mesma rede Wi-Fi via Safari.
-   - Adicionar meta-tags para iOS/iPadOS (`apple-mobile-web-app-capable`, `apple-touch-icon`) para funcionar como Web App / PWA em ecrã inteiro.
-   - Ajustar validação de `Host` e CSRF para IPs locais da rede doméstica.
+1. **Acesso Remoto Seguro Fora de Casa (Opcional):**
+   - Documentação para ligar via VPN pessoal (ex: Tailscale ou Cloudflare Tunnel) para aceder fora de casa sem abrir portas no router.
 
 2. **Empacotamento e Distribuição (Opcional):**
    - Criação de scripts simples de arranque para macOS (`run.command`) e Windows (`run.bat`).

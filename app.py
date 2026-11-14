@@ -8,7 +8,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 DIR = Path(__file__).parent
-CFG_PATH = DIR / "config.json"
+_ENV_DATA_DIR = os.environ.get("MASTOSKY_DATA_DIR", "").strip()
+DATA_DIR = Path(_ENV_DATA_DIR).expanduser() if _ENV_DATA_DIR else DIR
+CFG_PATH = DATA_DIR / "config.json"
+USER_DATA_PATH = DATA_DIR / "user_data.json"
+_USER_DATA_LOCK = threading.Lock()
 
 
 def secure_config_perms(path=None):
@@ -23,7 +27,8 @@ def secure_config_perms(path=None):
 
 def write_config(cfg, path=None):
     """Grava o config com permissões 0600 desde a criação (sem janela em que fique legível por outros)."""
-    path = path or CFG_PATH
+    path = Path(path or CFG_PATH)
+    path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as f:
         f.write(json.dumps(cfg, indent=2))
@@ -31,6 +36,97 @@ def write_config(cfg, path=None):
         os.chmod(path, 0o600)
     except OSError:
         pass
+
+
+def _default_user_data():
+    return {
+        "saved_posts": [],
+        "drafts": [],
+        "muted_words": [],
+        "mute_mode": "warn",
+        "preferences": {},
+        "updated_at": 0,
+    }
+
+
+def _read_user_data_unlocked(path):
+    base = _default_user_data()
+    if not path.exists():
+        return base
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8") or "{}")
+    except Exception:
+        return base
+    if not isinstance(raw, dict):
+        return base
+    if isinstance(raw.get("saved_posts"), list):
+        base["saved_posts"] = raw["saved_posts"]
+    if isinstance(raw.get("drafts"), list):
+        base["drafts"] = raw["drafts"]
+    if isinstance(raw.get("muted_words"), list):
+        base["muted_words"] = [str(w).strip().lower() for w in raw["muted_words"] if isinstance(w, str) and w.strip()]
+    if raw.get("mute_mode") in ("warn", "hide"):
+        base["mute_mode"] = raw["mute_mode"]
+    if isinstance(raw.get("preferences"), dict):
+        base["preferences"] = raw["preferences"]
+    if isinstance(raw.get("updated_at"), (int, float)):
+        base["updated_at"] = int(raw["updated_at"])
+    return base
+
+
+def load_user_data(path=None):
+    """Carrega dados sincronizáveis do utilizador (guardados, rascunhos, silenciamentos, preferências)."""
+    path = Path(path or USER_DATA_PATH)
+    with _USER_DATA_LOCK:
+        return _read_user_data_unlocked(path)
+
+
+def save_user_data(updates, path=None):
+    """Atualiza e grava os dados do utilizador em disco com permissões 0600 de forma segura."""
+    if not isinstance(updates, dict):
+        raise ValueError("Payload inválido")
+    path = Path(path or USER_DATA_PATH)
+    with _USER_DATA_LOCK:
+        current = _read_user_data_unlocked(path)
+        if "saved_posts" in updates:
+            if not isinstance(updates["saved_posts"], list):
+                raise ValueError("saved_posts inválido")
+            current["saved_posts"] = updates["saved_posts"][:1000]
+        if "drafts" in updates:
+            if not isinstance(updates["drafts"], list):
+                raise ValueError("drafts inválido")
+            current["drafts"] = updates["drafts"][:200]
+        if "muted_words" in updates:
+            if not isinstance(updates["muted_words"], list):
+                raise ValueError("muted_words inválido")
+            seen = set()
+            clean_words = []
+            for w in updates["muted_words"]:
+                if isinstance(w, str):
+                    cw = w.strip().lower()
+                    if cw and cw not in seen:
+                        seen.add(cw)
+                        clean_words.append(cw)
+            current["muted_words"] = clean_words[:500]
+        if "mute_mode" in updates:
+            if updates["mute_mode"] not in ("warn", "hide"):
+                raise ValueError("mute_mode inválido")
+            current["mute_mode"] = updates["mute_mode"]
+        if "preferences" in updates:
+            if not isinstance(updates["preferences"], dict):
+                raise ValueError("preferences inválido")
+            merged_prefs = dict(current.get("preferences") or {})
+            for pk, pv in updates["preferences"].items():
+                if isinstance(pk, str) and len(pk) <= 64:
+                    merged_prefs[pk] = pv
+            current["preferences"] = merged_prefs
+        current["updated_at"] = int(time.time() * 1000)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = Path(f"{path}.tmp")
+        write_config(current, tmp_path)
+        os.replace(tmp_path, path)
+        secure_config_perms(path)
+        return current
 
 
 def load_cfg():
@@ -46,6 +142,8 @@ def load_cfg():
 MAX_BODY = 70 * 1024 * 1024  # limite do corpo dos pedidos POST (imagens e vídeos em base64 até 50MB)
 CFG = load_cfg()
 PORT = CFG.get("port", 8000)
+LISTEN_HOST = "127.0.0.1"
+LAN_MODE = False
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
 VERSION = "0.8.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
@@ -85,10 +183,10 @@ def parse_semver(s):
     return [int(x) if x.isdigit() else 0 for x in re.findall(r"\d+", s or "0")]
 
 
-def check_github_update():
+def check_github_update(force=False):
     """Consulta a API do GitHub com cache de 1 hora para evitar rate limiting."""
     now = time.time()
-    if UPDATE_CACHE["data"] and (now - UPDATE_CACHE["checked_at"] < 3600):
+    if not force and UPDATE_CACHE["data"] and (now - UPDATE_CACHE["checked_at"] < 3600):
         return UPDATE_CACHE["data"]
 
     url = "https://api.github.com/repos/gjmcosta/MastoSky/releases/latest"
@@ -166,23 +264,43 @@ def run_self_update():
         req = urllib.request.Request(url, headers={"User-Agent": f"MastoSky/{VERSION}"})
         with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as resp:
             data = resp.read()
+        persist_dir = (DATA_DIR / "app_update") if DATA_DIR.resolve() != DIR.resolve() else None
         with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
             for member in tar.getmembers():
                 parts = Path(member.name).parts
                 if len(parts) > 1:
                     rel_path = Path(*parts[1:])
-                    # Nunca sobrescrever configurações locais do utilizador
-                    if rel_path.name == "config.json":
+                    if rel_path.is_absolute() or ".." in rel_path.parts:
                         continue
-                    dest = DIR / rel_path
+                    # Nunca sobrescrever configurações e dados locais do utilizador
+                    if rel_path.name in ("config.json", "user_data.json"):
+                        continue
+                    targets = [DIR / rel_path]
+                    if persist_dir is not None:
+                        targets.append(persist_dir / rel_path)
                     if member.isdir():
-                        dest.mkdir(parents=True, exist_ok=True)
+                        for dest in targets:
+                            dest.mkdir(parents=True, exist_ok=True)
                     elif member.isfile():
-                        dest.parent.mkdir(parents=True, exist_ok=True)
                         f = tar.extractfile(member)
                         if f:
-                            dest.write_bytes(f.read())
+                            content = f.read()
+                            for dest in targets:
+                                dest.parent.mkdir(parents=True, exist_ok=True)
+                                dest.write_bytes(content)
         return "MastoSky atualizado com sucesso!"
+
+
+def schedule_process_restart(delay=0.8):
+    """Reinicia o processo Python em background após enviar a resposta HTTP."""
+    def _restart():
+        time.sleep(delay)
+        try:
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        except Exception:
+            os._exit(0)
+    t = threading.Thread(target=_restart, daemon=True)
+    t.start()
 
 
 def multipart_encode(fields, files):
@@ -426,6 +544,38 @@ def render_bsky_text(text, facets=None):
         out.append(linkify(chunk))
 
     return "".join(out)
+
+
+def build_bsky_facets(text, resolve_handle_fn=None):
+    """Extrai facets (links, menções @handle e tags #hashtag) para o Bluesky."""
+    if not text:
+        return []
+    facets = []
+    for m in _URL_RE.finditer(text):
+        url = m.group().rstrip(".,;:!?)")
+        b_start, b_end = byte_span(text, m.start(), m.start() + len(url))
+        facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
+                       "features": [{"$type": "app.bsky.richtext.facet#link", "uri": url}]})
+    for m in _HANDLE_RE.finditer(text):
+        handle = m.group(1)
+        did = resolve_handle_fn(handle) if resolve_handle_fn else None
+        if did:
+            b_start, b_end = byte_span(text, m.start(), m.end())
+            facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
+                           "features": [{"$type": "app.bsky.richtext.facet#mention", "did": did}]})
+    for m in _HASHTAG_RE.finditer(text):
+        tag = m.group(1)
+        b_start, b_end = byte_span(text, m.start(), m.end())
+        facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
+                       "features": [{"$type": "app.bsky.richtext.facet#tag", "tag": tag}]})
+    clean_facets = []
+    last_end = 0
+    for f in sorted(facets, key=lambda f: (f["index"]["byteStart"], -f["index"]["byteEnd"])):
+        st, en = f["index"]["byteStart"], f["index"]["byteEnd"]
+        if st >= last_end and en > st:
+            clean_facets.append(f)
+            last_end = en
+    return clean_facets
 
 
 class Clean(HTMLParser):
@@ -846,7 +996,8 @@ def parse_masto_quote(st):
         "time": qs.get("created_at"),
         "url": safe_url(qs.get("url")),
         "ref": ref_obj,
-        "media": safe_media_list(q_media)
+        "media": safe_media_list(q_media),
+        "cw": (qs.get("spoiler_text") or "").strip(),
     }
     if q_name_html:
         out["name_html"] = q_name_html
@@ -859,6 +1010,7 @@ class Bsky:
     def __init__(self, c):
         self.c, self.jwt, self.refresh_jwt, self.did = c, None, None, None
         self.host = c.get("service", "https://bsky.social")
+        self.pds = None
         self.lock = threading.RLock()  # protege login/refresh em pedidos concorrentes
         self._handle_cache = {}
 
@@ -885,6 +1037,12 @@ class Bsky:
             r = http("POST", self.host + "/xrpc/com.atproto.server.createSession",
                      {"identifier": self.c["handle"], "password": self.c["app_password"]})
             self.jwt, self.refresh_jwt, self.did = r["accessJwt"], r.get("refreshJwt"), r["did"]
+            pds_endpoint = None
+            for s in (r.get("didDoc", {}).get("service") or []):
+                if s.get("type") == "AtprotoPersonalDataServer" or s.get("id") == "#atproto_pds":
+                    pds_endpoint = s.get("serviceEndpoint")
+                    break
+            self.pds = pds_endpoint or self.host
 
     def _ensure(self):
         with self.lock:
@@ -901,6 +1059,11 @@ class Bsky:
                     r = http("POST", self.host + "/xrpc/com.atproto.server.refreshSession", token=self.refresh_jwt)
                     self.jwt, self.refresh_jwt = r["accessJwt"], r.get("refreshJwt") or self.refresh_jwt
                     self.did = r.get("did") or self.did
+                    if "didDoc" in r:
+                        for s in (r.get("didDoc", {}).get("service") or []):
+                            if s.get("type") == "AtprotoPersonalDataServer" or s.get("id") == "#atproto_pds":
+                                self.pds = s.get("serviceEndpoint")
+                                break
                     return
                 except (RuntimeError, KeyError):
                     pass
@@ -923,9 +1086,22 @@ class Bsky:
             self._renew(jwt)
             return fn(self.jwt)
 
-    def call(self, method, nsid, data=None, params=None):
+    def call(self, method, nsid, data=None, params=None, headers=None):
         url = f"{self.host}/xrpc/{nsid}" + ("?" + urllib.parse.urlencode(params, doseq=True) if params else "")
-        return self._authed(lambda jwt: http(method, url, data, jwt))
+        return self._authed(lambda jwt: http(method, url, data, jwt, headers=headers))
+
+    def call_chat(self, method, nsid, data=None, params=None):
+        headers = {"atproto-proxy": "did:web:api.bsky.chat#bsky_chat"}
+        self._ensure()
+        pds_host = self.pds or self.host
+        url = f"{pds_host}/xrpc/{nsid}" + ("?" + urllib.parse.urlencode(params, doseq=True) if params else "")
+        try:
+            return self._authed(lambda jwt: http(method, url, data, jwt, headers=headers))
+        except Exception as e:
+            err_msg = str(e)
+            if any(term in err_msg for term in ("AuthFactorTokenRequired", "InvalidToken", "Bad token scope", "Token lacks chat", "401", "403")):
+                raise ApiError("A tua App Password do Bluesky não tem permissões para aceder a mensagens. Cria uma nova App Password em bsky.app com a opção de Direct Messages ativada.")
+            raise
 
     def item(self, p, reason=None, reply=None):
         a, rec = p["author"], p["record"]
@@ -1042,6 +1218,11 @@ class Bsky:
     def user_profile(self, actor):
         self._ensure()
         actor_clean = str(actor).strip().lstrip("@")
+        actor_clean = urllib.parse.unquote(actor_clean)
+        if actor_clean.startswith("http://") or actor_clean.startswith("https://"):
+            m = re.search(r"/profile/([^/?#]+)", actor_clean)
+            if m:
+                actor_clean = urllib.parse.unquote(m.group(1))
         p = self.call("GET", "app.bsky.actor.getProfile", params={"actor": actor_clean})
         desc = p.get("description") or ""
         bio_html = render_bsky_text(desc) if desc else ""
@@ -1068,7 +1249,13 @@ class Bsky:
 
     def user_feed(self, actor, cursor=None):
         self._ensure()
-        params = {"actor": actor, "limit": 40}
+        actor_clean = str(actor).strip().lstrip("@")
+        actor_clean = urllib.parse.unquote(actor_clean)
+        if actor_clean.startswith("http://") or actor_clean.startswith("https://"):
+            m = re.search(r"/profile/([^/?#]+)", actor_clean)
+            if m:
+                actor_clean = urllib.parse.unquote(m.group(1))
+        params = {"actor": actor_clean, "limit": 40}
         if cursor:
             params["cursor"] = cursor
         r = self.call("GET", "app.bsky.feed.getAuthorFeed", params=params)
@@ -1203,31 +1390,7 @@ class Bsky:
                 final_text = (final_text + "".join(poll_lines)).strip()
         if spoiler:
             final_text = f"⚠️ [CW: {spoiler}]\n\n{final_text}".strip()
-        facets = []
-        for m in _URL_RE.finditer(final_text):
-            url = m.group().rstrip(".,;:!?)")
-            b_start, b_end = byte_span(final_text, m.start(), m.start() + len(url))
-            facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
-                           "features": [{"$type": "app.bsky.richtext.facet#link", "uri": url}]})
-        for m in _HANDLE_RE.finditer(final_text):
-            handle = m.group(1)
-            did = self.resolve_handle(handle)
-            if did:
-                b_start, b_end = byte_span(final_text, m.start(), m.end())
-                facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
-                               "features": [{"$type": "app.bsky.richtext.facet#mention", "did": did}]})
-        for m in _HASHTAG_RE.finditer(final_text):
-            tag = m.group(1)
-            b_start, b_end = byte_span(final_text, m.start(), m.end())
-            facets.append({"index": {"byteStart": b_start, "byteEnd": b_end},
-                           "features": [{"$type": "app.bsky.richtext.facet#tag", "tag": tag}]})
-        clean_facets = []
-        last_end = 0
-        for f in sorted(facets, key=lambda f: (f["index"]["byteStart"], -f["index"]["byteEnd"])):
-            st, en = f["index"]["byteStart"], f["index"]["byteEnd"]
-            if st >= last_end and en > st:
-                clean_facets.append(f)
-                last_end = en
+        clean_facets = build_bsky_facets(final_text, self.resolve_handle)
         rec = {"$type": "app.bsky.feed.post", "text": final_text, "createdAt": now_iso()}
         if clean_facets:
             rec["facets"] = clean_facets
@@ -1582,6 +1745,130 @@ class Bsky:
                         "liked": liked, "boosted": boosted, "likes": likes_cnt, "boosts": boosts_cnt, "replies": replies_cnt})
         return out, next_cursor
 
+    def list_conversations(self, limit=30, cursor=None):
+        self._ensure()
+        params = {"limit": min(max(int(limit), 1), 50)}
+        if cursor:
+            params["cursor"] = str(cursor)
+        res = self.call_chat("GET", "chat.bsky.convo.listConvos", params=params)
+        convos = []
+        for c in res.get("convos", []):
+            cid = c.get("id")
+            members = c.get("members") or []
+            peer_obj = None
+            for m in members:
+                if self.did and m.get("did") != self.did:
+                    peer_obj = m
+                    break
+            if not peer_obj and members:
+                peer_obj = members[0]
+            peer = {
+                "id": peer_obj.get("did") if peer_obj else "",
+                "name": (peer_obj.get("displayName") or peer_obj.get("handle") or "") if peer_obj else "",
+                "handle": ("@" + peer_obj.get("handle")) if peer_obj and peer_obj.get("handle") else "",
+                "avatar": safe_url(peer_obj.get("avatar")) if peer_obj else ""
+            }
+            last_msg = c.get("lastMessage") or {}
+            last_text = last_msg.get("text") or ""
+            last_time = last_msg.get("sentAt") or ""
+            unread_cnt = int(c.get("unreadCount") or 0)
+            convos.append({
+                "id": cid,
+                "network": "bluesky",
+                "peer": peer,
+                "unread": unread_cnt > 0,
+                "unread_count": unread_cnt,
+                "last_text": last_text,
+                "last_time": last_time,
+                "status": c.get("status", "accepted"),
+                "muted": bool(c.get("muted"))
+            })
+        return {"convos": convos, "cursor": res.get("cursor")}
+
+    def get_conversation_messages(self, convo_id, limit=50, cursor=None):
+        self._ensure()
+        params = {"convoId": convo_id, "limit": min(max(int(limit), 1), 100)}
+        if cursor:
+            params["cursor"] = str(cursor)
+        res = self.call_chat("GET", "chat.bsky.convo.getMessages", params=params)
+        raw_msgs = res.get("messages", [])
+        messages = []
+        for m in raw_msgs:
+            if not isinstance(m, dict):
+                continue
+            mid = m.get("id")
+            text = m.get("text", "")
+            sent_at = m.get("sentAt", "")
+            sender = m.get("sender") or {}
+            sender_did = sender.get("did") or ""
+            is_own = bool(self.did and sender_did == self.did)
+            facets = m.get("facets")
+            messages.append({
+                "id": mid,
+                "sender_id": sender_did,
+                "is_own": is_own,
+                "text": text,
+                "html": render_bsky_text(text, facets) if text else "",
+                "time": sent_at
+            })
+        messages.sort(key=lambda x: parse_time(x.get("time")))
+        return {
+            "id": convo_id,
+            "network": "bluesky",
+            "messages": messages,
+            "cursor": res.get("cursor")
+        }
+
+    def send_message(self, convo_id, text):
+        self._ensure()
+        text = (text or "").strip()
+        if not text:
+            raise ValueError("O texto da mensagem não pode estar vazio.")
+        facets = build_bsky_facets(text, self.resolve_handle)
+        msg_payload = {"text": text}
+        if facets:
+            msg_payload["facets"] = facets
+        res = self.call_chat("POST", "chat.bsky.convo.sendMessage", data={
+            "convoId": convo_id,
+            "message": msg_payload
+        })
+        sent_at = res.get("sentAt") or now_iso()
+        return {
+            "id": res.get("id"),
+            "sender_id": self.did,
+            "is_own": True,
+            "text": text,
+            "html": render_bsky_text(text, facets) if text else "",
+            "time": sent_at
+        }
+
+    def mark_as_read(self, convo_id):
+        self._ensure()
+        return self.call_chat("POST", "chat.bsky.convo.updateRead", data={"convoId": convo_id})
+
+    def start_conversation(self, recipient, text=None):
+        self._ensure()
+        recipient = (recipient or "").strip()
+        if not recipient:
+            raise ValueError("Destinatário em falta.")
+        m_prof = re.search(r"bsky\.app/profile/([^/?#]+)", recipient)
+        target = m_prof.group(1) if m_prof else recipient
+        target = target.lstrip("@")
+        target_did = target if target.startswith("did:") else self.resolve_handle(target)
+        if not target_did:
+            raise ApiError(f"Não foi possível encontrar o utilizador {recipient} no Bluesky.")
+        res = self.call_chat("GET", "chat.bsky.convo.getConvoForMembers", params={"members": [target_did]})
+        convo = res.get("convo") or {}
+        convo_id = convo.get("id")
+        sent_msg = None
+        if text:
+            sent_msg = self.send_message(convo_id, text)
+        return {
+            "convo_id": convo_id,
+            "network": "bluesky",
+            "message": sent_msg
+        }
+
 
 def sanitize_masto_instance(inst):
     """Normaliza o URL da instância Mastodon, aceitando 'exemplo.social', 'https://exemplo.social',
@@ -1606,6 +1893,7 @@ class Masto:
         self.cache = {}  # posts "pai" já obtidos
         self.cache_lock = threading.Lock()  # a cache é usada por várias threads em paralelo
         self.my_id = None
+        self.convo_last_status = {}
 
     def get_my_id(self):
         if self.my_id:
@@ -1673,6 +1961,7 @@ class Masto:
             "is_own": bool(my_id and str(a.get("id")) == my_id),
             "url": safe_url(x.get("url")), "ref": {"id": x["id"]}, "reply_to": rt,
             "is_reply": bool(x.get("in_reply_to_id")),
+            "cw": (x.get("spoiler_text") or "").strip(),
         }
         if name_html:
             out["name_html"] = name_html
@@ -1731,10 +2020,25 @@ class Masto:
 
     def user_profile(self, actor):
         actor_str = str(actor).strip().lstrip("@")
-        if actor_str.isdigit():
+        if actor_str.startswith("http://") or actor_str.startswith("https://"):
+            res = self.call("GET", "/api/v2/search", params={"q": actor_str, "type": "accounts", "resolve": "true"})
+            accounts = res.get("accounts") or []
+            if accounts:
+                acc = accounts[0]
+            else:
+                raise Exception("Perfil não encontrado.")
+        elif actor_str.isdigit():
             acc = self.call("GET", f"/api/v1/accounts/{actor_str}")
         else:
-            acc = self.call("GET", "/api/v1/accounts/lookup", params={"acct": actor_str})
+            try:
+                acc = self.call("GET", "/api/v1/accounts/lookup", params={"acct": actor_str})
+            except Exception:
+                res = self.call("GET", "/api/v2/search", params={"q": actor_str, "type": "accounts", "resolve": "true"})
+                accounts = res.get("accounts") or []
+                if accounts:
+                    acc = accounts[0]
+                else:
+                    raise
         prof = self._format_acc(acc)
         my_id = self.get_my_id()
         acc_id = prof.get("id")
@@ -1985,6 +2289,177 @@ class Masto:
             out.append(notif_item)
         return out, next_cursor
 
+    def list_conversations(self, limit=30, max_id=None):
+        params = {"limit": min(max(int(limit), 1), 40)}
+        if max_id:
+            params["max_id"] = str(max_id)
+        try:
+            raw_convos = self.call("GET", "/api/v1/conversations", params=params)
+        except Exception as e:
+            err_msg = str(e)
+            if any(term in err_msg.lower() for term in ("scope", "403", "401")):
+                raise ApiError("O teu token do Mastodon não tem permissão para aceder a conversas (escopo read:conversations). Atualiza o teu token nas Definições.")
+            raise
+        convos = []
+        my_id = self.get_my_id()
+        for c in (raw_convos or []):
+            cid = str(c.get("id"))
+            unread = bool(c.get("unread"))
+            accounts = c.get("accounts") or []
+            peer_acc = None
+            for a in accounts:
+                if my_id and str(a.get("id")) != str(my_id):
+                    peer_acc = a
+                    break
+            if not peer_acc and accounts:
+                peer_acc = accounts[0]
+            peer = {
+                "id": str(peer_acc.get("id")) if peer_acc else "",
+                "name": (peer_acc.get("display_name") or peer_acc.get("username") or "") if peer_acc else "",
+                "handle": ("@" + peer_acc.get("acct")) if peer_acc and peer_acc.get("acct") else "",
+                "avatar": safe_url(peer_acc.get("avatar")) if peer_acc else ""
+            }
+            ls = c.get("last_status") or {}
+            ls_id = str(ls.get("id")) if ls.get("id") else None
+            if ls_id:
+                self.convo_last_status[cid] = ls_id
+            last_text = preview(plain(ls.get("content", ""))) if ls else ""
+            last_time = ls.get("created_at") or ""
+            convos.append({
+                "id": cid,
+                "network": "mastodon",
+                "peer": peer,
+                "unread": unread,
+                "unread_count": 1 if unread else 0,
+                "last_text": last_text,
+                "last_time": last_time,
+                "status": "accepted",
+                "last_status_id": ls_id
+            })
+        return {"convos": convos}
+
+    def get_conversation_messages(self, convo_id, limit=50, last_status_id=None):
+        cid = str(convo_id)
+        ls_id = last_status_id or self.convo_last_status.get(cid)
+        if not ls_id:
+            convos = self.list_conversations(limit=40).get("convos", [])
+            for c in convos:
+                if str(c.get("id")) == cid and c.get("last_status_id"):
+                    ls_id = c["last_status_id"]
+                    break
+        if not ls_id:
+            return {"id": convo_id, "network": "mastodon", "messages": []}
+
+        try:
+            ctx = self.call("GET", f"/api/v1/statuses/{ls_id}/context")
+            ancestors = ctx.get("ancestors") or []
+            descendants = ctx.get("descendants") or []
+        except Exception:
+            ancestors, descendants = [], []
+
+        try:
+            last_st = self.call("GET", f"/api/v1/statuses/{ls_id}")
+        except Exception:
+            last_st = None
+
+        raw_all = ancestors + ([last_st] if last_st else []) + descendants
+        seen_ids = set()
+        messages = []
+        my_id = self.get_my_id()
+        for st in raw_all:
+            if not isinstance(st, dict):
+                continue
+            sid = str(st.get("id"))
+            if sid in seen_ids:
+                continue
+            seen_ids.add(sid)
+            acc = st.get("account") or {}
+            sender_id = str(acc.get("id") or "")
+            is_own = bool(my_id and sender_id == str(my_id))
+            text = plain(st.get("content", ""))
+            messages.append({
+                "id": sid,
+                "sender_id": sender_id,
+                "sender_name": acc.get("display_name") or acc.get("username") or "",
+                "sender_handle": "@" + acc.get("acct") if acc.get("acct") else "",
+                "sender_avatar": safe_url(acc.get("avatar")),
+                "is_own": is_own,
+                "text": text,
+                "html": st.get("content", ""),
+                "time": st.get("created_at", "")
+            })
+        messages.sort(key=lambda x: parse_time(x.get("time")))
+        return {
+            "id": convo_id,
+            "network": "mastodon",
+            "messages": messages
+        }
+
+    def send_message(self, convo_id, text, recipient=None, last_msg_id=None):
+        text = (text or "").strip()
+        if not text:
+            raise ValueError("O texto da mensagem não pode estar vazio.")
+        final_text = text
+        if recipient:
+            rec_handle = recipient.strip()
+            if not rec_handle.startswith("@"):
+                rec_handle = "@" + rec_handle
+            if rec_handle.lower() not in text.lower():
+                final_text = f"{rec_handle} {text}"
+        data = {
+            "status": final_text,
+            "visibility": "direct"
+        }
+        if last_msg_id:
+            data["in_reply_to_id"] = str(last_msg_id)
+        elif convo_id and self.convo_last_status.get(str(convo_id)):
+            data["in_reply_to_id"] = str(self.convo_last_status[str(convo_id)])
+        try:
+            st = self.call("POST", "/api/v1/statuses", data=data)
+        except Exception as e:
+            err_msg = str(e)
+            if any(term in err_msg.lower() for term in ("scope", "403", "401")):
+                raise ApiError("O teu token do Mastodon não tem permissão para publicar mensagens diretas (escopo write:statuses).")
+            raise
+        acc = st.get("account") or {}
+        st_id = str(st.get("id"))
+        if convo_id:
+            self.convo_last_status[str(convo_id)] = st_id
+        return {
+            "id": st_id,
+            "sender_id": str(acc.get("id") or ""),
+            "sender_name": acc.get("display_name") or acc.get("username") or "",
+            "sender_handle": "@" + acc.get("acct") if acc.get("acct") else "",
+            "sender_avatar": safe_url(acc.get("avatar")),
+            "is_own": True,
+            "text": plain(st.get("content", "")),
+            "html": st.get("content", ""),
+            "time": st.get("created_at") or now_iso()
+        }
+
+    def mark_as_read(self, convo_id):
+        try:
+            return self.call("POST", f"/api/v1/conversations/{convo_id}/read")
+        except Exception:
+            return {"ok": True}
+
+    def start_conversation(self, recipient, text):
+        recipient = (recipient or "").strip()
+        if not recipient:
+            raise ValueError("Destinatário em falta.")
+        text = (text or "").strip()
+        if not text:
+            raise ValueError("O texto da mensagem não pode estar vazio.")
+        m_user = re.search(r"/@([a-zA-Z0-9_.-]+(?:@[a-zA-Z0-9_.-]+)?)", recipient)
+        target = ("@" + m_user.group(1)) if m_user else recipient
+        if not target.startswith("@"):
+            target = "@" + target
+        msg = self.send_message(convo_id=None, text=text, recipient=target)
+        return {
+            "network": "mastodon",
+            "message": msg
+        }
+
 
 def init_clients(cfg):
     clients = {}
@@ -2000,7 +2475,7 @@ CLIENTS = init_clients(CFG)
 
 # 'unsafe-inline' necessário porque a UI é um único ficheiro com <script>/<style> inline.
 # connect-src/worker-src https:/blob: são exigidos pelo hls.js (playlists e segmentos de vídeo do Bluesky).
-CSP = ("default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+CSP = ("default-src 'none'; manifest-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
        "img-src 'self' https: data: blob:; media-src https: blob:; connect-src 'self' https:; worker-src blob:; "
        "frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
 
@@ -2090,7 +2565,7 @@ def generate_alt_text(image_data, lang=None, cfg=None):
         key = (ai_cfg.get("gemini_key") or "").strip()
         if not key:
             raise ValueError("A chave de API do Google Gemini não está configurada nas Definições.")
-        configured_model = (ai_cfg.get("gemini_model") or "gemini-3.5-flash").strip()
+        configured_model = (ai_cfg.get("gemini_model") or "gemini-3.5-flash-lite").strip()
         payload = {
             "system_instruction": {
                 "parts": [{"text": sys_prompt}]
@@ -2112,14 +2587,20 @@ def generate_alt_text(image_data, lang=None, cfg=None):
             ],
             "generationConfig": {
                 "temperature": 0.1,
-                "maxOutputTokens": 800,
-                "thinkingConfig": {"thinkingBudget": 0}
+                "maxOutputTokens": 800
             }
         }
 
-        # Modelos candidatos em caso de descontinuação ou sobrecarga temporária
+        # Modelos candidatos em caso de descontinuação, indisponibilidade ou limite de quota por modelo
         models_to_try = [configured_model]
-        for fallback_m in ("gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"):
+        for fallback_m in (
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash",
+            "gemini-3.8-flash",
+            "gemini-flash-latest"
+        ):
             if fallback_m not in models_to_try:
                 models_to_try.append(fallback_m)
 
@@ -2134,18 +2615,6 @@ def generate_alt_text(image_data, lang=None, cfg=None):
                 used_model = current_model
                 break
             except ApiError as e:
-                # Se o modelo falhar por não suportar thinkingConfig, retenta sem esse campo
-                err_lower = str(e).lower()
-                if "thinkingconfig" in err_lower or "thinking_config" in err_lower:
-                    try:
-                        p_no_think = json.loads(json.dumps(payload))
-                        p_no_think.get("generationConfig", {}).pop("thinkingConfig", None)
-                        res = http("POST", url, data=p_no_think, timeout=60)
-                        used_model = current_model
-                        break
-                    except Exception:
-                        pass
-
                 raw_body = getattr(e, "body", "") or ""
                 err_str = str(e)
                 clean_msg = err_str
@@ -2165,18 +2634,30 @@ def generate_alt_text(image_data, lang=None, cfg=None):
                         except Exception:
                             pass
 
+                # Se o modelo falhar por argumento inválido ou parâmetro não suportado, retenta com payload simplificado sem generationConfig
+                if getattr(e, "status", None) == 400 or "invalid argument" in clean_msg.lower():
+                    try:
+                        p_simple = {
+                            "contents": payload.get("contents", [])
+                        }
+                        res = http("POST", url, data=p_simple, timeout=60)
+                        used_model = current_model
+                        break
+                    except Exception:
+                        pass
+
                 last_err_msg = clean_msg
 
-                # Se a API sugerir explicitamente um modelo alternativo (ex: "Please update your code to use models/gemini-3.8-flash")
+                # Se a API sugerir explicitamente um modelo alternativo (ex: "Please update your code to use models/gemini-2.5-flash")
                 suggested_match = re.search(r"models/([a-zA-Z0-9\.\-_]+)", clean_msg)
                 if suggested_match:
                     sugg = suggested_match.group(1)
                     if sugg not in models_to_try:
                         models_to_try.append(sugg)
 
-                # Se for modelo indisponível/descontinuado (404) ou com sobrecarga/alta procura (503, 429 high demand)
+                # Se for modelo indisponível/descontinuado (404), argumento incompatível (400) ou sobrecarga/alta procura (503, 429)
                 is_unavailable_or_busy = (
-                    getattr(e, "status", None) in (404, 429, 503)
+                    getattr(e, "status", None) in (400, 404, 429, 503)
                     or "404" in err_str
                     or "503" in err_str
                     or "not found" in clean_msg.lower()
@@ -2184,6 +2665,7 @@ def generate_alt_text(image_data, lang=None, cfg=None):
                     or "deprecated" in clean_msg.lower()
                     or "high demand" in clean_msg.lower()
                     or "overloaded" in clean_msg.lower()
+                    or "invalid argument" in clean_msg.lower()
                     or "try again later" in clean_msg.lower()
                     or "resource has been exhausted" in clean_msg.lower()
                 )
@@ -2191,16 +2673,18 @@ def generate_alt_text(image_data, lang=None, cfg=None):
                     time.sleep(0.5)
                     continue
                 else:
-                    # Erro fatal de autenticação, chave inválida ou argumento errado: abortar
+                    # Erro fatal de autenticação, chave inválida ou permissão: abortar
                     raise ValueError(f"Erro Gemini API: {clean_msg}")
 
         if res is None:
             if "high demand" in last_err_msg.lower() or "overloaded" in last_err_msg.lower():
                 raise ValueError("Os servidores do Google Gemini estão com tráfego elevado temporário. Aguarda alguns segundos e tenta novamente.")
+            if "quota" in last_err_msg.lower() or "resource has been exhausted" in last_err_msg.lower() or "429" in last_err_msg:
+                raise ValueError("Limite de quota diária do Google Gemini atingido. Aguarda a renovação da quota ou adiciona uma nova chave gratuita nas Definições.")
             raise ValueError(f"Erro Gemini API: {last_err_msg}")
 
-        # Se mudámos de modelo devido a descontinuação definitiva, guarda nas definições
-        if used_model != configured_model and ("no longer available" in last_err_msg.lower() or "deprecated" in last_err_msg.lower() or "not found" in last_err_msg.lower()):
+        # Se mudámos de modelo devido a descontinuação definitiva ou incompatibilidade, guarda nas definições
+        if used_model != configured_model and ("no longer available" in last_err_msg.lower() or "deprecated" in last_err_msg.lower() or "not found" in last_err_msg.lower() or "invalid argument" in last_err_msg.lower()):
             try:
                 if "ai" in CFG:
                     CFG["ai"]["gemini_model"] = used_model
@@ -2299,6 +2783,648 @@ def generate_alt_text(image_data, lang=None, cfg=None):
         raise ValueError(f"Fornecedor de IA desconhecido: '{provider}'.")
 
 
+def clean_translated_text(txt):
+    """Limpa o texto traduzido: remove marcadores markdown externos, aspas e prefixos."""
+    if not isinstance(txt, str) or not txt.strip():
+        return ""
+    t = txt.strip()
+    if t.startswith("```") and t.endswith("```"):
+        lines = t.splitlines()
+        if len(lines) >= 3:
+            t = "\n".join(lines[1:-1]).strip()
+    for pfx in ("Translation:", "Tradução:", "Translated text:", "Here is the translation:"):
+        if t.lower().startswith(pfx.lower()):
+            t = t[len(pfx):].strip()
+    if (t.startswith('"') and t.endswith('"')) or (t.startswith('“') and t.endswith('”')):
+        if t.count('"') == 2 or (t.count('“') == 1 and t.count('”') == 1):
+            t = t[1:-1].strip()
+    return t
+
+
+def translate_text(text, target_lang=None, cfg=None):
+    """Traduz o texto de uma publicação social usando o fornecedor de IA configurado (Gemini, Ollama ou OpenAI)."""
+    if cfg is None:
+        cfg = CFG
+    ai_cfg = cfg.get("ai") or {}
+    provider = (ai_cfg.get("provider") or "none").lower()
+    if provider == "none":
+        raise ValueError("O serviço de IA não está ativado. Ativa o Google Gemini (gratuito) ou Ollama nas Definições para traduzir publicações.")
+
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("Texto para tradução em falta ou inválido.")
+
+    target_lang = (target_lang or ai_cfg.get("lang") or "pt").lower().strip()
+    lang_name_en = {
+        "pt": "Portuguese (Portugal)",
+        "pt-pt": "Portuguese (Portugal)",
+        "pt-br": "Portuguese (Brazil)",
+        "en": "English",
+        "es": "Spanish",
+        "fr": "French",
+        "de": "German"
+    }
+    target_desc = lang_name_en.get(target_lang, "Portuguese")
+
+    sys_prompt = (
+        f"You are a professional social media translator for Bluesky and Mastodon.\n"
+        f"Translate the following user post accurately into {target_desc}.\n"
+        "STRICT RULES:\n"
+        f"- Output ONLY the direct translated text in {target_desc}, nothing else.\n"
+        "- Do NOT add quotation marks around the entire translation.\n"
+        "- Do NOT add any intro, preamble, explanations, or notes.\n"
+        "- Preserve all @mentions (e.g. @user.bsky.social), #hashtags, URLs, emojis, and line breaks exactly as in the original.\n"
+        "- Maintain the natural, informal tone suitable for social media posts."
+    )
+
+    if provider == "gemini":
+        key = (ai_cfg.get("gemini_key") or "").strip()
+        if not key:
+            raise ValueError("A chave de API do Google Gemini não está configurada nas Definições.")
+        configured_model = (ai_cfg.get("gemini_model") or "gemini-3.5-flash-lite").strip()
+        payload = {
+            "system_instruction": {
+                "parts": [{"text": sys_prompt}]
+            },
+            "contents": [
+                {
+                    "parts": [{"text": text}]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.2,
+                "maxOutputTokens": 2000
+            }
+        }
+
+        models_to_try = [configured_model]
+        for fallback_m in (
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash",
+            "gemini-3.8-flash",
+            "gemini-flash-latest"
+        ):
+            if fallback_m not in models_to_try:
+                models_to_try.append(fallback_m)
+
+        last_err_msg = ""
+        res = None
+        used_model = configured_model
+
+        for current_model in list(models_to_try):
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{current_model}:generateContent?key={key}"
+            try:
+                res = http("POST", url, data=payload, timeout=30)
+                used_model = current_model
+                break
+            except ApiError as e:
+                raw_body = getattr(e, "body", "") or ""
+                err_str = str(e)
+                clean_msg = err_str
+
+                if "timed out" in err_str.lower():
+                    clean_msg = "O pedido ao Google Gemini excedeu o tempo limite (timeout). Tenta novamente."
+
+                for source in (raw_body, err_str.split(": ", 1)[-1] if ": " in err_str else ""):
+                    if source:
+                        try:
+                            parsed_err = json.loads(source)
+                            if isinstance(parsed_err, dict) and "error" in parsed_err:
+                                err_obj = parsed_err["error"]
+                                clean_msg = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+                                break
+                        except Exception:
+                            pass
+
+                # Se o modelo rejeitar system_instruction ou parâmetros de generationConfig com 400 / invalid argument,
+                # tenta formato simplificado com o prompt no corpo de contents
+                if getattr(e, "status", None) == 400 or "invalid argument" in clean_msg.lower():
+                    try:
+                        p_simple = {
+                            "contents": [
+                                {
+                                    "parts": [{"text": f"{sys_prompt}\n\nPost to translate:\n{text}"}]
+                                }
+                            ]
+                        }
+                        res = http("POST", url, data=p_simple, timeout=30)
+                        used_model = current_model
+                        break
+                    except Exception:
+                        pass
+
+                last_err_msg = clean_msg
+                suggested_match = re.search(r"models/([a-zA-Z0-9\.\-_]+)", clean_msg)
+                if suggested_match:
+                    sugg = suggested_match.group(1)
+                    if sugg not in models_to_try:
+                        models_to_try.append(sugg)
+
+                # Se o modelo falhar por incompatibilidade/descontinuação (404), erro de argumento (400) ou sobrecarga (503, 429)
+                is_retryable = (
+                    getattr(e, "status", None) in (400, 404, 429, 503)
+                    or "404" in err_str
+                    or "503" in err_str
+                    or "not found" in clean_msg.lower()
+                    or "no longer available" in clean_msg.lower()
+                    or "deprecated" in clean_msg.lower()
+                    or "high demand" in clean_msg.lower()
+                    or "overloaded" in clean_msg.lower()
+                    or "invalid argument" in clean_msg.lower()
+                    or "try again later" in clean_msg.lower()
+                    or "resource has been exhausted" in clean_msg.lower()
+                )
+                if is_retryable:
+                    time.sleep(0.5)
+                    continue
+                else:
+                    raise ValueError(f"Erro Gemini API: {clean_msg}")
+
+        if res is None:
+            if "high demand" in last_err_msg.lower() or "overloaded" in last_err_msg.lower():
+                raise ValueError("Os servidores do Google Gemini estão com tráfego elevado temporário. Aguarda alguns segundos e tenta novamente.")
+            if "quota" in last_err_msg.lower() or "resource has been exhausted" in last_err_msg.lower() or "429" in last_err_msg:
+                raise ValueError("Limite de quota diária do Google Gemini atingido. Aguarda a renovação da quota ou adiciona uma nova chave gratuita nas Definições.")
+            raise ValueError(f"Erro Gemini API: {last_err_msg}")
+
+        # Se mudámos de modelo devido a incompatibilidade ou descontinuação, guarda nas definições
+        if used_model != configured_model and ("no longer available" in last_err_msg.lower() or "deprecated" in last_err_msg.lower() or "not found" in last_err_msg.lower() or "invalid argument" in last_err_msg.lower()):
+            try:
+                if "ai" in CFG:
+                    CFG["ai"]["gemini_model"] = used_model
+                    write_config(CFG)
+            except Exception:
+                pass
+
+        try:
+            candidates = res.get("candidates") or []
+            if candidates and candidates[0].get("content", {}).get("parts"):
+                txt = candidates[0]["content"]["parts"][0].get("text", "").strip()
+                cleaned = clean_translated_text(txt)
+                if cleaned:
+                    return cleaned
+        except Exception:
+            pass
+        if "error" in res:
+            err_msg = res["error"].get("message") if isinstance(res["error"], dict) else str(res["error"])
+            raise ValueError(f"Erro Gemini API: {err_msg}")
+        raise ValueError("A API do Gemini não devolveu texto traduzido.")
+
+    elif provider == "ollama":
+        base_url = (ai_cfg.get("ollama_url") or "http://localhost:11434").strip().rstrip("/")
+        model = (ai_cfg.get("ollama_model") or "llama3.2").strip()
+        url = f"{base_url}/api/generate"
+        payload = {
+            "model": model,
+            "system": sys_prompt,
+            "prompt": text,
+            "stream": False
+        }
+        try:
+            res = http("POST", url, data=payload, timeout=45)
+        except ApiError as e:
+            raise ValueError(f"Erro ao ligar ao Ollama ({e}). Verifica se o servidor local está em execução em {base_url}.")
+
+        txt = (res.get("response") or "").strip()
+        cleaned = clean_translated_text(txt)
+        if cleaned:
+            return cleaned
+        if "error" in res:
+            raise ValueError(f"Erro Ollama: {res['error']}")
+        raise ValueError("Ollama não devolveu texto para esta tradução.")
+
+    elif provider in ("openai", "openai_compatible", "compativel"):
+        base_url = (ai_cfg.get("openai_url") or "https://api.openai.com/v1").strip().rstrip("/")
+        key = (ai_cfg.get("openai_key") or "").strip()
+        model = (ai_cfg.get("openai_model") or "gpt-4o-mini").strip()
+        url = f"{base_url}/chat/completions"
+        headers = {}
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": text}
+            ],
+            "temperature": 0.2,
+            "max_tokens": 1500
+        }
+        try:
+            res = http("POST", url, data=payload, headers=headers, timeout=30)
+        except ApiError as e:
+            clean_msg = str(e)
+            raw_body = getattr(e, "body", "") or ""
+            for source in (raw_body, str(e)):
+                if source:
+                    try:
+                        parsed_err = json.loads(source)
+                        if isinstance(parsed_err, dict) and "error" in parsed_err:
+                            err_obj = parsed_err["error"]
+                            clean_msg = err_obj.get("message") if isinstance(err_obj, dict) else str(err_obj)
+                            break
+                    except Exception:
+                        pass
+            raise ValueError(f"Erro OpenAI API: {clean_msg}")
+
+        try:
+            choices = res.get("choices") or []
+            if choices and choices[0].get("message", {}).get("content"):
+                txt = choices[0]["message"]["content"].strip()
+                cleaned = clean_translated_text(txt)
+                if cleaned:
+                    return cleaned
+        except Exception:
+            pass
+        if "error" in res:
+            err_msg = res["error"].get("message") if isinstance(res["error"], dict) else str(res["error"])
+            raise ValueError(f"Erro OpenAI API: {err_msg}")
+        raise ValueError("A API compatível não devolveu texto traduzido.")
+
+    else:
+        raise ValueError(f"Fornecedor de IA desconhecido: '{provider}'.")
+
+
+_TAILSCALE_NET = ipaddress.ip_network("100.64.0.0/10")
+
+
+def _extra_allowed_hosts():
+    raw = os.environ.get("MASTOSKY_ALLOWED_HOSTS", "")
+    return {h.strip().lower().rstrip(".") for h in raw.split(",") if h.strip()}
+
+
+def is_private_or_local_host(host_str):
+    """Verifica se o host é local ou pertence a gamas privadas (RFC 1918 / RFC 4193 / Tailscale CGNAT / link-local / .local / .ts.net)."""
+    if not host_str:
+        return False
+    host = host_str.strip()
+    if host.startswith("[") and "]" in host:
+        host = host[1:host.index("]")]
+    elif host.count(":") == 1:
+        host = host.split(":")[0]
+    host = host.lower().rstrip(".")
+    if not host:
+        return False
+    if host in ("127.0.0.1", "localhost", "::1"):
+        return True
+    if host.endswith(".local") or (host.endswith(".ts.net") and len(host) > 7):
+        return True
+    if host in _extra_allowed_hosts():
+        return True
+    try:
+        if host == socket.gethostname().lower():
+            return True
+    except Exception:
+        pass
+    try:
+        ip = ipaddress.ip_address(host)
+        if ip in _TAILSCALE_NET:
+            return True
+        mapped = getattr(ip, "ipv4_mapped", None)
+        if mapped is not None and (mapped in _TAILSCALE_NET or mapped.is_private or mapped.is_loopback or mapped.is_link_local):
+            return True
+        return ip.is_private or ip.is_loopback or ip.is_link_local
+    except ValueError:
+        return False
+
+
+def get_tailscale_ip():
+    """Deteta o IP ou hostname Tailscale desta máquina (100.64.0.0/10 ou MASTOSKY_TAILSCALE_HOST)."""
+    env_host = os.environ.get("MASTOSKY_TAILSCALE_HOST", "").strip()
+    if env_host:
+        return env_host
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("100.100.100.100", 53))
+            ip_str = s.getsockname()[0]
+        finally:
+            s.close()
+        if ipaddress.ip_address(ip_str) in _TAILSCALE_NET:
+            return ip_str
+    except Exception:
+        pass
+    return None
+
+
+def get_tailscale_url(port=None):
+    """Constrói o URL Tailscale se disponível (MASTOSKY_TAILSCALE_URL, MASTOSKY_TAILSCALE_HOST ou IP 100.64.0.0/10)."""
+    env_url = os.environ.get("MASTOSKY_TAILSCALE_URL", "").strip().rstrip("/")
+    if env_url:
+        return env_url
+    ts = get_tailscale_ip()
+    if not ts:
+        return None
+    if ts.startswith(("http://", "https://")):
+        return ts.rstrip("/")
+    return f"http://{ts}:{port or PORT}"
+
+
+def get_local_ip():
+    """Deteta o endereço IP local na rede (Wi-Fi/LAN) sem tráfego externo."""
+    for target in ("10.255.255.255", "192.168.255.255", "8.8.8.8"):
+        s = None
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0.5)
+            s.connect((target, 1))
+            ip = s.getsockname()[0]
+            if ip and not ip.startswith("127."):
+                return ip
+        except Exception:
+            pass
+        finally:
+            if s:
+                try:
+                    s.close()
+                except Exception:
+                    pass
+
+    if sys.platform == "darwin":
+        for iface in ("en0", "en1", "en2"):
+            try:
+                out = subprocess.check_output(["ipconfig", "getifaddr", iface], text=True, stderr=subprocess.DEVNULL).strip()
+                if out and not out.startswith("127."):
+                    return out
+            except Exception:
+                pass
+
+    if sys.platform.startswith("linux"):
+        try:
+            out = subprocess.check_output(["hostname", "-I"], text=True, stderr=subprocess.DEVNULL).split()
+            for ip in out:
+                if not ip.startswith("127."):
+                    return ip
+        except Exception:
+            pass
+
+    try:
+        hname = socket.gethostname()
+        ip = socket.gethostbyname(hname)
+        if ip and not ip.startswith("127."):
+            return ip
+    except Exception:
+        pass
+
+    return "127.0.0.1"
+
+
+def generate_qr_matrix(text, level='M'):
+    """Gera matriz booleana de QR Code para URLs curtas (Byte Mode, v1-6). Zero dependências externas."""
+    exp = [0] * 512
+    log = [0] * 256
+    x = 1
+    for i in range(255):
+        exp[i] = x
+        exp[i + 255] = x
+        log[x] = i
+        x = (x << 1) ^ (0x11d if (x & 0x80) else 0)
+
+    def gf_mul(a, b):
+        return 0 if a == 0 or b == 0 else exp[log[a] + log[b]]
+
+    def rs_gen_poly(num_ec):
+        poly = [1]
+        for i in range(num_ec):
+            next_poly = [0] * (len(poly) + 1)
+            factor = exp[i]
+            for j in range(len(poly)):
+                next_poly[j] ^= poly[j]
+                next_poly[j + 1] ^= gf_mul(poly[j], factor)
+            poly = next_poly
+        return poly
+
+    def rs_encode(data, num_ec):
+        gen = rs_gen_poly(num_ec)
+        res = [0] * num_ec
+        for d in data:
+            factor = d ^ res[0]
+            for j in range(num_ec - 1):
+                res[j] = res[j + 1] ^ gf_mul(gen[j + 1], factor)
+            res[num_ec - 1] = gf_mul(gen[num_ec], factor)
+        return res
+
+    VERSIONS = [
+        None,
+        {"total": 26, "dcL": 19, "dcM": 16, "ecL": 7, "ecM": 10, "blocksL": 1, "blocksM": 1, "align": []},
+        {"total": 44, "dcL": 34, "dcM": 28, "ecL": 10, "ecM": 16, "blocksL": 1, "blocksM": 1, "align": [6, 18]},
+        {"total": 70, "dcL": 55, "dcM": 44, "ecL": 15, "ecM": 26, "blocksL": 1, "blocksM": 1, "align": [6, 22]},
+        {"total": 100, "dcL": 80, "dcM": 64, "ecL": 20, "ecM": 36, "blocksL": 1, "blocksM": 2, "align": [6, 26]},
+        {"total": 134, "dcL": 108, "dcM": 86, "ecL": 26, "ecM": 48, "blocksL": 1, "blocksM": 2, "align": [6, 30]},
+        {"total": 172, "dcL": 136, "dcM": 108, "ecL": 36, "ecM": 64, "blocksL": 2, "blocksM": 4, "align": [6, 34]},
+    ]
+
+    utf8 = list(text.encode("utf-8"))
+    v = 1
+    for ver in range(1, 7):
+        cap = VERSIONS[ver]["dcL" if level == 'L' else "dcM"]
+        if len(utf8) + 2 <= cap:
+            v = ver
+            break
+    vinfo = VERSIONS[v]
+    data_cap = vinfo["dcL" if level == 'L' else "dcM"]
+
+    bits = []
+    def put_bits(num, count):
+        for i in range(count - 1, -1, -1):
+            bits.append((num >> i) & 1)
+
+    put_bits(4, 4)
+    put_bits(len(utf8), 8)
+    for b in utf8:
+        put_bits(b, 8)
+    term_len = min(4, data_cap * 8 - len(bits))
+    bits.extend([0] * term_len)
+    while len(bits) % 8 != 0:
+        bits.append(0)
+
+    bytes_data = []
+    for i in range(0, len(bits), 8):
+        val = 0
+        for j in range(8):
+            val = (val << 1) | bits[i + j]
+        bytes_data.append(val)
+
+    pad = 0xEC
+    while len(bytes_data) < data_cap:
+        bytes_data.append(pad)
+        pad = 0x11 if pad == 0xEC else 0xEC
+
+    num_blocks = vinfo["blocksL" if level == 'L' else "blocksM"]
+    total_ec = vinfo["ecL" if level == 'L' else "ecM"]
+    ec_per_block = total_ec // num_blocks
+    total_dc = data_cap
+
+    blocks = []
+    ec_blocks = []
+    base_dc_len = total_dc // num_blocks
+    num_large_blocks = total_dc % num_blocks
+    offset = 0
+
+    for b in range(num_blocks):
+        dc_len = base_dc_len + (1 if b >= (num_blocks - num_large_blocks) else 0)
+        blk = bytes_data[offset:offset + dc_len]
+        offset += dc_len
+        blocks.append(blk)
+        ec_blocks.append(rs_encode(blk, ec_per_block))
+
+    final_bytes = []
+    max_dc = base_dc_len + 1
+    for i in range(max_dc):
+        for b in range(num_blocks):
+            if i < len(blocks[b]):
+                final_bytes.append(blocks[b][i])
+    for i in range(ec_per_block):
+        for b in range(num_blocks):
+            final_bytes.append(ec_blocks[b][i])
+
+    size = 17 + 4 * v
+    matrix = [[False] * size for _ in range(size)]
+    reserved = [[False] * size for _ in range(size)]
+
+    def set_finder(row, col):
+        for r in range(-1, 8):
+            for c in range(-1, 8):
+                cr, cc = row + r, col + c
+                if 0 <= cr < size and 0 <= cc < size:
+                    val = (0 <= r <= 6 and 0 <= c <= 6) and (
+                        r == 0 or r == 6 or c == 0 or c == 6 or (2 <= r <= 4 and 2 <= c <= 4)
+                    )
+                    matrix[cr][cc] = val
+                    reserved[cr][cc] = True
+
+    set_finder(0, 0)
+    set_finder(0, size - 7)
+    set_finder(size - 7, 0)
+
+    for i in range(8, size - 8):
+        if not reserved[6][i]:
+            matrix[6][i] = (i % 2 == 0)
+            reserved[6][i] = True
+        if not reserved[i][6]:
+            matrix[i][6] = (i % 2 == 0)
+            reserved[i][6] = True
+
+    for ar in vinfo["align"]:
+        for ac in vinfo["align"]:
+            if reserved[ar][ac]:
+                continue
+            for r in range(-2, 3):
+                for c in range(-2, 3):
+                    val = (abs(r) == 2 or abs(c) == 2 or (r == 0 and c == 0))
+                    matrix[ar + r][ac + c] = val
+                    reserved[ar + r][ac + c] = True
+
+    for i in range(9):
+        if i < size:
+            reserved[8][i] = True
+            reserved[i][8] = True
+        if size - 1 - i >= 0:
+            reserved[8][size - 1 - i] = True
+            reserved[size - 1 - i][8] = True
+    matrix[size - 8][8] = True
+    reserved[size - 8][8] = True
+
+    all_bits = []
+    for b in final_bytes:
+        for shift in range(7, -1, -1):
+            all_bits.append((b >> shift) & 1)
+
+    remainder = 7 if (2 <= v <= 6) else 0
+    all_bits.extend([0] * remainder)
+
+    bit_idx = 0
+    dir_y = -1
+    col = size - 1
+    while col > 0:
+        if col == 6:
+            col -= 1
+        for i in range(size):
+            r = (size - 1 - i) if dir_y == -1 else i
+            for c in range(2):
+                curr_col = col - c
+                if not reserved[r][curr_col]:
+                    bit = all_bits[bit_idx] if bit_idx < len(all_bits) else 0
+                    bit_idx += 1
+                    mask = ((r + curr_col) % 2 == 0)
+                    matrix[r][curr_col] = bool(bit ^ (1 if mask else 0))
+        col -= 2
+        dir_y = -dir_y
+
+    format_data = (1 if level == 'L' else 0) << 3
+    bch = format_data << 10
+    gen_bch = 0x537
+    for i in range(4, -1, -1):
+        if (bch >> (i + 10)) & 1:
+            bch ^= (gen_bch << i)
+    full_format = ((format_data << 10) | bch) ^ 0x5412
+
+    for i in range(15):
+        bit = bool((full_format >> i) & 1)
+        if i < 6:
+            matrix[8][i] = bit
+        elif i == 6:
+            matrix[8][7] = bit
+        elif i == 7:
+            matrix[8][8] = bit
+        elif i == 8:
+            matrix[7][8] = bit
+        else:
+            matrix[14 - i][8] = bit
+
+        if i < 8:
+            matrix[size - 1 - i][8] = bit
+        else:
+            matrix[8][size - 15 + i] = bit
+
+    return matrix
+
+
+def qr_to_ascii(matrix, margin=1):
+    """Converte matriz booleana num bloco de texto ANSI Unicode compacto."""
+    size = len(matrix)
+    full_size = size + margin * 2
+    grid = [[False] * full_size for _ in range(full_size)]
+    for r in range(size):
+        for c in range(size):
+            grid[r + margin][c + margin] = matrix[r][c]
+
+    lines = []
+    for r in range(0, full_size, 2):
+        row_str = "  "
+        for c in range(full_size):
+            top = grid[r][c]
+            bot = grid[r + 1][c] if r + 1 < full_size else False
+            if top and bot:
+                row_str += "█"
+            elif top and not bot:
+                row_str += "▀"
+            elif not top and bot:
+                row_str += "▄"
+            else:
+                row_str += " "
+        lines.append(row_str)
+    return "\n".join(lines)
+
+
+def qr_to_svg(matrix, margin=3):
+    """Converte matriz booleana num SVG escalável para o navegador."""
+    size = len(matrix)
+    total_size = size + margin * 2
+    path = []
+    for r in range(size):
+        for c in range(size):
+            if matrix[r][c]:
+                path.append(f"M{c + margin},{r + margin}h1v1h-1z")
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {total_size} {total_size}" shape-rendering="crispEdges">'
+        f'<rect width="100%" height="100%" fill="#ffffff" rx="10"/>'
+        f'<path d="{"".join(path)}" fill="#0B1020"/>'
+        '</svg>'
+    )
+
+
 class H(BaseHTTPRequestHandler):
     verbose = False
 
@@ -2308,9 +3434,37 @@ class H(BaseHTTPRequestHandler):
 
     def allowed(self):
         # Protege contra outros sites a falarem com o servidor local.
-        ok = (f"127.0.0.1:{PORT}", f"localhost:{PORT}")
-        o = self.headers.get("Origin")
-        return self.headers.get("Host") in ok and (o is None or o in [f"http://{h}" for h in ok])
+        host = self.headers.get("Host", "")
+        origin = self.headers.get("Origin")
+
+        if not LAN_MODE:
+            ok = (f"127.0.0.1:{PORT}", f"localhost:{PORT}")
+            return host in ok and (origin is None or origin in [f"http://{h}" for h in ok])
+
+        if not host:
+            return False
+
+        host_parts = host.rsplit(":", 1)
+        if len(host_parts) == 2 and host_parts[1].isdigit():
+            if int(host_parts[1]) != PORT:
+                return False
+
+        if not is_private_or_local_host(host):
+            return False
+
+        if origin is not None:
+            try:
+                parsed_origin = urllib.parse.urlparse(origin)
+                if parsed_origin.scheme not in ("http", "https"):
+                    return False
+                if parsed_origin.port and parsed_origin.port != PORT:
+                    return False
+                if not is_private_or_local_host(parsed_origin.hostname):
+                    return False
+            except Exception:
+                return False
+
+        return True
 
     def send(self, code, body, ctype="application/json"):
         b = body if isinstance(body, bytes) else json.dumps(body).encode()
@@ -2355,7 +3509,47 @@ class H(BaseHTTPRequestHandler):
         if path == "/api/csrf":
             return self.send(200, {"token": SESSION_TOKEN})
         if path == "/api/version":
-            return self.send(200, check_github_update())
+            qs = urllib.parse.parse_qs(parsed.query)
+            force = qs.get("force", ["0"])[0] == "1"
+            return self.send(200, check_github_update(force=force))
+        if path in ("/manifest.json", "/manifest.webmanifest"):
+            mpath = DIR / "manifest.json"
+            if mpath.is_file():
+                return self.send(200, mpath.read_bytes(), "application/manifest+json")
+        if path == "/api/lan":
+            local_ip = get_local_ip()
+            lan_url = f"http://{local_ip}:{PORT}"
+            hname = socket.gethostname()
+            mdns_url = f"http://{hname}.local:{PORT}" if hname and not hname.endswith(".local") else f"http://{hname}:{PORT}"
+            try:
+                mat = generate_qr_matrix(lan_url, level='M')
+                svg = qr_to_svg(mat, margin=3)
+            except Exception:
+                svg = ""
+            ts_ip = get_tailscale_ip()
+            ts_url = get_tailscale_url(PORT)
+            ts_svg = ""
+            if ts_url:
+                try:
+                    ts_mat = generate_qr_matrix(ts_url, level='M')
+                    ts_svg = qr_to_svg(ts_mat, margin=3)
+                except Exception:
+                    ts_svg = ""
+            return self.send(200, {
+                "lan": LAN_MODE,
+                "host": LISTEN_HOST,
+                "port": PORT,
+                "local_ip": local_ip,
+                "url": lan_url,
+                "mdns_url": mdns_url,
+                "hostname": hname,
+                "qr_svg": svg,
+                "tailscale_ip": ts_ip,
+                "tailscale_url": ts_url,
+                "tailscale_qr_svg": ts_svg
+            })
+        if path == "/api/user_data":
+            return self.send(200, {"ok": True, "data": load_user_data()})
         if path == "/vendor/hls.min.js":
             return self.send(200, (DIR / "vendor" / "hls.min.js").read_bytes(), "application/javascript")
         if path.startswith("/brand/"):
@@ -2409,7 +3603,7 @@ class H(BaseHTTPRequestHandler):
                 "lang": CFG.get("ai", {}).get("lang", "pt-pt"),
                 "auto": CFG.get("ai", {}).get("auto", False),
                 "gemini_key": CFG.get("ai", {}).get("gemini_key", ""),
-                "gemini_model": CFG.get("ai", {}).get("gemini_model", "gemini-3.5-flash"),
+                "gemini_model": CFG.get("ai", {}).get("gemini_model", "gemini-3.5-flash-lite"),
                 "ollama_url": CFG.get("ai", {}).get("ollama_url", "http://localhost:11434"),
                 "ollama_model": CFG.get("ai", {}).get("ollama_model", "llama3.2-vision"),
                 "openai_url": CFG.get("ai", {}).get("openai_url", "https://api.openai.com/v1"),
@@ -2561,6 +3755,51 @@ class H(BaseHTTPRequestHandler):
                 "hashtags": all_hashtags,
                 "errors": errors
             })
+        if path == "/api/conversations":
+            if not CLIENTS:
+                return self.send(200, {"conversations": [], "total_unread": 0, "errors": {}, "networks": []})
+            qs = urllib.parse.parse_qs(parsed.query)
+            target_net = qs.get("network", [None])[0]
+            active_clients = [c for c in CLIENTS.values() if not target_net or c.name == target_net]
+            all_convos = []
+            errors = {}
+
+            def fetch_convos(c):
+                try:
+                    return c.name, c.list_conversations(), None
+                except Exception as e:
+                    return c.name, None, str(e)
+
+            with ThreadPoolExecutor() as ex:
+                for name, res, err in ex.map(fetch_convos, active_clients):
+                    if err:
+                        errors[name] = err
+                    elif res:
+                        all_convos.extend(res.get("convos", []))
+
+            all_convos.sort(key=lambda c: parse_time(c.get("last_time")), reverse=True)
+            total_unread = sum(1 for c in all_convos if c.get("unread"))
+            return self.send(200, {
+                "conversations": all_convos,
+                "total_unread": total_unread,
+                "errors": errors,
+                "networks": list(CLIENTS)
+            })
+        if path == "/api/conversation":
+            if not CLIENTS:
+                return self.send(400, {"error": "Nenhuma rede configurada."})
+            qs = urllib.parse.parse_qs(parsed.query)
+            net = qs.get("network", [None])[0]
+            cid = qs.get("id", [None])[0]
+            if not net or net not in CLIENTS:
+                return self.send(400, {"error": "Rede inválida ou não configurada."})
+            if not cid:
+                return self.send(400, {"error": "Parâmetro id em falta."})
+            try:
+                res = CLIENTS[net].get_conversation_messages(cid)
+                return self.send(200, res)
+            except Exception as e:
+                return self.send(500, {"error": str(e)})
         self.send(404, {"error": "not found"})
 
     def do_POST(self):
@@ -2840,6 +4079,18 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, {"ok": True, "alt": alt_text})
             except Exception as e:
                 return self.send(200, {"ok": False, "error": str(e)})
+        if self.path == "/api/translate":
+            text_to_translate = d.get("text")
+            if not text_to_translate or not isinstance(text_to_translate, str):
+                return self.send(400, {"ok": False, "error": "Texto em falta ou inválido."})
+            target_lang = d.get("target_lang")
+            if target_lang is not None and not isinstance(target_lang, str):
+                return self.send(400, {"ok": False, "error": "Idioma de destino inválido."})
+            try:
+                translated = translate_text(text_to_translate, target_lang=target_lang)
+                return self.send(200, {"ok": True, "translated": translated, "target_lang": target_lang})
+            except Exception as e:
+                return self.send(200, {"ok": False, "error": str(e)})
         if self.path == "/api/setup":
             new_cfg = dict(CFG)
             new_cfg["port"] = PORT
@@ -2871,7 +4122,7 @@ class H(BaseHTTPRequestHandler):
                         "lang": str(ai.get("lang") or "pt-pt").strip(),
                         "auto": bool(ai.get("auto", False)),
                         "gemini_key": str(ai.get("gemini_key") or "").strip(),
-                        "gemini_model": str(ai.get("gemini_model") or "gemini-3.5-flash").strip(),
+                        "gemini_model": str(ai.get("gemini_model") or "gemini-3.5-flash-lite").strip(),
                         "ollama_url": str(ai.get("ollama_url") or "http://localhost:11434").strip(),
                         "ollama_model": str(ai.get("ollama_model") or "llama3.2-vision").strip(),
                         "openai_url": str(ai.get("openai_url") or "https://api.openai.com/v1").strip(),
@@ -2896,16 +4147,70 @@ class H(BaseHTTPRequestHandler):
             try:
                 msg = run_self_update()
                 UPDATE_CACHE["data"] = None
+                schedule_process_restart()
+                return self.send(200, {"ok": True, "message": msg, "restarting": True})
+            except Exception as e:
+                return self.send(500, {"ok": False, "error": str(e)})
+        if self.path == "/api/conversation/send":
+            net = d.get("network")
+            cid = d.get("convo_id")
+            text = (d.get("text") or "").strip()
+            recipient = d.get("recipient")
+            last_msg_id = d.get("last_msg_id")
+            if not net or net not in CLIENTS:
+                return self.send(400, {"ok": False, "error": "Rede inválida ou não configurada."})
+            if not text:
+                return self.send(400, {"ok": False, "error": "Texto da mensagem não pode estar vazio."})
+            try:
+                if net == "bluesky":
+                    msg = CLIENTS[net].send_message(cid, text)
+                else:
+                    msg = CLIENTS[net].send_message(cid, text, recipient=recipient, last_msg_id=last_msg_id)
                 return self.send(200, {"ok": True, "message": msg})
             except Exception as e:
                 return self.send(500, {"ok": False, "error": str(e)})
+
+        if self.path == "/api/conversation/read":
+            net = d.get("network")
+            cid = d.get("convo_id")
+            if not net or net not in CLIENTS:
+                return self.send(400, {"ok": False, "error": "Rede inválida ou não configurada."})
+            if not cid:
+                return self.send(400, {"ok": False, "error": "Parâmetro convo_id em falta."})
+            try:
+                CLIENTS[net].mark_as_read(cid)
+                return self.send(200, {"ok": True})
+            except Exception as e:
+                return self.send(500, {"ok": False, "error": str(e)})
+
+        if self.path == "/api/conversation/start":
+            net = d.get("network")
+            recipient = (d.get("recipient") or "").strip()
+            text = (d.get("text") or "").strip()
+            if not net or net not in CLIENTS:
+                return self.send(400, {"ok": False, "error": "Rede inválida ou não configurada."})
+            if not recipient:
+                return self.send(400, {"ok": False, "error": "Destinatário em falta."})
+            try:
+                res = CLIENTS[net].start_conversation(recipient, text=text)
+                return self.send(200, {"ok": True, **res})
+            except Exception as e:
+                return self.send(500, {"ok": False, "error": str(e)})
+        if self.path.split("?", 1)[0] == "/api/user_data":
+            try:
+                saved = save_user_data(d)
+                return self.send(200, {"ok": True, "data": saved})
+            except ValueError as e:
+                return self.send(400, {"ok": False, "error": str(e)})
         self.send(404, {"error": "not found"})
 
 
 def main():
-    global PORT
+    global PORT, LAN_MODE, LISTEN_HOST
     parser = argparse.ArgumentParser(description="MastoSky: cliente local-first Bluesky + Mastodon.")
     parser.add_argument("--port", type=int, default=None, help="Porto HTTP local (por omissão: config.json ou 8000)")
+    parser.add_argument("--lan", action="store_true", help="Permitir acesso de outros dispositivos na mesma rede local (Wi-Fi / LAN)")
+    parser.add_argument("--host", type=str, default=None, help="Endereço de rede onde o servidor escuta (ex: 127.0.0.1 ou 0.0.0.0)")
     parser.add_argument("--open", action="store_true", help="Abrir automaticamente o navegador predefinido")
     parser.add_argument("--verbose", action="store_true", help="Ativar registo de pedidos HTTP em stderr")
     args = parser.parse_args()
@@ -2915,12 +4220,47 @@ def main():
     if args.verbose:
         H.verbose = True
 
-    url = f"http://127.0.0.1:{PORT}"
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), H)
-    print(f"MastoSky a correr em {url}  (Ctrl+C para parar)")
+    if args.lan:
+        LAN_MODE = True
+        LISTEN_HOST = args.host or "0.0.0.0"
+    elif args.host:
+        LISTEN_HOST = args.host
+        if LISTEN_HOST in ("0.0.0.0", "::"):
+            LAN_MODE = True
+
+    server = ThreadingHTTPServer((LISTEN_HOST, PORT), H)
+    local_url = f"http://127.0.0.1:{PORT}"
+
+    if LAN_MODE:
+        local_ip = get_local_ip()
+        lan_url = f"http://{local_ip}:{PORT}"
+        hname = socket.gethostname()
+        mdns_url = f"http://{hname}.local:{PORT}" if hname and not hname.endswith(".local") else f"http://{hname}:{PORT}"
+
+        print("\n" + "═" * 70)
+        print("🚀 MastoSky a correr na Rede Local (Wi-Fi / LAN)")
+        print(f"   • No teu computador:   {local_url}")
+        print(f"   • No telemóvel / iPad: {lan_url}")
+        if hname and hname != "127.0.0.1":
+            print(f"                          (ou {mdns_url})")
+        print("═" * 70)
+
+        try:
+            mat = generate_qr_matrix(lan_url, level='M')
+            print("\n📱 Lê com a câmara do telemóvel / iPad:")
+            print(qr_to_ascii(mat, margin=1))
+        except Exception:
+            pass
+
+        print("💡 No navegador, podes também clicar no ícone 📱 no topo para ver o")
+        print("   QR Code em alta definição e as instruções de instalação (PWA).")
+        print("═" * 70 + "\n")
+    else:
+        print(f"MastoSky a correr em {local_url}  (Ctrl+C para parar)")
+        print("💡 Dica: Para acederes no telemóvel / iPad via Wi-Fi, usa: python3 app.py --lan\n")
 
     if args.open:
-        webbrowser.open(url)
+        webbrowser.open(local_url)
 
     try:
         server.serve_forever()

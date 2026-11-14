@@ -1,0 +1,14 @@
+.git
+.github
+.DS_Store
+__pycache__
+*.pyc
+config.json
+user_data.json
+tests
+docs
+*.bat
+*.command
+*.ps1
+install.sh
+

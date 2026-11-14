@@ -2,10 +2,18 @@
 <html lang="pt-PT">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="csrf-token" content="">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MastoSky">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B1020" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F7F8FF" media="(prefers-color-scheme: light)">
 <title>MastoSky</title>
 <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
+<link rel="apple-touch-icon" href="/brand/app-icon.svg">
+<link rel="manifest" href="/manifest.json">
 <script>
   (function(){
     try {
@@ -18,7 +26,7 @@
 <style>
 :root{
   --ms-night:#0B1020; --ms-indigo:#5B4BDB; --ms-sky:#4DB2FF; --ms-gold:#FFD66B; --ms-mist:#EEF0FF;
-  --bg:#F7F8FF; --card:#FFFFFF; --surface-2:#EEF0FF; --line:#D5D9F2;
+  --bg:#F7F8FF; --card:#FFFFFF; --surface:#FFFFFF; --surface-1:#F2F4FF; --surface-2:#EEF0FF; --line:#D5D9F2;
   --ink:#0B1020; --muted:#555C85; --accent:#5B4BDB; --star:#F0B400;
   --bsky:#0A78D6; --masto:#5B4BDB; --danger:#D32F2F;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
@@ -28,30 +36,30 @@
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#0B1020; --card:#121936; --surface-2:#1A2247; --line:#2A3366;
+    --bg:#0B1020; --card:#121936; --surface:#121936; --surface-1:#161E40; --surface-2:#1A2247; --line:#2A3366;
     --ink:#EEF0FF; --muted:#A9B0D6; --accent:#9AA0FF; --star:#FFD66B;
     --bsky:#4DB2FF; --masto:#9AA0FF; --danger:#FF7B6B;
     color-scheme: dark;
   }
 }
 html[data-theme="dark"]{
-  --bg:#0B1020; --card:#121936; --surface-2:#1A2247; --line:#2A3366;
+  --bg:#0B1020; --card:#121936; --surface:#121936; --surface-1:#161E40; --surface-2:#1A2247; --line:#2A3366;
   --ink:#EEF0FF; --muted:#A9B0D6; --accent:#9AA0FF; --star:#FFD66B;
   --bsky:#4DB2FF; --masto:#9AA0FF; --danger:#FF7B6B;
   color-scheme: dark;
 }
 html[data-theme="light"]{
-  --bg:#F7F8FF; --card:#FFFFFF; --surface-2:#EEF0FF; --line:#D5D9F2;
+  --bg:#F7F8FF; --card:#FFFFFF; --surface:#FFFFFF; --surface-1:#F2F4FF; --surface-2:#EEF0FF; --line:#D5D9F2;
   --ink:#0B1020; --muted:#555C85; --accent:#5B4BDB; --star:#F0B400;
   --bsky:#0A78D6; --masto:#5B4BDB; --danger:#D32F2F;
   color-scheme: light;
 }
 
-.brand-logo-dark{display:none}
-.brand-logo-light{display:block}
+.brand-logo-dark{display:none !important}
+.brand-logo-light{display:block !important}
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]) .brand-logo-dark{display:block}
-  :root:not([data-theme="light"]) .brand-logo-light{display:none}
+  :root:not([data-theme="light"]) .brand-logo-dark{display:block !important}
+  :root:not([data-theme="light"]) .brand-logo-light{display:none !important}
 }
 html[data-theme="dark"] .brand-logo-dark{display:block !important}
 html[data-theme="dark"] .brand-logo-light{display:none !important}
@@ -344,9 +352,34 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .body{font:15px/1.5 var(--sans);overflow-wrap:anywhere}
 .body a{color:var(--c)}
 .media{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px;margin-top:8px}
+.media-img-wrap{position:relative;display:flex;border-radius:8px;overflow:hidden}
+.media-img-wrap img{width:100%;height:100%;display:block}
 .media img{width:100%;max-height:380px;object-fit:cover;border-radius:8px;cursor:zoom-in}
-.media:has(> :only-child) img{max-height:520px;object-fit:contain;background:rgba(0,0,0,0.03)}
+.media:has(> :only-child) img{height:auto;max-height:520px;object-fit:contain;background:rgba(0,0,0,0.03)}
+.media-alt-badge{position:absolute;left:8px;bottom:8px;background:rgba(11,16,32,0.82);color:#fff;border:1px solid rgba(255,255,255,0.22);border-radius:6px;padding:2px 7px;font:700 10.5px/1.3 var(--sans);letter-spacing:0.5px;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:2;transition:background .15s,transform .15s}
+.media-alt-badge:hover{background:var(--accent);transform:scale(1.04)}
+.media-alt-popover{position:absolute;left:8px;right:8px;bottom:34px;max-height:150px;overflow-y:auto;background:rgba(11,16,32,0.94);color:#fff;border:1px solid rgba(255,255,255,0.18);border-radius:8px;padding:8px 10px;font:12.5px/1.45 var(--sans);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:3;box-shadow:0 6px 20px rgba(0,0,0,0.45);word-break:break-word;white-space:pre-wrap}
+.cw-banner,.muted-post-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px;line-height:1.35}
+.cw-banner{border:1px solid color-mix(in srgb,var(--star) 45%,var(--line));background:color-mix(in srgb,var(--star) 12%,var(--surface-1));color:var(--ink)}
+.muted-post-banner{border:1px solid var(--line);background:var(--surface-1);color:var(--muted);font-size:12.5px}
+.cw-label,.muted-post-label{font-weight:600;min-width:0;word-break:break-word;display:flex;align-items:center;gap:6px}
+.cw-toggle-btn,.muted-toggle-btn{flex-shrink:0;background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:4px 10px;font:600 11.5px var(--sans);cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.cw-toggle-btn:hover,.muted-toggle-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--surface-2)}
+.cw-content[hidden],.muted-post-content[hidden]{display:none}
+.muted-chips-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.muted-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink)}
+.muted-chip-rm{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:0 2px;border-radius:50%;transition:color .15s,background .15s}
+.muted-chip-rm:hover{color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,transparent)}
+.muted-add-row{display:flex;gap:6px;align-items:center;margin-top:6px}
+.muted-add-row input{flex:1;margin-top:0 !important}
 .post-video{width:100%;max-height:480px;background:#000;border-radius:8px;margin-top:8px;outline:none;display:block}
+.post-translate-wrap{margin-top:6px;display:flex;flex-direction:column;gap:6px}
+.post-translate-link{background:none;border:none;padding:0;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-decoration:none;transition:color .15s}
+.post-translate-link:hover{color:var(--accent);text-decoration:underline}
+.post-translate-link svg{display:block;flex:none;width:14px;height:14px}
+.post-translated-box{background:color-mix(in srgb,var(--surface-2) 65%,transparent);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:8px 12px;margin:8px 0;font-size:14px;line-height:1.45;color:var(--ink)}
+.post-translated-badge{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px;display:inline-flex;align-items:center;gap:5px}
+.post-translated-badge svg{display:block;flex:none;width:13px;height:13px}
 img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:inline}
 .quote-card{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);cursor:pointer;transition:border-color .15s, background .15s}
 .quote-card:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--line));background:color-mix(in srgb, var(--card) 92%, var(--surface-2))}
@@ -382,6 +415,9 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .acts button.act-save:hover{color:var(--star, #F0B400)}
 .acts button.act-save.on{color:var(--star, #F0B400);font-weight:600}
 .acts button.act-save.on svg{fill:currentColor}
+.acts button.act-translate:hover{color:var(--accent)}
+.acts button.act-translate.on{color:var(--accent);font-weight:600}
+.acts button.act-translate.loading svg{animation:spin-rotate 1s linear infinite}
 .acts button.act-thread:hover{color:var(--ink)}
 .acts button.act-del:hover{color:var(--danger)}
 .saved-box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
@@ -392,10 +428,15 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .saved-search-wrap input{flex:1;border:none;background:transparent;color:var(--ink);font:13.5px var(--sans);outline:none;padding:5px 0}
 .banner{background:var(--card);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px}
 .empty{text-align:center;color:var(--muted);padding:40px 0}
-.tabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
-.tab{background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 14px;margin-bottom:-1px;font-weight:600}
-.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.tabs{display:flex;width:100%;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--line);justify-content:space-between;box-sizing:border-box}
+.tab{flex:1 1 0;min-width:0;background:none;border:0;border-bottom:3px solid transparent;border-radius:8px 8px 0 0;color:var(--muted);padding:8px 4px 9px;margin-bottom:-1px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:color .15s,border-color .15s,background .15s}
+.tab:hover{color:var(--ink);background:color-mix(in srgb,var(--surface-2) 45%,transparent)}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.tab .tab-ico{width:18px;height:18px;display:block;flex:none}
+.tab .tab-label{display:block;font-size:12px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tab-notif-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center}
 .badge{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:600;margin-left:4px}
+.tab-notif-wrap .badge{position:absolute;top:-5px;right:-10px;padding:0 4px;height:14px;min-width:14px;font-size:9.5px;line-height:14px;border-radius:10px;margin-left:0;box-shadow:0 1px 3px rgba(0,0,0,0.28)}
 .notif .head{margin-bottom:6px;display:flex;align-items:flex-start;gap:10px}
 .notif .who{min-width:0;flex:1;font-family:var(--sans)}
 .notif .who b{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;font-family:var(--sans);font-size:14px;line-height:1.35;white-space:normal}
@@ -441,15 +482,14 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif-boost-banner .notif-author{color:var(--ink);font-weight:600}
 .notif-boost-banner .notif-action{color:var(--muted)}
 .notif-boost-banner .notif-meta{color:var(--muted);font-size:11.5px}
-.notif-header-bar{display:flex;align-items:center;justify-content:flex-start;gap:6px;padding:6px 10px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,var(--card));position:sticky;top:0;z-index:5;backdrop-filter:blur(10px)}
-.notif-filter-pills{display:flex;gap:5px;align-items:center;flex:1;min-width:0;overflow:hidden}
-.notif-filter-pills .filter-pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;min-width:28px;padding:0 7px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-size:11.5px;font-weight:600;cursor:pointer;transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);white-space:nowrap}
-.notif-filter-pills .filter-pill .filter-label{display:none;font-size:11.5px;line-height:1}
-.notif-filter-pills .filter-pill.active{background:color-mix(in srgb,var(--accent) 15%,var(--card));color:var(--accent);border-color:var(--accent);padding:0 10px}
-.notif-filter-pills .filter-pill.active .filter-label{display:inline}
-.notif-filter-pills .filter-pill:hover:not(.active){color:var(--ink);border-color:var(--muted);background:var(--card)}
-.notif-filter-pills .filter-pill .ico{width:13px;height:13px;flex-shrink:0}
-.filter-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;font-size:10px;font-weight:700;line-height:1;background:var(--accent);color:#fff;margin-left:3px;box-shadow:0 1px 4px rgba(0,0,0,0.25)}
+.notif-header-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px;background:var(--surface-1,var(--card));border:1px solid var(--line);border-radius:12px;margin-bottom:12px;box-sizing:border-box}
+.notif-filter-pills{display:flex;gap:4px;align-items:stretch;width:100%;flex:1;min-width:0}
+.notif-filter-pills .filter-pill{flex:1 1 0;min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;border-radius:8px;background:transparent;border:1px solid transparent;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s ease;white-space:nowrap;box-sizing:border-box}
+.notif-filter-pills .filter-pill .filter-label{display:block;font-size:11px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.notif-filter-pills .filter-pill.active{background:color-mix(in srgb,var(--accent) 16%,var(--card));color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));font-weight:700}
+.notif-filter-pills .filter-pill:hover:not(.active){color:var(--ink);background:var(--surface-2);border-color:var(--line)}
+.notif-filter-pills .filter-pill .ico{width:14px;height:14px;flex-shrink:0}
+.filter-badge{position:absolute;top:2px;right:4px;display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;padding:0 3.5px;border-radius:8px;font-size:9px;font-weight:700;line-height:14px;background:var(--accent);color:#fff;margin-left:0;box-shadow:0 1px 3px rgba(0,0,0,0.28)}
 .back{margin-bottom:12px}
 .chain{border-left:2px solid var(--line);margin:0 0 10px 12px;padding-left:10px}
 .post.focus{box-shadow:0 0 0 2px var(--c)}
@@ -572,13 +612,403 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
   .side-nav-divider{width:22px;height:1px;margin:2px 0}
 }
 
-/* Mobile: Barra horizontal no fundo */
+/* Mobile: Layout, Header & Barra horizontal no fundo */
 @media (max-width: 767px){
-  .side-nav-rail{left:50%;bottom:14px;top:auto;transform:translateX(-50%) translateY(30px)}
-  .side-nav-rail.visible{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
-  .side-nav-inner{flex-direction:row;gap:6px;border-radius:32px;padding:6px 12px}
-  .side-nav-btn{width:38px;height:38px;border-radius:50%}
-  .side-nav-divider,.side-nav-lang,.side-nav-top{display:none}
+  body:not(.view-deck) {
+    overflow-x: clip;
+    padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+  }
+  main {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding-top: calc(14px + env(safe-area-inset-top, 0px)) !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px)) !important;
+    box-sizing: border-box;
+  }
+  /* Topo no mobile (logótipo + ícones de opções + abas) sempre visível e protegido da Dynamic Island */
+  .top-nav-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    margin: calc(-14px - env(safe-area-inset-top, 0px)) -14px 12px -14px;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 4px 14px;
+    border-bottom: 1px solid var(--line);
+    touch-action: pan-y;
+    overflow-x: hidden;
+  }
+  header {
+    margin-bottom: 10px;
+    gap: 8px;
+    display: flex !important;
+    visibility: visible !important;
+  }
+  .header-logo-wrap {
+    min-width: 0;
+    flex-shrink: 1;
+    display: flex !important;
+  }
+  .header-logo-wrap img {
+    height: 26px !important;
+    max-width: 125px;
+    width: auto;
+  }
+  .header-actions {
+    gap: 6px;
+    flex-shrink: 0;
+    display: flex !important;
+  }
+  /* No telemóvel não precisamos do modal de ligar telemóvel nem dos atalhos de teclado desktop */
+  #mobileConnectBtn, #shortcutsBtn {
+    display: none !important;
+  }
+  .header-nav-group {
+    display: inline-flex !important;
+    gap: 2px;
+    padding: 2px 3px;
+    border-radius: 20px;
+  }
+  .header-nav-btn {
+    width: 32px;
+    height: 32px;
+    display: inline-flex !important;
+  }
+  .header-nav-btn .ico {
+    width: 16px;
+    height: 16px;
+  }
+  .update-pill {
+    font-size: 11px;
+    padding: 2px 7px;
+  }
+  /* Tabs em mobile: fixas, sem scroll horizontal e perfeitamente distribuídas (não dançam) */
+  .tabs {
+    overflow: hidden;
+    overflow-x: hidden;
+    touch-action: pan-y;
+    display: flex;
+    width: 100%;
+    gap: 2px;
+    margin-bottom: 6px;
+    border-bottom: 0;
+    box-sizing: border-box;
+    justify-content: space-between;
+    padding: 0;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 5px 1px 6px 1px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 8px;
+    border-bottom: 2.5px solid transparent;
+    transition: all .15s ease;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .tab .tab-ico {
+    width: 18px;
+    height: 18px;
+    display: block;
+    flex: none;
+  }
+  .tab .tab-label {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: block;
+    letter-spacing: -0.15px;
+  }
+  .tab[aria-selected="true"] {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    font-weight: 700;
+  }
+  .tab:active {
+    transform: scale(0.95);
+    opacity: 0.85;
+  }
+  .tab-notif-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tab-notif-wrap .badge {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    padding: 0 4px;
+    height: 13px;
+    min-width: 13px;
+    font-size: 8.5px;
+    line-height: 13px;
+    border-radius: 10px;
+    margin-left: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  @media (max-width: 480px) {
+    .tab {
+      flex: 1 1 0;
+      padding: 6px 2px;
+    }
+    .tab .tab-label {
+      display: none;
+    }
+    .tab[aria-selected="true"] {
+      flex: 0 0 auto;
+      padding: 6px 10px;
+      flex-direction: row;
+      gap: 5px;
+    }
+    .tab[aria-selected="true"] .tab-label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: -0.1px;
+      overflow: visible;
+      max-width: none;
+    }
+  }
+  /* Barra flutuante de navegação rápida em mobile (Dock Bar) */
+  .side-nav-rail {
+    left: 50%;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    top: auto;
+    width: calc(100vw - 20px);
+    max-width: 410px;
+    transform: translateX(-50%) translateY(30px);
+    z-index: 900;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+  .side-nav-rail.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+  }
+  .side-nav-inner {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    gap: 2px;
+    border-radius: 32px;
+    padding: 5px 6px;
+    box-sizing: border-box;
+    background: color-mix(in srgb, var(--card) 92%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .side-nav-btn {
+    width: 34px;
+    height: 34px;
+    flex: 1 1 auto;
+    max-width: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    padding: 0;
+  }
+  .side-nav-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+  .side-nav-btn[data-tab="timeline"] {
+    order: 1;
+  }
+  .side-nav-btn[data-tab="explore"] {
+    order: 2;
+  }
+  .side-nav-btn[data-tab="search"] {
+    order: 3;
+  }
+  /* Botão de novo post em destaque no meio da barra mobile */
+  .side-nav-btn.side-nav-compose {
+    order: 4;
+    background: var(--accent) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 12px rgba(91,75,219,0.4);
+    transform: scale(1.05);
+  }
+  .side-nav-btn[data-tab="saved"] {
+    order: 5;
+  }
+  .side-nav-btn[data-tab="notifs"] {
+    order: 6;
+  }
+  .side-nav-btn[data-tab="messages"] {
+    order: 7;
+  }
+  .side-nav-btn[data-tab="profile"] {
+    order: 8;
+  }
+  /* Ocultar elementos e botões de desktop redundantes no mobile */
+  .side-nav-divider,
+  .side-nav-lang,
+  .side-nav-top,
+  #sideThemeBtn,
+  #sideRefreshBtn,
+  #sideSettingsBtn,
+  #sideShortcutsBtn {
+    display: none !important;
+  }
+}
+.header-lan-badge{position:absolute;bottom:2px;right:2px;background:#10B981;color:#fff;font-size:7.5px;font-weight:800;padding:1px 3px;border-radius:4px;line-height:1;letter-spacing:0.3px}
+
+/* Mobile Connect Modal Styles */
+.mobile-modal-box {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 580px;
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.mobile-qr-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-bottom: 18px;
+}
+.mobile-qr-code {
+  width: 180px;
+  height: 180px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mobile-qr-code svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.mobile-url-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 440px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 10px;
+  box-sizing: border-box;
+}
+.mobile-url-text {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mobile-copy-btn {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb,var(--accent) 12%,transparent);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all .15s;
+  flex-shrink: 0;
+}
+.mobile-copy-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+.mobile-guides-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 600px) {
+  .mobile-guides-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+.mobile-guide-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+}
+.mobile-guide-title {
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.mobile-guide-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.mobile-guide-steps li {
+  margin-bottom: 5px;
+}
+.mobile-guide-steps b {
+  color: var(--ink);
+}
+.mobile-lan-disabled-banner {
+  background: color-mix(in srgb, #f59e0b 12%, var(--card));
+  border: 1px solid color-mix(in srgb, #f59e0b 45%, var(--line));
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.mobile-lan-cmd {
+  background: #0B1020;
+  color: #4DB2FF;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 13px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 /* Deck View Styles */
 body.view-deck {
@@ -643,6 +1073,14 @@ body.view-deck .deck-container {
 .deck-col.dragging {
   opacity: 0.45;
   transform: scale(0.98);
+}
+.deck-col.is-active-col {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent), 0 6px 20px rgba(0,0,0,0.14);
+}
+.deck-col.is-active-col .deck-col-head {
+  border-bottom-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-2));
 }
 .deck-col.drag-over-left {
   box-shadow: -4px 0 0 0 var(--accent), 0 4px 16px rgba(0,0,0,0.1) !important;
@@ -1193,6 +1631,80 @@ kbd {
 .net-status-close:hover {
   opacity: 1;
 }
+
+/* Direct Messages / Conversas */
+.msg-box{margin-bottom:12px}
+.msg-header-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px;background:var(--surface-1,var(--card));border:1px solid var(--line);border-radius:12px;margin-bottom:12px;box-sizing:border-box}
+.msg-filter-pills{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.msg-filter-pills .filter-pill{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);border-radius:14px;padding:0 8px;height:28px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;transition:all .15s ease;box-sizing:border-box}
+.msg-filter-pills .filter-pill:hover{color:var(--ink);border-color:var(--accent)}
+.msg-filter-pills .filter-pill.active{background:color-mix(in srgb,var(--accent) 18%,var(--card));color:var(--accent);border-color:var(--accent)}
+.msg-filter-pills .filter-pill[data-msg-net="bluesky"].active{background:color-mix(in srgb,#0085FF 18%,var(--card));color:#0085FF;border-color:#0085FF}
+.msg-filter-pills .filter-pill[data-msg-net="mastodon"].active{background:color-mix(in srgb,#6364FF 18%,var(--card));color:#6364FF;border-color:#6364FF}
+.msg-new-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:28px;padding:0 10px;background:var(--accent);color:var(--bg);border:1px solid var(--accent);border-radius:14px;font-size:11.5px;font-weight:700;font-family:var(--sans);cursor:pointer;white-space:nowrap;flex-shrink:0;box-sizing:border-box;transition:all .15s ease}
+.msg-new-btn:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 35%,transparent)}
+.msg-new-btn:active{transform:scale(0.96)}
+.msg-new-btn .ico{width:12px;height:12px;stroke-width:2.5}
+.msg-new-btn .msg-new-short{display:none}
+.msg-new-btn .msg-new-full{display:inline}
+.deck-col .msg-new-btn .msg-new-full{display:none}
+.deck-col .msg-new-btn .msg-new-short{display:inline}
+.convo-card{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all .15s;position:relative}
+.convo-card:hover{border-color:var(--accent);transform:translateY(-1px);background:color-mix(in srgb,var(--surface-2) 40%,var(--card))}
+.convo-card.is-unread{border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--card))}
+.convo-avatar-wrap{position:relative;flex-shrink:0}
+.convo-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#000;display:block}
+.convo-net-dot{position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;border:2px solid var(--card);background:var(--c)}
+.convo-body{flex:1;min-width:0}
+.convo-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:2px}
+.convo-peer-name{font-weight:700;color:var(--ink);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.convo-time{font-size:11.5px;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.convo-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.convo-snippet{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.convo-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+
+/* Chat thread view */
+.msg-thread-wrap{display:flex;flex-direction:column;height:calc(100vh - 210px);min-height:360px;max-height:680px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+body.view-deck .deck-col-body:has(.msg-thread-wrap){display:flex;flex-direction:column;overflow:hidden}
+body.view-deck #pMessages,body.view-deck #convoThreadView{flex:1;display:flex;flex-direction:column;min-height:0}
+body.view-deck #convoListView{flex:1;overflow-y:auto;min-height:0}
+body.view-deck #convoThreadView[hidden],body.view-deck #convoListView[hidden],body.view-deck #pMessages[hidden]{display:none}
+body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
+@media (max-width:767px){
+  .msg-thread-wrap{height:calc(100dvh - 180px);min-height:300px;max-height:none}
+}
+.msg-thread-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-1);flex-shrink:0}
+.msg-thread-head-left{display:flex;align-items:center;gap:10px;min-width:0}
+.msg-thread-back-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.msg-thread-back-btn:hover{color:var(--ink);background:var(--surface-2)}
+.msg-thread-peer-info{display:flex;align-items:center;gap:8px;min-width:0;cursor:pointer;padding:3px 6px;margin:-3px -6px;border-radius:8px;transition:background .15s}
+.msg-thread-peer-info:hover{background:var(--surface-2)}
+.msg-thread-peer-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.msg-thread-peer-meta{min-width:0}
+.msg-thread-peer-name{font-weight:700;font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-thread-peer-handle{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-thread-body{flex:1;min-height:0;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.confirm-modal-box{max-width:400px;padding:20px}
+.confirm-modal-title{font:700 17px var(--sans);margin:0 0 8px;color:var(--ink)}
+.confirm-modal-msg{font:14px/1.45 var(--sans);color:var(--muted);margin:0 0 18px;word-break:break-word}
+.confirm-modal-actions{display:flex;justify-content:flex-end;gap:8px}
+.msg-bubble-wrap{display:flex;flex-direction:column;max-width:80%}
+.msg-bubble-wrap.is-own{align-self:flex-end;align-items:flex-end}
+.msg-bubble-wrap.is-peer{align-self:flex-start;align-items:flex-start}
+.msg-bubble{padding:8px 12px;border-radius:14px;font-size:13.5px;line-height:1.45;word-break:break-word}
+.msg-bubble-wrap.is-own .msg-bubble{background:var(--accent);color:#fff;border-bottom-right-radius:2px}
+.msg-bubble-wrap.is-own .msg-bubble a{color:#fff;text-decoration:underline}
+.msg-bubble-wrap.is-peer .msg-bubble{background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-bottom-left-radius:2px}
+.msg-bubble-wrap.is-peer .msg-bubble a{color:var(--accent);text-decoration:none}
+.msg-bubble-wrap.is-peer .msg-bubble a:hover{text-decoration:underline}
+.msg-time{font-size:10.5px;color:var(--muted);margin-top:3px;padding:0 4px}
+.msg-composer-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--card)}
+.msg-composer-input{flex:1;background:var(--surface-1);border:1px solid var(--line);border-radius:20px;padding:8px 14px;font:14px var(--sans);color:var(--ink);outline:none;transition:border-color .15s}
+.msg-composer-input:focus{border-color:var(--accent)}
+.msg-send-btn{width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;border:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s}
+.msg-send-btn:hover{opacity:.92;transform:scale(1.05)}
+.msg-send-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.msg-send-btn svg{width:16px;height:16px}
 </style>
 </head>
 <body>
@@ -1236,6 +1748,8 @@ kbd {
   <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="12" y1="18" x2="12.01" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 <div class="cosmos-bg" aria-hidden="true">
   <div class="cosmos-glow"></div>
@@ -1261,6 +1775,10 @@ kbd {
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <span class="side-nav-badge" id="sideBadge" hidden><span class="star-badge" aria-hidden="true"></span><span id="sideBadgeCount"></span></span>
     </button>
+    <button type="button" class="side-nav-btn" data-tab="messages" title="Mensagens" data-i18n-title="tabs.messages" aria-label="Mensagens">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="side-nav-badge" id="sideMessagesBadge" hidden><span class="star-badge" aria-hidden="true"></span><span id="sideMessagesBadgeCount"></span></span>
+    </button>
     <button type="button" class="side-nav-btn" data-tab="profile" title="Perfil" data-i18n-title="tabs.profile" aria-label="Perfil">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     </button>
@@ -1280,13 +1798,17 @@ kbd {
 <main>
   <div id="topNavWrap" class="top-nav-wrap">
     <header>
-      <div class="header-logo-wrap" style="display:flex;align-items:center;gap:10px">
-        <img class="brand-logo-light" src="/brand/logo-lockup-light.svg" alt="MastoSky" height="32" style="display:block">
-        <img class="brand-logo-dark" src="/brand/logo-lockup-dark.svg" alt="MastoSky" height="32" style="display:block">
+      <div class="header-logo-wrap" style="display:flex;align-items:center">
+        <img class="brand-logo-light" src="/brand/logo-lockup-light.svg" alt="MastoSky" height="32">
+        <img class="brand-logo-dark" src="/brand/logo-lockup-dark.svg" alt="MastoSky" height="32">
       </div>
       <div class="header-actions">
         <button type="button" class="update-pill" id="headerUpdatePill" hidden>✨ Nova versão</button>
         <div class="header-nav-group">
+          <button type="button" class="header-nav-btn" id="mobileConnectBtn" title="Ligar Telemóvel / iPad" data-i18n-title="header.mobile_connect_title" aria-label="Ligar Telemóvel / iPad">
+            <svg class="ico" style="width:16px;height:16px"><use href="#i-phone"/></svg>
+            <span id="headerLanBadge" class="header-lan-badge" hidden>LAN</span>
+          </button>
           <button type="button" class="header-nav-btn" id="shortcutsBtn" title="Atalhos de teclado (?)" data-i18n-title="header.shortcuts_title" aria-label="Atalhos de teclado">
             <svg class="ico"><use href="#i-keyboard"/></svg>
           </button>
@@ -1307,12 +1829,40 @@ kbd {
     </header>
 
     <nav class="tabs" role="tablist">
-      <button class="tab" role="tab" data-tab="timeline" data-i18n="tabs.timeline">Timeline</button>
-      <button class="tab" role="tab" data-tab="explore" data-i18n="tabs.explore">Em Alta</button>
-      <button class="tab" role="tab" data-tab="search" data-i18n="tabs.search">Pesquisa</button>
-      <button class="tab" role="tab" data-tab="saved" data-i18n="tabs.saved">Guardados</button>
-      <button class="tab" role="tab" data-tab="notifs"><span data-i18n="tabs.notifs">Notificações</span> <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span></button>
-      <button class="tab" role="tab" data-tab="profile" data-i18n="tabs.profile">Perfil</button>
+      <button class="tab" role="tab" data-tab="timeline" title="Timeline" data-i18n-title="tabs.timeline">
+        <svg class="tab-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="tab-label" data-i18n="tabs.timeline">Timeline</span>
+      </button>
+      <button class="tab" role="tab" data-tab="explore" title="Em Alta" data-i18n-title="tabs.explore">
+        <svg class="tab-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        <span class="tab-label" data-i18n="tabs.explore">Em Alta</span>
+      </button>
+      <button class="tab" role="tab" data-tab="search" title="Pesquisa" data-i18n-title="tabs.search">
+        <svg class="tab-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+        <span class="tab-label" data-i18n="tabs.search">Pesquisa</span>
+      </button>
+      <button class="tab" role="tab" data-tab="saved" title="Guardados" data-i18n-title="tabs.saved">
+        <svg class="tab-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span class="tab-label" data-i18n="tabs.saved">Guardados</span>
+      </button>
+      <button class="tab" role="tab" data-tab="notifs" title="Notificações" data-i18n-title="tabs.notifs">
+        <span class="tab-notif-wrap">
+          <svg class="tab-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="badge" id="badge" hidden><span class="star-badge" aria-hidden="true"></span><span id="badgeCount"></span></span>
+        </span>
+        <span class="tab-label" data-i18n="tabs.notifs">Notificações</span>
+      </button>
+      <button class="tab" role="tab" data-tab="messages" title="Mensagens" data-i18n-title="tabs.messages">
+        <span class="tab-notif-wrap">
+          <svg class="tab-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="badge" id="messagesBadge" hidden><span class="star-badge" aria-hidden="true"></span><span id="messagesBadgeCount"></span></span>
+        </span>
+        <span class="tab-label" data-i18n="tabs.messages">Mensagens</span>
+      </button>
+      <button class="tab" role="tab" data-tab="profile" title="Perfil" data-i18n-title="tabs.profile">
+        <svg class="tab-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="tab-label" data-i18n="tabs.profile">Perfil</span>
+      </button>
     </nav>
   </div>
 
@@ -1691,6 +2241,70 @@ kbd {
       </div>
     </div>
 
+    <div class="deck-col" id="colMessages" data-col="messages">
+      <div class="deck-col-head">
+        <div class="deck-col-head-left">
+          <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg class="ico"><use href="#i-drag-grip"/></svg></span>
+          <span class="deck-col-title"><span data-i18n="header.col_messages">Mensagens</span> <span class="badge" id="deckMessagesBadge" hidden><span class="star-badge"></span><span id="deckMessagesBadgeCount"></span></span></span>
+        </div>
+        <div class="deck-col-actions">
+          <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('messages', -1)" title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico"><use href="#i-arrow-left"/></svg></button>
+          <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('messages', 1)" title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico"><use href="#i-arrow-right"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="openNewConvoModal()" title="Nova Mensagem" data-i18n-title="messages.new_btn"><svg class="ico" style="width:14px;height:14px"><use href="#i-plus"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="loadConversations()" title="Atualizar" data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px"><use href="#i-refresh"/></svg></button>
+          <button type="button" class="deck-act-btn" onclick="$('colMessagesBody').scrollTo({top:0,behavior:'smooth'})" title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px"><use href="#i-arrow-up"/></svg></button>
+          <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('messages')" title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico"><use href="#i-close"/></svg></button>
+        </div>
+      </div>
+      <div class="deck-col-body" id="colMessagesBody">
+        <div id="pMessages" hidden>
+          <div id="convoListView">
+            <div class="msg-header-bar">
+              <div class="msg-filter-pills" id="msgNetFilters">
+                <button type="button" class="filter-pill active" data-msg-net="all" data-i18n="search.net_all">Ambas</button>
+                <button type="button" class="filter-pill" data-msg-net="bluesky">Bluesky</button>
+                <button type="button" class="filter-pill" data-msg-net="mastodon">Mastodon</button>
+              </div>
+              <button type="button" class="msg-new-btn" id="openNewConvoBtn" onclick="openNewConvoModal()" title="Nova Mensagem" data-i18n-title="messages.new_btn">
+                <svg class="ico"><use href="#i-plus"/></svg>
+                <span class="msg-new-full" data-i18n="messages.new_btn">Nova Mensagem</span>
+                <span class="msg-new-short" data-i18n="messages.new_short">Nova</span>
+              </button>
+            </div>
+            <div id="convoErrors"></div>
+            <div id="convoList"></div>
+          </div>
+
+          <div id="convoThreadView" hidden>
+            <div class="msg-thread-wrap">
+              <div class="msg-thread-head">
+                <div class="msg-thread-head-left">
+                  <button type="button" class="msg-thread-back-btn" onclick="closeConvoThread()" title="Voltar" data-i18n-title="actions.back">
+                    <svg class="ico" style="width:16px;height:16px"><use href="#i-arrow-left"/></svg>
+                  </button>
+                  <div class="msg-thread-peer-info" id="convoPeerInfo">
+                    <img id="convoPeerAvatar" class="msg-thread-peer-avatar" src="" alt="">
+                    <div class="msg-thread-peer-meta">
+                      <div id="convoPeerName" class="msg-thread-peer-name"></div>
+                      <div id="convoPeerHandle" class="msg-thread-peer-handle"></div>
+                    </div>
+                  </div>
+                </div>
+                <span id="convoPeerNetBadge" class="net"></span>
+              </div>
+              <div class="msg-thread-body" id="convoMessagesFeed"></div>
+              <form class="msg-composer-bar" id="convoComposerForm" onsubmit="event.preventDefault(); sendCurrentConvoMessage();">
+                <input type="text" class="msg-composer-input" id="convoMessageInput" placeholder="Escreve uma mensagem..." data-i18n-ph="messages.type_message_ph" autocomplete="off">
+                <button type="submit" class="msg-send-btn" id="convoSendBtn" title="Enviar" data-i18n-title="messages.send_btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="deck-col" id="colProfile" data-col="profile">
       <div class="deck-col-head">
         <div class="deck-col-head-left">
@@ -1766,6 +2380,37 @@ kbd {
     </div>
   </div>
 
+  <div id="newConvoModalOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true">
+    <div class="setup-box" style="max-width:440px">
+      <div class="setup-head" style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
+        <h2 style="font-size:16px;margin:0" data-i18n="messages.start_chat">Iniciar conversa</h2>
+        <button type="button" class="setup-close-btn" id="closeNewConvoBtn" onclick="closeNewConvoModal()" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
+      </div>
+      <form onsubmit="event.preventDefault(); submitStartConvo();">
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--muted)" data-i18n="messages.network_label">Rede social:</label>
+          <div class="search-net-bar" id="newConvoNetPills">
+            <button type="button" class="filter-pill active" id="btnStartNetBsky" data-start-net="bluesky" onclick="setStartConvoNet('bluesky')">Bluesky</button>
+            <button type="button" class="filter-pill" id="btnStartNetMasto" data-start-net="mastodon" onclick="setStartConvoNet('mastodon')">Mastodon</button>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--muted)" data-i18n="messages.recipient_label">Para:</label>
+          <input type="text" id="newConvoRecipientInput" placeholder="@utilizador ou URL de perfil..." data-i18n-ph="messages.search_recipient_ph" style="width:100%;border:1px solid var(--line);background:var(--surface-1);color:var(--ink);padding:8px 12px;border-radius:8px;font:14px var(--sans);outline:none" required>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--muted)" data-i18n="messages.initial_msg_label">Mensagem inicial:</label>
+          <textarea id="newConvoTextInput" placeholder="Escreve uma mensagem..." data-i18n-ph="messages.type_message_ph" style="width:100%;min-height:70px;border:1px solid var(--line);background:var(--surface-1);color:var(--ink);padding:8px 12px;border-radius:8px;font:14px var(--sans);outline:none;resize:vertical" required></textarea>
+        </div>
+        <div class="msg" id="newConvoMsg" role="status" style="margin-bottom:10px"></div>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button type="button" class="ghost" onclick="closeNewConvoModal()" data-i18n="common.cancel">Cancelar</button>
+          <button type="submit" class="prime" id="newConvoSubmitBtn" data-i18n="messages.send_btn">Enviar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="setupOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="setupModalTitle">
     <div class="setup-box settings-dialog">
       <div class="setup-header">
@@ -1816,6 +2461,7 @@ kbd {
                 <label class="setup-check-item"><input type="checkbox" id="chkColSearch"> <span data-i18n="setup.deck_col_search">Pesquisa</span></label>
                 <label class="setup-check-item"><input type="checkbox" id="chkColSaved"> <span data-i18n="setup.deck_col_saved">Guardados</span></label>
                 <label class="setup-check-item"><input type="checkbox" id="chkColNotifs"> <span data-i18n="setup.deck_col_notifs">Notificações</span></label>
+                <label class="setup-check-item"><input type="checkbox" id="chkColMessages"> <span data-i18n="setup.deck_col_messages">Mensagens</span></label>
                 <label class="setup-check-item"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
               </div>
             </div>
@@ -1890,6 +2536,24 @@ kbd {
             </div>
           </div>
 
+          <div class="setup-section" id="mutedWordsSection">
+            <div class="setup-sec-title"><span>🔇 <span data-i18n="setup.muted_title">Palavras Silenciadas & Filtros</span></span></div>
+            <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45" data-i18n="setup.muted_desc">
+              Esconde ou avisa em publicações que contenham estas palavras-chave ou hashtags no texto ou aviso de conteúdo.
+            </p>
+            <label><span data-i18n="setup.muted_mode_label">Comportamento do filtro:</span>
+              <select id="cfgMuteModeSelect" style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                <option id="optMuteWarn" value="warn" data-i18n="setup.muted_mode_warn">Mostrar aviso colapsável</option>
+                <option id="optMuteHide" value="hide" data-i18n="setup.muted_mode_hide">Ocultar completamente</option>
+              </select>
+            </label>
+            <div class="muted-add-row">
+              <input type="text" id="mutedWordInput" placeholder="Adicionar palavra ou #hashtag..." data-i18n-ph="setup.muted_ph" autocomplete="off">
+              <button type="button" class="setup-secondary-btn" id="addMutedWordBtn" data-i18n="setup.muted_add_btn">Adicionar</button>
+            </div>
+            <div id="mutedChipsList" class="muted-chips-list"></div>
+          </div>
+
           <div class="setup-section" id="backupSection">
             <div class="setup-sec-title"><span>💾 <span data-i18n="setup.backup_title">Cópia de Segurança & Dados</span></span></div>
             <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45" data-i18n="setup.backup_desc">
@@ -1905,6 +2569,19 @@ kbd {
               <input type="file" id="importBackupFileInput" accept=".json,application/json" style="display:none">
             </div>
             <div id="backupFeedbackMsg" class="msg" style="margin-top:8px"></div>
+          </div>
+
+          <div class="setup-section" id="mobileLanSection">
+            <div class="setup-sec-title"><span>📱 <span data-i18n="setup.mobile_title">Acesso Móvel & PWA (Telemóvel / iPad)</span></span></div>
+            <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45" data-i18n="setup.mobile_desc">
+              Acede ao MastoSky a partir de qualquer iPhone, iPad ou Android na tua rede Wi-Fi e instala-o como app no ecrã inicial.
+            </p>
+            <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+              <span id="settingsLanBadgeText" style="font-size:12px;color:var(--muted)">...</span>
+              <button type="button" class="setup-secondary-btn" id="openMobileModalFromSettings" style="display:inline-flex;align-items:center;gap:6px">
+                <span data-i18n="setup.mobile_btn">Ver QR Code & Instruções ↗</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2012,7 +2689,7 @@ kbd {
               </div>
               <div style="display:flex;gap:8px;align-items:center">
                 <button type="button" class="ghost-sm" id="checkUpdateBtn" data-i18n="update.btn_check">Verificar</button>
-                <button type="button" class="send-sm" id="selfUpdateBtn" style="display:none" data-i18n="update.btn_update">Atualizar agora</button>
+                <button type="button" class="send-sm" id="selfUpdateBtn" style="display:inline-flex" data-i18n="update.btn_update">Atualizar agora</button>
               </div>
             </div>
           </div>
@@ -2032,7 +2709,7 @@ kbd {
     <div class="setup-box cross-post-box">
       <div class="setup-header">
         <h2 data-i18n="cross_post.modal_title">Publicação Cruzada</h2>
-        <button type="button" class="rm-sm" id="closeCrossPost" title="Fechar">✕</button>
+        <button type="button" class="setup-close-btn" id="closeCrossPost" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
       </div>
       <p class="setup-desc" id="crossPostDesc">Cria um repost/citação na rede de origem e partilha um cartão visual enriquecido na outra rede.</p>
 
@@ -2071,7 +2748,7 @@ kbd {
           <svg class="ico" style="width:20px;height:20px"><use href="#i-draft"/></svg>
           <span data-i18n="drafts.title">Rascunhos</span>
         </h2>
-        <button type="button" class="rm-sm" id="closeDrafts" title="Fechar (Esc)">✕</button>
+        <button type="button" class="setup-close-btn" id="closeDrafts" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
       </div>
       <p class="setup-desc" data-i18n="drafts.desc">Os teus rascunhos são guardados localmente no teu navegador e nunca saem do teu computador.</p>
 
@@ -2097,7 +2774,7 @@ kbd {
     <div class="setup-box user-profile-box">
       <div class="setup-header">
         <h2 id="userProfileModalTitle" style="font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Perfil</h2>
-        <button type="button" class="rm-sm" id="closeUserProfileModal" title="Fechar (Esc)">✕</button>
+        <button type="button" class="setup-close-btn" id="closeUserProfileModal" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
       </div>
       <div id="userProfileModalBody" class="user-profile-modal-body">
         <div id="userProfileModalCard"></div>
@@ -2113,7 +2790,7 @@ kbd {
           <span style="font-size:18px">⚠️</span>
           <span data-i18n="composer.partial_title">Publicação Parcial</span>
         </h2>
-        <button type="button" class="rm-sm" id="closePartialPost" title="Fechar (Esc)">✕</button>
+        <button type="button" class="setup-close-btn" id="closePartialPost" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
       </div>
       <p class="setup-desc" data-i18n="composer.partial_desc">
         A publicação foi concluída numa rede, mas falhou noutra. Podes tentar novamente apenas nas redes em falta sem duplicar o post.
@@ -2140,7 +2817,7 @@ kbd {
           <svg class="ico" style="width:20px;height:20px"><use href="#i-keyboard"/></svg>
           <span data-i18n="shortcuts.title">Atalhos de Teclado</span>
         </h2>
-        <button type="button" class="rm-sm" id="closeShortcuts" title="Fechar (Esc)">✕</button>
+        <button type="button" class="setup-close-btn" id="closeShortcuts" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
       </div>
       <p class="setup-desc" data-i18n="shortcuts.desc">Navega e interage no MastoSky rapidamente sem tirar as mãos do teclado.</p>
 
@@ -2167,7 +2844,7 @@ kbd {
           </div>
           <div class="shortcut-row">
             <span data-i18n="shortcuts.jump_col">Mudar de coluna / aba</span>
-            <span class="shortcut-keys"><kbd>1</kbd> <span class="shortcut-hyphen">–</span> <kbd>6</kbd></span>
+            <span class="shortcut-keys"><kbd>1</kbd> <span class="shortcut-hyphen">–</span> <kbd>7</kbd></span>
           </div>
         </div>
 
@@ -2228,6 +2905,90 @@ kbd {
     </div>
   </div>
 
+  <div id="mobileModalOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="mobileModalTitle">
+    <div class="mobile-modal-box">
+      <div class="setup-header">
+        <h2 id="mobileModalTitle" data-i18n="mobile.title">📱 Ligar Telemóvel / iPad</h2>
+        <button type="button" class="setup-close-btn" id="closeMobileModal" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
+      </div>
+      <p class="setup-desc" data-i18n="mobile.desc">Acede ao MastoSky a partir de qualquer iPhone, Android ou iPad na tua rede local (Wi-Fi) e instala-o no ecrã inicial como uma aplicação nativa.</p>
+
+      <div id="mobileLanActiveWrap">
+        <div class="mobile-qr-wrap">
+          <div class="mobile-qr-code" id="mobileQrSvg">
+            <!-- SVG QR Code injetado dinamicamente -->
+          </div>
+          <div class="mobile-url-bar">
+            <span class="mobile-url-text" id="mobileUrlText">http://192.168.1.xxx:8000</span>
+            <button type="button" class="mobile-copy-btn" id="mobileCopyBtn" data-i18n="mobile.copy">Copiar</button>
+          </div>
+          <div style="font-size:11.5px;color:var(--muted);text-align:center">
+            <span data-i18n="mobile.wifi_hint">Certifica-te de que o teu telemóvel está ligado ao mesmo Wi-Fi deste computador.</span>
+          </div>
+          <div id="mobileTailscaleWrap" hidden style="width:100%;margin-top:8px;padding-top:10px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px;text-align:center">
+              <span data-i18n="mobile.tailscale_title">Acesso Remoto (Tailscale)</span>
+            </div>
+            <div class="mobile-url-bar" style="margin:0">
+              <span class="mobile-url-text" id="mobileTailscaleUrlText"></span>
+              <button type="button" class="mobile-copy-btn" id="mobileCopyTailscaleBtn" data-i18n="mobile.copy">Copiar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-guides-grid">
+          <div class="mobile-guide-card">
+            <div class="mobile-guide-title">
+              <span>🍎</span>
+              <span data-i18n="mobile.guide_apple_title">iPhone & iPad (Safari)</span>
+            </div>
+            <ol class="mobile-guide-steps">
+              <li data-i18n="mobile.guide_apple_step1">Lê o <b>QR Code</b> com a câmara do iPhone/iPad (ou abre o link no Safari).</li>
+              <li data-i18n="mobile.guide_apple_step2">Toca no botão de partilha (<b>Partilhar</b> no Safari).</li>
+              <li data-i18n="mobile.guide_apple_step3">Escolhe <b>«Adicionar ao Ecrã Principal»</b>.</li>
+              <li data-i18n="mobile.guide_apple_step4">Abre o MastoSky em ecrã inteiro como uma app dedicada!</li>
+            </ol>
+          </div>
+
+          <div class="mobile-guide-card">
+            <div class="mobile-guide-title">
+              <span>🤖</span>
+              <span data-i18n="mobile.guide_android_title">Android (Chrome)</span>
+            </div>
+            <ol class="mobile-guide-steps">
+              <li data-i18n="mobile.guide_android_step1">Lê o <b>QR Code</b> com a câmara ou abre o link no Chrome.</li>
+              <li data-i18n="mobile.guide_android_step2">Toca no menu de três pontos (<b>⋮</b>) no canto superior.</li>
+              <li data-i18n="mobile.guide_android_step3">Escolhe <b>«Instalar aplicação»</b> ou <b>«Adicionar ao ecrã principal»</b>.</li>
+              <li data-i18n="mobile.guide_android_step4">Inicia a app diretamente a partir do ecrã de início!</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div id="mobileLanInactiveWrap" hidden>
+        <div class="mobile-lan-disabled-banner">
+          <div style="font-weight:700;font-size:14px;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            <span>⚠️</span> <span data-i18n="mobile.inactive_title">Modo de Rede Local Inativo</span>
+          </div>
+          <p style="font-size:13px;line-height:1.45;color:var(--ink);margin:0 0 10px" data-i18n="mobile.inactive_desc">
+            O servidor MastoSky está atualmente a escutar apenas pedidos internos deste computador (127.0.0.1). Para permitir o acesso no teu iPhone, iPad ou Android:
+          </p>
+          <div class="mobile-lan-cmd">
+            <code id="mobileLanCmdText">python3 app.py --lan</code>
+            <button type="button" class="mobile-copy-btn" id="mobileCopyCmdBtn" style="border-color:#4DB2FF;color:#4DB2FF">Copiar comando</button>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin:8px 0 0" data-i18n="mobile.inactive_hint">
+            Basta parar o servidor no terminal (Ctrl+C) e voltar a iniciá-lo com a opção <code>--lan</code>.
+          </p>
+        </div>
+      </div>
+
+      <div class="setup-actions" style="margin-top:18px">
+        <button type="button" class="btn btn-secondary" id="mobileDoneBtn" data-i18n="mobile.done">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="imageLightbox" class="lightbox-overlay" hidden role="dialog" aria-modal="true" aria-label="Pré-visualização de imagem">
     <div class="lightbox-backdrop" onclick="closeImageLightbox()"></div>
     <div class="lightbox-container">
@@ -2241,6 +3002,20 @@ kbd {
         <span class="lightbox-counter" id="lightboxCount" hidden></span>
         <span class="lightbox-alt" id="lightboxAltText"></span>
         <a id="lightboxOriginalLink" href="#" target="_blank" rel="noopener noreferrer" class="lightbox-link" data-i18n="lightbox.open_original">Abrir original ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirmModalOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+    <div class="setup-box confirm-modal-box">
+      <div class="setup-header">
+        <h2 id="confirmModalTitle" class="confirm-modal-title">Confirmação</h2>
+        <button type="button" class="setup-close-btn" id="closeConfirmModalBtn" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
+      </div>
+      <p id="confirmModalMessage" class="confirm-modal-msg"></p>
+      <div class="confirm-modal-actions">
+        <button type="button" class="ghost" id="confirmModalCancelBtn" data-i18n="common.cancel">Cancelar</button>
+        <button type="button" class="send" id="confirmModalOkBtn">Confirmar</button>
       </div>
     </div>
   </div>
@@ -2272,7 +3047,9 @@ const I18N = {
       col_user: "Perfil de utilizador",
       col_search: "Pesquisa",
       col_saved: "Guardados",
-      shortcuts_title: "Atalhos de teclado (?)"
+      col_messages: "Mensagens",
+      shortcuts_title: "Atalhos de teclado (?)",
+      mobile_connect_title: "Ligar Telemóvel / iPad"
     },
     tabs: {
       timeline: "Timeline",
@@ -2280,6 +3057,7 @@ const I18N = {
       search: "Pesquisa",
       saved: "Guardados",
       notifs: "Notificações",
+      messages: "Mensagens",
       profile: "Perfil"
     },
     nav: {
@@ -2457,6 +3235,8 @@ const I18N = {
       saved_rm: "Remover dos guardados",
       delete: "Eliminar",
       view_thread: "Ver conversa",
+      translate: "Traduzir com IA",
+      translated_with_ai: "Traduzido com IA",
       confirm_delete: "Tens a certeza que queres eliminar esta publicação?",
       load_more: "Carregar mais",
       loading: "A carregar...",
@@ -2506,7 +3286,10 @@ const I18N = {
     post: {
       shared_by: "Partilhado por {name}",
       view_profile: "Ver perfil de {name}",
-      attach_alt: "Anexo"
+      attach_alt: "Anexo",
+      cw_show: "Mostrar conteúdo",
+      cw_hide: "Ocultar",
+      alt_view: "Ver descrição da imagem (ALT)"
     },
     notifs: {
       filter_all: "Todas",
@@ -2625,6 +3408,7 @@ const I18N = {
       deck_col_search: "Pesquisa",
       deck_col_saved: "Guardados",
       deck_col_notifs: "Notificações",
+      deck_col_messages: "Mensagens (Direct Messages)",
       deck_col_profile: "Perfil",
       active_session: "Sessão ativa",
       bsky_pass_label: "Palavra-passe da aplicação (*App Password*):",
@@ -2670,7 +3454,45 @@ const I18N = {
       backup_exported_ok: "Backup exportado com sucesso ({drafts} rascunhos, {saved} guardados)!",
       backup_imported_ok: "Backup restaurado com sucesso ({drafts} novos rascunhos, {saved} novos guardados)!",
       backup_invalid_err: "Ficheiro inválido. Seleciona um backup JSON do MastoSky.",
-      backup_parse_err: "Erro ao ler ficheiro de backup"
+      backup_parse_err: "Erro ao ler ficheiro de backup",
+      mobile_title: "Acesso Móvel & PWA (Telemóvel / iPad)",
+      mobile_desc: "Acede ao MastoSky a partir de qualquer iPhone, iPad ou Android na tua rede Wi-Fi e instala-o como app no ecrã inicial.",
+      mobile_btn: "Ver QR Code & Instruções ↗",
+      muted_title: "Palavras Silenciadas & Filtros",
+      muted_desc: "Esconde ou avisa em publicações que contenham estas palavras-chave ou hashtags no texto ou aviso de conteúdo.",
+      muted_mode_label: "Comportamento do filtro:",
+      muted_mode_warn: "Mostrar aviso colapsável",
+      muted_mode_hide: "Ocultar completamente",
+      muted_ph: "Adicionar palavra ou #hashtag...",
+      muted_add_btn: "Adicionar",
+      muted_empty: "Nenhuma palavra silenciada.",
+      muted_banner: "Publicação filtrada por conter «{word}»",
+      muted_show: "Mostrar",
+      muted_hide: "Ocultar",
+      muted_remove_aria: "Remover filtro"
+    },
+    mobile: {
+      title: "📱 Ligar Telemóvel / iPad",
+      desc: "Acede ao MastoSky a partir de qualquer iPhone, Android ou iPad na tua rede local (Wi-Fi) e instala-o no ecrã inicial como uma aplicação nativa.",
+      close: "Fechar (Esc)",
+      copy: "Copiar",
+      copied: "Copiado! ✓",
+      wifi_hint: "Certifica-te de que o teu telemóvel está ligado à mesma rede Wi-Fi deste computador.",
+      tailscale_title: "Acesso Remoto (Tailscale)",
+      guide_apple_title: "iPhone & iPad (Safari)",
+      guide_apple_step1: "Lê o <b>QR Code</b> com a câmara do iPhone/iPad (ou abre o link no Safari).",
+      guide_apple_step2: "Toca no botão de partilha (<b>Partilhar</b> no Safari).",
+      guide_apple_step3: "Escolhe <b>«Adicionar ao Ecrã Principal»</b>.",
+      guide_apple_step4: "Abre o MastoSky em ecrã inteiro como uma app dedicada!",
+      guide_android_title: "Android (Chrome)",
+      guide_android_step1: "Lê o <b>QR Code</b> com a câmara ou abre o link no Chrome.",
+      guide_android_step2: "Toca no menu de três pontos (<b>⋮</b>) no canto superior.",
+      guide_android_step3: "Escolhe <b>«Instalar aplicação»</b> ou <b>«Adicionar ao ecrã principal»</b>.",
+      guide_android_step4: "Inicia a app diretamente a partir do ecrã de início!",
+      inactive_title: "Modo de Rede Local Inativo",
+      inactive_desc: "O servidor MastoSky está atualmente a escutar apenas pedidos internos deste computador (127.0.0.1). Para permitir o acesso no teu iPhone, iPad ou Android:",
+      inactive_hint: "Basta parar o servidor no terminal (Ctrl+C) e voltar a iniciá-lo com a opção --lan.",
+      done: "Fechar"
     },
     status: {
       offline: "Sem ligação à Internet — Modo offline",
@@ -2711,6 +3533,36 @@ const I18N = {
       theme: "Alternar tema (Claro / Escuro)",
       help: "Ver esta folha de atalhos",
       close: "Fechar modal / conversa / foco"
+    },
+    messages: {
+      title: "Mensagens",
+      new_btn: "Nova Mensagem",
+      new_short: "Nova",
+      no_convos: "Nenhuma conversa encontrada.",
+      no_convos_sub: "Inicia uma conversa privada com alguém do Bluesky ou Mastodon.",
+      search_recipient_ph: "Procurar utilizador (@handle ou URL)...",
+      type_message_ph: "Escreve uma mensagem...",
+      send_btn: "Enviar",
+      direct_note: "Mensagens privadas entre ti e {name}",
+      masto_privacy_note: "No Mastodon, mensagens diretas não são encriptadas ponta-a-ponta.",
+      err_load: "Não foi possível carregar as conversas.",
+      err_send: "Erro ao enviar mensagem: {err}",
+      back_to_list: "← Voltar às conversas",
+      empty_thread: "Esta conversa ainda não tem mensagens.",
+      recipient_label: "Para:",
+      select_user: "Seleciona um destinatário para iniciar o chat.",
+      start_chat: "Iniciar conversa",
+      network_label: "Rede social:",
+      initial_msg_label: "Mensagem inicial:",
+      loading: "A carregar mensagens...",
+      sending: "A enviar..."
+    },
+    common: {
+      confirm_title: "Confirmação",
+      alert_title: "Aviso",
+      confirm_btn: "Confirmar",
+      cancel: "Cancelar",
+      ok: "OK"
     }
   },
   en: {
@@ -2731,7 +3583,9 @@ const I18N = {
       col_user: "User profile",
       col_search: "Search",
       col_saved: "Saved",
-      shortcuts_title: "Keyboard shortcuts (?)"
+      col_messages: "Messages",
+      shortcuts_title: "Keyboard shortcuts (?)",
+      mobile_connect_title: "Connect Mobile / iPad"
     },
     tabs: {
       timeline: "Timeline",
@@ -2739,6 +3593,7 @@ const I18N = {
       search: "Search",
       saved: "Saved",
       notifs: "Notifications",
+      messages: "Messages",
       profile: "Profile"
     },
     nav: {
@@ -2916,6 +3771,8 @@ const I18N = {
       saved_rm: "Remove from saved",
       delete: "Delete",
       view_thread: "View thread",
+      translate: "Translate with AI",
+      translated_with_ai: "Translated with AI",
       confirm_delete: "Are you sure you want to delete this post?",
       load_more: "Load more",
       loading: "Loading...",
@@ -2965,7 +3822,10 @@ const I18N = {
     post: {
       shared_by: "Shared by {name}",
       view_profile: "View profile of {name}",
-      attach_alt: "Attachment"
+      attach_alt: "Attachment",
+      cw_show: "Show content",
+      cw_hide: "Hide",
+      alt_view: "View image description (ALT)"
     },
     notifs: {
       filter_all: "All",
@@ -3084,6 +3944,7 @@ const I18N = {
       deck_col_search: "Search",
       deck_col_saved: "Saved",
       deck_col_notifs: "Notifications",
+      deck_col_messages: "Messages (Direct Messages)",
       deck_col_profile: "Profile",
       active_session: "Active session",
       bsky_pass_label: "App Password:",
@@ -3129,7 +3990,45 @@ const I18N = {
       backup_exported_ok: "Backup exported successfully ({drafts} drafts, {saved} saved)!",
       backup_imported_ok: "Backup restored successfully ({drafts} new drafts, {saved} new saved)!",
       backup_invalid_err: "Invalid file. Please select a valid MastoSky JSON backup.",
-      backup_parse_err: "Error reading backup file"
+      backup_parse_err: "Error reading backup file",
+      mobile_title: "Mobile Access & PWA (Phone / iPad)",
+      mobile_desc: "Access MastoSky from any iPhone, iPad, or Android on your local Wi-Fi network and install it on your home screen.",
+      mobile_btn: "View QR Code & Guide ↗",
+      muted_title: "Muted Words & Filters",
+      muted_desc: "Hide or warn on posts containing these keywords or hashtags in text or content warnings.",
+      muted_mode_label: "Filter behavior:",
+      muted_mode_warn: "Show collapsible warning",
+      muted_mode_hide: "Hide completely",
+      muted_ph: "Add word or #hashtag...",
+      muted_add_btn: "Add",
+      muted_empty: "No muted words yet.",
+      muted_banner: "Post filtered for containing “{word}”",
+      muted_show: "Show",
+      muted_hide: "Hide",
+      muted_remove_aria: "Remove filter"
+    },
+    mobile: {
+      title: "📱 Connect Mobile / iPad",
+      desc: "Access MastoSky from any iPhone, Android, or iPad on your local Wi-Fi and install it on your home screen as a standalone app.",
+      close: "Close (Esc)",
+      copy: "Copy",
+      copied: "Copied! ✓",
+      wifi_hint: "Make sure your mobile device is connected to the same Wi-Fi network as this computer.",
+      tailscale_title: "Remote Access (Tailscale)",
+      guide_apple_title: "iPhone & iPad (Safari)",
+      guide_apple_step1: "Scan the <b>QR Code</b> with your camera (or open the link in Safari).",
+      guide_apple_step2: "Tap the share button (<b>Share</b> in Safari).",
+      guide_apple_step3: "Choose <b>«Add to Home Screen»</b>.",
+      guide_apple_step4: "Launch MastoSky full-screen as a dedicated app!",
+      guide_android_title: "Android (Chrome)",
+      guide_android_step1: "Scan the <b>QR Code</b> with your camera or open the link in Chrome.",
+      guide_android_step2: "Tap the three dots menu (<b>⋮</b>) at the top right.",
+      guide_android_step3: "Choose <b>«Install app»</b> or <b>«Add to Home screen»</b>.",
+      guide_android_step4: "Launch the app directly from your home screen!",
+      inactive_title: "Local Network Mode Inactive",
+      inactive_desc: "The MastoSky server is currently listening only for requests from this computer (127.0.0.1). To enable access on your iPhone, iPad, or Android:",
+      inactive_hint: "Simply stop the server in the terminal (Ctrl+C) and restart it with the --lan option.",
+      done: "Close"
     },
     status: {
       offline: "No Internet connection — Offline mode",
@@ -3170,6 +4069,36 @@ const I18N = {
       theme: "Toggle theme (Light / Dark)",
       help: "Open this shortcuts help",
       close: "Close modal / thread / focus"
+    },
+    messages: {
+      title: "Messages",
+      new_btn: "New Message",
+      new_short: "New",
+      no_convos: "No conversations found.",
+      no_convos_sub: "Start a private conversation with someone on Bluesky or Mastodon.",
+      search_recipient_ph: "Search user (@handle or URL)...",
+      type_message_ph: "Type a message...",
+      send_btn: "Send",
+      direct_note: "Direct messages between you and {name}",
+      masto_privacy_note: "On Mastodon, direct messages are not end-to-end encrypted.",
+      err_load: "Could not load conversations.",
+      err_send: "Error sending message: {err}",
+      back_to_list: "← Back to conversations",
+      empty_thread: "This conversation has no messages yet.",
+      recipient_label: "To:",
+      select_user: "Select a recipient to start chatting.",
+      start_chat: "Start conversation",
+      network_label: "Social network:",
+      initial_msg_label: "Initial message:",
+      loading: "Loading messages...",
+      sending: "Sending..."
+    },
+    common: {
+      confirm_title: "Confirmation",
+      alert_title: "Notice",
+      confirm_btn: "Confirm",
+      cancel: "Cancel",
+      ok: "OK"
     }
   }
 };
@@ -3191,6 +4120,9 @@ function applyTheme(theme, save = true) {
     try {
       localStorage.setItem("mastosky_theme", theme);
     } catch (_) {}
+    if (typeof scheduleServerSync === "function" && typeof getSyncPreferences === "function") {
+      scheduleServerSync({ preferences: getSyncPreferences() });
+    }
   }
   document.documentElement.setAttribute("data-theme", theme);
   if ($("cfgThemeSelect")) $("cfgThemeSelect").value = theme;
@@ -3214,7 +4146,7 @@ function toggleThemeQuick() {
   applyTheme(nextTheme, true);
 }
 let viewMode = localStorage.getItem("mastosky_view_mode") || "single";
-const ALL_DECK_COLS = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
+const ALL_DECK_COLS = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
 let deckColumns = (() => {
   try {
     const raw = JSON.parse(localStorage.getItem("mastosky_deck_columns") || '["compose","timeline","explore","notifs"]');
@@ -3331,10 +4263,17 @@ function applyI18n() {
   }
 }
 
+function syncPrefsToServer() {
+  if (typeof scheduleServerSync === "function" && typeof getSyncPreferences === "function") {
+    scheduleServerSync({ preferences: getSyncPreferences() });
+  }
+}
+
 function setLang(newLang) {
   if (newLang !== "pt" && newLang !== "en") return;
   currentLang = newLang;
   localStorage.setItem("mastosky_lang", newLang);
+  syncPrefsToServer();
   applyI18n();
 
   if (tab === "timeline") render();
@@ -3355,6 +4294,7 @@ function setNavMode(newMode) {
   if (newMode !== "sidebar" && newMode !== "sticky" && newMode !== "none") return;
   navMode = newMode;
   localStorage.setItem("mastosky_nav_mode", newMode);
+  syncPrefsToServer();
   document.body.classList.toggle("nav-sticky", newMode === "sticky");
   const sideRail = $("sideNavRail");
   if (newMode !== "sidebar" && sideRail) sideRail.classList.remove("visible");
@@ -3384,13 +4324,14 @@ const DECK_COL_INFO = {
   search: { titleKey: "header.col_search", defTitle: "Pesquisa", icon: "#i-search" },
   saved: { titleKey: "header.col_saved", defTitle: "Guardados", icon: "#i-bookmark" },
   notifs: { titleKey: "header.col_notifs", defTitle: "Notificações", icon: "#i-vis-public" },
+  messages: { titleKey: "header.col_messages", defTitle: "Mensagens", icon: "#i-message" },
   profile: { titleKey: "tabs.profile", defTitle: "Perfil", icon: "#i-net-both" },
   thread: { titleKey: "header.col_thread", defTitle: "Conversa", icon: "#i-thread" }
 };
 
 function applyDeckColumnVisibility() {
   if (viewMode !== "deck") return;
-  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
+  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
   allCols.forEach(c => {
     const el = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
     if (!el) return;
@@ -3412,6 +4353,13 @@ function applyDeckColumnVisibility() {
   }
 }
 
+function persistDeckColumns() {
+  localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
+  syncPrefsToServer();
+  applyDeckColumnVisibility();
+  syncDeckColsCheckboxes();
+}
+
 function moveDeckColumn(colId, delta) {
   const idx = deckColumns.indexOf(colId);
   if (idx < 0) return;
@@ -3420,9 +4368,7 @@ function moveDeckColumn(colId, delta) {
 
   const item = deckColumns.splice(idx, 1)[0];
   deckColumns.splice(newIdx, 0, item);
-  localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
-  applyDeckColumnVisibility();
-  syncDeckColsCheckboxes();
+  persistDeckColumns();
 
   const el = $("col" + colId.charAt(0).toUpperCase() + colId.slice(1));
   if (el) el.scrollIntoView({ behavior: "smooth", inline: "nearest" });
@@ -3439,17 +4385,13 @@ function closeDeckColumn(colId) {
     return;
   }
   deckColumns = deckColumns.filter(c => c !== colId);
-  localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
-  applyDeckColumnVisibility();
-  syncDeckColsCheckboxes();
+  persistDeckColumns();
 }
 
 function addDeckColumn(colId) {
   if (!deckColumns.includes(colId)) {
     deckColumns.push(colId);
-    localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
-    applyDeckColumnVisibility();
-    syncDeckColsCheckboxes();
+    persistDeckColumns();
   }
   closeAddColMenu();
   const el = $("col" + colId.charAt(0).toUpperCase() + colId.slice(1));
@@ -3466,13 +4408,11 @@ function reorderDeckColumn(draggedCol, targetCol, insertBefore) {
   if (!insertBefore) toIdx += 1;
 
   deckColumns.splice(toIdx, 0, draggedCol);
-  localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
-  applyDeckColumnVisibility();
-  syncDeckColsCheckboxes();
+  persistDeckColumns();
 }
 
 function syncDeckColsCheckboxes() {
-  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
+  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
   colIds.forEach(c => {
     const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
     if (chk) chk.checked = deckColumns.includes(c);
@@ -3484,7 +4424,7 @@ function renderAddColMenu() {
   if (!list) return;
   list.replaceChildren();
 
-  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
+  const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
   const available = allCols.filter(c => !deckColumns.includes(c));
 
   if (!available.length) {
@@ -3593,6 +4533,7 @@ function initDeckDragAndDrop() {
 function applyViewMode(mode) {
   viewMode = mode;
   localStorage.setItem("mastosky_view_mode", mode);
+  syncPrefsToServer();
   document.body.classList.toggle("view-deck", mode === "deck");
 
   const comp = $("composeSection");
@@ -3622,15 +4563,18 @@ function applyViewMode(mode) {
     if ($("pSearch")) $("pSearch").hidden = false;
     if ($("pSaved")) $("pSaved").hidden = false;
     $("pNotifs").hidden = false;
+    if ($("pMessages")) $("pMessages").hidden = false;
     if ($("pProfile")) $("pProfile").hidden = false;
     if (!exploreItems.length) loadExplore();
     renderSavedFeed();
     if (!notifs) loadNotifs();
+    if (!conversations.length) loadConversations(true);
     if (!profileLoaded) loadProfile();
     applyDeckColumnVisibility();
   } else {
     setTab(tab);
   }
+  updateActiveDeckColUI();
 }
 
 function closeDeckDetail() {
@@ -3792,6 +4736,119 @@ function ago(iso) {
   return new Date(iso).toLocaleDateString(currentLang === "pt" ? "pt-PT" : "en-US", {day: "numeric", month: "short"});
 }
 
+function fullDateStr(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleString(currentLang === "pt" ? "pt-PT" : "en-US", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+  } catch (_) {
+    return "";
+  }
+}
+
+let mutedWords = (() => {
+  try {
+    const raw = JSON.parse(localStorage.getItem("mastosky_muted_words") || "[]");
+    return Array.isArray(raw) ? Array.from(new Set(raw.map(w => String(w || "").trim().toLowerCase()).filter(Boolean))) : [];
+  } catch (_) {
+    return [];
+  }
+})();
+let muteMode = localStorage.getItem("mastosky_mute_mode") === "hide" ? "hide" : "warn";
+
+function persistMutedSettings() {
+  try {
+    localStorage.setItem("mastosky_muted_words", JSON.stringify(mutedWords));
+    localStorage.setItem("mastosky_mute_mode", muteMode);
+  } catch (_) {}
+  if (typeof scheduleServerSync === "function") {
+    scheduleServerSync({ muted_words: mutedWords, mute_mode: muteMode });
+  }
+}
+
+function escapeRegExp(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getMutedMatch(it) {
+  if (!it || !mutedWords.length) return null;
+  const parts = [it.cw || "", it.text || ""];
+  if (it.quote) {
+    parts.push(it.quote.cw || "", it.quote.text || "");
+  }
+  const haystack = parts.join("\n").trim();
+  if (!haystack) return null;
+
+  for (const kw of mutedWords) {
+    if (!kw) continue;
+    const esc = escapeRegExp(kw);
+    let re = null;
+    try {
+      re = new RegExp(`(?:^|[^\\p{L}\\p{N}_])${esc}(?=$|[^\\p{L}\\p{N}_])`, "iu");
+    } catch (_) {
+      re = new RegExp(`(?:^|\\W)${esc}(?=$|\\W)`, "i");
+    }
+    if (re.test(haystack)) return kw;
+  }
+  return null;
+}
+
+function refreshMutedFeeds() {
+  if (typeof render === "function" && Array.isArray(items) && items.length) render();
+  if (typeof renderExplore === "function" && Array.isArray(exploreItems) && exploreItems.length) renderExplore();
+  if (typeof renderSavedFeed === "function") renderSavedFeed();
+  if (typeof renderSearchResults === "function" && typeof searchResultsData !== "undefined" && searchResultsData) {
+    renderSearchResults(searchResultsData);
+  }
+}
+
+function renderMutedWordsChips() {
+  const box = $("mutedChipsList");
+  if (!box) return;
+  box.replaceChildren();
+  if (!mutedWords.length) {
+    const empty = el("span", null, t("setup.muted_empty"));
+    empty.style.fontSize = "12px";
+    empty.style.color = "var(--muted)";
+    box.append(empty);
+    return;
+  }
+  mutedWords.forEach(w => {
+    const chip = el("span", "muted-chip");
+    chip.append(el("span", null, w));
+    const rm = el("button", "muted-chip-rm", "×");
+    rm.type = "button";
+    rm.title = t("setup.muted_remove_aria");
+    rm.setAttribute("aria-label", t("setup.muted_remove_aria"));
+    rm.onclick = () => removeMutedWord(w);
+    chip.append(rm);
+    box.append(chip);
+  });
+}
+
+function addMutedWord(raw) {
+  const word = String(raw || "").trim().toLowerCase();
+  if (!word) return;
+  if (!mutedWords.includes(word)) {
+    mutedWords.push(word);
+    persistMutedSettings();
+    renderMutedWordsChips();
+    refreshMutedFeeds();
+  }
+  if ($("mutedWordInput")) $("mutedWordInput").value = "";
+}
+
+function removeMutedWord(word) {
+  mutedWords = mutedWords.filter(w => w !== word);
+  persistMutedSettings();
+  renderMutedWordsChips();
+  refreshMutedFeeds();
+}
+
 // Defesa em profundidade: só URLs http(s) chegam a href/src/window.open.
 function su(u) {
   try { const p = new URL(u); return (p.protocol === "http:" || p.protocol === "https:") ? u : null; }
@@ -3816,6 +4873,7 @@ const ICONS = {
   bookmark: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
   bookmarkFill: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
   thread: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
+  translate: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>'
 };
 function netBadge(n) {
@@ -3928,6 +4986,12 @@ function closeImageLightbox() {
 let currentFocusedPost = null;
 let activeDeckCol = "timeline";
 
+function updateActiveDeckColUI() {
+  document.querySelectorAll(".deck-col").forEach(col => {
+    col.classList.toggle("is-active-col", viewMode === "deck" && col.dataset.col === activeDeckCol);
+  });
+}
+
 function setKeyboardFocusedPost(postEl, shouldScroll = true) {
   if (currentFocusedPost && currentFocusedPost !== postEl) {
     currentFocusedPost.classList.remove("is-keyboard-focused");
@@ -3938,6 +5002,7 @@ function setKeyboardFocusedPost(postEl, shouldScroll = true) {
     const col = currentFocusedPost.closest(".deck-col");
     if (col && col.dataset.col) {
       activeDeckCol = col.dataset.col;
+      updateActiveDeckColUI();
     }
     if (shouldScroll) {
       currentFocusedPost.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -4095,6 +5160,7 @@ function scrollActiveColTop() {
       search: $("colSearchBody"),
       saved: $("colSavedBody"),
       notifs: $("colNotifsBody"),
+      messages: $("colMessagesBody"),
       profile: $("colProfileBody"),
       thread: $("colThreadBody")
     };
@@ -4128,12 +5194,14 @@ function jumpToColumnOrTab(key) {
     "3": "search",
     "4": "saved",
     "5": "notifs",
-    "6": "profile"
+    "6": "messages",
+    "7": "profile"
   };
   const target = colMap[key];
   if (!target) return;
   setTab(target);
   activeDeckCol = target;
+  updateActiveDeckColUI();
   clearKeyboardFocusedPost();
 }
 
@@ -4151,19 +5219,147 @@ function closeShortcutsModal() {
   document.body.style.overflow = "";
 }
 
+let lanInfoCache = null;
+
+async function fetchLanInfo() {
+  try {
+    const res = await api("/api/lan");
+    lanInfoCache = res;
+    return res;
+  } catch (e) {
+    return { lan: false, url: "http://127.0.0.1:8000", local_ip: "127.0.0.1", qr_svg: "" };
+  }
+}
+
+async function updateLanBadges() {
+  const info = lanInfoCache || await fetchLanInfo();
+  if ($("headerLanBadge")) {
+    $("headerLanBadge").hidden = !info.lan;
+  }
+  if ($("settingsLanBadgeText")) {
+    const isEn = (currentLang === "en");
+    const t = info.lan
+      ? (isEn ? `🟢 Active on local network (${info.local_ip})` : `🟢 Ativo na rede local (${info.local_ip})`)
+      : (isEn ? "⚪ Inactive (computer only)" : "⚪ Inativo (apenas no computador)");
+    $("settingsLanBadgeText").textContent = t;
+  }
+}
+
+async function openMobileModal() {
+  const overlay = $("mobileModalOverlay");
+  if (!overlay) return;
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+
+  const info = await fetchLanInfo();
+  const h = (window.location.hostname || "").toLowerCase();
+  const isClientTs = h.endsWith(".ts.net") || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+$/.test(h);
+  const tsUrl = (info && info.tailscale_url) || (isClientTs ? window.location.origin : "");
+  const tsWrap = $("mobileTailscaleWrap");
+
+  if (info && info.lan) {
+    if ($("mobileLanActiveWrap")) $("mobileLanActiveWrap").hidden = false;
+    if ($("mobileLanInactiveWrap")) $("mobileLanInactiveWrap").hidden = true;
+    if ($("mobileQrSvg")) {
+      $("mobileQrSvg").innerHTML = (isClientTs && info.tailscale_qr_svg) ? info.tailscale_qr_svg : (info.qr_svg || "");
+    }
+    if ($("mobileUrlText")) $("mobileUrlText").textContent = info.url || "";
+    if (tsWrap) tsWrap.hidden = !tsUrl;
+    if ($("mobileTailscaleUrlText")) $("mobileTailscaleUrlText").textContent = tsUrl || "";
+  } else {
+    if ($("mobileLanActiveWrap")) $("mobileLanActiveWrap").hidden = true;
+    if ($("mobileLanInactiveWrap")) $("mobileLanInactiveWrap").hidden = false;
+    if (tsWrap) tsWrap.hidden = true;
+  }
+}
+
+function closeMobileModal() {
+  const overlay = $("mobileModalOverlay");
+  if (!overlay) return;
+  overlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
 function isAnyModalOpen() {
   const modalIds = [
+    "confirmModalOverlay",
+    "mobileModalOverlay",
     "setupOverlay",
     "partialPostOverlay",
     "userProfileOverlay",
     "draftsOverlay",
     "crossPostOverlay",
     "shortcutsOverlay",
-    "imageLightbox"
+    "imageLightbox",
+    "newConvoModalOverlay"
   ];
   return modalIds.some(id => {
     const el = $(id);
     return el && !el.hidden;
+  });
+}
+
+let confirmModalResolver = null;
+
+function closeConfirmModal(result = false) {
+  const overlay = $("confirmModalOverlay");
+  if (overlay) overlay.hidden = true;
+  if (confirmModalResolver) {
+    const resolve = confirmModalResolver;
+    confirmModalResolver = null;
+    resolve(Boolean(result));
+  }
+}
+
+function askConfirm(message, opts = {}) {
+  const overlay = $("confirmModalOverlay");
+  const titleEl = $("confirmModalTitle");
+  const msgEl = $("confirmModalMessage");
+  const okBtn = $("confirmModalOkBtn");
+  const cancelBtn = $("confirmModalCancelBtn");
+  if (!overlay || !msgEl || !okBtn) {
+    return Promise.resolve(window.confirm(message));
+  }
+  if (confirmModalResolver) closeConfirmModal(false);
+  if (titleEl) titleEl.textContent = opts.title || t("common.confirm_title");
+  msgEl.textContent = String(message || "");
+  if (cancelBtn) cancelBtn.hidden = false;
+  okBtn.textContent = opts.okText || t("common.confirm_btn");
+  overlay.hidden = false;
+  setTimeout(() => okBtn.focus(), 40);
+  return new Promise(resolve => {
+    confirmModalResolver = resolve;
+  });
+}
+
+function showAppAlert(message, title = null) {
+  const overlay = $("confirmModalOverlay");
+  const titleEl = $("confirmModalTitle");
+  const msgEl = $("confirmModalMessage");
+  const okBtn = $("confirmModalOkBtn");
+  const cancelBtn = $("confirmModalCancelBtn");
+  if (!overlay || !msgEl || !okBtn) {
+    window.alert(message);
+    return Promise.resolve();
+  }
+  if (confirmModalResolver) closeConfirmModal(false);
+  if (titleEl) titleEl.textContent = title || t("common.alert_title");
+  msgEl.textContent = String(message || "");
+  if (cancelBtn) cancelBtn.hidden = true;
+  okBtn.textContent = t("common.ok");
+  overlay.hidden = false;
+  setTimeout(() => okBtn.focus(), 40);
+  return new Promise(resolve => {
+    confirmModalResolver = resolve;
+  });
+}
+
+if ($("confirmModalOkBtn")) $("confirmModalOkBtn").onclick = () => closeConfirmModal(true);
+if ($("confirmModalCancelBtn")) $("confirmModalCancelBtn").onclick = () => closeConfirmModal(false);
+if ($("closeConfirmModalBtn")) $("closeConfirmModalBtn").onclick = () => closeConfirmModal(false);
+if ($("confirmModalOverlay")) {
+  $("confirmModalOverlay").addEventListener("click", (e) => {
+    if (e.target === $("confirmModalOverlay")) closeConfirmModal(false);
   });
 }
 
@@ -4175,6 +5371,7 @@ document.addEventListener("click", (e) => {
   const col = e.target.closest(".deck-col");
   if (col && col.dataset.col) {
     activeDeckCol = col.dataset.col;
+    updateActiveDeckColUI();
   }
 }, true);
 
@@ -4197,9 +5394,17 @@ window.addEventListener("keydown", (e) => {
 
   // 2. Tecla Escape: fecho contextual em cascata
   if (e.key === "Escape") {
+    if ($("confirmModalOverlay") && !$("confirmModalOverlay").hidden) {
+      closeConfirmModal(false);
+      return;
+    }
     const lightbox = $("imageLightbox");
     if (lightbox && !lightbox.hidden) {
       closeImageLightbox();
+      return;
+    }
+    if ($("mobileModalOverlay") && !$("mobileModalOverlay").hidden) {
+      closeMobileModal();
       return;
     }
     if ($("shortcutsOverlay") && !$("shortcutsOverlay").hidden) {
@@ -4224,6 +5429,14 @@ window.addEventListener("keydown", (e) => {
     }
     if ($("crossPostOverlay") && !$("crossPostOverlay").hidden) {
       closeCrossPostModal();
+      return;
+    }
+    if ($("newConvoModalOverlay") && !$("newConvoModalOverlay").hidden) {
+      closeNewConvoModal();
+      return;
+    }
+    if (activeConvo) {
+      closeConvoThread();
       return;
     }
     if (viewMode === "deck" && $("colThread") && !$("colThread").hidden) {
@@ -4317,7 +5530,7 @@ window.addEventListener("keydown", (e) => {
   } else if (e.key === ".") {
     e.preventDefault();
     scrollActiveColTop();
-  } else if (e.key >= "1" && e.key <= "6") {
+  } else if (e.key >= "1" && e.key <= "7") {
     e.preventDefault();
     jumpToColumnOrTab(e.key);
   } else if (k === "m") {
@@ -4328,6 +5541,57 @@ window.addEventListener("keydown", (e) => {
     openShortcutsModal();
   }
 });
+
+function attachPostTranslator(container, textToTranslate) {
+  if (!textToTranslate || !textToTranslate.trim()) return;
+  const wrap = el("div", "post-translate-wrap");
+  const link = el("button", "post-translate-link");
+  link.type = "button";
+  link.innerHTML = ICONS.translate + ' <span>' + t("actions.translate") + '</span>';
+  let translatedBox = null;
+  let isTranslating = false;
+
+  link.onclick = async (e) => {
+    e.stopPropagation();
+    if (translatedBox) {
+      translatedBox.hidden = !translatedBox.hidden;
+      return;
+    }
+    if (isTranslating) return;
+    isTranslating = true;
+    link.innerHTML = ICONS.translate + ' <span>' + (currentLang === "en" ? "Translating..." : "A traduzir...") + '</span>';
+    link.disabled = true;
+
+    try {
+      const res = await api("/api/translate", {
+        text: textToTranslate,
+        target_lang: currentLang
+      });
+      if (res && res.translated) {
+        translatedBox = el("div", "post-translated-box");
+        const badge = el("div", "post-translated-badge");
+        badge.innerHTML = ICONS.translate + ' <span>' + t("actions.translated_with_ai") + '</span>';
+        const content = el("div", "post-translated-text", res.translated);
+        translatedBox.append(badge, content);
+        wrap.append(translatedBox);
+        link.innerHTML = ICONS.translate + ' <span>' + t("actions.translate") + '</span>';
+      } else {
+        throw new Error(res?.error || "Falha na tradução");
+      }
+    } catch (err) {
+      link.innerHTML = '⚠️ <span>' + (err.message || "Erro") + '</span>';
+      setTimeout(() => {
+        link.innerHTML = ICONS.translate + ' <span>' + t("actions.translate") + '</span>';
+      }, 3000);
+    } finally {
+      isTranslating = false;
+      link.disabled = false;
+    }
+  };
+
+  wrap.append(link);
+  container.append(wrap);
+}
 
 function renderMedia(mediaList) {
   if (!mediaList || !mediaList.length) return null;
@@ -4368,6 +5632,7 @@ function renderMedia(mediaList) {
       a.append(info);
       m.append(a);
     } else {
+      const wrap = el("div", "media-img-wrap");
       const img = el("img");
       const fullUrl = su(x.url || x.thumb) || "";
       img.src = fullUrl;
@@ -4379,7 +5644,26 @@ function renderMedia(mediaList) {
         e.stopPropagation();
         openImageLightbox(imgList, idx >= 0 ? idx : 0);
       };
-      m.append(img);
+      wrap.append(img);
+      const altText = (x.alt || "").trim();
+      if (altText) {
+        const altBtn = el("button", "media-alt-badge", "ALT");
+        altBtn.type = "button";
+        altBtn.title = t("post.alt_view");
+        altBtn.setAttribute("aria-label", t("post.alt_view"));
+        altBtn.setAttribute("aria-expanded", "false");
+        const pop = el("div", "media-alt-popover", altText);
+        pop.hidden = true;
+        pop.onclick = (e) => e.stopPropagation();
+        altBtn.onclick = (e) => {
+          e.stopPropagation();
+          const willShow = pop.hidden;
+          pop.hidden = !willShow;
+          altBtn.setAttribute("aria-expanded", String(willShow));
+        };
+        wrap.append(altBtn, pop);
+      }
+      m.append(wrap);
     }
   }
   return m;
@@ -4423,7 +5707,11 @@ function renderQuote(q) {
   bQName.onclick = onAuthorClick;
   who.append(bQName, el("span", null, " " + q.handle));
   head.append(who);
-  if (q.time) head.append(el("span", "when", ago(q.time)));
+  if (q.time) {
+    const qWhen = el("span", "when", ago(q.time));
+    qWhen.title = fullDateStr(q.time);
+    head.append(qWhen);
+  }
   if (q.url) {
     const ext = el("a", "quote-ext-link", "↗");
     ext.href = su(q.url) || "#";
@@ -4450,6 +5738,7 @@ function renderQuote(q) {
       }
     });
     card.append(body);
+    if (q.text) attachPostTranslator(card, q.text);
   }
   if (q.media && q.media.length) {
     const qm = renderMedia(q.media);
@@ -4490,10 +5779,13 @@ function getSavedPosts() {
 function persistSavedPosts(list) {
   try {
     localStorage.setItem("mastosky_saved_posts", JSON.stringify(list));
+    if (typeof scheduleServerSync === "function") {
+      scheduleServerSync({ saved_posts: list });
+    }
     return true;
   } catch (err) {
     if (err.name === "QuotaExceededError" || err.code === 22) {
-      alert(t("saved.quota_err") || "Limite de armazenamento atingido.");
+      showAppAlert(t("saved.quota_err") || "Limite de armazenamento atingido.");
     }
     return false;
   }
@@ -4575,6 +5867,10 @@ function renderSavedFeed() {
     });
   }
 
+  if (muteMode === "hide") {
+    filtered = filtered.filter(p => !getMutedMatch(p));
+  }
+
   if (countText) {
     countText.textContent = filtered.length === 1
       ? t("saved.count_one")
@@ -4617,6 +5913,42 @@ function initSavedEvents() {
   }
 }
 
+const tabScrolls = {};
+
+function handlePostHtmlClicks(e, network) {
+  const a = e.target.closest("a");
+  if (!a) return;
+  const href = a.getAttribute("href") || a.href || "";
+  const txt = (a.textContent || "").trim();
+
+  // 1. Hashtags: #tag ou links para /tags/ ou /hashtag/
+  const mTag = href.match(/(?:tags|hashtag)\/([^/?#]+)/i) || (txt.startsWith("#") ? [null, txt.slice(1)] : null);
+  if (mTag && mTag[1]) {
+    e.preventDefault();
+    e.stopPropagation();
+    const tagName = decodeURIComponent(mTag[1]).replace(/^#/, "");
+    if (typeof setSearchType === "function") setSearchType("posts");
+    setTab("search");
+    doSearch("#" + tagName);
+    return;
+  }
+
+  // 2. Menções @user: links para perfis ou textos que começam por @
+  if (txt.startsWith("@") || href.includes("/profile/") || href.includes("/@") || a.classList.contains("mention") || a.classList.contains("u-url")) {
+    e.preventDefault();
+    e.stopPropagation();
+    let actor = href;
+    const mBsky = href.match(/bsky\.app\/profile\/([^/?#]+)/i);
+    const mMasto = href.match(/(?:mastodon\.[^/]+|[^/]+)\/@([^/?#]+)/i);
+    if (mBsky) actor = decodeURIComponent(mBsky[1]);
+    else if (mMasto) actor = decodeURIComponent(href);
+    else if (txt.startsWith("@")) actor = txt;
+    try { actor = decodeURIComponent(actor); } catch (_) {}
+    openUserProfile(network || "bluesky", actor);
+    return;
+  }
+}
+
 function postCard(it, o = {}) {
   const postKey = getPostKey(it);
   const isReplyTarget = Boolean(reply && getPostKey(reply) === postKey);
@@ -4655,34 +5987,78 @@ function postCard(it, o = {}) {
   who.append(bItName, el("span", null, it.handle + " · " + LABEL[it.network]));
   const when = el("a", "when", ago(it.time));
   when.href = su(it.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
+  when.title = fullDateStr(it.time);
   head.append(who, netBadge(it.network), when);
   const body = el("div", "body");
   body.innerHTML = it.html; // já limpo no servidor
-  body.addEventListener("click", (e) => {
-    const a = e.target.closest("a");
-    if (!a || !a.href) return;
-    const mTag = a.href.match(/(?:tags|hashtag)\/([^/?#]+)/i);
-    if (mTag && mTag[1]) {
-      e.preventDefault();
-      e.stopPropagation();
-      const tagName = decodeURIComponent(mTag[1]);
-      setTab("search");
-      doSearch("#" + tagName);
-    }
-  });
+  const cwText = (it.cw || "").trim();
+  if (cwText && body.firstElementChild && body.firstElementChild.tagName === "STRONG" && body.firstElementChild.nextSibling && body.firstElementChild.nextSibling.nodeName === "BR") {
+    const brNode = body.firstElementChild.nextSibling;
+    body.firstElementChild.remove();
+    brNode.remove();
+  }
+  body.addEventListener("click", (e) => handlePostHtmlClicks(e, it.network));
   p.append(head);
+
+  const mutedMatch = (!o.focus && muteMode !== "hide") ? getMutedMatch(it) : null;
+  let contentTarget = p;
+  if (mutedMatch) {
+    const muteBanner = el("div", "muted-post-banner");
+    const muteLbl = el("span", "muted-post-label", "🔇 " + t("setup.muted_banner", { word: mutedMatch }));
+    const muteBtn = el("button", "muted-toggle-btn", t("setup.muted_show"));
+    muteBtn.type = "button";
+    muteBtn.setAttribute("aria-expanded", "false");
+    const muteContent = el("div", "muted-post-content");
+    muteContent.hidden = true;
+    muteBtn.onclick = (e) => {
+      e.stopPropagation();
+      const willShow = muteContent.hidden;
+      muteContent.hidden = !willShow;
+      muteBtn.textContent = willShow ? t("setup.muted_hide") : t("setup.muted_show");
+      muteBtn.setAttribute("aria-expanded", String(willShow));
+    };
+    muteBanner.append(muteLbl, muteBtn);
+    p.append(muteBanner, muteContent);
+    contentTarget = muteContent;
+  }
+
   if (it.reply_to && !o.focus) {
     const r = el("button", "replyto"), rt = it.reply_to;
     r.title = t("actions.view_thread");
     r.append(el("b", null, "↩ " + t("composer.replying_to", {name: rt.name || "...", net: LABEL[it.network]})));
     if (rt.text) r.append(el("span", "pv", rt.text));
     r.onclick = () => openThread(it);
-    p.append(r);
+    contentTarget.append(r);
   }
-  p.append(body);
+
   const m = renderMedia(it.media);
-  if (m) p.append(m);
-  if (it.quote) p.append(renderQuote(it.quote));
+  const qEl = it.quote ? renderQuote(it.quote) : null;
+
+  if (cwText) {
+    const cwBanner = el("div", "cw-banner");
+    const cwLbl = el("span", "cw-label", "⚠️ " + cwText);
+    const cwBtn = el("button", "cw-toggle-btn", t("post.cw_show"));
+    cwBtn.type = "button";
+    cwBtn.setAttribute("aria-expanded", "false");
+    const cwContent = el("div", "cw-content");
+    cwContent.hidden = true;
+    cwContent.append(body);
+    if (m) cwContent.append(m);
+    if (qEl) cwContent.append(qEl);
+    cwBtn.onclick = (e) => {
+      e.stopPropagation();
+      const willShow = cwContent.hidden;
+      cwContent.hidden = !willShow;
+      cwBtn.textContent = willShow ? t("post.cw_hide") : t("post.cw_show");
+      cwBtn.setAttribute("aria-expanded", String(willShow));
+    };
+    cwBanner.append(cwLbl, cwBtn);
+    contentTarget.append(cwBanner, cwContent);
+  } else {
+    contentTarget.append(body);
+    if (m) contentTarget.append(m);
+    if (qEl) contentTarget.append(qEl);
+  }
   const acts = el("div", "acts");
   const bR = el("button", "act-btn act-reply" + (isReplyTarget ? " active" : ""));
   if (postKey) bR.dataset.replyKey = postKey;
@@ -4718,6 +6094,56 @@ function postCard(it, o = {}) {
   };
 
   acts.append(bR, bB, bL, bS);
+
+  if (it.text && it.text.trim()) {
+    const bTr = el("button", "act-btn act-translate");
+    bTr.title = t("actions.translate");
+    bTr.setAttribute("aria-label", t("actions.translate"));
+    bTr.innerHTML = ICONS.translate;
+    let translatedBox = null;
+    let isTranslating = false;
+
+    bTr.onclick = async (e) => {
+      e.stopPropagation();
+      if (translatedBox) {
+        translatedBox.hidden = !translatedBox.hidden;
+        bTr.classList.toggle("on", !translatedBox.hidden);
+        bTr.title = translatedBox.hidden ? t("actions.translate") : t("actions.translated_with_ai");
+        return;
+      }
+      if (isTranslating) return;
+      isTranslating = true;
+      bTr.classList.add("loading");
+      bTr.disabled = true;
+
+      try {
+        const res = await api("/api/translate", {
+          text: it.text,
+          target_lang: currentLang
+        });
+        if (res && res.translated) {
+          translatedBox = el("div", "post-translated-box");
+          const badge = el("div", "post-translated-badge");
+          badge.innerHTML = ICONS.translate + ' <span>' + t("actions.translated_with_ai") + '</span>';
+          const content = el("div", "post-translated-text", res.translated);
+          translatedBox.append(badge, content);
+          body.insertAdjacentElement("afterend", translatedBox);
+          bTr.classList.add("on");
+          bTr.title = t("actions.translated_with_ai");
+        } else {
+          throw new Error(res?.error || "Falha na tradução");
+        }
+      } catch (err) {
+        bTr.title = "⚠️ " + (err.message || "Erro");
+        setTimeout(() => { bTr.title = t("actions.translate"); }, 4000);
+      } finally {
+        isTranslating = false;
+        bTr.classList.remove("loading");
+        bTr.disabled = false;
+      }
+    };
+    acts.append(bTr);
+  }
 
   if (it.is_own) {
     const bD = el("button", "act-btn act-del");
@@ -4762,8 +6188,11 @@ let timelineCursors = {}, exploreCursors = {}, notifsCursors = {};
 function dedupSort(existing, incoming, sortDesc = true) {
   const seen = new Set();
   const all = [];
-  for (const it of existing.concat(incoming)) {
-    const key = it.url || (it.network + ":" + (it.ref ? JSON.stringify(it.ref) : "") + ":" + (it.time || ""));
+  const list = sortDesc ? (incoming || []).concat(existing || []) : (existing || []).concat(incoming || []);
+  for (const it of list) {
+    const key = it.kind
+      ? ("notif:" + it.network + ":" + getNotifKey(it))
+      : (it.url || (it.network + ":" + (it.ref ? JSON.stringify(it.ref) : "") + ":" + (it.time || "")));
     if (!seen.has(key)) {
       seen.add(key);
       all.push(it);
@@ -4785,15 +6214,15 @@ function renderLoadMore(container, cursors, onLoadMore) {
   const wrap = el("div", "more-wrap");
   wrap.style.textAlign = "center";
   wrap.style.padding = "20px 0";
-  const btn = el("button", "ghost", "Carregar mais");
+  const btn = el("button", "ghost", t("actions.load_more"));
   btn.onclick = async () => {
     btn.disabled = true;
-    btn.textContent = "A carregar...";
+    btn.textContent = t("actions.loading");
     try {
       await onLoadMore();
     } finally {
       btn.disabled = false;
-      btn.textContent = "Carregar mais";
+      btn.textContent = t("actions.load_more");
     }
   };
   wrap.append(btn);
@@ -4827,7 +6256,7 @@ function captureScrollAnchor(colId, feedEl) {
     if (rect.bottom - containerTop - headerOffset > 5) {
       return {
         atTop: false,
-        key: p.dataset.postKey || p.dataset.notifKey || null,
+        key: p.dataset.notifKey || p.dataset.postKey || null,
         offset: topRel
       };
     }
@@ -4847,7 +6276,7 @@ function restoreScrollAnchor(colId, feedEl, anchor) {
   }
 
   if (anchor.key) {
-    const target = feedEl.querySelector(`[data-post-key="${anchor.key}"], [data-notif-key="${anchor.key}"]`);
+    const target = feedEl.querySelector(`[data-notif-key="${anchor.key}"], [data-post-key="${anchor.key}"]`);
     if (target) {
       const containerTop = isWin ? 0 : sc.getBoundingClientRect().top;
       const headerOffset = isWin ? 110 : 0;
@@ -4918,8 +6347,9 @@ function scrollColToTop(colId) {
 function render() {
   const feed = $("feed");
   feed.replaceChildren();
-  if (!items.length) feed.append(el("div", "empty", t("feed.empty_timeline")));
-  for (const it of items) feed.append(postCard(it));
+  const visible = muteMode === "hide" ? items.filter(it => !getMutedMatch(it)) : items;
+  if (!visible.length) feed.append(el("div", "empty", t("feed.empty_timeline")));
+  for (const it of visible) feed.append(postCard(it));
   renderLoadMore(feed, timelineCursors, loadMoreTimeline);
 }
 
@@ -5038,8 +6468,9 @@ async function loadExplore() {
 function renderExplore() {
   const feed = $("efeed");
   feed.replaceChildren();
-  if (!exploreItems.length) feed.append(el("div", "empty", t("feed.empty_explore")));
-  for (const it of exploreItems) feed.append(postCard(it));
+  const visible = muteMode === "hide" ? exploreItems.filter(it => !getMutedMatch(it)) : exploreItems;
+  if (!visible.length) feed.append(el("div", "empty", t("feed.empty_explore")));
+  for (const it of visible) feed.append(postCard(it));
   renderLoadMore(feed, exploreCursors, loadMoreExplore);
 }
 
@@ -5172,12 +6603,13 @@ function renderSearchResults(data) {
   // 3. Publicações (Posts)
   const feed = $("sfeed");
   const postsHead = $("sPostsHead");
+  const visiblePosts = muteMode === "hide" ? posts.filter(p => !getMutedMatch(p)) : posts;
   if (currentSearchType === "all" || currentSearchType === "posts") {
     feed.replaceChildren();
-    if (posts.length > 0) {
+    if (visiblePosts.length > 0) {
       postsHead.hidden = false;
-      $("sPostsCount").textContent = String(posts.length);
-      posts.forEach(p => feed.append(postCard(p)));
+      $("sPostsCount").textContent = String(visiblePosts.length);
+      visiblePosts.forEach(p => feed.append(postCard(p)));
     } else {
       postsHead.hidden = true;
       if (!actors.length && !hashtags.length) {
@@ -5589,24 +7021,21 @@ function initNotifObserver() {
   if (notifObserver) notifObserver.disconnect();
   notifObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
+      const target = entry.target;
+      const key = target.dataset.notifKey;
+      if (!key || !target.classList.contains("fresh")) return;
       if (entry.isIntersecting) {
-        const target = entry.target;
-        const key = target.dataset.notifKey;
-        if (key && target.classList.contains("fresh")) {
-          if (!target._readTimer) {
-            target._readTimer = setTimeout(() => {
-              target.classList.remove("fresh");
-              readNotifKeys.add(key);
-              persistReadNotifs();
-              updateBadge();
-              if (notifObserver) notifObserver.unobserve(target);
-            }, 600);
-          }
-        }
-      } else {
-        if (entry.target._readTimer) {
-          clearTimeout(entry.target._readTimer);
-          entry.target._readTimer = null;
+        target._wasVisible = true;
+      } else if (target._wasVisible) {
+        const rootTop = entry.rootBounds ? entry.rootBounds.top : 80;
+        if (entry.boundingClientRect.top < rootTop) {
+          target.classList.remove("fresh");
+          const dot = target.querySelector(".notif-unread-dot");
+          if (dot) dot.remove();
+          readNotifKeys.add(key);
+          persistReadNotifs();
+          updateBadge();
+          if (notifObserver) notifObserver.unobserve(target);
         }
       }
     });
@@ -5865,6 +7294,7 @@ function renderNotifs() {
       boostBar.append(sNameWrap, sVerb, sMeta, netBadge(n.network));
 
       const notifWhen = el("span", "when", ago(n.time));
+      notifWhen.title = fullDateStr(n.time);
       notifWhen.style.marginLeft = "auto";
       boostBar.append(notifWhen);
       p.append(boostBar);
@@ -5906,6 +7336,7 @@ function renderNotifs() {
       origWhen.href = su(tp.url || n.url) || "#";
       origWhen.target = "_blank";
       origWhen.rel = "noopener noreferrer";
+      origWhen.title = fullDateStr(tp.time || n.time);
       origWhen.onclick = () => markSingleNotifRead(n, p);
       head.append(who, origWhen);
       p.append(head);
@@ -5943,6 +7374,7 @@ function renderNotifs() {
       who.append(bNName, sMeta);
       const when = el("a", "when", ago(n.time));
       when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
+      when.title = fullDateStr(n.time);
       when.onclick = () => markSingleNotifRead(n, p);
       head.append(who, netBadge(n.network), when);
       p.append(head);
@@ -6015,6 +7447,60 @@ function renderNotifs() {
       };
 
       acts.append(bR, bB, bL, bS);
+
+      const notifTrText = ((postTarget && postTarget.text) || n.text || "").trim();
+      if (notifTrText) {
+        const bTr = el("button", "act-btn act-translate");
+        bTr.title = t("actions.translate");
+        bTr.setAttribute("aria-label", t("actions.translate"));
+        bTr.innerHTML = ICONS.translate;
+        let translatedBox = null;
+        let isTranslating = false;
+
+        bTr.onclick = async (e) => {
+          e.stopPropagation();
+          markSingleNotifRead(n, p);
+          if (translatedBox) {
+            translatedBox.hidden = !translatedBox.hidden;
+            bTr.classList.toggle("on", !translatedBox.hidden);
+            bTr.title = translatedBox.hidden ? t("actions.translate") : t("actions.translated_with_ai");
+            return;
+          }
+          if (isTranslating) return;
+          isTranslating = true;
+          bTr.classList.add("loading");
+          bTr.disabled = true;
+
+          try {
+            const res = await api("/api/translate", {
+              text: notifTrText,
+              target_lang: currentLang
+            });
+            if (res && res.translated) {
+              translatedBox = el("div", "post-translated-box");
+              const badge = el("div", "post-translated-badge");
+              badge.innerHTML = ICONS.translate + ' <span>' + t("actions.translated_with_ai") + '</span>';
+              const content = el("div", "post-translated-text", res.translated);
+              translatedBox.append(badge, content);
+              const bodyEl = p.querySelector(".body");
+              if (bodyEl) bodyEl.insertAdjacentElement("afterend", translatedBox);
+              else acts.insertAdjacentElement("beforebegin", translatedBox);
+              bTr.classList.add("on");
+              bTr.title = t("actions.translated_with_ai");
+            } else {
+              throw new Error(res?.error || "Falha na tradução");
+            }
+          } catch (err) {
+            bTr.title = "⚠️ " + (err.message || "Erro");
+            setTimeout(() => { bTr.title = t("actions.translate"); }, 4000);
+          } finally {
+            isTranslating = false;
+            bTr.classList.remove("loading");
+            bTr.disabled = false;
+          }
+        };
+        acts.append(bTr);
+      }
 
       if (targetPost) {
         const c = el("button", "act-btn act-thread");
@@ -6275,6 +7761,15 @@ function renderSingleProfileCard(p, isOwn = false) {
       linkExt.rel = "noopener noreferrer";
       actionsRight.append(linkExt);
     }
+
+    const msgBtn = el("button", "btn-profile-ext", "💬 " + (t("messages.title") || "Mensagem"));
+    msgBtn.type = "button";
+    msgBtn.onclick = (e) => {
+      e.stopPropagation();
+      closeUserProfileModal();
+      openNewConvoModal(p.handle || p.raw_handle || p.id || p.did, p.network);
+    };
+    actionsRight.append(msgBtn);
     nameRow.append(actionsRight);
   }
 
@@ -6316,7 +7811,7 @@ async function toggleFollow(p, btn, card) {
       follow_uri: p.follow_uri
     });
     if (!res || res.error || !res.ok) {
-      alert(t("profile.follow_err", {err: (res && res.error) || "Erro de comunicação."}));
+      showAppAlert(t("profile.follow_err", {err: (res && res.error) || "Erro de comunicação."}));
       btn.disabled = false;
       btn.textContent = prevText;
       return;
@@ -6337,7 +7832,7 @@ async function toggleFollow(p, btn, card) {
     btn.classList.remove("danger-hover");
     btn.disabled = false;
   } catch (err) {
-    alert(t("profile.follow_err", {err: err.message}));
+    showAppAlert(t("profile.follow_err", {err: err.message}));
     btn.disabled = false;
     btn.textContent = prevText;
   }
@@ -6350,6 +7845,7 @@ let activeModalNet = null;
 
 async function openUserProfile(network, actor) {
   if (!network || !actor) return;
+  try { actor = decodeURIComponent(actor); } catch (_) {}
   activeModalNet = network;
   activeModalActor = actor;
   userProfileModalCursor = null;
@@ -6366,7 +7862,7 @@ async function openUserProfile(network, actor) {
   document.body.style.overflow = "hidden";
 
   if (modalBody) modalBody.scrollTo({top: 0, behavior: "instant"});
-  if (titleEl) titleEl.textContent = actor;
+  if (titleEl) titleEl.textContent = actor.startsWith("did:") ? "Perfil" : actor;
   if (cardWrap) cardWrap.replaceChildren(el("div", "empty", t("feed.loading_profile")));
   if (feedWrap) feedWrap.replaceChildren();
 
@@ -6478,7 +7974,364 @@ function refreshProfileView() {
   }
 }
 
+let conversations = [];
+let activeConvo = null;
+let convoFilterNet = "all";
+let startConvoNet = "bluesky";
+
+function updateMessagesBadge(count) {
+  const unreadCount = Number(count) || 0;
+  if ($("messagesBadge")) $("messagesBadge").hidden = !unreadCount;
+  if ($("messagesBadgeCount")) $("messagesBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
+  if ($("sideMessagesBadge")) $("sideMessagesBadge").hidden = !unreadCount;
+  if ($("sideMessagesBadgeCount")) $("sideMessagesBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
+  if ($("deckMessagesBadge")) $("deckMessagesBadge").hidden = !unreadCount;
+  if ($("deckMessagesBadgeCount")) $("deckMessagesBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
+}
+
+async function loadConversations(silent = false) {
+  try {
+    const res = await api("/api/conversations");
+    if (!res) return;
+    if (res.error) {
+      if (!silent) {
+        const errBox = $("convoErrors");
+        if (errBox) {
+          errBox.replaceChildren();
+          errBox.append(el("div", "banner", res.error === "not found" ? "O servidor local MastoSky precisa de ser reiniciado para carregar as conversas (Ctrl+C e python3 app.py)." : res.error));
+        }
+      }
+      return;
+    }
+    conversations = res.conversations || [];
+    updateMessagesBadge(res.total_unread || 0);
+
+    const errBox = $("convoErrors");
+    if (errBox) {
+      errBox.replaceChildren();
+      if (res.errors && Object.keys(res.errors).length) {
+        for (const [net, errText] of Object.entries(res.errors)) {
+          errBox.append(el("div", "banner", `${LABEL[net] || net}: ${errText}`));
+        }
+      }
+    }
+    if (!activeConvo) {
+      renderConversationList();
+    }
+  } catch (err) {
+    if (!silent) {
+      const errBox = $("convoErrors");
+      if (errBox) {
+        errBox.replaceChildren();
+        errBox.append(el("div", "banner", t("messages.err_load") + " " + err.message));
+      }
+    }
+  }
+}
+
+function renderConversationList() {
+  const listEl = $("convoList");
+  if (!listEl) return;
+  listEl.replaceChildren();
+
+  const filtered = convoFilterNet === "all"
+    ? conversations
+    : conversations.filter(c => c.network === convoFilterNet);
+
+  if (!filtered.length) {
+    const emptyWrap = el("div", "empty");
+    emptyWrap.style.padding = "40px 16px";
+    emptyWrap.style.textAlign = "center";
+    emptyWrap.innerHTML = `
+      <div style="margin-bottom:10px">
+        <svg class="ico" style="width:38px;height:38px;color:var(--muted)"><use href="#i-message"/></svg>
+      </div>
+      <div style="font-weight:600;font-size:14px;color:var(--ink);margin-bottom:6px">${t("messages.no_convos")}</div>
+      <div style="font-size:12.5px;color:var(--muted);max-width:280px;margin:0 auto;line-height:1.4">${t("messages.no_convos_sub")}</div>
+    `;
+    listEl.append(emptyWrap);
+    return;
+  }
+
+  filtered.forEach(c => {
+    const card = el("div", "convo-card" + (c.unread ? " is-unread" : ""));
+    card.onclick = () => openConvo(c);
+
+    const avWrap = el("div", "convo-avatar-wrap");
+    if (c.peer && c.peer.avatar) {
+      const img = el("img", "convo-avatar");
+      img.src = su(c.peer.avatar) || "";
+      img.alt = "";
+      img.loading = "lazy";
+      avWrap.append(img);
+    } else {
+      const ph = el("div", "convo-avatar ph");
+      ph.style.display = "grid";
+      ph.style.placeItems = "center";
+      ph.style.background = "var(--surface-2)";
+      ph.innerHTML = `<svg class="ico" style="width:20px;height:20px;color:var(--muted)"><use href="#i-user"/></svg>`;
+      avWrap.append(ph);
+    }
+
+    const netDot = el("span", "convo-net-dot");
+    netDot.style.setProperty("--c", c.network === "bluesky" ? "#0085FF" : "#6364FF");
+    avWrap.append(netDot);
+
+    const body = el("div", "convo-body");
+    const top = el("div", "convo-top");
+    const peerName = el("div", "convo-peer-name", (c.peer && c.peer.name) || (c.peer && c.peer.handle) || "Utilizador");
+    const timeEl = el("div", "convo-time", c.last_time ? ago(c.last_time) : "");
+    top.append(peerName, timeEl);
+
+    const btm = el("div", "convo-bottom");
+    const snip = el("div", "convo-snippet", c.last_text || "...");
+    btm.append(snip);
+
+    if (c.unread) {
+      const dot = el("span", "convo-unread-dot");
+      dot.title = "Nova mensagem";
+      btm.append(dot);
+    }
+
+    body.append(top, btm);
+    card.append(avWrap, body);
+    listEl.append(card);
+  });
+}
+
+async function openConvo(c) {
+  activeConvo = c;
+  if ($("convoListView")) $("convoListView").hidden = true;
+  if ($("convoThreadView")) $("convoThreadView").hidden = false;
+
+  const nameEl = $("convoPeerName");
+  const handleEl = $("convoPeerHandle");
+  const avEl = $("convoPeerAvatar");
+  const badgeEl = $("convoPeerNetBadge");
+
+  if (nameEl) nameEl.textContent = (c.peer && c.peer.name) || (c.peer && c.peer.handle) || "";
+  if (handleEl) handleEl.textContent = (c.peer && c.peer.handle) || "";
+  if (avEl) {
+    avEl.src = (c.peer && su(c.peer.avatar)) || "";
+    avEl.style.display = (c.peer && c.peer.avatar) ? "block" : "none";
+  }
+  if (badgeEl) {
+    badgeEl.style.setProperty("--c", c.network === "bluesky" ? "#0085FF" : "#6364FF");
+    badgeEl.innerHTML = `<svg><use href="${c.network === 'bluesky' ? '#i-brand-bsky' : '#i-brand-masto'}"/></svg>`;
+  }
+
+  const peerInfoEl = $("convoPeerInfo");
+  if (peerInfoEl) {
+    const peerActor = c.peer && (c.peer.did || c.peer.id || c.peer.handle);
+    const peerLabel = (c.peer && (c.peer.name || c.peer.handle)) || "";
+    peerInfoEl.title = peerLabel ? t("post.view_profile", { name: peerLabel }) : "";
+    peerInfoEl.setAttribute("role", "button");
+    peerInfoEl.tabIndex = 0;
+    const openPeer = (e) => {
+      e.stopPropagation();
+      if (peerActor) openUserProfile(c.network, peerActor);
+    };
+    peerInfoEl.onclick = openPeer;
+    peerInfoEl.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openPeer(e);
+      }
+    };
+  }
+
+  const feed = $("convoMessagesFeed");
+  if (feed) {
+    feed.replaceChildren();
+    feed.append(el("div", "empty", t("messages.loading")));
+  }
+
+  if (c.unread) {
+    c.unread = false;
+    c.unread_count = 0;
+    const totalUnread = conversations.filter(x => x.unread).length;
+    updateMessagesBadge(totalUnread);
+    api("/api/conversation/read", { network: c.network, convo_id: c.id }).catch(() => {});
+  }
+
+  try {
+    const res = await api(`/api/conversation?network=${encodeURIComponent(c.network)}&id=${encodeURIComponent(c.id)}`);
+    if (!res || !feed) return;
+    feed.replaceChildren();
+    const msgs = res.messages || [];
+    if (!msgs.length) {
+      feed.append(el("div", "empty", t("messages.empty_thread")));
+    } else {
+      msgs.forEach(m => {
+        const wrap = el("div", "msg-bubble-wrap " + (m.is_own ? "is-own" : "is-peer"));
+        const bubble = el("div", "msg-bubble");
+        if (m.html) bubble.innerHTML = m.html;
+        else bubble.textContent = m.text;
+        const timeEl = el("div", "msg-time", m.time ? ago(m.time) : "");
+        if (m.time) timeEl.title = fullDateStr(m.time);
+        wrap.append(bubble, timeEl);
+        feed.append(wrap);
+      });
+      feed.scrollTop = feed.scrollHeight;
+    }
+  } catch (err) {
+    if (feed) {
+      feed.replaceChildren();
+      feed.append(el("div", "banner", t("messages.err_load") + " " + err.message));
+    }
+  }
+
+  setTimeout(() => {
+    const inp = $("convoMessageInput");
+    if (inp) inp.focus();
+  }, 100);
+}
+
+function closeConvoThread() {
+  activeConvo = null;
+  if ($("convoThreadView")) $("convoThreadView").hidden = true;
+  if ($("convoListView")) $("convoListView").hidden = false;
+  renderConversationList();
+}
+
+async function sendCurrentConvoMessage() {
+  if (!activeConvo) return;
+  const inp = $("convoMessageInput");
+  const sendBtn = $("convoSendBtn");
+  const text = (inp ? inp.value : "").trim();
+  if (!text) return;
+
+  if (inp) inp.disabled = true;
+  if (sendBtn) sendBtn.disabled = true;
+
+  try {
+    const payload = {
+      network: activeConvo.network,
+      convo_id: activeConvo.id,
+      text: text,
+      recipient: activeConvo.peer ? (activeConvo.peer.handle || activeConvo.peer.id) : null,
+      last_msg_id: activeConvo.last_status_id
+    };
+    const res = await api("/api/conversation/send", payload);
+    if (!res || !res.ok) {
+      throw new Error((res && res.error) || "Falha no envio.");
+    }
+
+    const feed = $("convoMessagesFeed");
+    if (feed) {
+      const emptyEl = feed.querySelector(".empty");
+      if (emptyEl) emptyEl.remove();
+      const wrap = el("div", "msg-bubble-wrap is-own");
+      const bubble = el("div", "msg-bubble");
+      bubble.textContent = text;
+      const timeEl = el("div", "msg-time", t("time.now"));
+      timeEl.title = fullDateStr(new Date().toISOString());
+      wrap.append(bubble, timeEl);
+      feed.append(wrap);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    activeConvo.last_text = text;
+    activeConvo.last_time = new Date().toISOString();
+    if (inp) {
+      inp.value = "";
+      inp.disabled = false;
+      inp.focus();
+    }
+    if (sendBtn) sendBtn.disabled = false;
+  } catch (err) {
+    showAppAlert(t("messages.err_send", {err: err.message}));
+    if (inp) {
+      inp.disabled = false;
+      inp.focus();
+    }
+    if (sendBtn) sendBtn.disabled = false;
+  }
+}
+
+function openNewConvoModal(prefillRecipient = "", prefillNet = "bluesky") {
+  const overlay = $("newConvoModalOverlay");
+  if (!overlay) return;
+  setStartConvoNet(prefillNet);
+  if ($("newConvoRecipientInput")) $("newConvoRecipientInput").value = prefillRecipient || "";
+  if ($("newConvoTextInput")) $("newConvoTextInput").value = "";
+  if ($("newConvoMsg")) $("newConvoMsg").textContent = "";
+  overlay.hidden = false;
+  setTimeout(() => {
+    if (prefillRecipient && $("newConvoTextInput")) $("newConvoTextInput").focus();
+    else if ($("newConvoRecipientInput")) $("newConvoRecipientInput").focus();
+  }, 100);
+}
+
+function closeNewConvoModal() {
+  const overlay = $("newConvoModalOverlay");
+  if (overlay) overlay.hidden = true;
+}
+
+function setStartConvoNet(net) {
+  startConvoNet = net;
+  const btnB = $("btnStartNetBsky");
+  const btnM = $("btnStartNetMasto");
+  if (btnB) btnB.classList.toggle("active", net === "bluesky");
+  if (btnM) btnM.classList.toggle("active", net === "mastodon");
+}
+
+async function submitStartConvo() {
+  const recInp = $("newConvoRecipientInput");
+  const txtInp = $("newConvoTextInput");
+  const submitBtn = $("newConvoSubmitBtn");
+  const msgEl = $("newConvoMsg");
+
+  const recipient = (recInp ? recInp.value : "").trim();
+  const text = (txtInp ? txtInp.value : "").trim();
+  if (!recipient || !text) return;
+
+  if (submitBtn) submitBtn.disabled = true;
+  if (msgEl) {
+    msgEl.className = "msg";
+    msgEl.textContent = t("messages.sending");
+  }
+
+  try {
+    const res = await api("/api/conversation/start", {
+      network: startConvoNet,
+      recipient: recipient,
+      text: text
+    });
+    if (!res || !res.ok) {
+      throw new Error((res && res.error) || "Falha ao iniciar conversa.");
+    }
+    closeNewConvoModal();
+    setTab("messages");
+    await loadConversations();
+    if (res.convo_id) {
+      const match = conversations.find(c => c.id === res.convo_id);
+      if (match) openConvo(match);
+    }
+  } catch (err) {
+    if (msgEl) {
+      msgEl.className = "msg err";
+      msgEl.textContent = err.message;
+    }
+  } finally {
+    if (submitBtn) submitBtn.disabled = false;
+  }
+}
+
+function initConvoEvents() {
+  document.querySelectorAll("#msgNetFilters .filter-pill").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll("#msgNetFilters .filter-pill").forEach(b => b.classList.toggle("active", b === btn));
+      convoFilterNet = btn.dataset.msgNet || "all";
+      renderConversationList();
+    };
+  });
+}
+
 function setTab(newTab) {
+  if (viewMode === "single" && typeof tab !== "undefined" && tab) {
+    tabScrolls[tab] = window.scrollY;
+  }
   tab = newTab;
   if (viewMode === "deck") {
     const colMap = {
@@ -6487,6 +8340,7 @@ function setTab(newTab) {
       search: "colSearch",
       saved: "colSaved",
       notifs: "colNotifs",
+      messages: "colMessages",
       profile: "colProfile"
     };
     const colId = colMap[newTab];
@@ -6494,13 +8348,20 @@ function setTab(newTab) {
       $(colId).hidden = false;
       $(colId).scrollIntoView({behavior: "smooth", inline: "start"});
     }
+    activeDeckCol = newTab;
+    updateActiveDeckColUI();
     if (newTab === "saved") renderSavedFeed();
+    if (newTab === "messages") {
+      if (!conversations.length) loadConversations();
+      else renderConversationList();
+    }
   } else {
     $("pTimeline").hidden = newTab !== "timeline";
     $("pExplore").hidden = newTab !== "explore";
     $("pSearch").hidden = newTab !== "search";
     if ($("pSaved")) $("pSaved").hidden = newTab !== "saved";
     $("pNotifs").hidden = newTab !== "notifs";
+    if ($("pMessages")) $("pMessages").hidden = newTab !== "messages";
     $("pProfile").hidden = newTab !== "profile";
     ["Timeline", "Explore", "Search", "Saved", "Notifs", "Profile"].forEach(c => {
       const th = $("thread" + c);
@@ -6508,6 +8369,10 @@ function setTab(newTab) {
       if (typeof threadHistory !== "undefined") threadHistory[c.toLowerCase()] = [];
     });
     if (newTab === "saved") renderSavedFeed();
+    if (newTab === "messages") {
+      if (!conversations.length) loadConversations();
+      else renderConversationList();
+    }
   }
   document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === newTab));
   document.querySelectorAll(".side-nav-btn[data-tab]").forEach(b => b.classList.toggle("active", b.dataset.tab === newTab));
@@ -6522,6 +8387,9 @@ function setTab(newTab) {
   }
   renderNotifs(); updateBadge();
   history.replaceState(null, "", "#" + newTab);
+  if (viewMode === "single" && tabScrolls[newTab] !== undefined) {
+    window.scrollTo({ top: tabScrolls[newTab], behavior: "instant" });
+  }
 }
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
 document.querySelectorAll("#notifFilterPills .filter-pill").forEach(p => {
@@ -6597,6 +8465,8 @@ async function openThread(it, keep, originEl) {
 
     threadIt = it;
     colThread.hidden = false;
+    activeDeckCol = "thread";
+    updateActiveDeckColUI();
 
     if (!keep) {
       threadContent.replaceChildren(el("div", "empty", t("feed.loading_thread")));
@@ -6740,6 +8610,10 @@ function closeDeckThread() {
   document.querySelectorAll(".post.is-thread-active").forEach(el => el.classList.remove("is-thread-active"));
   threadIt = null;
   deckThreadHistory = [];
+  if (activeDeckCol === "thread") {
+    activeDeckCol = (typeof tab !== "undefined" && tab) ? tab : "timeline";
+  }
+  updateActiveDeckColUI();
 }
 
 function closeColumnThread(colId) {
@@ -7123,6 +8997,10 @@ async function requestAiAltForImage(imgObj, inpEl, btnEl) {
     btnEl.classList.add("loading");
     btnEl.disabled = true;
   }
+  const prevPlaceholder = inpEl ? inpEl.placeholder : "";
+  if (inpEl && !inpEl.value) {
+    inpEl.placeholder = t("composer.ai_alt_loading") || "✨ A gerar descrição com IA...";
+  }
 
   let reqLang = aiConfig.lang || "pt-pt";
   if (reqLang === "ui") {
@@ -7145,20 +9023,35 @@ async function requestAiAltForImage(imgObj, inpEl, btnEl) {
       setTimeout(() => { inpEl.style.boxShadow = ""; }, 1200);
     } else {
       const errMsg = res?.error || t("composer.ai_alt_err");
+      if (inpEl) {
+        inpEl.style.transition = "box-shadow 0.3s";
+        inpEl.style.boxShadow = "0 0 0 2px var(--danger)";
+        inpEl.title = errMsg;
+        setTimeout(() => { inpEl.style.boxShadow = ""; }, 3000);
+      }
       $("msg").className = "msg err";
       $("msg").textContent = errMsg;
       setTimeout(() => {
         if ($("msg").textContent === errMsg) $("msg").textContent = "";
-      }, 5000);
+      }, 6000);
     }
   } catch (err) {
     const msg = "Erro ao gerar Alt-Text: " + err.message;
+    if (inpEl) {
+      inpEl.style.transition = "box-shadow 0.3s";
+      inpEl.style.boxShadow = "0 0 0 2px var(--danger)";
+      inpEl.title = msg;
+      setTimeout(() => { inpEl.style.boxShadow = ""; }, 3000);
+    }
     $("msg").className = "msg err";
     $("msg").textContent = msg;
     setTimeout(() => {
       if ($("msg").textContent === msg) $("msg").textContent = "";
-    }, 5000);
+    }, 6000);
   } finally {
+    if (inpEl && !inpEl.value) {
+      inpEl.placeholder = prevPlaceholder || t("composer.img_alt_ph");
+    }
     if (btnEl) {
       btnEl.classList.remove("loading");
       btnEl.disabled = false;
@@ -8405,13 +10298,255 @@ function persistSavedDrafts(drafts) {
   try {
     localStorage.setItem("mastosky_drafts", JSON.stringify(drafts));
     updateDraftsBadge();
+    if (typeof scheduleServerSync === "function") {
+      scheduleServerSync({ drafts });
+    }
     return true;
   } catch (err) {
     if (err.name === "QuotaExceededError" || err.code === 22) {
-      alert(t("drafts.quota_err") || "Limite de armazenamento atingido. Elimina rascunhos antigos.");
+      showAppAlert(t("drafts.quota_err") || "Limite de armazenamento atingido. Elimina rascunhos antigos.");
     }
     return false;
   }
+}
+
+let _serverSyncReady = false;
+let _suppressServerSync = false;
+let _serverSyncTimer = null;
+let _pendingServerSync = {};
+
+function getSyncPreferences() {
+  return {
+    theme: currentTheme,
+    lang: currentLang,
+    nav_mode: navMode,
+    view_mode: viewMode,
+    deck_columns: Array.isArray(deckColumns) ? [...deckColumns] : [],
+    notif_sound: Boolean(notifSoundEnabled),
+    notif_types: (notifTypesEnabled && typeof notifTypesEnabled === "object") ? { ...notifTypesEnabled } : {}
+  };
+}
+
+function scheduleServerSync(partial) {
+  if (_suppressServerSync || !_serverSyncReady || !partial || typeof partial !== "object") return;
+  Object.assign(_pendingServerSync, partial);
+  if (_serverSyncTimer) clearTimeout(_serverSyncTimer);
+  _serverSyncTimer = setTimeout(() => {
+    flushServerSync(false);
+  }, 250);
+}
+
+async function flushServerSync(keepalive = false) {
+  if (_serverSyncTimer) {
+    clearTimeout(_serverSyncTimer);
+    _serverSyncTimer = null;
+  }
+  const payload = _pendingServerSync;
+  if (!payload || !Object.keys(payload).length) return;
+  _pendingServerSync = {};
+  try {
+    if (keepalive) {
+      const headers = { "Content-Type": "application/json" };
+      const token = getCsrfToken();
+      if (token) headers["X-CSRF-Token"] = token;
+      fetch("/api/user_data", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch(() => {});
+      return;
+    }
+    const res = await api("/api/user_data", payload);
+    if (res && res.ok && res.data && res.data.updated_at) {
+      try { localStorage.setItem("mastosky_server_sync_at", String(res.data.updated_at)); } catch (_) {}
+    }
+  } catch (_) {}
+}
+
+function _mergeSyncedLists(primary, secondary, keyFn) {
+  const out = [];
+  const seen = new Set();
+  for (const item of [...(primary || []), ...(secondary || [])]) {
+    const k = keyFn(item);
+    if (k && !seen.has(k)) {
+      seen.add(k);
+      out.push(item);
+    }
+  }
+  return out;
+}
+
+function applySyncedUserData(serverData, isInitialMerge = false) {
+  if (!serverData || typeof serverData !== "object") return false;
+  let mergedBack = false;
+  _suppressServerSync = true;
+  try {
+    if (Array.isArray(serverData.saved_posts)) {
+      let nextSaved = serverData.saved_posts;
+      if (isInitialMerge) {
+        const localSaved = getSavedPosts();
+        if (localSaved.length) {
+          nextSaved = _mergeSyncedLists(serverData.saved_posts, localSaved, p => p && (p.key || `${p.network || ""}:${p.id || p.uri || p.cid || ""}`));
+          if (nextSaved.length > serverData.saved_posts.length) mergedBack = true;
+        }
+      }
+      localStorage.setItem("mastosky_saved_posts", JSON.stringify(nextSaved));
+      if (typeof renderSavedFeed === "function") renderSavedFeed();
+    }
+
+    if (Array.isArray(serverData.drafts)) {
+      let nextDrafts = serverData.drafts;
+      if (isInitialMerge) {
+        const localDrafts = getSavedDrafts();
+        if (localDrafts.length) {
+          nextDrafts = _mergeSyncedLists(serverData.drafts, localDrafts, d => d && (d.id || `${d.text || ""}:${d.savedAt || ""}`));
+          if (nextDrafts.length > serverData.drafts.length) mergedBack = true;
+        }
+      }
+      localStorage.setItem("mastosky_drafts", JSON.stringify(nextDrafts));
+      if (typeof updateDraftsBadge === "function") updateDraftsBadge();
+      if ($("draftsModalOverlay") && !$("draftsModalOverlay").hidden && typeof renderDraftsList === "function") {
+        renderDraftsList();
+      }
+    }
+
+    let mutedChanged = false;
+    if (Array.isArray(serverData.muted_words)) {
+      let nextMuted = serverData.muted_words;
+      if (isInitialMerge && mutedWords.length) {
+        nextMuted = Array.from(new Set([...serverData.muted_words, ...mutedWords]));
+        if (nextMuted.length > serverData.muted_words.length) mergedBack = true;
+      }
+      if (JSON.stringify(nextMuted) !== JSON.stringify(mutedWords)) {
+        mutedWords = nextMuted;
+        localStorage.setItem("mastosky_muted_words", JSON.stringify(mutedWords));
+        mutedChanged = true;
+      }
+    }
+    if (serverData.mute_mode === "warn" || serverData.mute_mode === "hide") {
+      if (muteMode !== serverData.mute_mode) {
+        muteMode = serverData.mute_mode;
+        localStorage.setItem("mastosky_mute_mode", muteMode);
+        if ($("cfgMuteModeSelect")) $("cfgMuteModeSelect").value = muteMode;
+        mutedChanged = true;
+      }
+    }
+    if (mutedChanged) {
+      if (typeof renderMutedWordsChips === "function") renderMutedWordsChips();
+      if (typeof refreshMutedFeeds === "function") refreshMutedFeeds();
+    }
+
+    const p = serverData.preferences;
+    if (p && typeof p === "object") {
+      if (p.theme && p.theme !== currentTheme) {
+        applyTheme(p.theme, true);
+      }
+      if ((p.lang === "pt" || p.lang === "en") && p.lang !== currentLang) {
+        setLang(p.lang);
+      }
+      if ((p.nav_mode === "sidebar" || p.nav_mode === "sticky" || p.nav_mode === "none") && p.nav_mode !== navMode) {
+        setNavMode(p.nav_mode);
+      }
+      if ((p.view_mode === "single" || p.view_mode === "deck") && p.view_mode !== viewMode) {
+        applyViewMode(p.view_mode);
+      }
+      if (Array.isArray(p.deck_columns)) {
+        const filtered = Array.from(new Set(p.deck_columns.filter(c => ALL_DECK_COLS.includes(c))));
+        if (filtered.length && JSON.stringify(filtered) !== JSON.stringify(deckColumns)) {
+          deckColumns = filtered;
+          localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
+          applyDeckColumnVisibility();
+          syncDeckColsCheckboxes();
+        }
+      }
+      if (typeof p.notif_sound === "boolean" && p.notif_sound !== notifSoundEnabled) {
+        notifSoundEnabled = p.notif_sound;
+        localStorage.setItem("mastosky_notif_sound", notifSoundEnabled ? "true" : "false");
+        if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+      }
+      if (p.notif_types && typeof p.notif_types === "object") {
+        notifTypesEnabled = { ...notifTypesEnabled, ...p.notif_types };
+        localStorage.setItem("mastosky_notif_types", JSON.stringify(notifTypesEnabled));
+        if ($("cfgNotifTypeReplies")) $("cfgNotifTypeReplies").checked = notifTypesEnabled.replies !== false;
+        if ($("cfgNotifTypeLikes")) $("cfgNotifTypeLikes").checked = notifTypesEnabled.likes !== false;
+        if ($("cfgNotifTypeBoosts")) $("cfgNotifTypeBoosts").checked = notifTypesEnabled.boosts !== false;
+        if ($("cfgNotifTypeFollows")) $("cfgNotifTypeFollows").checked = notifTypesEnabled.follows !== false;
+      }
+    }
+  } finally {
+    _suppressServerSync = false;
+  }
+  return mergedBack;
+}
+
+async function pullUserDataFromServer(isInitial = false) {
+  if (!isInitial && Object.keys(_pendingServerSync).length) return;
+  try {
+    const res = await api("/api/user_data");
+    if (!res || !res.ok || !res.data) {
+      if (isInitial) _serverSyncReady = true;
+      return;
+    }
+    const serverData = res.data;
+    const serverUpdatedAt = Number(serverData.updated_at || 0);
+    const lastSyncedAt = Number(localStorage.getItem("mastosky_server_sync_at") || 0);
+
+    if (serverUpdatedAt === 0) {
+      _serverSyncReady = true;
+      const localSaved = getSavedPosts();
+      const localDrafts = getSavedDrafts();
+      const hasCustomLocal = localSaved.length || localDrafts.length || mutedWords.length ||
+        Boolean(localStorage.getItem("mastosky_theme") || localStorage.getItem("mastosky_deck_columns") ||
+                localStorage.getItem("mastosky_view_mode") || localStorage.getItem("mastosky_lang"));
+      if (hasCustomLocal) {
+        scheduleServerSync({
+          saved_posts: localSaved,
+          drafts: localDrafts,
+          muted_words: mutedWords,
+          mute_mode: muteMode,
+          preferences: getSyncPreferences()
+        });
+      }
+      return;
+    }
+
+    if (serverUpdatedAt > lastSyncedAt) {
+      const isInitialMerge = Boolean(isInitial && lastSyncedAt === 0);
+      const needsPushBack = applySyncedUserData(serverData, isInitialMerge);
+      try { localStorage.setItem("mastosky_server_sync_at", String(serverUpdatedAt)); } catch (_) {}
+      _serverSyncReady = true;
+      if (needsPushBack) {
+        scheduleServerSync({
+          saved_posts: getSavedPosts(),
+          drafts: getSavedDrafts(),
+          muted_words: mutedWords,
+          mute_mode: muteMode,
+          preferences: getSyncPreferences()
+        });
+      }
+      return;
+    }
+    if (isInitial) _serverSyncReady = true;
+  } catch (_) {
+    if (isInitial) _serverSyncReady = true;
+  }
+}
+
+function initServerSync() {
+  ALL_DECK_COLS.forEach(c => {
+    const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
+    if (chk) {
+      chk.addEventListener("change", () => syncPrefsToServer());
+    }
+  });
+  window.addEventListener("focus", () => pullUserDataFromServer(false));
+  window.addEventListener("beforeunload", () => flushServerSync(true));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushServerSync(true);
+    else if (document.visibilityState === "visible") pullUserDataFromServer(false);
+  });
+  pullUserDataFromServer(true);
 }
 
 function updateDraftsBadge() {
@@ -8455,14 +10590,14 @@ function saveCurrentComposerToDrafts() {
   return false;
 }
 
-function loadDraftFromLibrary(id) {
+async function loadDraftFromLibrary(id) {
   const drafts = getSavedDrafts();
   const draft = drafts.find(d => d.id === id);
   if (!draft) return;
 
   const curState = getComposerState();
   if (curState) {
-    if (!confirm(t("drafts.load_confirm") || "Substituir o conteúdo atual do compositor por este rascunho?")) {
+    if (!(await askConfirm(t("drafts.load_confirm") || "Substituir o conteúdo atual do compositor por este rascunho?"))) {
       return;
     }
   }
@@ -8527,18 +10662,18 @@ function deleteDraftFromLibrary(id) {
   renderDraftsList();
 }
 
-function clearAllDrafts() {
-  if (!confirm(t("drafts.clear_all_confirm") || "Tens a certeza que queres eliminar TODOS os rascunhos guardados?")) {
+async function clearAllDrafts() {
+  if (!(await askConfirm(t("drafts.clear_all_confirm") || "Tens a certeza que queres eliminar TODOS os rascunhos guardados?"))) {
     return;
   }
   persistSavedDrafts([]);
   renderDraftsList();
 }
 
-function discardCurrentComposer() {
+async function discardCurrentComposer() {
   const curState = getComposerState();
   if (curState) {
-    if (!confirm(t("drafts.discard_confirm") || "Tens a certeza que queres descartar o texto e anexos atuais?")) {
+    if (!(await askConfirm(t("drafts.discard_confirm") || "Tens a certeza que queres descartar o texto e anexos atuais?"))) {
       return;
     }
   }
@@ -8690,8 +10825,8 @@ function renderDraftsList() {
     delBtn.type = "button";
     delBtn.title = t("drafts.del_title");
     delBtn.textContent = "🗑️";
-    delBtn.onclick = () => {
-      if (confirm(t("drafts.del_confirm"))) {
+    delBtn.onclick = async () => {
+      if (await askConfirm(t("drafts.del_confirm"))) {
         deleteDraftFromLibrary(draft.id);
       }
     };
@@ -8709,6 +10844,7 @@ function exportBackupData() {
     exported_at: new Date().toISOString(),
     drafts: getSavedDrafts(),
     saved_posts: getSavedPosts(),
+    muted_words: (typeof mutedWords !== "undefined") ? mutedWords : [],
     deck_columns: (typeof deckColumns !== "undefined") ? deckColumns : [],
     preferences: {
       theme: currentTheme,
@@ -8717,7 +10853,8 @@ function exportBackupData() {
       nav_mode: (typeof navMode !== "undefined") ? navMode : "sidebar",
       notif_sound: (typeof notifSoundEnabled !== "undefined") ? notifSoundEnabled : true,
       notif_desktop: (typeof notifDesktopEnabled !== "undefined") ? notifDesktopEnabled : false,
-      notif_types: (typeof notifTypesEnabled !== "undefined") ? notifTypesEnabled : {}
+      notif_types: (typeof notifTypesEnabled !== "undefined") ? notifTypesEnabled : {},
+      mute_mode: (typeof muteMode !== "undefined") ? muteMode : "warn"
     }
   };
 
@@ -8826,7 +10963,19 @@ function importBackupData(file) {
           localStorage.setItem("mastosky_notif_sound", String(notifSoundEnabled));
           if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
         }
+        if (p.mute_mode === "warn" || p.mute_mode === "hide") {
+          muteMode = p.mute_mode;
+          if ($("cfgMuteModeSelect")) $("cfgMuteModeSelect").value = muteMode;
+        }
       }
+
+      if (Array.isArray(parsed.muted_words)) {
+        const cleaned = parsed.muted_words.map(w => String(w || "").trim().toLowerCase()).filter(Boolean);
+        mutedWords = Array.from(new Set([...(mutedWords || []), ...cleaned]));
+      }
+      persistMutedSettings();
+      renderMutedWordsChips();
+      refreshMutedFeeds();
 
       if (fb) {
         fb.className = "msg success";
@@ -8963,7 +11112,7 @@ if ($("retryPartialPostBtn")) {
         openPartialPostModal(combinedGood, newBad, bodyPayload, threadPayload);
       }
     } catch (err) {
-      alert(err.message || "Erro ao reenviar.");
+      showAppAlert(err.message || "Erro ao reenviar.");
       if (retryBtn) retryBtn.disabled = false;
       if (retryTxt) {
         if (retryTargets.length === 1) {
@@ -10343,7 +12492,7 @@ async function act(it, type, btn) {
 }
 
 async function deletePost(it, postEl) {
-  if (!confirm(t("actions.confirm_delete"))) return;
+  if (!(await askConfirm(t("actions.confirm_delete")))) return;
   try {
     const r = await api("/api/action", {network: it.network, action: "delete", ref: it.ref});
     if (r.ok) {
@@ -10371,11 +12520,13 @@ async function openSetup(mandatory = false) {
   if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
   if ($("cfgViewModeSelect")) $("cfgViewModeSelect").value = viewMode;
   if ($("deckColsConfig")) $("deckColsConfig").hidden = viewMode !== "deck";
-  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
+  const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
   colIds.forEach(c => {
     const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
     if (chk) chk.checked = deckColumns.includes(c);
   });
+  if ($("cfgMuteModeSelect")) $("cfgMuteModeSelect").value = muteMode;
+  renderMutedWordsChips();
   if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
   if ($("cfgNotifDesktop")) $("cfgNotifDesktop").checked = notifDesktopEnabled;
   if ($("cfgNotifTypeReplies")) $("cfgNotifTypeReplies").checked = notifTypesEnabled.replies !== false;
@@ -10383,6 +12534,7 @@ async function openSetup(mandatory = false) {
   if ($("cfgNotifTypeBoosts")) $("cfgNotifTypeBoosts").checked = notifTypesEnabled.boosts !== false;
   if ($("cfgNotifTypeFollows")) $("cfgNotifTypeFollows").checked = notifTypesEnabled.follows !== false;
   updateDesktopNotifUI();
+  updateLanBadges();
   try {
     const s = await api("/api/status");
     if (s.bluesky && s.bluesky.handle) $("cfgBskyHandle").value = s.bluesky.handle;
@@ -10439,6 +12591,44 @@ if ($("shortcutsOverlay")) {
   $("shortcutsOverlay").addEventListener("click", (e) => {
     if (e.target === $("shortcutsOverlay")) closeShortcutsModal();
   });
+}
+
+if ($("mobileConnectBtn")) $("mobileConnectBtn").onclick = openMobileModal;
+if ($("openMobileModalFromSettings")) $("openMobileModalFromSettings").onclick = () => { closeSetup(); openMobileModal(); };
+if ($("closeMobileModal")) $("closeMobileModal").onclick = closeMobileModal;
+if ($("mobileDoneBtn")) $("mobileDoneBtn").onclick = closeMobileModal;
+if ($("mobileModalOverlay")) {
+  $("mobileModalOverlay").addEventListener("click", (e) => {
+    if (e.target === $("mobileModalOverlay")) closeMobileModal();
+  });
+}
+function bindCopyUrlButton(btnId, getText) {
+  const btn = $(btnId);
+  if (!btn) return;
+  btn.onclick = async () => {
+    const txt = getText();
+    if (!txt) return;
+    try {
+      await navigator.clipboard.writeText(txt);
+      btn.textContent = (currentLang === "en" ? "Copied! ✓" : "Copiado! ✓");
+      setTimeout(() => {
+        btn.textContent = (currentLang === "en" ? "Copy" : "Copiar");
+      }, 2000);
+    } catch (e) {}
+  };
+}
+bindCopyUrlButton("mobileCopyBtn", () => ($("mobileUrlText") ? $("mobileUrlText").textContent : ""));
+bindCopyUrlButton("mobileCopyTailscaleBtn", () => ($("mobileTailscaleUrlText") ? $("mobileTailscaleUrlText").textContent : ""));
+if ($("mobileCopyCmdBtn")) {
+  $("mobileCopyCmdBtn").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText("python3 app.py --lan");
+      $("mobileCopyCmdBtn").textContent = (currentLang === "en" ? "Copied! ✓" : "Copiado! ✓");
+      setTimeout(() => {
+        $("mobileCopyCmdBtn").textContent = (currentLang === "en" ? "Copy command" : "Copiar comando");
+      }, 2000);
+    } catch (e) {}
+  };
 }
 
 if ($("cfgThemeSelect")) {
@@ -10557,7 +12747,7 @@ if ($("cfgViewModeSelect")) {
   $("cfgViewModeSelect").value = viewMode;
   $("cfgViewModeSelect").onchange = (e) => applyViewMode(e.target.value);
 }
-const deckColIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "profile"];
+const deckColIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
 deckColIds.forEach(c => {
   const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
   if (chk) {
@@ -10568,7 +12758,7 @@ deckColIds.forEach(c => {
       } else {
         if (deckColumns.length <= 1) {
           chk.checked = true;
-          alert(t("deck.err_min_one_col"));
+          showAppAlert(t("deck.err_min_one_col"));
           return;
         }
         deckColumns = deckColumns.filter(id => id !== c);
@@ -10579,10 +12769,30 @@ deckColIds.forEach(c => {
   }
 });
 
+if ($("addMutedWordBtn") && $("mutedWordInput")) {
+  $("addMutedWordBtn").onclick = () => addMutedWord($("mutedWordInput").value);
+  $("mutedWordInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addMutedWord($("mutedWordInput").value);
+    }
+  });
+}
+if ($("cfgMuteModeSelect")) {
+  $("cfgMuteModeSelect").value = muteMode;
+  $("cfgMuteModeSelect").onchange = () => {
+    muteMode = $("cfgMuteModeSelect").value === "hide" ? "hide" : "warn";
+    persistMutedSettings();
+    refreshMutedFeeds();
+  };
+}
+renderMutedWordsChips();
+
 if ($("cfgNotifSound")) {
   $("cfgNotifSound").onchange = () => {
     notifSoundEnabled = $("cfgNotifSound").checked;
     localStorage.setItem("mastosky_notif_sound", notifSoundEnabled ? "true" : "false");
+    syncPrefsToServer();
     if (notifSoundEnabled) {
       testSpatialSound("reply");
     }
@@ -10613,6 +12823,7 @@ if ($("cfgNotifDesktop")) {
       const k = kind.toLowerCase();
       notifTypesEnabled[k] = chk.checked;
       localStorage.setItem("mastosky_notif_types", JSON.stringify(notifTypesEnabled));
+      syncPrefsToServer();
     };
   }
 });
@@ -10674,7 +12885,7 @@ async function checkAppUpdate(manual = false) {
   const headerPill = $("headerUpdatePill");
   if (statusEl && manual) statusEl.textContent = t("update.checking");
   try {
-    const res = await api("/api/version");
+    const res = await api(manual ? "/api/version?force=1" : "/api/version");
     if (!res) return;
     updateInfo = res;
     if ($("appVersionBadge")) $("appVersionBadge").textContent = "v" + res.current;
@@ -10695,7 +12906,7 @@ async function checkAppUpdate(manual = false) {
       if (statusEl) {
         statusEl.textContent = t("update.latest");
       }
-      if (updateBtn) updateBtn.style.display = "none";
+      if (updateBtn) updateBtn.style.display = "inline-flex";
     }
   } catch (_) {
     if (statusEl && manual) statusEl.textContent = t("update.check_failed");
@@ -10711,7 +12922,7 @@ async function triggerSelfUpdate() {
     const r = await api("/api/self_update", {});
     if (r && r.ok) {
       if (statusEl) statusEl.textContent = t("update.success");
-      setTimeout(() => { window.location.reload(); }, 2000);
+      setTimeout(() => { window.location.reload(); }, 2500);
     } else {
       throw new Error(r?.error || "Falha ao atualizar.");
     }
@@ -10755,16 +12966,20 @@ applyViewMode(viewMode);
 updateDraftsBadge();
 checkAndRestoreAutoDraft();
 initSavedEvents();
+initConvoEvents();
 initDeckDragAndDrop();
 initNewPostsPillDismissers();
 syncStatusAndAiConfig();
+updateLanBadges();
+initServerSync();
 
-const validTabs = ["timeline", "explore", "search", "saved", "notifs", "profile"];
+const validTabs = ["timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
 const hashTab = (location.hash || "").replace("#", "");
 const initTab = validTabs.includes(hashTab) ? hashTab : "timeline";
 setTab(initTab);
 load();
 loadNotifs();
+loadConversations(true);
 if (initTab === "explore") loadExplore();
 if (initTab === "saved") renderSavedFeed();
 if (initTab === "profile") loadProfile();
@@ -10773,8 +12988,10 @@ checkAppUpdate(false);
 setInterval(() => {
   load();
   loadNotifs();
+  loadConversations(true);
   if (tab === "explore") loadExplore();
   if (tab === "saved") renderSavedFeed();
+  if (tab === "messages" && !activeConvo) loadConversations();
   if (tab === "profile") loadProfile(true);
 }, 120000);
 setInterval(() => checkAppUpdate(false), 1800000);

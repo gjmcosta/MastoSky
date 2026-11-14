@@ -20,6 +20,7 @@ MastoSky runs locally on your machine and gives you a single tab to read feeds, 
 - **Cross-Posting & Threads:** Compose once and post to Bluesky, Mastodon, or both. Includes video upload (MP4/WebM/MOV up to 50MB with async processing on both networks), image pasting (Cmd+V / drag-and-drop), thread composition, local drafts with auto-save, polls, and content warnings.
 - **Unified Search:** Query posts, user profiles, and hashtags across both networks simultaneously.
 - **Deck & Single-Column Views:** Switch between a compact single feed and a customizable multi-column layout (Deck View).
+- **Direct Messages & Private Chats:** Browse unified conversations from Bluesky (via AT Protocol Chat) and Mastodon (direct visibility messages), start new chats, and reply inline with unread notification badges.
 - **Notifications & Profiles:** Track likes, reposts, mentions, and inspect profiles side-by-side.
 - **AI-Powered Alt-Text:** Automatic, WCAG-compliant image descriptions via Google Gemini (free), Ollama (100% local), or OpenAI-compatible endpoints, with customizable output language.
 - **Zero Runtime Dependencies:** Backend uses Python 3 standard library only; frontend is vanilla HTML/CSS/JS. No `pip install`, no Node.js.
@@ -52,6 +53,20 @@ python3 app.py --open
 ```
 
 On first run, open [http://127.0.0.1:8000](http://127.0.0.1:8000) (if it doesn't open automatically) to enter your credentials.
+
+### Mobile & iPad Usage (Local Network & PWA)
+
+To access MastoSky from your iPhone, iPad, or Android on the same Wi-Fi network:
+
+```bash
+python3 app.py --lan
+```
+
+- The terminal displays your local LAN address and prints a **scannable ASCII QR Code** directly in the console.
+- In your desktop browser, click the `📱` icon in the header to view a high-resolution QR code and setup guide:
+  - **iPhone & iPad (Safari):** Tap *Share* $\rightarrow$ *«Add to Home Screen»* to run full-screen as a standalone web app.
+  - **Android (Chrome):** Tap the menu (⋮) $\rightarrow$ *«Install app»* or *«Add to Home screen»*.
+- Secured by strict private IP validation (RFC 1918), origin validation, and session CSRF tokens.
 
 ---
 

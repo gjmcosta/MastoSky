@@ -1,0 +1,25 @@
+{
+  "name": "MastoSky",
+  "short_name": "MastoSky",
+  "description": "Cliente unificado Bluesky e Mastodon local-first",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0B1020",
+  "theme_color": "#0B1020",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/brand/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/brand/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+
