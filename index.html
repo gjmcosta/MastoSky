@@ -402,6 +402,14 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .ext-domain{display:block;font-size:11.5px;color:var(--muted);margin-bottom:2px}
 .ext-info b{display:block;font-size:13.5px;color:var(--ink);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ext-info p{margin:0;font-size:12.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.composer-link-preview{margin:8px 0 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-1,var(--bg));overflow:hidden;position:relative;display:flex;align-items:stretch;min-height:66px}
+.composer-link-thumb{width:92px;flex:none;object-fit:cover;background:var(--line);display:block}
+.composer-link-meta{padding:8px 34px 8px 10px;min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.composer-link-domain{font-size:11px;color:var(--accent);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.composer-link-title{font-size:13px;font-weight:600;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}
+.composer-link-desc{font-size:11.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3}
+.composer-link-rm{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;border:0;background:color-mix(in srgb,var(--bg) 82%,transparent);color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:12px;line-height:1}
+.composer-link-rm:hover{color:var(--ink);background:var(--surface-2,var(--line))}
 .acts{display:flex;gap:12px;margin-top:8px;align-items:center}
 .acts button{border:0;background:none;color:var(--muted);padding:4px 7px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-variant-numeric:tabular-nums;cursor:pointer}
 .acts button svg{display:block;flex:none}
@@ -1977,6 +1985,7 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
         </div>
       </div>
       <div class="previews" id="previews" hidden></div>
+      <div class="composer-link-preview" id="composerLinkPreview" hidden></div>
       <div id="threadContainer" class="thread-container" hidden></div>
       <div class="bar">
         <div class="bar-left">
@@ -10090,6 +10099,143 @@ if ($("addThreadBtn")) {
   $("addThreadBtn").onclick = addThreadPost;
 }
 
+let composerLinkCard = null;
+let dismissedLinkUrl = "";
+let _linkPreviewTimer = null;
+let _linkPreviewReqUrl = "";
+const _clientLinkPreviewCache = new Map();
+
+function extractFirstComposerUrl(text) {
+  if (!text) return "";
+  const m = text.match(/https?:\/\/[a-z0-9.-]+\.[a-z]{2,}(?::\d+)?(?:\/[^\s<>"']*)?/i);
+  if (!m) return "";
+  return m[0].replace(/[.,;:!?)'"]+$/, "");
+}
+
+function renderComposerLinkPreview(loadingUrl = "") {
+  const box = $("composerLinkPreview");
+  if (!box) return;
+  box.replaceChildren();
+
+  const suppressed = images.length > 0 || Boolean(attachedVideo) || Boolean(hasPoll) || Boolean(quote);
+  if (suppressed || (!composerLinkCard && !loadingUrl)) {
+    box.hidden = true;
+    return;
+  }
+
+  if (loadingUrl) {
+    let dom = loadingUrl;
+    try { dom = new URL(loadingUrl).hostname.replace(/^www\./, ""); } catch (_) {}
+    const meta = el("div", "composer-link-meta");
+    meta.append(
+      el("span", "composer-link-domain", "🔗 " + dom),
+      el("span", "composer-link-desc", currentLang === "en" ? "Loading link preview..." : "A carregar pré-visualização da ligação...")
+    );
+    const rm = el("button", "composer-link-rm", "✕");
+    rm.type = "button";
+    rm.title = currentLang === "en" ? "Remove link preview" : "Remover pré-visualização";
+    rm.onclick = () => {
+      dismissedLinkUrl = loadingUrl;
+      composerLinkCard = null;
+      _linkPreviewReqUrl = "";
+      renderComposerLinkPreview();
+    };
+    box.append(meta, rm);
+    box.hidden = false;
+    return;
+  }
+
+  if (composerLinkCard.image) {
+    const img = el("img", "composer-link-thumb");
+    img.src = "/api/proxy_image?url=" + encodeURIComponent(composerLinkCard.image);
+    img.alt = "";
+    img.loading = "lazy";
+    img.onerror = () => { img.style.display = "none"; };
+    box.append(img);
+  }
+  const meta = el("div", "composer-link-meta");
+  meta.append(
+    el("span", "composer-link-domain", "🌐 " + (composerLinkCard.domain || "")),
+    el("span", "composer-link-title", composerLinkCard.title || composerLinkCard.url)
+  );
+  if (composerLinkCard.description) {
+    meta.append(el("span", "composer-link-desc", composerLinkCard.description));
+  }
+  const rm = el("button", "composer-link-rm", "✕");
+  rm.type = "button";
+  rm.title = currentLang === "en" ? "Remove link preview" : "Remover pré-visualização";
+  rm.onclick = () => {
+    dismissedLinkUrl = composerLinkCard ? composerLinkCard.url : "";
+    composerLinkCard = null;
+    renderComposerLinkPreview();
+  };
+  box.append(meta, rm);
+  box.hidden = false;
+}
+
+function scheduleComposerLinkPreview() {
+  if (_linkPreviewTimer) {
+    clearTimeout(_linkPreviewTimer);
+    _linkPreviewTimer = null;
+  }
+  if (images.length > 0 || attachedVideo || hasPoll || quote) {
+    renderComposerLinkPreview();
+    return;
+  }
+  const url = extractFirstComposerUrl($("text") ? $("text").value : "");
+  if (!url) {
+    composerLinkCard = null;
+    dismissedLinkUrl = "";
+    _linkPreviewReqUrl = "";
+    renderComposerLinkPreview();
+    return;
+  }
+  if (dismissedLinkUrl && dismissedLinkUrl !== url) {
+    dismissedLinkUrl = "";
+  }
+  if (dismissedLinkUrl === url) {
+    composerLinkCard = null;
+    renderComposerLinkPreview();
+    return;
+  }
+  if (composerLinkCard && composerLinkCard.url === url) {
+    renderComposerLinkPreview();
+    return;
+  }
+  if (_clientLinkPreviewCache.has(url)) {
+    composerLinkCard = _clientLinkPreviewCache.get(url);
+    renderComposerLinkPreview();
+    return;
+  }
+
+  composerLinkCard = null;
+  _linkPreviewTimer = setTimeout(async () => {
+    const curUrl = extractFirstComposerUrl($("text") ? $("text").value : "");
+    if (!curUrl || curUrl !== url || dismissedLinkUrl === url) return;
+    if (images.length > 0 || attachedVideo || hasPoll || quote) return;
+    _linkPreviewReqUrl = url;
+    renderComposerLinkPreview(url);
+    try {
+      const res = await api("/api/link_preview?url=" + encodeURIComponent(url));
+      if (_linkPreviewReqUrl !== url) return;
+      if (extractFirstComposerUrl($("text") ? $("text").value : "") !== url || dismissedLinkUrl === url) return;
+      if (res && res.ok && res.url) {
+        _clientLinkPreviewCache.set(url, res);
+        composerLinkCard = res;
+        renderComposerLinkPreview();
+      } else {
+        composerLinkCard = null;
+        renderComposerLinkPreview();
+      }
+    } catch (_) {
+      if (_linkPreviewReqUrl === url) {
+        composerLinkCard = null;
+        renderComposerLinkPreview();
+      }
+    }
+  }, 450);
+}
+
 function update() {
   const targets = selected();
   const text = $("text").value;
@@ -10188,6 +10334,7 @@ function update() {
 
   $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !targets.length || !threadValid;
   scheduleAutoSave();
+  scheduleComposerLinkPreview();
 }
 
 function startQuote(it, onlyNative = false) {
@@ -11458,164 +11605,6 @@ async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH, preloadedIm
 
   const loadedImgs = preloadedImgs || await Promise.all(
     mediaList.slice(0, count).map(m => {
-      const src = (m.type === "external") ? m.thumb : (m.url || m.thumb);
-      return loadImgSafe(src);
-    })
-  );
-
-  if (count === 1) {
-    const m0 = mediaList[0];
-    if (loadedImgs[0]) {
-      // Para imagens normais (fotografias/posters) usa "contain" para evitar qualquer corte
-      const singleFit = (m0.type === "external") ? "cover" : "contain";
-      drawRoundedImage(ctx, loadedImgs[0], boxX, boxY, boxW, boxH, radius, singleFit);
-      if (m0.type === "external") {
-        const barH = 52;
-        const barY = boxY + boxH - barH;
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(boxX, boxY, boxW, boxH, radius);
-        ctx.clip();
-        ctx.fillStyle = "rgba(10, 14, 28, 0.88)";
-        ctx.fillRect(boxX, barY, boxW, barH);
-        ctx.fillStyle = "#EEF0FF";
-        ctx.font = "bold 16px " + FONT_SANS;
-        ctx.textBaseline = "middle";
-        const domain = (m0.url || "").replace(/^https?:\/\//, "").split("/")[0];
-        let label = domain;
-        if (m0.title) label = domain ? `${domain} · ${m0.title}` : m0.title;
-        ctx.fillText(label.length > 55 ? label.slice(0, 52) + "..." : label, boxX + 18, barY + barH / 2);
-        ctx.restore();
-      }
-    } else {
-      if (m0.type === "external") {
-        drawRichLinkCard(ctx, boxX, boxY, boxW, boxH, radius, m0);
-      } else {
-        drawMediaFallback(ctx, boxX, boxY, boxW, boxH, radius, "🖼️ Imagem");
-      }
-    }
-  } else if (count === 2) {
-    const wEach = (boxW - gap) / 2;
-    for (let i = 0; i < 2; i++) {
-      const x = boxX + i * (wEach + gap);
-      if (loadedImgs[i]) {
-        drawRoundedImage(ctx, loadedImgs[i], x, boxY, wEach, boxH, radius);
-      } else {
-        drawMediaFallback(ctx, x, boxY, wEach, boxH, radius);
-      }
-    }
-  } else if (count === 3) {
-    const wLeft = (boxW - gap) * 0.58;
-    const wRight = boxW - gap - wLeft;
-    const hEach = (boxH - gap) / 2;
-    if (loadedImgs[0]) {
-      drawRoundedImage(ctx, loadedImgs[0], boxX, boxY, wLeft, boxH, radius);
-    } else {
-      drawMediaFallback(ctx, boxX, boxY, wLeft, boxH, radius);
-    }
-    if (loadedImgs[1]) {
-      drawRoundedImage(ctx, loadedImgs[1], boxX + wLeft + gap, boxY, wRight, hEach, radius);
-    } else {
-      drawMediaFallback(ctx, boxX + wLeft + gap, boxY, wRight, hEach, radius);
-    }
-    if (loadedImgs[2]) {
-      drawRoundedImage(ctx, loadedImgs[2], boxX + wLeft + gap, boxY + hEach + gap, wRight, hEach, radius);
-    } else {
-      drawMediaFallback(ctx, boxX + wLeft + gap, boxY + hEach + gap, wRight, hEach, radius);
-    }
-  } else if (count >= 4) {
-    const wEach = (boxW - gap) / 2;
-    const hEach = (boxH - gap) / 2;
-    for (let r = 0; r < 2; r++) {
-      for (let c = 0; c < 2; c++) {
-        const idx = r * 2 + c;
-        const x = boxX + c * (wEach + gap);
-        const y = boxY + r * (hEach + gap);
-        if (loadedImgs[idx]) {
-          drawRoundedImage(ctx, loadedImgs[idx], x, y, wEach, hEach, radius);
-        } else {
-          drawMediaFallback(ctx, x, y, wEach, hEach, radius);
-        }
-        if (idx === 3 && mediaList.length > 4) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.roundRect(x, y, wEach, hEach, radius);
-          ctx.fillStyle = "rgba(0,0,0,0.65)";
-          ctx.fill();
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 32px " + FONT_SANS;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(`+${mediaList.length - 3}`, x + wEach / 2, y + hEach / 2);
-          ctx.restore();
-        }
-      }
-    }
-  }
-}
-
-function extractCleanCardText(item, stripRe = false) {
-  if (!item) return "";
-  let txt = "";
-  if (item.html) {
-    const tmp = document.createElement("div");
-    tmp.innerHTML = item.html.replace(/<br\s*\/?>/gi, "\n");
-    if (item.cw && tmp.firstElementChild && tmp.firstElementChild.tagName === "STRONG") {
-      tmp.firstElementChild.remove();
-    }
-    txt = tmp.textContent || "";
-  } else {
-    txt = item.text || "";
-  }
-  if (stripRe || item.quote) {
-    txt = txt.replace(/^\s*RE:\s*(?:https?:\/\/)?\S+(?:\s*\n+\s*|\s+)?/i, "");
-    txt = txt.replace(/(?:\s*\n+\s*|\s+)RE:\s*(?:https?:\/\/)?\S+\s*$/i, "");
-  }
-  return txt
-    .split(/\r?\n/)
-    .map(ln => ln.replace(/[ \t]+/g, " ").trim())
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-function getValidCardMedia(item) {
-  return (item && Array.isArray(item.media) ? item.media : []).filter(m => {
-    if (!m) return false;
-    if (m.type === "external") return Boolean(m.thumb || m.url);
-    return Boolean(m.url || m.thumb);
-  });
-}
-
-function extractCrossPostExternalUrl(it) {
-  if (!it) return "";
-  const isPostOrProfileUrl = (u) => {
-    if (!u) return false;
-    const cleanU = u.replace(/\/+$/, "");
-    if (it.url && cleanU === it.url.replace(/\/+$/, "")) return true;
-    if (it.quote && it.quote.url && cleanU === it.quote.url.replace(/\/+$/, "")) return true;
-    if (/\/(?:@[^/?#]+|profile\/[^/?#]+)\/?$/i.test(cleanU)) return true;
-    return false;
-  };
-  for (const m of (it.media || [])) {
-    if (m && m.type === "external" && m.url && !isPostOrProfileUrl(m.url)) return m.url;
-  }
-  if (it.quote) {
-    for (const m of (it.quote.media || [])) {
-      if (m && m.type === "external" && m.url && !isPostOrProfileUrl(m.url)) return m.url;
-    }
-  }
-  for (const htmlStr of [it.html, it.quote && it.quote.html]) {
-    if (!htmlStr) continue;
-    const tmp = document.createElement("div");
-    tmp.innerHTML = htmlStr;
-    for (const a of tmp.querySelectorAll("a[href]")) {
-      const href = (a.getAttribute("href") || "").trim();
-      if (!/^https?:\/\//i.test(href)) continue;
-      const cls = a.className || "";
-      const txt = (a.textContent || "").trim();
-      if (cls.includes("mention") || cls.includes("hashtag") || cls.includes("u-url")) continue;
-      if (txt.startsWith("@") || txt.startsWith("#")) continue;
       if (/\/(?:tags|hashtag)\//i.test(href)) continue;
       if (isPostOrProfileUrl(href)) continue;
       return href;
@@ -12444,6 +12433,7 @@ function clearComposer(threadPayload) {
   reply = null; lastReplyAutoHandle = "";
   renderReplyBox();
   quote = null; renderQuoteBox();
+  composerLinkCard = null; dismissedLinkUrl = ""; _linkPreviewReqUrl = ""; renderComposerLinkPreview();
   try { localStorage.removeItem("mastosky_autosave"); } catch (_) {}
   if ($("draftIndicator")) $("draftIndicator").hidden = true;
   setTimeout(load, 1200);
@@ -12530,10 +12520,11 @@ $("send").onclick = async () => {
     ];
   }
 
+  const linkCardPayload = (!images.length && !attachedVideo && !hasPoll && !quote && composerLinkCard) ? composerLinkCard : null;
   const replyPayload = reply ? { network: reply.network, ref: reply.ref } : null;
   const body = reply
-    ? {text: $("text").value, reply: replyPayload, images, video: attachedVideo, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload}
-    : {text: $("text").value, targets: selected(), images, video: attachedVideo, spoiler, poll, visibility, quote, lang: currentLang, thread: threadPayload};
+    ? {text: $("text").value, reply: replyPayload, images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload}
+    : {text: $("text").value, targets: selected(), images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload};
 
   if (attachedVideo || (threadPayload && threadPayload.some(p => p.video))) {
     $("msg").className = "msg";

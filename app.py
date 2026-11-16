@@ -692,23 +692,147 @@ def safe_media_list(items):
     return [x for x in (safe_media(m) for m in items) if x]
 
 
-def proxy_fetch_image(url_str):
-    """Descarrega com segurança uma imagem remota para o gerador de cartões da publicação cruzada."""
+_LINK_PREVIEW_CACHE = {}
+
+
+def _validate_remote_http_url(url_str):
+    """Valida URL http(s) pública e bloqueia destinos locais/privados/Tailscale."""
     u = safe_url(url_str)
     if not u:
         raise ValueError("URL inválida.")
     p = urllib.parse.urlparse(u)
-    host = (p.hostname or "").lower()
+    host = (p.hostname or "").lower().rstrip(".")
     if not host:
         raise ValueError("Host inválido.")
-    if host in ("localhost", "127.0.0.1", "::1", "0.0.0.0") or host.endswith(".local"):
+    if host in ("localhost", "127.0.0.1", "::1", "0.0.0.0") or host.endswith(".local") or host.endswith(".ts.net"):
         raise ValueError("Acesso a endereços locais não permitido.")
     try:
         ip = ipaddress.ip_address(host)
     except ValueError:
         ip = None
-    if ip and (ip.is_private or ip.is_loopback or ip.is_link_local):
-        raise ValueError("Acesso a endereços de rede privada não permitido.")
+    if ip is not None:
+        mapped = getattr(ip, "ipv4_mapped", None)
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip in _TAILSCALE_NET or (
+            mapped is not None and (mapped.is_private or mapped.is_loopback or mapped.is_link_local or mapped in _TAILSCALE_NET)
+        ):
+            raise ValueError("Acesso a endereços de rede privada não permitido.")
+    return u, p
+
+
+def _urlopen_remote(req, timeout=10):
+    ssl_ctx = SSL_CTX
+    try:
+        return urllib.request.urlopen(req, timeout=timeout, context=ssl_ctx)
+    except Exception:
+        return urllib.request.urlopen(req, timeout=timeout, context=ssl._create_unverified_context())
+
+
+class _LinkPreviewParser(HTMLParser):
+    """Extrai metadados OpenGraph / Twitter Card / HTML <title> de uma página."""
+    def __init__(self):
+        super().__init__()
+        self.meta = {}
+        self.in_title = False
+        self.title_parts = []
+
+    def handle_starttag(self, tag, attrs):
+        tag_l = tag.lower()
+        if tag_l == "title":
+            self.in_title = True
+            return
+        if tag_l != "meta":
+            return
+        ad = {k.lower(): (v or "") for k, v in attrs if k}
+        key = (ad.get("property") or ad.get("name") or "").strip().lower()
+        val = (ad.get("content") or "").strip()
+        if key and val and key not in self.meta:
+            self.meta[key] = val
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "title":
+            self.in_title = False
+
+    def handle_data(self, data):
+        if self.in_title and len(self.title_parts) < 16:
+            self.title_parts.append(data)
+
+
+def fetch_link_preview(url_str):
+    """Obtém título, descrição, domínio e imagem de pré-visualização de uma ligação externa."""
+    u, p = _validate_remote_http_url(url_str)
+    now = time.time()
+    cached = _LINK_PREVIEW_CACHE.get(u)
+    if cached and (now - cached["ts"] < 1800):
+        return cached["data"]
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; MastoSky/1.0; +https://github.com/gjmcosta/MastoSky)",
+        "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5",
+    }
+    req = urllib.request.Request(u, headers=headers)
+    try:
+        resp = _urlopen_remote(req, timeout=6)
+    except Exception as e:
+        raise ValueError(f"Não foi possível obter pré-visualização da ligação: {e}")
+
+    with resp:
+        ctype = (resp.headers.get_content_type() or "").lower()
+        if ctype and not ("html" in ctype or ctype == "application/octet-stream"):
+            domain = p.netloc.lower()
+            out = {"ok": True, "url": u, "domain": domain, "title": domain, "description": "", "image": None}
+            _LINK_PREVIEW_CACHE[u] = {"ts": now, "data": out}
+            return out
+        raw = resp.read(256 * 1024)
+        charset = resp.headers.get_content_charset() or "utf-8"
+
+    text_html = raw.decode(charset, errors="replace")
+    parser = _LinkPreviewParser()
+    try:
+        parser.feed(text_html)
+    except Exception:
+        pass
+
+    m = parser.meta
+    raw_title = (
+        m.get("og:title")
+        or m.get("twitter:title")
+        or m.get("title")
+        or "".join(parser.title_parts)
+    )
+    title = html.unescape(re.sub(r"\s+", " ", raw_title or "")).strip()[:300]
+    raw_desc = (
+        m.get("og:description")
+        or m.get("twitter:description")
+        or m.get("description")
+        or ""
+    )
+    desc = html.unescape(re.sub(r"\s+", " ", raw_desc)).strip()[:600]
+    raw_img = (
+        m.get("og:image:secure_url")
+        or m.get("og:image")
+        or m.get("twitter:image")
+        or m.get("twitter:image:src")
+        or ""
+    ).strip()
+    img_url = safe_url(urllib.parse.urljoin(u, raw_img)) if raw_img else None
+    domain = (p.netloc or "").lower().removeprefix("www.")
+    out = {
+        "ok": True,
+        "url": u,
+        "domain": domain,
+        "title": title or domain,
+        "description": desc,
+        "image": img_url,
+    }
+    if len(_LINK_PREVIEW_CACHE) > 200:
+        _LINK_PREVIEW_CACHE.clear()
+    _LINK_PREVIEW_CACHE[u] = {"ts": now, "data": out}
+    return out
+
+
+def proxy_fetch_image(url_str):
+    """Descarrega com segurança uma imagem remota para o gerador de cartões da publicação cruzada."""
+    u, p = _validate_remote_http_url(url_str)
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
@@ -716,25 +840,10 @@ def proxy_fetch_image(url_str):
         "Referer": f"{p.scheme}://{p.netloc}/"
     }
     req = urllib.request.Request(u, headers=headers)
-    ssl_ctx = None
     try:
-        import ssl
-        try:
-            import certifi
-            ssl_ctx = ssl.create_default_context(cafile=certifi.where())
-        except Exception:
-            ssl_ctx = ssl.create_default_context()
-    except Exception:
-        ssl_ctx = None
-
-    try:
-        resp = urllib.request.urlopen(req, timeout=10, context=ssl_ctx)
-    except Exception:
-        try:
-            import ssl
-            resp = urllib.request.urlopen(req, timeout=10, context=ssl._create_unverified_context())
-        except Exception as e:
-            raise ValueError(f"Não foi possível obter imagem remota: {e}")
+        resp = _urlopen_remote(req, timeout=10)
+    except Exception as e:
+        raise ValueError(f"Não foi possível obter imagem remota: {e}")
 
     with resp:
         ctype = resp.headers.get_content_type()
@@ -1384,7 +1493,7 @@ class Bsky:
 
         raise ApiError("O processamento do vídeo no Bluesky excedeu o tempo limite (máx. 2 minutos).")
 
-    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, quote=None, video=None):
+    def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, quote=None, video=None, link_card=None):
         self._ensure()
         final_text = (text or "").strip()
         if poll and poll.get("options"):
@@ -1461,6 +1570,26 @@ class Bsky:
                     rec["text"] = (rec["text"] + "\n\n" + quote["url"]).strip()
         elif embed_media:
             rec["embed"] = embed_media
+        elif not quote and isinstance(link_card, dict):
+            card_url = safe_url(link_card.get("url"))
+            if card_url:
+                ext = {
+                    "uri": card_url,
+                    "title": (str(link_card.get("title") or link_card.get("domain") or card_url)).strip()[:300],
+                    "description": (str(link_card.get("description") or "")).strip()[:600],
+                }
+                card_img = safe_url(link_card.get("image"))
+                if card_img:
+                    try:
+                        img_bytes, img_mime = proxy_fetch_image(card_img)
+                        if img_bytes and len(img_bytes) <= 950_000:
+                            ext["thumb"] = self.upload_blob(img_bytes, img_mime)
+                    except Exception:
+                        pass
+                rec["embed"] = {
+                    "$type": "app.bsky.embed.external",
+                    "external": ext,
+                }
 
         return self.call("POST", "com.atproto.repo.createRecord",
                {"repo": self.did, "collection": "app.bsky.feed.post", "record": rec})
@@ -3591,6 +3720,15 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, data, ctype)
             except Exception as e:
                 return self.send(400, {"error": str(e)})
+        if path == "/api/link_preview":
+            qs = urllib.parse.parse_qs(parsed.query)
+            target_url = qs.get("url", [None])[0]
+            if not target_url:
+                return self.send(400, {"ok": False, "error": "Parâmetro url em falta."})
+            try:
+                return self.send(200, fetch_link_preview(target_url))
+            except Exception as e:
+                return self.send(400, {"ok": False, "error": str(e)})
         if path == "/api/local_image":
             qs = urllib.parse.parse_qs(parsed.query)
             target_path = qs.get("path", [None])[0]
@@ -3886,6 +4024,9 @@ class H(BaseHTTPRequestHandler):
             quote = d.get("quote")
             if quote is not None and not isinstance(quote, dict):
                 return self.send(400, {"error": "Citação inválida."})
+            link_card = d.get("link_card")
+            if link_card is not None and not isinstance(link_card, dict):
+                return self.send(400, {"error": "Pré-visualização de ligação inválida."})
             targets = [ref["network"]] if ref else d.get("targets", [])
             if (not isinstance(targets, list) or not targets
                     or not all(isinstance(t, str) for t in targets)):
@@ -3977,7 +4118,8 @@ class H(BaseHTTPRequestHandler):
                         "video": item_vid,
                         "spoiler": (item.get("spoiler") or "").strip() or spoiler,
                         "poll": item.get("poll") if idx == 0 else None,
-                        "quote": item.get("quote") if idx == 0 else quote
+                        "quote": item.get("quote") if idx == 0 else quote,
+                        "link_card": (item.get("link_card") or link_card) if idx == 0 else None
                     })
             else:
                 try:
@@ -3995,7 +4137,8 @@ class H(BaseHTTPRequestHandler):
                     "video": parsed_video,
                     "spoiler": spoiler,
                     "poll": poll,
-                    "quote": quote
+                    "quote": quote,
+                    "link_card": link_card
                 }]
 
             for t in targets:
@@ -4015,6 +4158,8 @@ class H(BaseHTTPRequestHandler):
                         kwargs = {"spoiler": item_spoiler, "poll": item_poll, "lang": lang, "quote": item_quote, "video": item_vid}
                         if t == "mastodon" and visibility:
                             kwargs["visibility"] = visibility
+                        if t == "bluesky" and item.get("link_card"):
+                            kwargs["link_card"] = item["link_card"]
 
                         created = CLIENTS[t].post(item_text, current_ref, item_imgs, **kwargs)
 

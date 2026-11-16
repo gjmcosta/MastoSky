@@ -3,7 +3,7 @@
 > **Data de atualização:** 14 de Novembro de 2026  
 > **Versão:** v0.8.4  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 193 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 195 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -177,6 +177,10 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 - **Deteção inteligente em segundo plano:** Polling de 2 minutos que deteta novas notificações e toca apenas para novos eventos (sem alertas no carregamento inicial).
 
 ### 🛠️ Refinamentos de UX, Robustez & Conectividade
+- **Pré-visualização de Ligações no Compositor e Cartão Nativo no Bluesky (`GET /api/link_preview`):**
+  - Deteção automática da primeira ligação HTTP/HTTPS ao escrever ou colar num novo post (`extractFirstComposerUrl()`, `scheduleComposerLinkPreview()`), exibindo o cartão visual `#composerLinkPreview` com miniatura, domínio, título, descrição e botão `✕` para dispensar sem apagar o link.
+  - Endpoint `GET /api/link_preview` (`fetch_link_preview()`, `_validate_remote_http_url()`, `_LinkPreviewParser`) com cache em memória (30 min) e proteção anti-SSRF contra destinos locais, redes privadas e endereços Tailscale.
+  - Ao publicar no Bluesky sem imagens/vídeo/citação/sondagem, envia `link_card` em `POST /api/post` e `Bsky.post()` anexa o embed nativo `app.bsky.embed.external` (incluindo upload da miniatura como blob).
 - **Publicação Cruzada com Ligações Externas e Cartões de Citação Aprimorados:**
   - Quando a publicação original ou a sua citação contém uma ligação externa (cartão de artigo ou `<a href>` externo), `extractCrossPostExternalUrl()` extrai o URL completo e inclui-o como link clicável (`🌐 <url>`) apenas na publicação enviada para a rede de destino (mantendo a ação nativa na rede original inalterada).
   - Cartão visual (`drawQuotedCard()` e `renderCrossCanvas()`) passa a renderizar também a imagem/cartão da ligação ou media dentro da citação (`getValidCardMedia()`, `measureQuotedCard()`), limpa o prefixo `RE: ...` em citações Mastodon (`plain(..., strip_quote_inline=True, strip_re=True)` e `extractCleanCardText()`) e preserva quebras de linha e listas com marcadores (`<br>` → `\n`).

@@ -3695,6 +3695,82 @@ class UiRefinementsAndCwTests(unittest.TestCase):
             "https://futurism.com/artificial-intelligence/young-people-hate-ai-ceos",
         )
 
+    def test_link_preview_fetch_and_endpoint(self):
+        for bad in ("http://127.0.0.1/a", "http://100.80.1.2/a", "http://casaos.tail123.ts.net/a"):
+            with self.assertRaises(ValueError):
+                app.fetch_link_preview(bad)
+
+        html_doc = (
+            b"<html><head>"
+            b'<meta property="og:title" content="Not\xc3\xadcia Importante">'
+            b'<meta property="og:description" content="Resumo curto da not\xc3\xadcia.">'
+            b'<meta property="og:image" content="/assets/foto.jpg">'
+            b"<title>Fallback</title></head></html>"
+        )
+        mock_resp = mock.MagicMock()
+        mock_resp.headers.get_content_type.return_value = "text/html"
+        mock_resp.headers.get_content_charset.return_value = "utf-8"
+        mock_resp.read.return_value = html_doc
+        mock_resp.__enter__.return_value = mock_resp
+
+        app._LINK_PREVIEW_CACHE.clear()
+        with mock.patch("app._urlopen_remote", return_value=mock_resp):
+            data = app.fetch_link_preview("https://www.publico.pt/artigo-1")
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["domain"], "publico.pt")
+        self.assertEqual(data["title"], "Notícia Importante")
+        self.assertEqual(data["description"], "Resumo curto da notícia.")
+        self.assertEqual(data["image"], "https://www.publico.pt/assets/foto.jpg")
+
+        h = object.__new__(app.H)
+        h.path = "/api/link_preview?url=" + app.urllib.parse.quote("https://www.publico.pt/artigo-1")
+        h.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+        h.wfile = io.BytesIO()
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        h.do_GET()
+        code = [v for k, v in h.sent if k == "code"][0]
+        self.assertEqual(code, 200)
+        ep_data = json.loads(h.wfile.getvalue().decode("utf-8"))
+        self.assertEqual(ep_data["title"], "Notícia Importante")
+
+        self.assertIn('id="composerLinkPreview"', self.html)
+        self.assertIn("function scheduleComposerLinkPreview(", self.html)
+        self.assertIn("/api/link_preview", self.html)
+
+    def test_bsky_post_with_link_card_embed(self):
+        b = app.Bsky({"handle": "u.bsky.social", "app_password": "p"})
+        b.jwt = "jwt"
+        b.did = "did:plc:me"
+        b.pds = "https://bsky.social"
+        fake_blob = {"$type": "blob", "ref": {"$link": "bafkthumb"}, "mimeType": "image/jpeg", "size": 123}
+        calls = []
+
+        def fake_call(method, xrpc, payload=None, params=None):
+            calls.append((method, xrpc, payload))
+            return {"uri": "at://did:plc:me/app.bsky.feed.post/1", "cid": "cid1"}
+
+        b.call = fake_call
+        b.upload_blob = mock.MagicMock(return_value=fake_blob)
+        with mock.patch("app.proxy_fetch_image", return_value=(b"\xff\xd8\xffimg", "image/jpeg")):
+            b.post(
+                "Tudo normal.. https://www.publico.pt/artigo-1",
+                link_card={
+                    "url": "https://www.publico.pt/artigo-1",
+                    "domain": "publico.pt",
+                    "title": "Artigo Público",
+                    "description": "Descrição",
+                    "image": "https://www.publico.pt/assets/foto.jpg",
+                },
+            )
+        rec = calls[0][2]["record"]
+        self.assertEqual(rec["embed"]["$type"], "app.bsky.embed.external")
+        self.assertEqual(rec["embed"]["external"]["uri"], "https://www.publico.pt/artigo-1")
+        self.assertEqual(rec["embed"]["external"]["title"], "Artigo Público")
+        self.assertEqual(rec["embed"]["external"]["thumb"], fake_blob)
+
 
 if __name__ == "__main__":
     unittest.main()
