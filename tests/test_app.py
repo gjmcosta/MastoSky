@@ -2185,6 +2185,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("async function executeCrossPost(", html)
         self.assertIn("submit_only_dest", html)
         self.assertIn("#crossPostOverlay{z-index:1020}", html)
+        self.assertIn(".cross-post-actions", html)
         # Botões de tema 100% redondos e sem artefatos
         self.assertIn(".swatch{width:28px;height:28px;border-radius:50%!important", html)
         self.assertIn("background-clip:padding-box", html)
