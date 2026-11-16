@@ -2808,6 +2808,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn(".acts button.act-translate", html)
         self.assertIn("act-btn act-translate", html)
         self.assertIn("ICONS.translate", html)
+        self.assertIn('<rect x="1.5" y="2" width="12.5" height="11.5" rx="2.5"/>', html)
         self.assertIn('/api/translate', html)
 
         # Suporte a traduções nas ações do post
