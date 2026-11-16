@@ -124,7 +124,7 @@ html[data-theme="light"] .cosmos-stars{opacity:.32}
 .quote-box-card .quote-who{font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;margin-bottom:3px}
 .quote-box-card .quote-who span{color:var(--muted);font-weight:normal;font-size:12px}
 .quote-box-card .quote-snip{color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;opacity:.85}
-.boost-popover{position:fixed;z-index:1000;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,0.28);padding:4px;min-width:185px;display:flex;flex-direction:column;gap:2px;animation:popIn .12s ease-out}
+.boost-popover{position:fixed;z-index:1030;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,0.28);padding:4px;min-width:185px;display:flex;flex-direction:column;gap:2px;animation:popIn .12s ease-out}
 .boost-header{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:6px 10px 2px}
 .boost-divider{height:1px;background:var(--line);margin:3px 0}
 .boost-popover button{border:0;background:none;color:var(--ink);padding:8px 12px;border-radius:7px;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;text-align:left;width:100%;transition:background .15s}
@@ -509,6 +509,8 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .replyto b{display:block;font-weight:600}
 .replyto .pv{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-family:var(--sans);font-size:13.5px}
 .setup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(5px);display:grid;place-items:center;z-index:999;padding:16px;overflow-y:auto}
+#crossPostOverlay{z-index:1020}
+#confirmModalOverlay,#partialPostOverlay{z-index:1050}
 .setup-box{background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:480px;width:100%;padding:22px;box-shadow:0 16px 40px rgba(0,0,0,0.3);animation:popIn .2s ease-out}
 .setup-box.settings-dialog{max-width:960px;width:100%;padding:24px 28px;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,0.45)}
 .setup-box.settings-dialog .setup-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
@@ -5483,16 +5485,16 @@ window.addEventListener("keydown", (e) => {
       closePartialPostModal();
       return;
     }
+    if ($("crossPostOverlay") && !$("crossPostOverlay").hidden) {
+      closeCrossPostModal();
+      return;
+    }
     if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
       closeUserProfileModal();
       return;
     }
     if ($("draftsOverlay") && !$("draftsOverlay").hidden) {
       closeDraftsModal();
-      return;
-    }
-    if ($("crossPostOverlay") && !$("crossPostOverlay").hidden) {
-      closeCrossPostModal();
       return;
     }
     if ($("newConvoModalOverlay") && !$("newConvoModalOverlay").hidden) {
@@ -10343,6 +10345,9 @@ function update() {
 }
 
 function startQuote(it, onlyNative = false) {
+  if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
+    closeUserProfileModal();
+  }
   let txt = (it.text || "").trim();
   if (!txt && it.html) {
     const tmp = document.createElement("div");
@@ -10362,9 +10367,17 @@ function startQuote(it, onlyNative = false) {
   if (onlyNative && $("targetSelect")) {
     $("targetSelect").value = it.network;
   }
+  if (viewMode === "deck") {
+    if (!deckColumns.includes("compose")) {
+      addDeckColumn("compose");
+    }
+    $("colComposeBody")?.scrollTo({top: 0, behavior: "smooth"});
+  }
   const ta = $("text");
   ta.focus();
-  ta.scrollIntoView({behavior: "smooth", block: "center"});
+  if (viewMode !== "deck") {
+    ta.scrollIntoView({behavior: "smooth", block: "center"});
+  }
   update();
 }
 
@@ -12545,6 +12558,9 @@ function updateReplyUserRow() {
 }
 
 function startReply(it) {
+  if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
+    closeUserProfileModal();
+  }
   // Se clicar no mesmo post que já está a ser respondido, cancela a resposta (toggle)
   const incomingKey = getPostKey(it);
   if (reply && getPostKey(reply) === incomingKey) {
