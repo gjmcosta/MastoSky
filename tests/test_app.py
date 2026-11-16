@@ -3778,6 +3778,26 @@ class UiRefinementsAndCwTests(unittest.TestCase):
         self.assertEqual(rec["embed"]["external"]["title"], "Artigo Público")
         self.assertEqual(rec["embed"]["external"]["thumb"], fake_blob)
 
+    def test_crosstalk_timeline_dedup_feature(self):
+        required = [
+            ".crosstalk-switch",
+            ".crosstalk-btn",
+            'id="cfgCrosstalkDedup"',
+            "mastosky_crosstalk_dedup",
+            "function normalizeCrossPostText(",
+            "function sameCrossPostAuthor(",
+            "function isCrossPostPair(",
+            "function groupCrossPosts(",
+            'crosstalkActiveNet.get(groupKey) || "mastodon"',
+            "crosstalk_label:",
+            "crosstalk_desc:",
+            "crosstalk_switch_to:",
+            "crosstalk_active:",
+            "const visible = groupCrossPosts(filtered);",
+        ]
+        for marker in required:
+            self.assertIn(marker, self.html)
+
 
 if __name__ == "__main__":
     unittest.main()

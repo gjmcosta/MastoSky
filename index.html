@@ -456,6 +456,13 @@ img.emoji{width:18px;height:18px;vertical-align:-3px;object-fit:contain;display:
 .notif .head img,.notif .head .ph{width:32px;height:32px;border-radius:50%}
 .net{width:22px;height:22px;border-radius:6px;background:var(--c);display:grid;place-items:center;flex:none}
 .net svg{width:14px;height:14px}
+.crosstalk-switch{display:inline-flex;align-items:center;gap:3px;padding:2px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);flex:none}
+.crosstalk-btn{width:22px;height:22px;border-radius:6px;border:0;padding:0;display:grid;place-items:center;cursor:pointer;opacity:.42;filter:saturate(.75);transition:opacity .15s,transform .15s,filter .15s,box-shadow .15s}
+.crosstalk-btn svg{width:13px;height:13px;display:block}
+.crosstalk-btn.net-mastodon{background:var(--masto)}
+.crosstalk-btn.net-bluesky{background:var(--bsky)}
+.crosstalk-btn:hover{opacity:.88;filter:saturate(1);transform:scale(1.06)}
+.crosstalk-btn.active{opacity:1;filter:saturate(1);box-shadow:0 1px 4px rgba(0,0,0,0.28),0 0 0 1.5px rgba(255,255,255,0.22)}
 .glyph{width:26px;height:26px;border-radius:50%;background:color-mix(in srgb,var(--glyph-c,var(--c)) 14%,transparent);color:var(--glyph-c,var(--c));border:1px solid color-mix(in srgb,var(--glyph-c,var(--c)) 24%,transparent);display:grid;place-items:center;flex:none;box-sizing:border-box;transition:transform .15s ease,background .15s ease}
 .glyph svg{width:15px;height:15px;display:block}
 .glyph.kind-like,.glyph.kind-like_repost{--glyph-c:#f43f5e}
@@ -2525,6 +2532,15 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
                 <label class="setup-check-item"><input type="checkbox" id="chkColProfile"> <span data-i18n="setup.deck_col_profile">Perfil</span></label>
               </div>
             </div>
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+              <label class="setup-check-item" style="padding:0;font-weight:600">
+                <input type="checkbox" id="cfgCrosstalkDedup" checked>
+                <span data-i18n="setup.crosstalk_label">Agrupar publicações duplicadas entre redes (Crosstalk)</span>
+              </label>
+              <div style="font-size:11.5px;color:var(--muted);margin:3px 0 0 24px;line-height:1.4" data-i18n="setup.crosstalk_desc">
+                Funde num único cartão (🐘 + 🦋) os posts publicados em simultâneo no Mastodon e Bluesky, dando prioridade ao Mastodon.
+              </div>
+            </div>
           </div>
 
           <div class="setup-section">
@@ -3352,7 +3368,9 @@ const I18N = {
       attach_alt: "Anexo",
       cw_show: "Mostrar conteúdo",
       cw_hide: "Ocultar",
-      alt_view: "Ver descrição da imagem (ALT)"
+      alt_view: "Ver descrição da imagem (ALT)",
+      crosstalk_switch_to: "Publicado nas duas redes · Ver versão {net}",
+      crosstalk_active: "Publicado nas duas redes · A ver versão {net}"
     },
     notifs: {
       filter_all: "Todas",
@@ -3473,6 +3491,8 @@ const I18N = {
       deck_col_notifs: "Notificações",
       deck_col_messages: "Mensagens (Direct Messages)",
       deck_col_profile: "Perfil",
+      crosstalk_label: "Agrupar publicações duplicadas entre redes (Crosstalk)",
+      crosstalk_desc: "Funde num único cartão (🐘 + 🦋) os posts publicados em simultâneo no Mastodon e Bluesky, dando prioridade ao Mastodon.",
       active_session: "Sessão ativa",
       bsky_pass_label: "Palavra-passe da aplicação (*App Password*):",
       bsky_help: "Gera em bsky.app > Definições > Privacidade e Segurança > Palavras-passe da aplicação.",
@@ -3890,7 +3910,9 @@ const I18N = {
       attach_alt: "Attachment",
       cw_show: "Show content",
       cw_hide: "Hide",
-      alt_view: "View image description (ALT)"
+      alt_view: "View image description (ALT)",
+      crosstalk_switch_to: "Published on both networks · View {net} version",
+      crosstalk_active: "Published on both networks · Viewing {net} version"
     },
     notifs: {
       filter_all: "All",
@@ -4011,6 +4033,8 @@ const I18N = {
       deck_col_notifs: "Notifications",
       deck_col_messages: "Messages (Direct Messages)",
       deck_col_profile: "Profile",
+      crosstalk_label: "Group duplicate cross-network posts (Crosstalk)",
+      crosstalk_desc: "Merges simultaneous Mastodon and Bluesky posts into a single card (🐘 + 🦋), prioritizing Mastodon by default.",
       active_session: "Active session",
       bsky_pass_label: "App Password:",
       bsky_help: "Generate at bsky.app > Settings > Privacy and Security > App Passwords.",
@@ -6022,6 +6046,128 @@ function openExternalLinkClick(e) {
 }
 document.addEventListener("click", openExternalLinkClick, true);
 
+let crosstalkDedupEnabled = localStorage.getItem("mastosky_crosstalk_dedup") !== "false";
+const crosstalkActiveNet = new Map();
+
+function normalizeCrossPostText(it) {
+  if (!it) return "";
+  let txt = (it.text || "").trim();
+  if (!txt && it.html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = it.html.replace(/<br\s*\/?>/gi, "\n");
+    txt = tmp.textContent || "";
+  }
+  return txt
+    .replace(/^⚠️?\s*\[CW:\s*([^\]]+)\]\s*/i, "$1 ")
+    .replace(/🌐/g, " ")
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(/(?:^|\s)(?:www\.)?[a-z0-9-]+(?:\.[a-z]{2,})+\/\S*/gi, " ")
+    .replace(/@([a-z0-9_-]+)(?:@[a-z0-9.-]+|\.[a-z0-9.-]+)/gi, "@$1")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function sameCrossPostAuthor(a, b) {
+  if (!a || !b) return false;
+  if (a.is_own && b.is_own) return true;
+  const cleanName = (s) => String(s || "")
+    .replace(/:[a-z0-9_+-]+:/gi, "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, "");
+  const na = cleanName(a.name);
+  const nb = cleanName(b.name);
+  if (na.length >= 2 && nb.length >= 2 && na === nb) return true;
+  const rootHandle = (it) => String(it.author_handle || it.handle || "")
+    .replace(/^@/, "")
+    .toLowerCase()
+    .split(/[.@]/)[0]
+    .replace(/[^a-z0-9_-]/g, "");
+  const ha = rootHandle(a);
+  const hb = rootHandle(b);
+  return ha.length >= 3 && hb.length >= 3 && ha === hb;
+}
+
+function getExternalUrlForPair(it) {
+  if (!it || !Array.isArray(it.media)) return "";
+  for (const m of it.media) {
+    if (m && m.type === "external" && m.url) {
+      return String(m.url).trim().replace(/[?#].*$/, "").replace(/\/+$/, "").toLowerCase();
+    }
+  }
+  return "";
+}
+
+function isCrossPostPair(a, b) {
+  if (!a || !b || a.network === b.network) return false;
+  if ((a.network !== "mastodon" && a.network !== "bluesky") || (b.network !== "mastodon" && b.network !== "bluesky")) return false;
+  const hasReply = (x) => Boolean(x.is_reply || (x.reply_to && (x.reply_to.name || x.reply_to.text)));
+  if (hasReply(a) || hasReply(b)) return false;
+  if (Boolean(a.boosted_by) !== Boolean(b.boosted_by)) return false;
+  if (a.boosted_by && b.boosted_by) {
+    const normB = (s) => String(s || "").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+    if (normB(a.boosted_by) !== normB(b.boosted_by)) return false;
+  }
+  const ta = a.time ? new Date(a.time).getTime() : 0;
+  const tb = b.time ? new Date(b.time).getTime() : 0;
+  if (!ta || !tb || Math.abs(ta - tb) > 45 * 60 * 1000) return false;
+  if (!sameCrossPostAuthor(a, b)) return false;
+
+  const na = normalizeCrossPostText(a);
+  const nb = normalizeCrossPostText(b);
+  if (na.length >= 6 && nb.length >= 6) {
+    if (na === nb) return true;
+    const minLen = Math.min(na.length, nb.length);
+    if (minLen >= 60 && (na.startsWith(nb.slice(0, 60)) || nb.startsWith(na.slice(0, 60)))) return true;
+  }
+  if (Math.abs(ta - tb) <= 10 * 60 * 1000) {
+    const extA = getExternalUrlForPair(a);
+    const extB = getExternalUrlForPair(b);
+    if (extA && extB && extA === extB && (!na || !nb || na.slice(0, 20) === nb.slice(0, 20))) return true;
+    const imgCountA = (a.media || []).filter(m => m && m.type !== "external").length;
+    const imgCountB = (b.media || []).filter(m => m && m.type !== "external").length;
+    if (imgCountA > 0 && imgCountA === imgCountB && (!na || !nb || na === nb)) return true;
+  }
+  return false;
+}
+
+function groupCrossPosts(list) {
+  if (!crosstalkDedupEnabled || !Array.isArray(list) || list.length < 2) return list || [];
+  const consumed = new Set();
+  const out = [];
+  for (let i = 0; i < list.length; i++) {
+    if (consumed.has(i)) continue;
+    const a = list[i];
+    let matchIdx = -1;
+    for (let j = i + 1; j < list.length; j++) {
+      if (consumed.has(j)) continue;
+      if (isCrossPostPair(a, list[j])) {
+        matchIdx = j;
+        break;
+      }
+    }
+    if (matchIdx >= 0) {
+      consumed.add(matchIdx);
+      const b = list[matchIdx];
+      const mastoIt = a.network === "mastodon" ? a : b;
+      const bskyIt = a.network === "bluesky" ? a : b;
+      const groupKey = getPostKey(mastoIt) + "|" + getPostKey(bskyIt);
+      const activeNet = crosstalkActiveNet.get(groupKey) || "mastodon";
+      const activeIt = activeNet === "bluesky" ? bskyIt : mastoIt;
+      out.push({
+        ...activeIt,
+        _crosstalk: { groupKey, mastodon: mastoIt, bluesky: bskyIt, activeNet }
+      });
+    } else {
+      out.push(a);
+    }
+  }
+  return out;
+}
+
 function postCard(it, o = {}) {
   const postKey = getPostKey(it);
   const isReplyTarget = Boolean(reply && getPostKey(reply) === postKey);
@@ -6061,7 +6207,51 @@ function postCard(it, o = {}) {
   const when = el("a", "when", ago(it.time));
   when.href = su(it.url) || "#"; when.target = "_blank"; when.rel = "opener";
   when.title = fullDateStr(it.time);
-  head.append(who, netBadge(it.network), when);
+  let netEl;
+  if (it._crosstalk && !o.focus) {
+    const ct = it._crosstalk;
+    const sw = el("div", "crosstalk-switch");
+    sw.setAttribute("role", "group");
+    ["mastodon", "bluesky"].forEach(net => {
+      const isActive = ct.activeNet === net;
+      const btn = el("button", "crosstalk-btn net-" + net + (isActive ? " active" : ""));
+      btn.type = "button";
+      btn.innerHTML = LOGO[net];
+      btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+      btn.title = isActive
+        ? t("post.crosstalk_active", { net: LABEL[net] })
+        : t("post.crosstalk_switch_to", { net: LABEL[net] });
+      btn.setAttribute("aria-label", btn.title);
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        if (ct.activeNet === net) return;
+        if (ct[ct.activeNet]) {
+          Object.assign(ct[ct.activeNet], {
+            liked: it.liked,
+            likes: it.likes,
+            boosted: it.boosted,
+            boosts: it.boosts,
+            ref: it.ref
+          });
+        }
+        crosstalkActiveNet.set(ct.groupKey, net);
+        const nextBase = net === "bluesky" ? ct.bluesky : ct.mastodon;
+        const nextItem = {
+          ...nextBase,
+          _crosstalk: { ...ct, activeNet: net }
+        };
+        const wasFocused = p.classList.contains("is-keyboard-focused");
+        const nextCard = postCard(nextItem, o);
+        p.replaceWith(nextCard);
+        if (wasFocused) setKeyboardFocusedPost(nextCard, false);
+      };
+      sw.append(btn);
+    });
+    netEl = sw;
+  } else {
+    netEl = netBadge(it.network);
+  }
+  head.append(who, netEl, when);
   const body = el("div", "body");
   body.innerHTML = it.html; // já limpo no servidor
   const cwText = (it.cw || "").trim();
@@ -6420,7 +6610,8 @@ function scrollColToTop(colId) {
 function render() {
   const feed = $("feed");
   feed.replaceChildren();
-  const visible = muteMode === "hide" ? items.filter(it => !getMutedMatch(it)) : items;
+  const filtered = muteMode === "hide" ? items.filter(it => !getMutedMatch(it)) : items;
+  const visible = groupCrossPosts(filtered);
   if (!visible.length) feed.append(el("div", "empty", t("feed.empty_timeline")));
   for (const it of visible) feed.append(postCard(it));
   renderLoadMore(feed, timelineCursors, loadMoreTimeline);
@@ -6541,7 +6732,8 @@ async function loadExplore() {
 function renderExplore() {
   const feed = $("efeed");
   feed.replaceChildren();
-  const visible = muteMode === "hide" ? exploreItems.filter(it => !getMutedMatch(it)) : exploreItems;
+  const filtered = muteMode === "hide" ? exploreItems.filter(it => !getMutedMatch(it)) : exploreItems;
+  const visible = groupCrossPosts(filtered);
   if (!visible.length) feed.append(el("div", "empty", t("feed.empty_explore")));
   for (const it of visible) feed.append(postCard(it));
   renderLoadMore(feed, exploreCursors, loadMoreExplore);
@@ -10533,7 +10725,8 @@ function getSyncPreferences() {
     nav_mode: navMode,
     deck_columns: Array.isArray(deckColumns) ? [...deckColumns] : [],
     notif_sound: Boolean(notifSoundEnabled),
-    notif_types: (notifTypesEnabled && typeof notifTypesEnabled === "object") ? { ...notifTypesEnabled } : {}
+    notif_types: (notifTypesEnabled && typeof notifTypesEnabled === "object") ? { ...notifTypesEnabled } : {},
+    crosstalk_dedup: Boolean(crosstalkDedupEnabled)
   };
   if (!isCompactMobileViewport()) {
     prefs.view_mode = viewMode;
@@ -10678,6 +10871,13 @@ function applySyncedUserData(serverData, isInitialMerge = false) {
         notifSoundEnabled = p.notif_sound;
         localStorage.setItem("mastosky_notif_sound", notifSoundEnabled ? "true" : "false");
         if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+      }
+      if (typeof p.crosstalk_dedup === "boolean" && p.crosstalk_dedup !== crosstalkDedupEnabled) {
+        crosstalkDedupEnabled = p.crosstalk_dedup;
+        localStorage.setItem("mastosky_crosstalk_dedup", crosstalkDedupEnabled ? "true" : "false");
+        if ($("cfgCrosstalkDedup")) $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
+        render();
+        if (exploreItems && exploreItems.length) renderExplore();
       }
       if (p.notif_types && typeof p.notif_types === "object") {
         notifTypesEnabled = { ...notifTypesEnabled, ...p.notif_types };
@@ -11068,7 +11268,8 @@ function exportBackupData() {
       notif_sound: (typeof notifSoundEnabled !== "undefined") ? notifSoundEnabled : true,
       notif_desktop: (typeof notifDesktopEnabled !== "undefined") ? notifDesktopEnabled : false,
       notif_types: (typeof notifTypesEnabled !== "undefined") ? notifTypesEnabled : {},
-      mute_mode: (typeof muteMode !== "undefined") ? muteMode : "warn"
+      mute_mode: (typeof muteMode !== "undefined") ? muteMode : "warn",
+      crosstalk_dedup: (typeof crosstalkDedupEnabled !== "undefined") ? crosstalkDedupEnabled : true
     }
   };
 
@@ -11181,6 +11382,13 @@ function importBackupData(file) {
           muteMode = p.mute_mode;
           if ($("cfgMuteModeSelect")) $("cfgMuteModeSelect").value = muteMode;
         }
+        if (typeof p.crosstalk_dedup === "boolean") {
+          crosstalkDedupEnabled = p.crosstalk_dedup;
+          localStorage.setItem("mastosky_crosstalk_dedup", crosstalkDedupEnabled ? "true" : "false");
+          if ($("cfgCrosstalkDedup")) $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
+          render();
+          if (exploreItems && exploreItems.length) renderExplore();
+        }
       }
 
       if (Array.isArray(parsed.muted_words)) {
@@ -11267,318 +11475,6 @@ if ($("partialPostOverlay")) {
 }
 if ($("finishPartialPostBtn")) {
   $("finishPartialPostBtn").onclick = () => {
-    if (pendingPartialData) {
-      clearComposer(pendingPartialData.threadPayload);
-      pendingPartialData = null;
-    }
-    closePartialPostModal();
-    const msg = $("msg");
-    if (msg) {
-      msg.className = "msg";
-      msg.textContent = t("composer.posted");
-    }
-  };
-}
-if ($("editPartialPostBtn")) {
-  $("editPartialPostBtn").onclick = () => {
-    closePartialPostModal();
-    const msg = $("msg");
-    if (msg) {
-      msg.className = "msg err";
-      msg.textContent = t("composer.partial_editing_note") || "Podes rever a tua publicação e reenviar apenas para a rede em falta.";
-    }
-    $("text").focus();
-  };
-}
-if ($("retryPartialPostBtn")) {
-  $("retryPartialPostBtn").onclick = async () => {
-    if (!pendingPartialData) return;
-    const { good, bad, bodyPayload, threadPayload } = pendingPartialData;
-    const retryTargets = bad.map(([n]) => n);
-    const retryBtn = $("retryPartialPostBtn");
-    const retryTxt = $("retryPartialPostText");
-
-    if (retryBtn) retryBtn.disabled = true;
-    if (retryTxt) retryTxt.textContent = t("composer.partial_retrying");
-
-    const retryBody = { ...bodyPayload, targets: retryTargets };
-    if (retryBody.reply && !retryTargets.includes(retryBody.reply.network)) {
-      delete retryBody.reply;
-    }
-
-    try {
-      const res = await api("/api/post", retryBody);
-      const newBad = Object.entries(res).filter(([, v]) => v !== "ok");
-      const newGood = Object.entries(res).filter(([, v]) => v === "ok");
-
-      if (newBad.length === 0) {
-        closePartialPostModal();
-        clearComposer(threadPayload);
-        const msg = $("msg");
-        if (msg) {
-          msg.className = "msg";
-          msg.textContent = threadPayload ? (t("composer.thread_published") || "Fio publicado com sucesso!") : t("composer.posted");
-        }
-        pendingPartialData = null;
-      } else {
-        const combinedGood = [...good, ...newGood];
-        pendingPartialData = { good: combinedGood, bad: newBad, bodyPayload, threadPayload };
-        openPartialPostModal(combinedGood, newBad, bodyPayload, threadPayload);
-      }
-    } catch (err) {
-      showAppAlert(err.message || "Erro ao reenviar.");
-      if (retryBtn) retryBtn.disabled = false;
-      if (retryTxt) {
-        if (retryTargets.length === 1) {
-          retryTxt.textContent = t("composer.partial_retry_btn", {net: LABEL[retryTargets[0]]});
-        } else {
-          retryTxt.textContent = t("composer.partial_retry_all_failed");
-        }
-      }
-    }
-  };
-}
-
-function closeBoostMenu() {
-  if (activeBoostMenu) {
-    activeBoostMenu.remove();
-    activeBoostMenu = null;
-  }
-}
-
-document.addEventListener("click", (e) => {
-  if (activeBoostMenu && !activeBoostMenu.contains(e.target)) {
-    closeBoostMenu();
-  }
-});
-window.addEventListener("scroll", closeBoostMenu, {passive: true});
-
-function openBoostMenu(it, btn) {
-  if (activeBoostMenu) {
-    const isSame = activeBoostMenu._btn === btn;
-    closeBoostMenu();
-    if (isSame) return;
-  }
-
-  const menu = el("div", "boost-popover");
-  menu._btn = btn;
-
-  // Secção: Partilhar noutra rede
-  const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
-  if (networks.length > 1 && networks.includes(otherNet)) {
-    const secOut = el("div", "boost-header", t("share_menu.out_net"));
-    const btnCross = el("button", "boost-btn-cross");
-    btnCross.innerHTML = '🔀 <span>' + t("share_menu.cross_post", {net: LABEL[otherNet]}) + '</span>';
-    btnCross.onclick = (e) => {
-      e.stopPropagation();
-      closeBoostMenu();
-      openCrossPostModal(it);
-    };
-    menu.append(secOut, btnCross, el("div", "boost-divider"));
-  }
-
-  // Secção: Nesta rede
-  const secIn = el("div", "boost-header", t("share_menu.in_net", {net: LABEL[it.network]}));
-  const btnRepost = el("button", null);
-  btnRepost.innerHTML = ICONS.boost + " <span>" + (it.boosted ? t("share_menu.undo_repost") : t("share_menu.repost")) + "</span>";
-  btnRepost.onclick = (e) => {
-    e.stopPropagation();
-    closeBoostMenu();
-    act(it, "boost", btn);
-  };
-
-  const btnQuote = el("button", null);
-  btnQuote.innerHTML = '💬 <span>' + t("share_menu.quote") + '</span>';
-  btnQuote.onclick = (e) => {
-    e.stopPropagation();
-    closeBoostMenu();
-    startQuote(it, true);
-  };
-
-  menu.append(secIn, btnRepost, btnQuote);
-  document.body.append(menu);
-
-  const rect = btn.getBoundingClientRect();
-  menu.style.top = (rect.bottom + 4) + "px";
-  menu.style.left = Math.max(10, Math.min(window.innerWidth - 225, rect.left - 10)) + "px";
-
-  activeBoostMenu = menu;
-}
-
-let crossPostTarget = null;
-let crossPostTheme = "cosmic";
-
-const FONT_SANS = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
-
-function getCanvasWrappedLines(ctx, text, maxWidth, maxLines = 14) {
-  if (!text) return [];
-  const paragraphs = text.split(/\r?\n/);
-  const lines = [];
-
-  for (let p = 0; p < paragraphs.length; p++) {
-    const rawPara = paragraphs[p].trim();
-    if (!rawPara) {
-      if (lines.length > 0 && lines.length < maxLines) {
-        lines.push("");
-      }
-      continue;
-    }
-    const words = rawPara.split(/\s+/);
-    let currentLine = "";
-
-    for (let w = 0; w < words.length; w++) {
-      const testLine = currentLine ? (currentLine + " " + words[w]) : words[w];
-      const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxWidth && currentLine) {
-        lines.push(currentLine);
-        currentLine = words[w];
-        if (lines.length >= maxLines - 1) {
-          currentLine += " …";
-          break;
-        }
-      } else {
-        currentLine = testLine;
-      }
-    }
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-    if (lines.length >= maxLines) break;
-  }
-  return lines;
-}
-
-function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 12) {
-  const words = text.split(/\s+/);
-  let line = "";
-  let lineCount = 0;
-
-  for (let n = 0; n < words.length; n++) {
-    const testLine = line + (line ? " " : "") + words[n];
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && n > 0) {
-      ctx.fillText(line, x, y);
-      line = words[n];
-      y += lineHeight;
-      lineCount++;
-      if (lineCount >= maxLines - 1 && n < words.length - 1) {
-        line += " …";
-        break;
-      }
-    } else {
-      line = testLine;
-    }
-  }
-  ctx.fillText(line, x, y);
-  return y + lineHeight;
-}
-
-function loadImgSafe(url) {
-  return new Promise((resolve) => {
-    if (!url) return resolve(null);
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => resolve(img);
-    img.onerror = () => {
-      // Se o proxy falhou, tenta carregar diretamente da URL com CORS anónimo
-      const direct = new Image();
-      direct.crossOrigin = "anonymous";
-      direct.onload = () => resolve(direct);
-      direct.onerror = () => {
-        // Fallback: carregar diretamente sem crossOrigin
-        const noCors = new Image();
-        noCors.onload = () => resolve(noCors);
-        noCors.onerror = () => resolve(null);
-        noCors.src = url;
-      };
-      direct.src = url;
-    };
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      img.src = "/api/proxy_image?url=" + encodeURIComponent(url);
-    } else {
-      img.src = url;
-    }
-  });
-}
-
-function drawRoundedImage(ctx, img, x, y, w, h, r = 16, fit = "cover") {
-  if (!img) return;
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-  ctx.clip();
-
-  const nw = img.naturalWidth || img.width || 1;
-  const nh = img.naturalHeight || img.height || 1;
-  const imgRatio = nw / nh;
-  const targetRatio = w / h;
-
-  if (fit === "contain") {
-    // Fundo elegante de contraste para imagens que não preenchem a totalidade da caixa
-    const bgGrad = ctx.createLinearGradient(x, y, x, y + h);
-    bgGrad.addColorStop(0, "rgba(8, 12, 26, 0.75)");
-    bgGrad.addColorStop(1, "rgba(4, 7, 16, 0.92)");
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(x, y, w, h);
-
-    let dw, dh, dx, dy;
-    if (imgRatio > targetRatio) {
-      dw = w;
-      dh = dw / imgRatio;
-      dx = x;
-      dy = y + (h - dh) / 2;
-    } else {
-      dh = h;
-      dw = dh * imgRatio;
-      dx = x + (w - dw) / 2;
-      dy = y;
-    }
-    ctx.drawImage(img, 0, 0, nw, nh, dx, dy, dw, dh);
-  } else {
-    let sx, sy, sw, sh;
-    if (imgRatio > targetRatio) {
-      sh = nh;
-      sw = sh * targetRatio;
-      sx = (nw - sw) / 2;
-      sy = 0;
-    } else {
-      sw = nw;
-      sh = sw / targetRatio;
-      sx = 0;
-      sy = (nh - sh) / 2;
-    }
-    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
-  }
-  ctx.restore();
-
-  // Borda subtil
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-  ctx.strokeStyle = "rgba(255,255,255,0.14)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawRichLinkCard(ctx, x, y, w, h, r = 16, m = {}) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, r);
-  const bgGrad = ctx.createLinearGradient(x, y, x, y + h);
-  bgGrad.addColorStop(0, "#151B38");
-  bgGrad.addColorStop(1, "#0D1126");
-  ctx.fillStyle = bgGrad;
-  ctx.fill();
-  ctx.strokeStyle = "rgba(77, 178, 255, 0.28)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  const pad = 30;
-  const innerW = w - pad * 2;
-  const domain = (m.url || "").replace(/^https?:\/\//, "").split("/")[0] || "LINK";
-  ctx.fillStyle = "#4DB2FF";
-  ctx.font = "bold 18px " + FONT_SANS;
   ctx.fillText("🔗 " + domain.toUpperCase(), x + pad, y + pad + 14);
 
   const title = m.title || domain;
@@ -12857,6 +12753,7 @@ async function openSetup(mandatory = false) {
     if (chk) chk.checked = deckColumns.includes(c);
   });
   if ($("cfgMuteModeSelect")) $("cfgMuteModeSelect").value = muteMode;
+  if ($("cfgCrosstalkDedup")) $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
   renderMutedWordsChips();
   if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
   if ($("cfgNotifDesktop")) $("cfgNotifDesktop").checked = notifDesktopEnabled;
@@ -13032,6 +12929,10 @@ $("saveSetupBtn").onclick = async () => {
         notifSoundEnabled = $("cfgNotifSound").checked;
         localStorage.setItem("mastosky_notif_sound", notifSoundEnabled ? "true" : "false");
       }
+      if ($("cfgCrosstalkDedup")) {
+        crosstalkDedupEnabled = $("cfgCrosstalkDedup").checked;
+        localStorage.setItem("mastosky_crosstalk_dedup", crosstalkDedupEnabled ? "true" : "false");
+      }
       if ($("cfgNotifDesktop")) {
         notifDesktopEnabled = $("cfgNotifDesktop").checked && ("Notification" in window) && Notification.permission === "granted";
         localStorage.setItem("mastosky_notif_desktop", notifDesktopEnabled ? "true" : "false");
@@ -13099,6 +13000,17 @@ deckColIds.forEach(c => {
     };
   }
 });
+
+if ($("cfgCrosstalkDedup")) {
+  $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
+  $("cfgCrosstalkDedup").onchange = () => {
+    crosstalkDedupEnabled = $("cfgCrosstalkDedup").checked;
+    localStorage.setItem("mastosky_crosstalk_dedup", crosstalkDedupEnabled ? "true" : "false");
+    if (typeof syncPrefsToServer === "function") syncPrefsToServer();
+    render();
+    if (exploreItems && exploreItems.length) renderExplore();
+  };
+}
 
 if ($("addMutedWordBtn") && $("mutedWordInput")) {
   $("addMutedWordBtn").onclick = () => addMutedWord($("mutedWordInput").value);
