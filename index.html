@@ -2785,9 +2785,10 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
 
       <div id="crossPostMsg" class="msg"></div>
 
-      <div class="setup-actions" style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px">
+      <div class="setup-actions" style="margin-top:12px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap">
         <button type="button" class="ghost" id="cancelCrossPost" data-i18n="cross_post.cancel">Cancelar</button>
-        <button type="button" class="send" id="submitCrossPost" data-i18n="cross_post.submit">Publicar cruzado</button>
+        <button type="button" class="ghost" id="submitCrossPost" data-i18n="cross_post.submit">Publicar nas duas redes</button>
+        <button type="button" class="send" id="submitCrossPostOnly">Publicar só noutra rede</button>
       </div>
     </div>
   </div>
@@ -3303,12 +3304,14 @@ const I18N = {
     },
     cross_post: {
       modal_title: "Publicação Cruzada",
-      modal_desc: "Cria um repost/citação no {origin} e publica o cartão visual com link no {dest}.",
+      modal_desc: "Partilha o cartão visual enriquecido no {dest} (opcionalmente republicando também no {origin}).",
       card_style: "Estilo do cartão:",
       comment_ph: "Escreve um comentário / citação (opcional)...",
       cancel: "Cancelar",
       submit: "Publicar nas duas redes",
       submitting: "A publicar nas duas redes...",
+      submit_only_dest: "Publicar só no {dest}",
+      submitting_only_dest: "A publicar no {dest}...",
       success: "Publicação cruzada efetuada com sucesso!",
       retry: "Tentar novamente",
       failed: "Falhou: {err}",
@@ -3839,12 +3842,14 @@ const I18N = {
     },
     cross_post: {
       modal_title: "Cross-Posting",
-      modal_desc: "Quotes/reposts on {origin} and shares an enriched visual card with link on {dest}.",
+      modal_desc: "Share the enriched visual card on {dest} (optionally also reposting/quoting on {origin}).",
       card_style: "Card style:",
       comment_ph: "Write a comment / quote (optional)...",
       cancel: "Cancel",
       submit: "Publish to both networks",
       submitting: "Publishing to both networks...",
+      submit_only_dest: "Publish only to {dest}",
+      submitting_only_dest: "Publishing to {dest}...",
       success: "Cross-posted successfully!",
       retry: "Try again",
       failed: "Failed: {err}",
@@ -11605,6 +11610,164 @@ async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH, preloadedIm
 
   const loadedImgs = preloadedImgs || await Promise.all(
     mediaList.slice(0, count).map(m => {
+      const src = (m.type === "external") ? m.thumb : (m.url || m.thumb);
+      return loadImgSafe(src);
+    })
+  );
+
+  if (count === 1) {
+    const m0 = mediaList[0];
+    if (loadedImgs[0]) {
+      // Para imagens normais (fotografias/posters) usa "contain" para evitar qualquer corte
+      const singleFit = (m0.type === "external") ? "cover" : "contain";
+      drawRoundedImage(ctx, loadedImgs[0], boxX, boxY, boxW, boxH, radius, singleFit);
+      if (m0.type === "external") {
+        const barH = 52;
+        const barY = boxY + boxH - barH;
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, radius);
+        ctx.clip();
+        ctx.fillStyle = "rgba(10, 14, 28, 0.88)";
+        ctx.fillRect(boxX, barY, boxW, barH);
+        ctx.fillStyle = "#EEF0FF";
+        ctx.font = "bold 16px " + FONT_SANS;
+        ctx.textBaseline = "middle";
+        const domain = (m0.url || "").replace(/^https?:\/\//, "").split("/")[0];
+        let label = domain;
+        if (m0.title) label = domain ? `${domain} · ${m0.title}` : m0.title;
+        ctx.fillText(label.length > 55 ? label.slice(0, 52) + "..." : label, boxX + 18, barY + barH / 2);
+        ctx.restore();
+      }
+    } else {
+      if (m0.type === "external") {
+        drawRichLinkCard(ctx, boxX, boxY, boxW, boxH, radius, m0);
+      } else {
+        drawMediaFallback(ctx, boxX, boxY, boxW, boxH, radius, "🖼️ Imagem");
+      }
+    }
+  } else if (count === 2) {
+    const wEach = (boxW - gap) / 2;
+    for (let i = 0; i < 2; i++) {
+      const x = boxX + i * (wEach + gap);
+      if (loadedImgs[i]) {
+        drawRoundedImage(ctx, loadedImgs[i], x, boxY, wEach, boxH, radius);
+      } else {
+        drawMediaFallback(ctx, x, boxY, wEach, boxH, radius);
+      }
+    }
+  } else if (count === 3) {
+    const wLeft = (boxW - gap) * 0.58;
+    const wRight = boxW - gap - wLeft;
+    const hEach = (boxH - gap) / 2;
+    if (loadedImgs[0]) {
+      drawRoundedImage(ctx, loadedImgs[0], boxX, boxY, wLeft, boxH, radius);
+    } else {
+      drawMediaFallback(ctx, boxX, boxY, wLeft, boxH, radius);
+    }
+    if (loadedImgs[1]) {
+      drawRoundedImage(ctx, loadedImgs[1], boxX + wLeft + gap, boxY, wRight, hEach, radius);
+    } else {
+      drawMediaFallback(ctx, boxX + wLeft + gap, boxY, wRight, hEach, radius);
+    }
+    if (loadedImgs[2]) {
+      drawRoundedImage(ctx, loadedImgs[2], boxX + wLeft + gap, boxY + hEach + gap, wRight, hEach, radius);
+    } else {
+      drawMediaFallback(ctx, boxX + wLeft + gap, boxY + hEach + gap, wRight, hEach, radius);
+    }
+  } else if (count >= 4) {
+    const wEach = (boxW - gap) / 2;
+    const hEach = (boxH - gap) / 2;
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 2; c++) {
+        const idx = r * 2 + c;
+        const x = boxX + c * (wEach + gap);
+        const y = boxY + r * (hEach + gap);
+        if (loadedImgs[idx]) {
+          drawRoundedImage(ctx, loadedImgs[idx], x, y, wEach, hEach, radius);
+        } else {
+          drawMediaFallback(ctx, x, y, wEach, hEach, radius);
+        }
+        if (idx === 3 && mediaList.length > 4) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(x, y, wEach, hEach, radius);
+          ctx.fillStyle = "rgba(0,0,0,0.65)";
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "bold 32px " + FONT_SANS;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(`+${mediaList.length - 3}`, x + wEach / 2, y + hEach / 2);
+          ctx.restore();
+        }
+      }
+    }
+  }
+}
+
+function extractCleanCardText(item, stripRe = false) {
+  if (!item) return "";
+  let txt = "";
+  if (item.html) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = item.html.replace(/<br\s*\/?>/gi, "\n");
+    if (item.cw && tmp.firstElementChild && tmp.firstElementChild.tagName === "STRONG") {
+      tmp.firstElementChild.remove();
+    }
+    txt = tmp.textContent || "";
+  } else {
+    txt = item.text || "";
+  }
+  if (stripRe || item.quote) {
+    txt = txt.replace(/^\s*RE:\s*(?:https?:\/\/)?\S+(?:\s*\n+\s*|\s+)?/i, "");
+    txt = txt.replace(/(?:\s*\n+\s*|\s+)RE:\s*(?:https?:\/\/)?\S+\s*$/i, "");
+  }
+  return txt
+    .split(/\r?\n/)
+    .map(ln => ln.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function getValidCardMedia(item) {
+  return (item && Array.isArray(item.media) ? item.media : []).filter(m => {
+    if (!m) return false;
+    if (m.type === "external") return Boolean(m.thumb || m.url);
+    return Boolean(m.url || m.thumb);
+  });
+}
+
+function extractCrossPostExternalUrl(it) {
+  if (!it) return "";
+  const isPostOrProfileUrl = (u) => {
+    if (!u) return false;
+    const cleanU = u.replace(/\/+$/, "");
+    if (it.url && cleanU === it.url.replace(/\/+$/, "")) return true;
+    if (it.quote && it.quote.url && cleanU === it.quote.url.replace(/\/+$/, "")) return true;
+    if (/\/(?:@[^/?#]+|profile\/[^/?#]+)\/?$/i.test(cleanU)) return true;
+    return false;
+  };
+  for (const m of (it.media || [])) {
+    if (m && m.type === "external" && m.url && !isPostOrProfileUrl(m.url)) return m.url;
+  }
+  if (it.quote) {
+    for (const m of (it.quote.media || [])) {
+      if (m && m.type === "external" && m.url && !isPostOrProfileUrl(m.url)) return m.url;
+    }
+  }
+  for (const htmlStr of [it.html, it.quote && it.quote.html]) {
+    if (!htmlStr) continue;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = htmlStr;
+    for (const a of tmp.querySelectorAll("a[href]")) {
+      const href = (a.getAttribute("href") || "").trim();
+      if (!/^https?:\/\//i.test(href)) continue;
+      const cls = a.className || "";
+      const txt = (a.textContent || "").trim();
+      if (cls.includes("mention") || cls.includes("hashtag") || cls.includes("u-url")) continue;
+      if (txt.startsWith("@") || txt.startsWith("#")) continue;
       if (/\/(?:tags|hashtag)\//i.test(href)) continue;
       if (isPostOrProfileUrl(href)) continue;
       return href;
@@ -12081,10 +12244,16 @@ function openCrossPostModal(it) {
   overlay.hidden = false;
   $("crossPostMsg").textContent = "";
   $("crossComment").value = "";
-  $("submitCrossPost").disabled = false;
-  $("submitCrossPost").textContent = t("cross_post.submit");
 
   const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
+  if ($("submitCrossPost")) {
+    $("submitCrossPost").disabled = false;
+    $("submitCrossPost").textContent = t("cross_post.submit");
+  }
+  if ($("submitCrossPostOnly")) {
+    $("submitCrossPostOnly").disabled = false;
+    $("submitCrossPostOnly").textContent = t("cross_post.submit_only_dest", {dest: LABEL[otherNet]});
+  }
   $("crossPostDesc").textContent = t("cross_post.modal_desc", {origin: LABEL[it.network], dest: LABEL[otherNet]});
 
   document.querySelectorAll("#crossSwatches .swatch").forEach(s => {
@@ -12111,18 +12280,36 @@ document.querySelectorAll("#crossSwatches .swatch").forEach(s => {
   };
 });
 
-$("submitCrossPost").onclick = async () => {
+async function executeCrossPost(onlyDest = false) {
   if (!crossPostTarget) return;
   const it = crossPostTarget;
   const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
   const comment = $("crossComment").value.trim();
-  const btn = $("submitCrossPost");
+  const btnBoth = $("submitCrossPost");
+  const btnOnly = $("submitCrossPostOnly");
+  const activeBtn = onlyDest ? btnOnly : btnBoth;
   const msg = $("crossPostMsg");
 
-  btn.disabled = true;
-  btn.textContent = t("cross_post.submitting");
+  if (btnBoth) btnBoth.disabled = true;
+  if (btnOnly) btnOnly.disabled = true;
+  if (activeBtn) {
+    activeBtn.textContent = onlyDest
+      ? t("cross_post.submitting_only_dest", {dest: LABEL[otherNet]})
+      : t("cross_post.submitting");
+  }
   msg.className = "msg";
   msg.textContent = "";
+
+  const restoreButtons = (isRetry = false) => {
+    if (btnBoth) {
+      btnBoth.disabled = false;
+      btnBoth.textContent = (!onlyDest && isRetry) ? t("cross_post.retry") : t("cross_post.submit");
+    }
+    if (btnOnly) {
+      btnOnly.disabled = false;
+      btnOnly.textContent = (onlyDest && isRetry) ? t("cross_post.retry") : t("cross_post.submit_only_dest", {dest: LABEL[otherNet]});
+    }
+  };
 
   try {
     const dataUrl = $("crossCanvas").toDataURL("image/jpeg", 0.92);
@@ -12130,9 +12317,11 @@ $("submitCrossPost").onclick = async () => {
       throw new Error(t("cross_post.cant_generate"));
     }
 
-    // 1. Ação na rede de origem do post (it.network)
+    // 1. Ação opcional na rede de origem do post (it.network) quando não for onlyDest
     let originPromise;
-    if (comment) {
+    if (onlyDest) {
+      originPromise = Promise.resolve({skipped: true});
+    } else if (comment) {
       originPromise = api("/api/post", {
         text: comment,
         targets: [it.network],
@@ -12179,16 +12368,18 @@ $("submitCrossPost").onclick = async () => {
 
     const errors = [];
 
-    // Verificação de resposta na rede de origem
-    if (comment) {
-      if (resOrigin && resOrigin.error) {
-        errors.push(LABEL[it.network] + ": " + resOrigin.error);
-      } else if (resOrigin && resOrigin[it.network] && resOrigin[it.network] !== "ok") {
-        errors.push(LABEL[it.network] + ": " + resOrigin[it.network]);
-      }
-    } else {
-      if (resOrigin && (!resOrigin.ok || resOrigin.error)) {
-        errors.push(LABEL[it.network] + ": " + (resOrigin.error || "falha na republicação"));
+    // Verificação de resposta na rede de origem (apenas se publicada)
+    if (!onlyDest) {
+      if (comment) {
+        if (resOrigin && resOrigin.error) {
+          errors.push(LABEL[it.network] + ": " + resOrigin.error);
+        } else if (resOrigin && resOrigin[it.network] && resOrigin[it.network] !== "ok") {
+          errors.push(LABEL[it.network] + ": " + resOrigin[it.network]);
+        }
+      } else {
+        if (resOrigin && (!resOrigin.ok || resOrigin.error)) {
+          errors.push(LABEL[it.network] + ": " + (resOrigin.error || "falha na republicação"));
+        }
       }
     }
 
@@ -12202,8 +12393,7 @@ $("submitCrossPost").onclick = async () => {
     if (errors.length) {
       msg.className = "msg err";
       msg.textContent = t("cross_post.failed", {err: errors.join("; ")});
-      btn.disabled = false;
-      btn.textContent = t("cross_post.retry");
+      restoreButtons(true);
     } else {
       closeCrossPostModal();
       $("msg").className = "msg";
@@ -12213,10 +12403,12 @@ $("submitCrossPost").onclick = async () => {
   } catch (err) {
     msg.className = "msg err";
     msg.textContent = t("cross_post.failed", {err: err.message});
-    btn.disabled = false;
-    btn.textContent = t("cross_post.retry");
+    restoreButtons(true);
   }
-};
+}
+
+if ($("submitCrossPostOnly")) $("submitCrossPostOnly").onclick = () => executeCrossPost(true);
+if ($("submitCrossPost")) $("submitCrossPost").onclick = () => executeCrossPost(false);
 
 let lastReplyAutoHandle = "";
 

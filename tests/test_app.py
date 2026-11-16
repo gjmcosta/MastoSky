@@ -2181,6 +2181,9 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("it.quote", html)
         self.assertIn("drawQuotedCard(ctx, it.quote", html)
         self.assertIn("extractCrossPostExternalUrl(it)", html)
+        self.assertIn('id="submitCrossPostOnly"', html)
+        self.assertIn("async function executeCrossPost(", html)
+        self.assertIn("submit_only_dest", html)
         # Botões de tema 100% redondos e sem artefatos
         self.assertIn(".swatch{width:28px;height:28px;border-radius:50%!important", html)
         self.assertIn("background-clip:padding-box", html)
@@ -2192,13 +2195,13 @@ class ProxyImageTests(unittest.TestCase):
             return
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()
-        m = re.search(r"<script>([\s\S]*?)</script>", html)
-        self.assertIsNotNone(m, "Bloco <script> não encontrado no index.html")
-        js_code = m.group(1)
-        # Passar código via stdin para evitar exceder o limite de argumentos do kernel Linux (MAX_ARG_STRLEN = 128KB)
-        res = subprocess.run([node_bin, "-e", "const fs = require('fs'); new Function(fs.readFileSync(0, 'utf-8'));"],
-                             input=js_code, capture_output=True, text=True)
-        self.assertEqual(res.returncode, 0, f"Erro de sintaxe no JavaScript do index.html: {res.stderr}")
+        scripts = re.findall(r"<script>([\s\S]*?)</script>", html)
+        self.assertTrue(scripts, "Blocos <script> não encontrados no index.html")
+        # Passar cada bloco via stdin para validar inclusive o script principal completo
+        for idx, js_code in enumerate(scripts):
+            res = subprocess.run([node_bin, "-e", "const fs = require('fs'); new Function(fs.readFileSync(0, 'utf-8'));"],
+                                 input=js_code, capture_output=True, text=True)
+            self.assertEqual(res.returncode, 0, f"Erro de sintaxe no bloco <script> #{idx + 1} do index.html: {res.stderr}")
 
     def test_keyboard_shortcuts_feature(self):
         with open("index.html", "r", encoding="utf-8") as f:
