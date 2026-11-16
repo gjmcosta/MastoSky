@@ -2170,12 +2170,17 @@ class ProxyImageTests(unittest.TestCase):
             html = f.read()
         # Funções de renderização aprimorada de crosspost
         self.assertIn("function getCanvasWrappedLines(", html)
+        self.assertIn("function extractCleanCardText(", html)
+        self.assertIn("function extractCrossPostExternalUrl(", html)
+        self.assertIn("function getValidCardMedia(", html)
+        self.assertIn("function measureQuotedCard(", html)
         self.assertIn("async function drawQuotedCard(", html)
         self.assertIn("async function renderCrossCanvas(", html)
         self.assertIn("/brand/logo-lockup-dark.svg", html)
-        # Suporte a posts citados dentro do cartão
+        # Suporte a posts citados dentro do cartão e links externos na publicação cruzada
         self.assertIn("it.quote", html)
         self.assertIn("drawQuotedCard(ctx, it.quote", html)
+        self.assertIn("extractCrossPostExternalUrl(it)", html)
         # Botões de tema 100% redondos e sem artefatos
         self.assertIn(".swatch{width:28px;height:28px;border-radius:50%!important", html)
         self.assertIn("background-clip:padding-box", html)
@@ -3649,6 +3654,46 @@ class UiRefinementsAndCwTests(unittest.TestCase):
             if re.search(r'(?<!window\.)\b(?:confirm|alert)\(', line)
         ]
         self.assertEqual(bare_dialogs, [])
+
+    def test_masto_quote_strips_re_and_preserves_newlines(self):
+        client = app.Masto({"instance": "https://x", "token": "t"})
+        st = {
+            "id": "20",
+            "account": {"username": "kike", "acct": "kike@mastodon.social"},
+            "content": (
+                '<p class="quote-inline">RE: <a href="https://infosec.exchange/@michaflee/11">infosec.exchange/@michaflee/11</a></p>'
+                "<p>Hai futuro:</p>"
+            ),
+            "created_at": "2026-11-16T00:00:00Z",
+            "quote": {
+                "quoted_status": {
+                    "id": "11",
+                    "account": {"username": "michaflee", "acct": "michaflee@infosec.exchange"},
+                    "content": (
+                        "<p>US adults aged between 18 and 34:</p>"
+                        "<p>- 81% don't trust Alex Karp<br>- 79% don't trust Peter Thiel</p>"
+                    ),
+                    "created_at": "2026-11-16T00:00:00Z",
+                    "card": {
+                        "url": "https://futurism.com/artificial-intelligence/young-people-hate-ai-ceos",
+                        "title": "Young People Hate AI CEOs",
+                        "image": "https://futurism.com/img.jpg",
+                    },
+                }
+            },
+        }
+        it = client.item(st)
+        self.assertEqual(it["text"], "Hai futuro:")
+        self.assertNotIn("RE:", it["text"])
+        self.assertEqual(
+            it["quote"]["text"],
+            "US adults aged between 18 and 34:\n\n- 81% don't trust Alex Karp\n- 79% don't trust Peter Thiel",
+        )
+        self.assertEqual(it["quote"]["media"][0]["type"], "external")
+        self.assertEqual(
+            it["quote"]["media"][0]["url"],
+            "https://futurism.com/artificial-intelligence/young-people-hate-ai-ceos",
+        )
 
 
 if __name__ == "__main__":

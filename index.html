@@ -11554,22 +11554,112 @@ async function drawMediaGrid(ctx, mediaList, boxX, boxY, boxW, boxH, preloadedIm
   }
 }
 
-async function drawQuotedCard(ctx, quote, x, y, w, r = 16) {
-  if (!quote) return 0;
-  let qTxt = (quote.text || "").trim();
-  if (!qTxt && quote.html) {
+function extractCleanCardText(item, stripRe = false) {
+  if (!item) return "";
+  let txt = "";
+  if (item.html) {
     const tmp = document.createElement("div");
-    tmp.innerHTML = quote.html;
-    qTxt = (tmp.textContent || "").trim();
+    tmp.innerHTML = item.html.replace(/<br\s*\/?>/gi, "\n");
+    if (item.cw && tmp.firstElementChild && tmp.firstElementChild.tagName === "STRONG") {
+      tmp.firstElementChild.remove();
+    }
+    txt = tmp.textContent || "";
+  } else {
+    txt = item.text || "";
   }
+  if (stripRe || item.quote) {
+    txt = txt.replace(/^\s*RE:\s*(?:https?:\/\/)?\S+(?:\s*\n+\s*|\s+)?/i, "");
+    txt = txt.replace(/(?:\s*\n+\s*|\s+)RE:\s*(?:https?:\/\/)?\S+\s*$/i, "");
+  }
+  return txt
+    .split(/\r?\n/)
+    .map(ln => ln.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
+function getValidCardMedia(item) {
+  return (item && Array.isArray(item.media) ? item.media : []).filter(m => {
+    if (!m) return false;
+    if (m.type === "external") return Boolean(m.thumb || m.url);
+    return Boolean(m.url || m.thumb);
+  });
+}
+
+function extractCrossPostExternalUrl(it) {
+  if (!it) return "";
+  const isPostOrProfileUrl = (u) => {
+    if (!u) return false;
+    const cleanU = u.replace(/\/+$/, "");
+    if (it.url && cleanU === it.url.replace(/\/+$/, "")) return true;
+    if (it.quote && it.quote.url && cleanU === it.quote.url.replace(/\/+$/, "")) return true;
+    if (/\/(?:@[^/?#]+|profile\/[^/?#]+)\/?$/i.test(cleanU)) return true;
+    return false;
+  };
+  for (const m of (it.media || [])) {
+    if (m && m.type === "external" && m.url && !isPostOrProfileUrl(m.url)) return m.url;
+  }
+  if (it.quote) {
+    for (const m of (it.quote.media || [])) {
+      if (m && m.type === "external" && m.url && !isPostOrProfileUrl(m.url)) return m.url;
+    }
+  }
+  for (const htmlStr of [it.html, it.quote && it.quote.html]) {
+    if (!htmlStr) continue;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = htmlStr;
+    for (const a of tmp.querySelectorAll("a[href]")) {
+      const href = (a.getAttribute("href") || "").trim();
+      if (!/^https?:\/\//i.test(href)) continue;
+      const cls = a.className || "";
+      const txt = (a.textContent || "").trim();
+      if (cls.includes("mention") || cls.includes("hashtag") || cls.includes("u-url")) continue;
+      if (txt.startsWith("@") || txt.startsWith("#")) continue;
+      if (/\/(?:tags|hashtag)\//i.test(href)) continue;
+      if (isPostOrProfileUrl(href)) continue;
+      return href;
+    }
+  }
+  return "";
+}
+
+async function preloadCardMediaImgs(mediaList) {
+  if (!mediaList || !mediaList.length) return [];
+  return Promise.all(
+    mediaList.slice(0, 4).map(m => {
+      const src = (m.type === "external") ? m.thumb : (m.url || m.thumb);
+      return loadImgSafe(src);
+    })
+  );
+}
+
+function measureQuotedCard(ctx, quote, w, qImgs = null) {
   const pad = 20;
   const innerW = w - pad * 2;
+  const qTxt = extractCleanCardText(quote, true);
   ctx.font = "20px " + FONT_SANS;
-  const qLines = qTxt ? getCanvasWrappedLines(ctx, qTxt, innerW, 6) : [];
+  const qLines = qTxt ? getCanvasWrappedLines(ctx, qTxt, innerW, 12) : [];
   const textH = qLines.length > 0 ? (qLines.length * 28 + 6) : 0;
   const headH = 34;
-  const quoteH = pad * 2 + headH + 8 + textH;
+  const qMediaList = getValidCardMedia(quote);
+  let qMediaH = 0;
+  if (qMediaList.length) {
+    if (qMediaList.length === 1 && qMediaList[0].type === "external") {
+      qMediaH = (qImgs && qImgs[0]) ? 240 : 155;
+    } else {
+      qMediaH = 240;
+    }
+  }
+  const quoteH = pad * 2 + headH + 8 + textH + (qMediaH > 0 ? 12 + qMediaH : 0);
+  return { pad, innerW, headH, qLines, textH, qMediaList, qMediaH, quoteH };
+}
+
+async function drawQuotedCard(ctx, quote, x, y, w, r = 16, preloadedQuoteImgs = null) {
+  if (!quote) return 0;
+  const qMediaRaw = getValidCardMedia(quote);
+  const qImgs = preloadedQuoteImgs || (qMediaRaw.length ? await preloadCardMediaImgs(qMediaRaw) : []);
+  const { pad, innerW, headH, qLines, textH, qMediaList, qMediaH, quoteH } = measureQuotedCard(ctx, quote, w, qImgs);
 
   // Fundo e contorno do cartão citado
   ctx.save();
@@ -11636,6 +11726,12 @@ async function drawQuotedCard(ctx, quote, x, y, w, r = 16) {
     lineY += 28;
   }
 
+  // Media ou cartão de ligação dentro da citação
+  if (qMediaList.length && qMediaH > 0) {
+    const qMediaY = y + pad + headH + 8 + textH + 4;
+    await drawMediaGrid(ctx, qMediaList, x + pad, qMediaY, innerW, qMediaH, qImgs);
+  }
+
   ctx.restore();
   return quoteH;
 }
@@ -11646,12 +11742,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   const W = 1080;
 
   // 1. Processa e mede o texto da publicação principal
-  let postTxt = (it.text || "").trim();
-  if (!postTxt && it.html) {
-    const tmp = document.createElement("div");
-    tmp.innerHTML = it.html;
-    postTxt = (tmp.textContent || "").trim();
-  }
+  const postTxt = extractCleanCardText(it, Boolean(it.quote));
 
   const cardX = 65;
   const cardW = W - cardX * 2; // 950px
@@ -11663,38 +11754,25 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   const textLineH = 40;
   const textH = postLines.length > 0 ? (postLines.length * textLineH + 12) : 0;
 
-  // 2. Processa e mede o post citado (se existir)
+  // 2. Processa e mede o post citado (incluindo cartão de ligação / media interna)
   let quoteH = 0;
+  let qImgs = [];
   if (it.quote) {
-    let qTxt = (it.quote.text || "").trim();
-    if (!qTxt && it.quote.html) {
-      const tmp = document.createElement("div");
-      tmp.innerHTML = it.quote.html;
-      qTxt = (tmp.textContent || "").trim();
+    const qMediaList = getValidCardMedia(it.quote);
+    if (qMediaList.length) {
+      qImgs = await preloadCardMediaImgs(qMediaList);
     }
-    ctx.font = "20px " + FONT_SANS;
-    const qLines = qTxt ? getCanvasWrappedLines(ctx, qTxt, availW - 40, 6) : [];
-    const qTextH = qLines.length > 0 ? (qLines.length * 28 + 6) : 0;
-    quoteH = 40 + 34 + 8 + qTextH;
+    quoteH = measureQuotedCard(ctx, it.quote, availW, qImgs).quoteH;
   }
 
   // 3. Processa e mede anexos de media (se existirem)
-  const mediaList = (it.media || []).filter(m => {
-    if (!m) return false;
-    if (m.type === "external") return Boolean(m.thumb || m.url);
-    return Boolean(m.url || m.thumb);
-  });
+  const mediaList = getValidCardMedia(it);
   const hasMedia = mediaList.length > 0;
   let mediaH = 0;
   let preloadedImgs = null;
   if (hasMedia) {
     // Pré-carrega as imagens para calcularmos a altura ideal proporcional sem cortes
-    preloadedImgs = await Promise.all(
-      mediaList.slice(0, 4).map(m => {
-        const src = (m.type === "external") ? m.thumb : (m.url || m.thumb);
-        return loadImgSafe(src);
-      })
-    );
+    preloadedImgs = await preloadCardMediaImgs(mediaList);
 
     if (mediaList.length === 1 && mediaList[0].type === "external") {
       mediaH = mediaList[0].thumb ? 320 : 170;
@@ -11737,8 +11815,8 @@ async function renderCrossCanvas(it, theme = "cosmic") {
   const cardH = cardPadTop + headerH + dividerH + innerH + 16 + metricsH + cardPadBottom;
   const cardY = 50;
   const footerH = 46;
-  // Limites proporcionais: min 540px até max 1500px (proporção vertical ideal para suportar cartazes verticais completos)
-  const H = Math.max(540, Math.min(1500, cardY + cardH + 18 + footerH + 20));
+  // Limites proporcionais: min 540px até max 1750px (suporta cartazes verticais e citações com link card)
+  const H = Math.max(540, Math.min(1750, cardY + cardH + 18 + footerH + 20));
 
   canvas.width = W;
   canvas.height = H;
@@ -11936,7 +12014,7 @@ async function renderCrossCanvas(it, theme = "cosmic") {
 
   // Renderiza o post citado (se existir)
   if (it.quote) {
-    const renderedQuoteH = await drawQuotedCard(ctx, it.quote, contentLeft, curY, availW);
+    const renderedQuoteH = await drawQuotedCard(ctx, it.quote, contentLeft, curY, availW, 16, qImgs);
     curY += renderedQuoteH + 18;
   }
 
@@ -12090,9 +12168,14 @@ $("submitCrossPost").onclick = async () => {
       }
     }
 
-    // 2. Ação na outra rede (otherNet) com o cartão visual e link canónico
+    // 2. Ação na outra rede (otherNet) com o cartão visual, ligação externa (se existir) e link canónico
+    const extUrl = extractCrossPostExternalUrl(it);
     const linkStr = t("cross_post.orig_link_label", {net: LABEL[it.network], url: it.url});
-    const destText = comment ? (comment + "\n\n" + linkStr) : linkStr;
+    const destText = [
+      comment,
+      (extUrl && (!comment || !comment.includes(extUrl)) && extUrl !== it.url) ? ("🌐 " + extUrl) : "",
+      linkStr
+    ].filter(Boolean).join("\n\n");
 
     const destPromise = api("/api/post", {
       text: destText,

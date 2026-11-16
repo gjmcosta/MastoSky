@@ -3,7 +3,7 @@
 > **Data de atualização:** 14 de Novembro de 2026  
 > **Versão:** v0.8.4  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 192 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 193 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -177,6 +177,9 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 - **Deteção inteligente em segundo plano:** Polling de 2 minutos que deteta novas notificações e toca apenas para novos eventos (sem alertas no carregamento inicial).
 
 ### 🛠️ Refinamentos de UX, Robustez & Conectividade
+- **Publicação Cruzada com Ligações Externas e Cartões de Citação Aprimorados:**
+  - Quando a publicação original ou a sua citação contém uma ligação externa (cartão de artigo ou `<a href>` externo), `extractCrossPostExternalUrl()` extrai o URL completo e inclui-o como link clicável (`🌐 <url>`) apenas na publicação enviada para a rede de destino (mantendo a ação nativa na rede original inalterada).
+  - Cartão visual (`drawQuotedCard()` e `renderCrossCanvas()`) passa a renderizar também a imagem/cartão da ligação ou media dentro da citação (`getValidCardMedia()`, `measureQuotedCard()`), limpa o prefixo `RE: ...` em citações Mastodon (`plain(..., strip_quote_inline=True, strip_re=True)` e `extractCleanCardText()`) e preserva quebras de linha e listas com marcadores (`<br>` → `\n`).
 - **Alojamento em CasaOS (Docker), Acesso Remoto Tailscale e Sincronização (`user_data.json`):**
   - `Dockerfile` baseado em `python:3.12-alpine` (zero dependências externas), `.dockerignore` (protege `config.json` e `user_data.json` locais) e `docker-compose.yml` pronto para **CasaOS** (metadados `x-casaos`, volume `/DATA/AppData/mastosky:/data` e variável `MASTOSKY_DATA_DIR=/data`).
   - Suporte nativo em `app.py` para `MASTOSKY_DATA_DIR` (guardando `config.json` e `user_data.json` no volume persistente com permissões `0600`) e validação de rede privada alargada em `is_private_or_local_host()` para gama CGNAT Tailscale (`100.64.0.0/10`, incluindo IPv4-mapped IPv6), domínios `.ts.net` (MagicDNS) e `MASTOSKY_ALLOWED_HOSTS`.

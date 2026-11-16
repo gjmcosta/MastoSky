@@ -650,8 +650,16 @@ def preview(text, n=140):
     return text if len(text) <= n else text[:n].rstrip() + "…"
 
 
-def plain(h):
-    return html.unescape(re.sub(r"<[^>]+>", " ", clean(h)))
+def plain(h, strip_quote_inline=False, strip_re=False):
+    cleaned = clean(h, strip_quote_inline=strip_quote_inline)
+    if strip_re:
+        cleaned = strip_re_prefix(cleaned)
+    cleaned = re.sub(r"</?a\b[^>]*>", "", cleaned, flags=re.I)
+    cleaned = re.sub(r"(?:<br\s*/?>[ \t]*){2,}", "\n\n", cleaned, flags=re.I)
+    cleaned = re.sub(r"<br\s*/?>", "\n", cleaned, flags=re.I)
+    txt = html.unescape(re.sub(r"<[^>]+>", " ", cleaned))
+    lines = [re.sub(r"[ \t]+", " ", ln).strip() for ln in txt.split("\n")]
+    return "\n".join(lines).strip()
 
 
 def safe_url(u):
@@ -982,7 +990,7 @@ def parse_masto_quote(st):
     q_name = q_acc.get("display_name") or q_acc.get("username", "")
     q_name_html = render_custom_emojis(html.escape(q_name), q_acc.get("emojis")) if q_acc.get("emojis") else None
 
-    plain_text = ((f"[{qs['spoiler_text']}] " if qs.get("spoiler_text") else "") + plain(qs.get("content"))).strip()
+    plain_text = ((f"[{qs['spoiler_text']}] " if qs.get("spoiler_text") else "") + plain(qs.get("content"), strip_quote_inline=True, strip_re=True)).strip()
     ref_obj = {"id": qs.get("id")} if qs.get("id") else None
     out = {
         "network": "mastodon",
@@ -1947,7 +1955,7 @@ class Masto:
         name_plain = a.get("display_name") or a.get("username", "")
         name_html = render_custom_emojis(html.escape(name_plain), a.get("emojis")) if a.get("emojis") else None
         final_html = render_custom_emojis(cw + raw_html, x.get("emojis"))
-        plain_text = ((f"[{x['spoiler_text']}] " if x.get("spoiler_text") else "") + plain(x.get("content"))).strip()
+        plain_text = ((f"[{x['spoiler_text']}] " if x.get("spoiler_text") else "") + plain(x.get("content"), strip_quote_inline=bool(quote), strip_re=bool(quote))).strip()
         out = {
             "network": "mastodon", "name": name_plain, "handle": "@" + a.get("acct", ""),
             "author_id": str(a.get("id")), "author_handle": a.get("acct") or a.get("username", ""),
