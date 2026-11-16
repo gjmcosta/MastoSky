@@ -5438,7 +5438,7 @@ if ($("confirmModalOverlay")) {
 
 document.addEventListener("click", (e) => {
   const post = e.target.closest("article.post");
-  if (post) {
+  if (post && !e.target.closest("a, button, input, textarea, select")) {
     setKeyboardFocusedPost(post, false);
   }
   const col = e.target.closest(".deck-col");
@@ -5791,25 +5791,13 @@ function renderQuote(q) {
     ext.target = "_blank";
     ext.rel = "noopener noreferrer";
     ext.title = t("post.view_web");
-    ext.onclick = (e) => e.stopPropagation();
     head.append(ext);
   }
   card.append(head);
   if (q.html) {
     const body = el("div", "quote-body");
     body.innerHTML = q.html;
-    body.addEventListener("click", (e) => {
-      const a = e.target.closest("a");
-      if (!a || !a.href) return;
-      const mTag = a.href.match(/(?:tags|hashtag)\/([^/?#]+)/i);
-      if (mTag && mTag[1]) {
-        e.preventDefault();
-        e.stopPropagation();
-        const tagName = decodeURIComponent(mTag[1]);
-        setTab("search");
-        doSearch("#" + tagName);
-      }
-    });
+    body.addEventListener("click", (e) => handlePostHtmlClicks(e, q.network));
     card.append(body);
     if (q.text) attachPostTranslator(card, q.text);
   }
@@ -5994,33 +5982,52 @@ function handlePostHtmlClicks(e, network) {
   const href = a.getAttribute("href") || a.href || "";
   const txt = (a.textContent || "").trim();
 
-  // 1. Hashtags: #tag ou links para /tags/ ou /hashtag/
-  const mTag = href.match(/(?:tags|hashtag)\/([^/?#]+)/i) || (txt.startsWith("#") ? [null, txt.slice(1)] : null);
-  if (mTag && mTag[1]) {
+  // 1. Hashtags: #tag ou links explícitos de hashtag
+  const mBskyTag = href.match(/^https?:\/\/(?:[\w.-]+\.)?bsky\.app\/hashtag\/([^/?#]+)/i);
+  const mMastoTag = (txt.startsWith("#") || a.classList.contains("hashtag")) ? href.match(/\/(?:tags|hashtag)\/([^/?#]+)/i) : null;
+  const tagRaw = mBskyTag ? mBskyTag[1] : (mMastoTag ? mMastoTag[1] : (txt.startsWith("#") ? txt.slice(1) : ""));
+  if (tagRaw) {
     e.preventDefault();
     e.stopPropagation();
-    const tagName = decodeURIComponent(mTag[1]).replace(/^#/, "");
+    const tagName = decodeURIComponent(tagRaw).replace(/^#/, "");
     if (typeof setSearchType === "function") setSearchType("posts");
     setTab("search");
     doSearch("#" + tagName);
     return;
   }
 
-  // 2. Menções @user: links para perfis ou textos que começam por @
-  if (txt.startsWith("@") || href.includes("/profile/") || href.includes("/@") || a.classList.contains("mention") || a.classList.contains("u-url")) {
+  // 2. Menções @user: apenas links diretos para perfis (sem /post/ ou sub-caminhos) ou textos que começam por @
+  const mBskyProf = href.match(/^https?:\/\/(?:[\w.-]+\.)?bsky\.app\/profile\/([^/?#]+)\/?$/i);
+  const mMastoProf = href.match(/^https?:\/\/[^/]+\/@([^/?#]+)\/?$/i);
+  if (txt.startsWith("@") || mBskyProf || mMastoProf || a.classList.contains("mention") || a.classList.contains("u-url")) {
     e.preventDefault();
     e.stopPropagation();
     let actor = href;
-    const mBsky = href.match(/bsky\.app\/profile\/([^/?#]+)/i);
-    const mMasto = href.match(/(?:mastodon\.[^/]+|[^/]+)\/@([^/?#]+)/i);
-    if (mBsky) actor = decodeURIComponent(mBsky[1]);
-    else if (mMasto) actor = decodeURIComponent(href);
+    if (mBskyProf) actor = decodeURIComponent(mBskyProf[1]);
+    else if (mMastoProf) actor = decodeURIComponent(href);
     else if (txt.startsWith("@")) actor = txt;
     try { actor = decodeURIComponent(actor); } catch (_) {}
     openUserProfile(network || "bluesky", actor);
     return;
   }
 }
+
+function openExternalLinkClick(e) {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+  if (!a || a.hasAttribute("download")) return;
+  const href = su(a.getAttribute("href") || a.href || "");
+  if (!href) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const w = window.open(href, "_blank");
+  if (w) {
+    try { w.opener = null; } catch (_) {}
+  } else {
+    window.location.assign(href);
+  }
+}
+document.addEventListener("click", openExternalLinkClick);
 
 function postCard(it, o = {}) {
   const postKey = getPostKey(it);
@@ -7456,18 +7463,7 @@ function renderNotifs() {
     if (n.html && (!hasMedia || !n.html.includes("📷 [Imagem]"))) {
       const b = el("div", "body");
       b.innerHTML = n.html;
-      b.addEventListener("click", (e) => {
-        const a = e.target.closest("a");
-        if (!a || !a.href) return;
-        const mTag = a.href.match(/(?:tags|hashtag)\/([^/?#]+)/i);
-        if (mTag && mTag[1]) {
-          e.preventDefault();
-          e.stopPropagation();
-          const tagName = decodeURIComponent(mTag[1]);
-          setTab("search");
-          doSearch("#" + tagName);
-        }
-      });
+      b.addEventListener("click", (e) => handlePostHtmlClicks(e, n.network));
       p.append(b);
     }
     const m = renderMedia(n.media);

@@ -2945,6 +2945,7 @@ class MobileAndLanAccessTests(unittest.TestCase):
 
         # Interceção de hashtags e menções @user nos posts
         self.assertIn('function handlePostHtmlClicks(', html)
+        self.assertIn('function openExternalLinkClick(', html)
         self.assertIn('tabScrolls', html)
         self.assertIn('setSearchType("posts")', html)
 
