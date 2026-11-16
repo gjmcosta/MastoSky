@@ -1,0 +1,26 @@
+{
+  "saved_posts": [],
+  "drafts": [],
+  "muted_words": [],
+  "mute_mode": "warn",
+  "preferences": {
+    "theme": "system",
+    "lang": "pt",
+    "nav_mode": "sidebar",
+    "view_mode": "deck",
+    "deck_columns": [
+      "compose",
+      "timeline",
+      "notifs",
+      "explore"
+    ],
+    "notif_sound": false,
+    "notif_types": {
+      "replies": true,
+      "likes": true,
+      "boosts": true,
+      "follows": true
+    }
+  },
+  "updated_at": 1794761918746
+}

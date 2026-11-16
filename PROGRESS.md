@@ -3,7 +3,7 @@
 > **Data de atualização:** 14 de Novembro de 2026  
 > **Versão:** v0.8.4  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 191 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 192 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -183,6 +183,11 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - Deteção automática de URL Tailscale (`get_tailscale_ip()` / `get_tailscale_url()` / `MASTOSKY_TAILSCALE_HOST`) em `GET /api/lan` e secção dedicada **Acesso Remoto (Tailscale)** no modal `#mobileModalOverlay`.
   - Novos endpoints autenticados com CSRF `GET /api/user_data` e `POST /api/user_data` (escrita atómica thread-safe em `user_data.json`) e motor de sincronização automática no `index.html` (`pullUserDataFromServer`, `scheduleServerSync`, `applySyncedUserData`, `initServerSync`) para sincronizar Guardados, Rascunhos, Palavras Silenciadas, Colunas do Deck e Preferências entre dispositivos.
   - **Atualização persistente com 1 clique no CasaOS/Docker (`run_self_update`, `schedule_process_restart`):** Descarrega o código de `main` do GitHub preservando `config.json` e `user_data.json`, persiste uma cópia em `/data/app_update` (restaurada automaticamente no arranque pelo `Dockerfile`), agenda reinício automático do processo Python em `POST /api/self_update` e mantém `#selfUpdateBtn` visível nas Definições (com `GET /api/version?force=1` ao clicar em "Verificar").
+- **Experiência Nativa iOS (iPhone) e iPadOS (iPad):**
+  - Ícones PNG oficiais (`brand/apple-touch-icon.png` `180×180`, `brand/icon-192.png` e `brand/icon-512.png`) servidos em `/brand/*.png` e `/apple-touch-icon.png` e declarados em `manifest.json` e `index.html`.
+  - Modo de vista independente entre iPhone (`<768px`, `mastosky_view_mode_mobile` em Coluna Única) e iPad/Mac (`≥768px`, sincronizando `view_mode` e `deck_columns` via servidor).
+  - Modo Deck otimizado para iPad (`768px–1180px` com colunas de `336px`, altura `100dvh` com margens `safe-area-inset` e botões de ação táteis de `32×32px` em `@media (pointer: coarse)`).
+  - Gesto tátil *Pull-to-Refresh* (`initTouchPullToRefresh` + `#pullToRefreshIndicator`) para PWA standalone e preenchimento rápido de rascunho por partilha de URL (`handleIncomingShareParams` + `share_target` no `manifest.json`).
 - **Cópia de Segurança & Restauro Local (Backup JSON):**
   - Secção dedicada nas Definições (`#setupOverlay`) e atalho no modal de rascunhos para exportar e restaurar todos os dados locais num ficheiro JSON estruturado (`mastosky-backup-YYYY-MM-DD.json`).
   - Cobre rascunhos de publicações, posts guardados nos marcadores, ordem e visibilidade das colunas do Deck, e preferências completas de interface (tema, idioma, modo de navegação e notificações).

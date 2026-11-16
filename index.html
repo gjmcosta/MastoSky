@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#F7F8FF" media="(prefers-color-scheme: light)">
 <title>MastoSky</title>
 <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
-<link rel="apple-touch-icon" href="/brand/app-icon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.json">
 <script>
   (function(){
@@ -1013,13 +1013,15 @@ body.nav-sticky .tabs{border-bottom:0;margin-bottom:8px}
 /* Deck View Styles */
 body.view-deck {
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 body.view-deck main {
   max-width: 100% !important;
   width: 100% !important;
   height: 100vh;
-  padding: 8px 16px 12px 16px;
+  height: 100dvh;
+  padding: max(8px, env(safe-area-inset-top, 8px)) max(14px, env(safe-area-inset-right, 14px)) max(12px, env(safe-area-inset-bottom, 12px)) max(14px, env(safe-area-inset-left, 14px));
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -1170,6 +1172,46 @@ body.view-deck .deck-container {
 .deck-act-btn.deck-close-btn:hover:not(:disabled) {
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 15%, transparent);
+}
+@media (min-width: 768px) and (max-width: 1180px) {
+  body.view-deck .deck-container {
+    gap: 10px;
+  }
+  .deck-col {
+    flex: 0 0 336px;
+    width: 336px;
+  }
+}
+@media (pointer: coarse) {
+  .deck-act-btn {
+    width: 32px;
+    height: 32px;
+  }
+}
+#pullToRefreshIndicator {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translate(-50%, -70px);
+  z-index: 250;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  font-size: 12.5px;
+  font-weight: 600;
+  pointer-events: none;
+  opacity: 0;
+  transition: transform .18s ease, opacity .18s ease, border-color .18s ease, color .18s ease;
+}
+#pullToRefreshIndicator.visible {
+  opacity: 1;
+}
+#pullToRefreshIndicator.ready {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 .deck-add-col-card {
   flex: 0 0 240px;
@@ -4145,7 +4187,13 @@ function toggleThemeQuick() {
   const nextTheme = effective === "dark" ? "light" : "dark";
   applyTheme(nextTheme, true);
 }
-let viewMode = localStorage.getItem("mastosky_view_mode") || "single";
+function isCompactMobileViewport() {
+  return typeof window !== "undefined" && window.innerWidth > 0 && window.innerWidth < 768;
+}
+function getViewModeStorageKey() {
+  return isCompactMobileViewport() ? "mastosky_view_mode_mobile" : "mastosky_view_mode";
+}
+let viewMode = localStorage.getItem(getViewModeStorageKey()) || "single";
 const ALL_DECK_COLS = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
 let deckColumns = (() => {
   try {
@@ -4532,8 +4580,10 @@ function initDeckDragAndDrop() {
 
 function applyViewMode(mode) {
   viewMode = mode;
-  localStorage.setItem("mastosky_view_mode", mode);
-  syncPrefsToServer();
+  localStorage.setItem(getViewModeStorageKey(), mode);
+  if (!isCompactMobileViewport()) {
+    syncPrefsToServer();
+  }
   document.body.classList.toggle("view-deck", mode === "deck");
 
   const comp = $("composeSection");
@@ -10316,15 +10366,18 @@ let _serverSyncTimer = null;
 let _pendingServerSync = {};
 
 function getSyncPreferences() {
-  return {
+  const prefs = {
     theme: currentTheme,
     lang: currentLang,
     nav_mode: navMode,
-    view_mode: viewMode,
     deck_columns: Array.isArray(deckColumns) ? [...deckColumns] : [],
     notif_sound: Boolean(notifSoundEnabled),
     notif_types: (notifTypesEnabled && typeof notifTypesEnabled === "object") ? { ...notifTypesEnabled } : {}
   };
+  if (!isCompactMobileViewport()) {
+    prefs.view_mode = viewMode;
+  }
+  return prefs;
 }
 
 function scheduleServerSync(partial) {
@@ -10448,7 +10501,7 @@ function applySyncedUserData(serverData, isInitialMerge = false) {
       if ((p.nav_mode === "sidebar" || p.nav_mode === "sticky" || p.nav_mode === "none") && p.nav_mode !== navMode) {
         setNavMode(p.nav_mode);
       }
-      if ((p.view_mode === "single" || p.view_mode === "deck") && p.view_mode !== viewMode) {
+      if (!isCompactMobileViewport() && (p.view_mode === "single" || p.view_mode === "deck") && p.view_mode !== viewMode) {
         applyViewMode(p.view_mode);
       }
       if (Array.isArray(p.deck_columns)) {
@@ -12959,6 +13012,129 @@ function initNewPostsPillDismissers() {
   });
 }
 
+function handleIncomingShareParams() {
+  try {
+    const qs = new URLSearchParams(window.location.search);
+    const title = (qs.get("title") || "").trim();
+    const text = (qs.get("text") || qs.get("share_text") || "").trim();
+    const url = (qs.get("url") || qs.get("share_url") || "").trim();
+    if (!title && !text && !url) return;
+
+    const parts = [];
+    if (title && (!text || !text.includes(title))) parts.push(title);
+    if (text) parts.push(text);
+    if (url && (!text || !text.includes(url))) parts.push(url);
+    const combined = parts.join("\n").trim();
+
+    if (combined && $("text")) {
+      if (viewMode === "single" && tab !== "timeline") setTab("timeline");
+      $("text").value = combined;
+      if (typeof update === "function") update();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setTimeout(() => $("text")?.focus(), 150);
+    }
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    }
+  } catch (_) {}
+}
+
+function initTouchPullToRefresh() {
+  if (!("ontouchstart" in window) || $("pullToRefreshIndicator")) return;
+  const ind = document.createElement("div");
+  ind.id = "pullToRefreshIndicator";
+  ind.hidden = true;
+  document.body.appendChild(ind);
+
+  let startX = 0;
+  let startY = 0;
+  let active = false;
+  let triggered = false;
+  let activeCol = null;
+
+  const hideIndicator = () => {
+    ind.classList.remove("visible", "ready");
+    ind.style.transform = "translate(-50%, -70px)";
+    setTimeout(() => {
+      if (!ind.classList.contains("visible")) ind.hidden = true;
+    }, 200);
+  };
+
+  document.addEventListener("touchstart", (e) => {
+    active = false;
+    triggered = false;
+    activeCol = null;
+    if (e.touches.length !== 1) return;
+    if (typeof isAnyModalOpen === "function" && isAnyModalOpen()) return;
+    if (e.target && e.target.closest && e.target.closest("textarea, input, select, [contenteditable='true']")) return;
+
+    if (viewMode === "deck") {
+      const colBody = e.target && e.target.closest ? e.target.closest(".deck-col-body") : null;
+      if (!colBody || colBody.scrollTop > 1) return;
+      activeCol = colBody;
+    } else {
+      if ((window.scrollY || document.documentElement.scrollTop || 0) > 1) return;
+    }
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    active = true;
+  }, { passive: true });
+
+  document.addEventListener("touchmove", (e) => {
+    if (!active || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    const atTop = activeCol ? activeCol.scrollTop <= 1 : (window.scrollY || 0) <= 1;
+    if (!atTop || dy < 0 || Math.abs(dx) > Math.abs(dy) * 0.9) {
+      active = false;
+      triggered = false;
+      hideIndicator();
+      return;
+    }
+    if (dy < 14) return;
+    const pull = Math.min(95, (dy - 14) * 0.55);
+    triggered = pull >= 45;
+    ind.hidden = false;
+    ind.classList.add("visible");
+    ind.classList.toggle("ready", triggered);
+    ind.textContent = triggered
+      ? (currentLang === "en" ? "↑ Release to refresh" : "↑ Larga para atualizar")
+      : (currentLang === "en" ? "↓ Pull to refresh" : "↓ Puxa para atualizar");
+    ind.style.transform = `translate(-50%, ${Math.round(pull - 10)}px)`;
+  }, { passive: true });
+
+  const onEnd = () => {
+    if (!active) return;
+    const shouldRefresh = triggered;
+    active = false;
+    triggered = false;
+    if (shouldRefresh) {
+      ind.textContent = currentLang === "en" ? "↻ Refreshing..." : "↻ A atualizar...";
+      ind.style.transform = "translate(-50%, 6px)";
+      const deckColId = activeCol ? activeCol.closest(".deck-col")?.dataset?.col : null;
+      if (deckColId === "explore") loadExplore();
+      else if (deckColId === "notifs") loadNotifs();
+      else if (deckColId === "messages") loadConversations(true);
+      else if (deckColId === "profile") loadProfile(true);
+      else {
+        load();
+        loadNotifs();
+        loadConversations(true);
+        if (viewMode === "single") {
+          if (tab === "explore") loadExplore();
+          if (tab === "saved") renderSavedFeed();
+          if (tab === "profile") loadProfile(true);
+        }
+      }
+      setTimeout(hideIndicator, 650);
+    } else {
+      hideIndicator();
+    }
+  };
+  document.addEventListener("touchend", onEnd, { passive: true });
+  document.addEventListener("touchcancel", onEnd, { passive: true });
+}
+
 setNavMode(navMode);
 applyI18n();
 applyTheme(currentTheme, false);
@@ -12972,11 +13148,13 @@ initNewPostsPillDismissers();
 syncStatusAndAiConfig();
 updateLanBadges();
 initServerSync();
+initTouchPullToRefresh();
 
 const validTabs = ["timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
 const hashTab = (location.hash || "").replace("#", "");
 const initTab = validTabs.includes(hashTab) ? hashTab : "timeline";
 setTab(initTab);
+handleIncomingShareParams();
 load();
 loadNotifs();
 loadConversations(true);

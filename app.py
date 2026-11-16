@@ -3556,8 +3556,19 @@ class H(BaseHTTPRequestHandler):
             rel = path[7:]
             target = (DIR / "brand" / rel).resolve()
             if target.is_file() and str(target).startswith(str((DIR / "brand").resolve())):
-                mime = "image/svg+xml" if path.endswith(".svg") else ("text/css" if path.endswith(".css") else "application/octet-stream")
+                if path.endswith(".svg"):
+                    mime = "image/svg+xml"
+                elif path.endswith(".png"):
+                    mime = "image/png"
+                elif path.endswith(".css"):
+                    mime = "text/css"
+                else:
+                    mime = "application/octet-stream"
                 return self.send(200, target.read_bytes(), mime)
+        if path in ("/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"):
+            ati = DIR / "brand" / "apple-touch-icon.png"
+            if ati.is_file():
+                return self.send(200, ati.read_bytes(), "image/png")
         if path in ("/favicon.ico", "/favicon.svg"):
             fav = DIR / "brand" / "favicon.svg"
             if fav.is_file():

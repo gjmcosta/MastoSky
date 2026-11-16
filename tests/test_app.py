@@ -3145,6 +3145,37 @@ class CasaOSTailscaleAndSyncTests(unittest.TestCase):
             self.assertFalse((data_dir / "app_update" / "config.json").exists())
             self.assertFalse((data_dir / "app_update" / "user_data.json").exists())
 
+    def test_ios_ipados_pwa_icons_and_features(self):
+        root = Path(__file__).resolve().parent.parent
+        for fname in ("apple-touch-icon.png", "icon-192.png", "icon-512.png"):
+            p = root / "brand" / fname
+            self.assertTrue(p.is_file(), f"Ícone em falta: {fname}")
+            self.assertTrue(p.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"))
+
+        for endpoint in ("/brand/apple-touch-icon.png", "/apple-touch-icon.png"):
+            h = self._api_handler(endpoint)
+            h.do_GET()
+            code = [v for k, v in h.sent if k == "code"][0]
+            ctype = dict((k, v) for k, v in h.sent if k != "code").get("Content-Type")
+            self.assertEqual(code, 200)
+            self.assertEqual(ctype, "image/png")
+            self.assertTrue(h.wfile.getvalue().startswith(b"\x89PNG\r\n\x1a\n"))
+
+        manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+        icon_srcs = [ic.get("src") for ic in manifest.get("icons", [])]
+        self.assertIn("/brand/apple-touch-icon.png", icon_srcs)
+        self.assertIn("/brand/icon-192.png", icon_srcs)
+        self.assertIn("/brand/icon-512.png", icon_srcs)
+        self.assertIn("share_target", manifest)
+
+        html = (root / "index.html").read_text(encoding="utf-8")
+        self.assertIn('href="/brand/apple-touch-icon.png"', html)
+        self.assertIn("function isCompactMobileViewport(", html)
+        self.assertIn("function initTouchPullToRefresh(", html)
+        self.assertIn("function handleIncomingShareParams(", html)
+        self.assertIn("mastosky_view_mode_mobile", html)
+        self.assertIn("100dvh", html)
+
 
 class DirectMessagesTests(unittest.TestCase):
     def test_build_bsky_facets(self):
