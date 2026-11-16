@@ -3062,7 +3062,7 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
       <div class="lightbox-caption" id="lightboxCaption">
         <span class="lightbox-counter" id="lightboxCount" hidden></span>
         <span class="lightbox-alt" id="lightboxAltText"></span>
-        <a id="lightboxOriginalLink" href="#" target="_blank" rel="noopener noreferrer" class="lightbox-link" data-i18n="lightbox.open_original">Abrir original ↗</a>
+        <a id="lightboxOriginalLink" href="#" target="_blank" rel="opener" class="lightbox-link" data-i18n="lightbox.open_original">Abrir original ↗</a>
       </div>
     </div>
   </div>
@@ -5687,7 +5687,7 @@ function renderMedia(mediaList) {
       m.append(v);
     } else if (x.type === "external") {
       const a = el("a", "ext-card" + (x.thumb ? "" : " no-thumb"));
-      a.href = su(x.url) || "#"; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.href = su(x.url) || "#"; a.target = "_blank"; a.rel = "opener";
       if (x.thumb) {
         const img = el("img"); img.src = su(x.thumb) || ""; img.loading = "lazy"; a.append(img);
       } else {
@@ -5789,7 +5789,7 @@ function renderQuote(q) {
     const ext = el("a", "quote-ext-link", "↗");
     ext.href = su(q.url) || "#";
     ext.target = "_blank";
-    ext.rel = "noopener noreferrer";
+    ext.rel = "opener";
     ext.title = t("post.view_web");
     head.append(ext);
   }
@@ -6013,21 +6013,14 @@ function handlePostHtmlClicks(e, network) {
 }
 
 function openExternalLinkClick(e) {
-  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
   const a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
   if (!a || a.hasAttribute("download")) return;
   const href = su(a.getAttribute("href") || a.href || "");
   if (!href) return;
-  e.preventDefault();
-  e.stopPropagation();
-  const w = window.open(href, "_blank");
-  if (w) {
-    try { w.opener = null; } catch (_) {}
-  } else {
-    window.location.assign(href);
-  }
+  a.target = "_blank";
+  a.rel = "opener";
 }
-document.addEventListener("click", openExternalLinkClick);
+document.addEventListener("click", openExternalLinkClick, true);
 
 function postCard(it, o = {}) {
   const postKey = getPostKey(it);
@@ -6066,7 +6059,7 @@ function postCard(it, o = {}) {
   }
   who.append(bItName, el("span", null, it.handle + " · " + LABEL[it.network]));
   const when = el("a", "when", ago(it.time));
-  when.href = su(it.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
+  when.href = su(it.url) || "#"; when.target = "_blank"; when.rel = "opener";
   when.title = fullDateStr(it.time);
   head.append(who, netBadge(it.network), when);
   const body = el("div", "body");
@@ -7415,7 +7408,7 @@ function renderNotifs() {
       const origWhen = el("a", "when", ago(tp.time || n.time));
       origWhen.href = su(tp.url || n.url) || "#";
       origWhen.target = "_blank";
-      origWhen.rel = "noopener noreferrer";
+      origWhen.rel = "opener";
       origWhen.title = fullDateStr(tp.time || n.time);
       origWhen.onclick = () => markSingleNotifRead(n, p);
       head.append(who, origWhen);
@@ -7453,7 +7446,7 @@ function renderNotifs() {
       const sMeta = el("span", "notif-meta", n.handle + " · " + LABEL[n.network]);
       who.append(bNName, sMeta);
       const when = el("a", "when", ago(n.time));
-      when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "noopener noreferrer";
+      when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "opener";
       when.title = fullDateStr(n.time);
       when.onclick = () => markSingleNotifRead(n, p);
       head.append(who, netBadge(n.network), when);
@@ -7827,7 +7820,7 @@ function renderSingleProfileCard(p, isOwn = false) {
       const linkExt = el("a", "btn-profile-ext", t("profile.view_on_web"));
       linkExt.href = su(p.url) || "#";
       linkExt.target = "_blank";
-      linkExt.rel = "noopener noreferrer";
+      linkExt.rel = "opener";
       actionsRight.append(linkExt);
     }
 
