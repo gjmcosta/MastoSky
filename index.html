@@ -4382,6 +4382,8 @@
       border-radius: 14px;
       max-width: 480px;
       width: 100%;
+      min-width: 0;
+      overflow-x: hidden;
       padding: 22px;
       box-sizing: border-box;
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
@@ -5292,16 +5294,42 @@
         padding: calc(10px + env(safe-area-inset-top, 0px)) 10px calc(10px + env(safe-area-inset-bottom, 0px));
       }
 
-      .setup-box.catchup-box {
+      .setup-box,
+      .setup-box.catchup-box,
+      .setup-box.user-profile-box,
+      .setup-box.reader-box,
+      .setup-box.drafts-box,
+      .setup-box.settings-dialog,
+      .setup-box.cross-post-box,
+      .setup-box.crop-box,
+      .setup-box.partial-post-box,
+      .setup-box.shortcuts-box,
+      .mobile-modal-box {
         max-width: 100%;
         width: 100%;
+        min-width: 0;
         max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
         padding: 14px;
+        overflow-x: hidden;
+        overflow-y: auto;
       }
 
+      .setup-box.catchup-box,
+      .setup-box.user-profile-box,
+      .setup-box.reader-box,
+      .setup-box.drafts-box {
+        overflow-y: hidden;
+      }
+
+      .user-profile-modal-body,
+      .reader-scroll,
+      .drafts-list,
       .catchup-list {
+        min-height: 0;
+        min-width: 0;
         max-height: none;
         padding-right: 0;
+        -webkit-overflow-scrolling: touch;
       }
 
         .header-nav-group {
@@ -14416,19 +14444,39 @@
         const targetPost = (n.target_post && (n.target_post.uri || n.target_post.id || n.target_post.url)) ? {
           network: n.network,
           id: n.target_post.uri || (n.target_post.id ? String(n.target_post.id) : null) || n.target_post.url,
-          ref: n.ref || (n.target_post.uri ? { uri: n.target_post.uri, cid: n.target_post.cid } : (n.target_post.id ? { id: String(n.target_post.id) } : null)),
-          url: n.target_post.url || n.url,
-          author_id: n.target_post.author_id,
-          handle: n.target_post.author_handle || n.handle,
-          name: n.target_post.author_name || n.name,
-          avatar: n.target_post.author_avatar || n.avatar,
-          text: n.target_post.text || n.text || "",
-          html: n.html || "",
-          media: n.media || [],
-          quote: n.quote || null,
-          liked: Boolean(n.target_post.liked ?? n.liked),
-          likes: n.target_post.likes ?? n.likes ?? 0,
-          boosted: Boolean(n.target_post.boosted ?? n.boosted),
+          boosts: n.target_post.boosts ?? n.boosts ?? 0,
+          replies: n.target_post.replies ?? n.replies ?? 0,
+          time: n.target_post.time || n.time,
+          cid: n.target_post.cid || null,
+          uri: n.target_post.uri || null
+        } : null;
+
+        const p = el("div", "post " + n.network + (isFresh ? " fresh" : ""));
+        p.dataset.notifKey = key;
+
+        if (isRepostNotif) {
+          const tp = n.target_post;
+          const banner = el("div", "notif-boost-banner");
+          banner.innerHTML = (NOTIF_ICONS[n.kind] || NOTIF_ICONS.boost) + " ";
+          banner.append(el("span", null, t("post.shared_by", { name: n.name || n.handle })));
+          p.append(banner);
+
+          const head = el("div", "head");
+          const onOrigProfile = (e) => {
+            e.stopPropagation();
+            markSingleNotifRead(n, p);
+            openUserProfile(n.network, tp.author_id || tp.author_handle);
+          };
+          if (tp.author_avatar) {
+            const av = el("img", "author-link");
+            av.src = su(tp.author_avatar) || "";
+            av.alt = "";
+            av.title = t("post.view_profile", { name: tp.author_name || tp.author_handle });
+            av.onclick = onOrigProfile;
+            head.append(av);
+          } else {
+            head.append(el("div", "ph"));
+          }
           const who = el("div", "who");
           const bOrigName = el("b", "author-link");
           if (tp.author_name_html) bOrigName.innerHTML = tp.author_name_html;
