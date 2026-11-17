@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
-> **Data de atualização:** 14 de Novembro de 2026  
+> **Data de atualização:** 17 de Novembro de 2026  
 > **Versão:** v0.8.4  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 195 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 206 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -273,16 +273,39 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - **Atalhos e Acessibilidade:** Tecla `6` para saltar diretamente para a coluna/aba de Mensagens, tecla `Escape` para fechar o modal ou voltar à lista a partir de uma conversa aberta, e traduções integrais em Português e Inglês.
   - **Refinamento Visual do Subheader e Estado Vazio:** Barra de ferramentas unificada com pílulas e botão de nova mensagem perfeitamente alinhados (altura exata de 28px, geometria arredondada contínua, adaptação responsiva no Deck View para "Nova" e etiqueta completa em ecrãs largos, sem quebras de linha espúrias), contraste ideal no tema escuro/claro, renderização corrigida do estado vazio com ícone SVG estilizado e adição do botão de ação rápida `+` no cabeçalho superior da coluna do Deck.
 
+### 🧩 Desduplicação, Cross-Posting Avançado, Produtividade e Leitura (Novembro 2026)
+- **Desduplicação de Cross-posts na Timeline (*Crosstalk*):**
+  - Deteção automática de publicações simultâneas do mesmo autor em Mastodon e Bluesky (`groupCrossPosts()`, `isCrossPostPair()`, `normalizeCrossPostText()`) fundidas num único cartão com seletor `🐘 + 🦋` no topo (prioridade Mastodon por omissão), preservando interações locais e paginação por cursor.
+  - Opção configurável nas Definições (`#cfgCrosstalkDedup`), sincronizada em `user_data.json` e backup JSON.
+- **Adaptação Inteligente de Limite (300 vs 500), Auto-Thread & Anéis Duplos:**
+  - **Modo Híbrido Automático (301–500 caracteres):** Ao publicar para *Ambas as redes*, o servidor aceita `thread_by_network` (`app.py`) para enviar 1 post completo para o Mastodon e um fio numerado (`1/2`, `2/2`, …) para o Bluesky.
+  - **Divisão Manual (`✂️ Dividir em fio`):** Botão `#splitThreadBtn` que divide textos longos por parágrafos, linhas, frases ou palavras em caixas editáveis do fio.
+  - **Anéis de Progresso Duplos (`#countRings`):** Dois anéis SVG animados (`🦋 300` e `🐘 500`) com transição para âmbar (`≤ 20` restantes), vermelho (excedido) e traço tracejado (modo híbrido).
+- **Agendamento de Publicações (*Scheduled Posts*):**
+  - Persistência segura em `DATA_DIR/scheduled_posts.json` (`0600`) protegida em `run_self_update()`, com ciclo em background de 15s (`start_scheduler_thread()`).
+  - Deteção no arranque de agendamentos em atraso (`missed`) para decisão manual, tratamento de falhas parciais com reenvio seletivo sem duplicação (`/api/scheduled/run_now`), seletor rápido no compositor (`#schedulePickerBar` com `+1h`, `+3h`, `Amanhã 09:00`) e modal de gestão (`#scheduledOverlay`).
+- **Autocomplete de `@menções` & Mapeamento de Handles entre Redes:**
+  - Menu flutuante `#mentionAcMenu` no compositor e nos fios com sugestões instantâneas de contactos locais/mapeados e pesquisa remota em `/api/search?type=actors`.
+  - Gestão de pares equivalentes nas Definições (`#handleMapSection` + sugestões automáticas dos pares Crosstalk) com substituição automática por rede ao publicar (`applyHandleMappings()`).
+- **Filtros Rápidos na Timeline & Modo Catch-Up (*"✨ O que perdi?"*):**
+  - Barra de filtros persistente em `localStorage` (`Ambas | 🦋 Bluesky | 🐘 Mastodon` e `Sem boosts`).
+  - Modal `#catchUpOverlay` com janelas de `6h`, `12h` e `24h`, ordenação por relevância/interação e resumo opcional por tópicos via IA (`POST /api/catchup_summary`).
+- **Modo de Leitura Limpa de Artigos (*Reader View*):**
+  - Extração HTML limpa com proteção SSRF (`GET /api/reader` / `fetch_article_reader()`), botão **`📖 Ler`** nos cartões `.ext-card` (mantendo o clique no cartão a abrir em nova janela) e modal `#readerOverlay` com controlos de tamanho de letra (`A-` / `A+`).
+- **Refinamentos de UX e Hiperligações:**
+  - Links externos abertos em nova janela (`target="_blank"` + `rel="opener"`), alinhamento dos botões do modal de cross-post e destaque primário no botão de publicação dupla.
+
 ---
 
 ## 📋 4. Próximos Passos e Roadmap Pendente
 
-1. **Acesso Remoto Seguro Fora de Casa (Opcional):**
-   - Documentação para ligar via VPN pessoal (ex: Tailscale ou Cloudflare Tunnel) para aceder fora de casa sem abrir portas no router.
+1. **Melhorias de UX / UI Pendentes:**
+   - **Estado Visual de Acessibilidade (`ALT` nas Imagens Anexadas):** Crachás visuais `⚠️ Sem ALT` / `✓ ALT` nas miniaturas do compositor + aviso opcional antes de publicar.
+   - **Agrupamento Visual de Republicações / Fios na Timeline (*estilo Phanpy*):** Compactar sequências de vários boosts do mesmo autor.
+   - **Gestão de Imagens no Compositor:** Reordenar as 4 imagens anexadas e recorte rápido.
 
-2. **Empacotamento e Distribuição (Opcional):**
-   - Criação de scripts simples de arranque para macOS (`run.command`) e Windows (`run.bat`).
-   - Avaliação de instaladores nativos portáteis sem dependências.
+2. **Acesso Remoto Seguro & Empacotamento / Mobile Nativo (Opcional):**
+   - Documentação complementar Tailscale / Cloudflare Tunnel e avaliação futura de wrapper nativo iOS/iPadOS/Android.
 
 ---
 
