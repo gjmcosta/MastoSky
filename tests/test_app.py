@@ -4160,6 +4160,74 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         self.assertEqual(code_e, 200)
         self.assertFalse(res_e["ok"])
 
+    def test_article_reader_endpoint_and_ssrf_block(self):
+        from pathlib import Path
+        from unittest import mock
+
+        sample_html = (
+            "<html><head><title>Artigo Teste</title>"
+            '<meta name="author" content="Maria">'
+            '<meta property="og:site_name" content="Jornal Teste">'
+            "</head><body>"
+            "<nav>Menu principal ignorado</nav>"
+            "<article><h1>Título do Artigo</h1>"
+            "<p>Este é o primeiro parágrafo completo de um artigo jornalístico para validar a extração limpa no MastoSky.</p>"
+            "<blockquote>Citação importante dentro do artigo para testar formatação limpa.</blockquote>"
+            "<ul><li>Primeiro ponto relevante da lista de factos do artigo.</li></ul>"
+            "<script>console.log('ignorar script');</script>"
+            "</article>"
+            "<footer>Rodapé com cookies ignorado</footer>"
+            "</body></html>"
+        ).encode("utf-8")
+
+        class _FakeResp:
+            def __init__(self, data):
+                self._data = data
+                self.headers = self
+            def get_content_type(self):
+                return "text/html"
+            def get_content_charset(self):
+                return "utf-8"
+            def read(self, _n=None):
+                return self._data
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+
+        app._READER_CACHE.clear()
+        with mock.patch.object(app, "_validate_remote_http_url", return_value=("https://example.com/artigo", mock.Mock(netloc="example.com"))):
+            with mock.patch.object(app, "_urlopen_remote", return_value=_FakeResp(sample_html)):
+                code, res = self._req("GET", "/api/reader?url=https%3A%2F%2Fexample.com%2Fartigo")
+                self.assertEqual(code, 200)
+                self.assertTrue(res["ok"])
+                self.assertEqual(res["author"], "Maria")
+                self.assertEqual(res["site_name"], "Jornal Teste")
+                texts = " ".join(b["text"] for b in res["blocks"])
+                self.assertIn("primeiro parágrafo completo", texts)
+                self.assertIn("Citação importante", texts)
+                self.assertNotIn("Menu principal ignorado", texts)
+                self.assertNotIn("ignorar script", texts)
+                self.assertNotIn("Rodapé com cookies ignorado", texts)
+
+        # SSRF protection on localhost
+        code_bad, res_bad = self._req("GET", "/api/reader?url=http%3A%2F%2F127.0.0.1%3A8000%2Fsecret")
+        self.assertEqual(code_bad, 400)
+        self.assertFalse(res_bad["ok"])
+
+        html = Path("index.html").read_text(encoding="utf-8")
+        for marker in [
+            "ext-read-btn",
+            'id="readerOverlay"',
+            'id="readerContent"',
+            'id="readerFontIncBtn"',
+            'id="readerFontDecBtn"',
+            "function openArticleReader(",
+            "function closeReaderModal(",
+            "/api/reader?url=",
+        ]:
+            self.assertIn(marker, html)
+
 
 if __name__ == "__main__":
     unittest.main()

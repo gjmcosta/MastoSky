@@ -298,6 +298,23 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .catchup-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
 .catchup-ai-box{background:color-mix(in srgb,var(--accent) 9%,var(--surface-1));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;line-height:1.5;white-space:pre-wrap;color:var(--ink)}
 .catchup-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:4px;max-height:58vh}
+.ext-domain-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ext-read-btn{border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));background:color-mix(in srgb,var(--accent) 12%,var(--card));color:var(--accent);border-radius:8px;padding:2px 8px;font-size:11.5px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;flex:none;transition:all .15s}
+.ext-read-btn:hover{background:var(--accent);color:#fff}
+.reader-box{max-width:740px;width:100%;max-height:90vh;display:flex;flex-direction:column}
+.reader-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.reader-meta{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.reader-tools{display:flex;align-items:center;gap:6px}
+.reader-scroll{overflow-y:auto;padding-right:6px;max-height:68vh}
+.reader-hero{width:100%;max-height:280px;object-fit:cover;border-radius:10px;margin-bottom:14px;background:#000}
+.reader-title{margin:0 0 8px;font-size:22px;line-height:1.25;color:var(--ink)}
+.reader-content{max-width:66ch;font-size:var(--reader-font,16px);line-height:1.72;color:var(--ink)}
+.reader-content p{margin:0 0 14px}
+.reader-content h2{margin:22px 0 10px;font-size:1.22em;line-height:1.3;color:var(--ink)}
+.reader-content blockquote{margin:14px 0;padding:8px 14px;border-left:3px solid var(--accent);background:var(--surface-1);border-radius:0 8px 8px 0;color:var(--muted)}
+.reader-content ul{margin:0 0 14px;padding-left:22px}
+.reader-content li{margin-bottom:6px}
+.reader-content pre{background:var(--surface-1);border:1px solid var(--line);border-radius:8px;padding:10px 12px;overflow-x:auto;font:13px/1.5 var(--mono);margin:0 0 14px}
 .partial-post-box{max-width:520px;width:100%}
 .partial-post-list{display:flex;flex-direction:column;gap:10px;margin:14px 0}
 .partial-post-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;background:var(--surface-1);border:1px solid var(--line)}
@@ -2992,6 +3009,32 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
     </div>
   </div>
 
+  <div id="readerOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="readerModalTitle">
+    <div class="setup-box reader-box">
+      <div class="setup-header">
+        <h2 id="readerModalTitle" style="display:inline-flex;align-items:center;gap:8px;font-size:15px">
+          <span>📖</span>
+          <span id="readerSiteLabel" data-i18n="reader.title">Leitura Limpa</span>
+        </h2>
+        <button type="button" class="setup-close-btn" id="closeReader" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
+      </div>
+      <div class="reader-toolbar">
+        <div id="readerMeta" class="reader-meta"></div>
+        <div class="reader-tools">
+          <button type="button" class="ghost-sm" id="readerFontDecBtn" title="Diminuir letra">A-</button>
+          <button type="button" class="ghost-sm" id="readerFontIncBtn" title="Aumentar letra">A+</button>
+          <a id="readerOpenOrigLink" class="send-sm" href="#" target="_blank" rel="opener" style="text-decoration:none" data-i18n="reader.open_orig">Abrir original ↗</a>
+        </div>
+      </div>
+      <div class="reader-scroll" id="readerScrollBody">
+        <div id="readerStatus" class="msg"></div>
+        <h1 id="readerArticleTitle" class="reader-title"></h1>
+        <img id="readerHeroImg" class="reader-hero" src="" alt="" hidden>
+        <div id="readerContent" class="reader-content"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="userProfileOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="userProfileModalTitle">
     <div class="setup-box user-profile-box">
       <div class="setup-header">
@@ -3564,7 +3607,15 @@ const I18N = {
       cw_hide: "Ocultar",
       alt_view: "Ver descrição da imagem (ALT)",
       crosstalk_switch_to: "Publicado nas duas redes · Ver versão {net}",
-      crosstalk_active: "Publicado nas duas redes · A ver versão {net}"
+      crosstalk_active: "Publicado nas duas redes · A ver versão {net}",
+      read_clean: "📖 Ler"
+    },
+    reader: {
+      title: "Leitura Limpa",
+      open_orig: "Abrir original ↗",
+      loading: "A extrair artigo limpo...",
+      read_time: "~{min} min de leitura",
+      empty: "Não foi possível extrair texto completo deste artigo. Podes abrir a página original acima."
     },
     notifs: {
       filter_all: "Todas",
@@ -4160,7 +4211,15 @@ const I18N = {
       cw_hide: "Hide",
       alt_view: "View image description (ALT)",
       crosstalk_switch_to: "Published on both networks · View {net} version",
-      crosstalk_active: "Published on both networks · Viewing {net} version"
+      crosstalk_active: "Published on both networks · Viewing {net} version",
+      read_clean: "📖 Read"
+    },
+    reader: {
+      title: "Reader View",
+      open_orig: "Open original ↗",
+      loading: "Extracting clean article...",
+      read_time: "~{min} min read",
+      empty: "Could not extract full article text. You can open the original page above."
     },
     notifs: {
       filter_all: "All",
@@ -5640,6 +5699,7 @@ function isAnyModalOpen() {
     "draftsOverlay",
     "scheduledOverlay",
     "catchUpOverlay",
+    "readerOverlay",
     "crossPostOverlay",
     "shortcutsOverlay",
     "imageLightbox",
@@ -5789,6 +5849,10 @@ window.addEventListener("keydown", (e) => {
     }
     if ($("catchUpOverlay") && !$("catchUpOverlay").hidden) {
       closeCatchUpModal();
+      return;
+    }
+    if ($("readerOverlay") && !$("readerOverlay").hidden) {
+      closeReaderModal();
       return;
     }
     if ($("newConvoModalOverlay") && !$("newConvoModalOverlay").hidden) {
@@ -5983,10 +6047,24 @@ function renderMedia(mediaList) {
         a.append(ph);
       }
       const info = el("div", "ext-info");
+      const domRow = el("div", "ext-domain-row");
+      let hostLabel = "";
       try {
-        const host = new URL(x.url).hostname;
-        if (host) info.append(el("span", "ext-domain", host));
+        hostLabel = new URL(x.url).hostname;
       } catch (_) {}
+      domRow.append(el("span", "ext-domain", hostLabel || "LINK"));
+      const safeExtUrl = su(x.url);
+      if (safeExtUrl) {
+        const readBtn = el("button", "ext-read-btn", t("post.read_clean"));
+        readBtn.type = "button";
+        readBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openArticleReader(safeExtUrl, x);
+        };
+        domRow.append(readBtn);
+      }
+      info.append(domRow);
       if (x.title) info.append(el("b", null, x.title));
       if (x.description) info.append(el("p", null, x.description));
       a.append(info);
@@ -7132,6 +7210,143 @@ document.querySelectorAll("[data-cu-hours]").forEach(btn => {
   };
 });
 if ($("catchUpAiBtn")) $("catchUpAiBtn").onclick = generateCatchUpAiSummary;
+
+// --- MODO DE LEITURA LIMPA (READER VIEW) ---
+let readerFontSize = Number(localStorage.getItem("mastosky_reader_font") || 16);
+if (!Number.isFinite(readerFontSize) || readerFontSize < 13 || readerFontSize > 24) readerFontSize = 16;
+const _readerClientCache = new Map();
+
+function applyReaderFontSize() {
+  const box = $("readerContent");
+  if (box) box.style.setProperty("--reader-font", readerFontSize + "px");
+  try { localStorage.setItem("mastosky_reader_font", String(readerFontSize)); } catch (_) {}
+}
+
+function closeReaderModal() {
+  const overlay = $("readerOverlay");
+  if (overlay) overlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+function renderReaderArticleData(data, fallbackCard = null) {
+  const titleEl = $("readerArticleTitle");
+  const siteEl = $("readerSiteLabel");
+  const metaEl = $("readerMeta");
+  const heroEl = $("readerHeroImg");
+  const contentEl = $("readerContent");
+  const statusEl = $("readerStatus");
+  if (!contentEl) return;
+
+  if (statusEl) statusEl.textContent = "";
+  if (siteEl) siteEl.textContent = data.site_name || data.domain || t("reader.title");
+  if (titleEl) titleEl.textContent = data.title || (fallbackCard && fallbackCard.title) || data.domain || "";
+
+  if (metaEl) {
+    const parts = [];
+    if (data.author) parts.push(data.author);
+    if (data.domain) parts.push(data.domain);
+    if (data.reading_minutes) parts.push(t("reader.read_time", { min: data.reading_minutes }));
+    metaEl.textContent = parts.join(" · ");
+  }
+
+  const heroSrc = data.image || (fallbackCard && fallbackCard.thumb) || "";
+  if (heroEl) {
+    if (heroSrc) {
+      heroEl.src = "/api/proxy_image?url=" + encodeURIComponent(heroSrc);
+      heroEl.hidden = false;
+      heroEl.onerror = () => { heroEl.hidden = true; };
+    } else {
+      heroEl.hidden = true;
+    }
+  }
+
+  contentEl.replaceChildren();
+  const blocks = Array.isArray(data.blocks) ? data.blocks : [];
+  if (!blocks.length) {
+    contentEl.append(el("p", null, t("reader.empty")));
+    return;
+  }
+
+  let ulEl = null;
+  blocks.forEach(b => {
+    if (!b || !b.text) return;
+    if (b.tag === "li") {
+      if (!ulEl) {
+        ulEl = document.createElement("ul");
+        contentEl.append(ulEl);
+      }
+      ulEl.append(el("li", null, b.text));
+      return;
+    }
+    ulEl = null;
+    const tag = (b.tag === "h2" || b.tag === "blockquote" || b.tag === "pre") ? b.tag : "p";
+    contentEl.append(el(tag, null, b.text));
+  });
+}
+
+async function openArticleReader(url, cardMeta = null) {
+  const overlay = $("readerOverlay");
+  const safeU = su(url);
+  if (!overlay || !safeU) return;
+  applyReaderFontSize();
+
+  if ($("readerOpenOrigLink")) $("readerOpenOrigLink").href = safeU;
+  if ($("readerArticleTitle")) $("readerArticleTitle").textContent = (cardMeta && cardMeta.title) || "";
+  if ($("readerSiteLabel")) $("readerSiteLabel").textContent = t("reader.title");
+  if ($("readerMeta")) $("readerMeta").textContent = "";
+  if ($("readerHeroImg")) $("readerHeroImg").hidden = true;
+  if ($("readerContent")) $("readerContent").replaceChildren();
+  if ($("readerStatus")) {
+    $("readerStatus").className = "msg";
+    $("readerStatus").textContent = t("reader.loading");
+  }
+  if ($("readerScrollBody")) $("readerScrollBody").scrollTop = 0;
+
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+
+  if (_readerClientCache.has(safeU)) {
+    renderReaderArticleData(_readerClientCache.get(safeU), cardMeta);
+    return;
+  }
+
+  try {
+    const res = await api("/api/reader?url=" + encodeURIComponent(safeU));
+    if (res && res.ok) {
+      _readerClientCache.set(safeU, res);
+      renderReaderArticleData(res, cardMeta);
+    } else {
+      if ($("readerStatus")) {
+        $("readerStatus").className = "msg err";
+        $("readerStatus").textContent = (res && res.error) || t("reader.empty");
+      }
+    }
+  } catch (err) {
+    if ($("readerStatus")) {
+      $("readerStatus").className = "msg err";
+      $("readerStatus").textContent = err.message || t("reader.empty");
+    }
+  }
+}
+
+if ($("closeReader")) $("closeReader").onclick = closeReaderModal;
+if ($("readerOverlay")) {
+  $("readerOverlay").onclick = (e) => {
+    if (e.target === $("readerOverlay")) closeReaderModal();
+  };
+}
+if ($("readerFontDecBtn")) {
+  $("readerFontDecBtn").onclick = () => {
+    readerFontSize = Math.max(13, readerFontSize - 1);
+    applyReaderFontSize();
+  };
+}
+if ($("readerFontIncBtn")) {
+  $("readerFontIncBtn").onclick = () => {
+    readerFontSize = Math.min(24, readerFontSize + 1);
+    applyReaderFontSize();
+  };
+}
 
 async function loadMoreTimeline() {
   const q = new URLSearchParams();

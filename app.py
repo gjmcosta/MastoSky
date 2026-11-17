@@ -1203,6 +1203,175 @@ def fetch_link_preview(url_str):
     return out
 
 
+_READER_CACHE = {}
+
+
+class _ReaderParser(HTMLParser):
+    """Extrai conteúdo principal limpo de artigos HTML ignorando navegação, scripts e rodapés."""
+    _SKIP_TAGS = {"script", "style", "noscript", "svg", "nav", "footer", "aside", "form", "iframe", "button", "header"}
+    _BLOCK_TAGS = {"h1", "h2", "h3", "h4", "p", "blockquote", "li", "pre"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.meta = {}
+        self.title_parts = []
+        self._in_title = False
+        self._skip_depth = 0
+        self._article_depth = 0
+        self._main_depth = 0
+        self._cur_tag = None
+        self._cur_parts = []
+        self._cur_in_article = False
+        self._cur_in_main = False
+        self.article_blocks = []
+        self.main_blocks = []
+        self.body_blocks = []
+
+    def handle_starttag(self, tag, attrs):
+        t = tag.lower()
+        ad = {k.lower(): (v or "") for k, v in attrs if k}
+        if t == "title":
+            self._in_title = True
+        elif t == "meta":
+            key = (ad.get("property") or ad.get("name") or "").strip().lower()
+            val = ad.get("content", "").strip()
+            if key and val and key not in self.meta:
+                self.meta[key] = val
+        if t in self._SKIP_TAGS:
+            self._skip_depth += 1
+            return
+        if self._skip_depth > 0:
+            return
+        if t == "article":
+            self._article_depth += 1
+        elif t == "main":
+            self._main_depth += 1
+        if t in self._BLOCK_TAGS and self._cur_tag is None:
+            self._cur_tag = "h2" if t in ("h1", "h2", "h3", "h4") else t
+            self._cur_parts = []
+            self._cur_in_article = self._article_depth > 0
+            self._cur_in_main = self._main_depth > 0
+
+    def handle_endtag(self, tag):
+        t = tag.lower()
+        if t == "title":
+            self._in_title = False
+        if t in self._SKIP_TAGS:
+            if self._skip_depth > 0:
+                self._skip_depth -= 1
+            return
+        if self._skip_depth > 0:
+            return
+        if t == "article" and self._article_depth > 0:
+            self._article_depth -= 1
+        elif t == "main" and self._main_depth > 0:
+            self._main_depth -= 1
+
+        mapped = "h2" if t in ("h1", "h2", "h3", "h4") else t
+        if self._cur_tag == mapped:
+            txt = html.unescape(re.sub(r"\s+", " ", "".join(self._cur_parts))).strip()
+            if txt and (len(txt) >= 15 or self._cur_tag in ("h2", "li", "blockquote")):
+                blk = {"tag": self._cur_tag, "text": txt}
+                if self._cur_in_article:
+                    self.article_blocks.append(blk)
+                if self._cur_in_main:
+                    self.main_blocks.append(blk)
+                self.body_blocks.append(blk)
+            self._cur_tag = None
+            self._cur_parts = []
+
+    def handle_data(self, data):
+        if self._in_title:
+            self.title_parts.append(data)
+        elif self._skip_depth == 0 and self._cur_tag is not None:
+            self._cur_parts.append(data)
+
+
+def fetch_article_reader(url_str):
+    """Obtém e extrai o texto limpo de um artigo web externo para o Reader View."""
+    u, p = _validate_remote_http_url(url_str)
+    now = time.time()
+    cached = _READER_CACHE.get(u)
+    if cached and (now - cached["ts"] < 1800):
+        return cached["data"]
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; MastoSky/1.0; +https://github.com/gjmcosta/MastoSky)",
+        "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5",
+    }
+    req = urllib.request.Request(u, headers=headers)
+    try:
+        resp = _urlopen_remote(req, timeout=8)
+    except Exception as e:
+        raise ValueError(f"Não foi possível carregar o artigo: {e}")
+
+    with resp:
+        ctype = (resp.headers.get_content_type() or "").lower()
+        if ctype and not ("html" in ctype or "xml" in ctype or ctype == "application/octet-stream"):
+            raise ValueError("Esta ligação não aponta para um artigo HTML legível.")
+        raw = resp.read(1536 * 1024)
+        charset = resp.headers.get_content_charset() or "utf-8"
+
+    text_html = raw.decode(charset, errors="replace")
+    parser = _ReaderParser()
+    try:
+        parser.feed(text_html)
+    except Exception:
+        pass
+
+    m = parser.meta
+    raw_title = m.get("og:title") or m.get("twitter:title") or m.get("title") or "".join(parser.title_parts)
+    title = html.unescape(re.sub(r"\s+", " ", raw_title or "")).strip()[:300]
+    author = html.unescape(re.sub(r"\s+", " ", m.get("author") or m.get("article:author") or "")).strip()[:120]
+    site_name = html.unescape(re.sub(r"\s+", " ", m.get("og:site_name") or "")).strip()[:120]
+    pub_date = (m.get("article:published_time") or m.get("date") or "")[:32]
+    raw_img = (m.get("og:image:secure_url") or m.get("og:image") or m.get("twitter:image") or "").strip()
+    img_url = safe_url(urllib.parse.urljoin(u, raw_img)) if raw_img else None
+    domain = (p.netloc or "").lower().removeprefix("www.")
+
+    blocks = parser.article_blocks
+    if sum(len(b["text"]) for b in blocks) < 200:
+        blocks = parser.main_blocks if sum(len(b["text"]) for b in parser.main_blocks) >= 200 else parser.body_blocks
+
+    # Deduplicar blocos repetidos e limitar tamanho total
+    deduped = []
+    seen_txt = set()
+    word_count = 0
+    for b in blocks:
+        if b["text"] in seen_txt:
+            continue
+        seen_txt.add(b["text"])
+        deduped.append(b)
+        word_count += len(b["text"].split())
+        if len(deduped) >= 150:
+            break
+
+    if not deduped:
+        desc = html.unescape(re.sub(r"\s+", " ", m.get("og:description") or m.get("description") or "")).strip()
+        if desc:
+            deduped = [{"tag": "p", "text": desc}]
+            word_count = len(desc.split())
+
+    reading_minutes = max(1, round(word_count / 200)) if word_count else 1
+    out = {
+        "ok": True,
+        "url": u,
+        "domain": domain,
+        "site_name": site_name or domain,
+        "title": title or domain,
+        "author": author,
+        "published_at": pub_date,
+        "image": img_url,
+        "reading_minutes": reading_minutes,
+        "word_count": word_count,
+        "blocks": deduped,
+    }
+    if len(_READER_CACHE) > 100:
+        _READER_CACHE.clear()
+    _READER_CACHE[u] = {"ts": now, "data": out}
+    return out
+
+
 def proxy_fetch_image(url_str):
     """Descarrega com segurança uma imagem remota para o gerador de cartões da publicação cruzada."""
     u, p = _validate_remote_http_url(url_str)
@@ -4105,6 +4274,15 @@ class H(BaseHTTPRequestHandler):
                 return self.send(400, {"ok": False, "error": "Parâmetro url em falta."})
             try:
                 return self.send(200, fetch_link_preview(target_url))
+            except Exception as e:
+                return self.send(400, {"ok": False, "error": str(e)})
+        if path == "/api/reader":
+            qs = urllib.parse.parse_qs(parsed.query)
+            target_url = qs.get("url", [None])[0]
+            if not target_url:
+                return self.send(400, {"ok": False, "error": "Parâmetro url em falta."})
+            try:
+                return self.send(200, fetch_article_reader(target_url))
             except Exception as e:
                 return self.send(400, {"ok": False, "error": str(e)})
         if path == "/api/local_image":
