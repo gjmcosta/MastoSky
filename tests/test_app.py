@@ -2249,6 +2249,23 @@ class ProxyImageTests(unittest.TestCase):
                                  input=js_code, capture_output=True, text=True)
             self.assertEqual(res.returncode, 0, f"Erro de sintaxe no bloco <script> #{idx + 1} do index.html: {res.stderr}")
 
+    def test_index_javascript_no_undeclared_identifiers(self):
+        from tests.js_lint import check_html_undeclared_js, find_undeclared_identifiers
+        # Autoteste do analisador: garantir que deteta variáveis em falta como onNotifProfile / isReplyTarget
+        sample_bad = ["function renderNotifs() { const x = 1; el.onclick = onNotifProfile; return isReplyTarget; }"]
+        detected = {name for name, _ in find_undeclared_identifiers(sample_bad)}
+        self.assertIn("onNotifProfile", detected)
+        self.assertIn("isReplyTarget", detected)
+
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        undeclared = check_html_undeclared_js(html)
+        self.assertEqual(
+            undeclared,
+            [],
+            f"Identificadores JS não declarados no index.html: {undeclared[:10]}",
+        )
+
     def test_keyboard_shortcuts_feature(self):
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()

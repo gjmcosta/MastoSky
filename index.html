@@ -10826,8 +10826,8 @@
       else if (tab === "explore") renderExplore();
       else if (tab === "notifs") renderNotifs();
       else if (tab === "profile") {
-        if (profileData) renderProfile(profileData);
-        renderProfileFeed();
+        if (profileData) renderProfileAccountsList(profileData);
+        if (activeProfileMode === "account" && activeProfileNet) viewOwnAccount(activeProfileNet);
       }
     }
 
@@ -20360,7 +20360,7 @@
       try { localStorage.removeItem("mastosky_autosave"); } catch (_) { }
       if ($("draftIndicator")) $("draftIndicator").hidden = true;
       setTimeout(load, 1200);
-      if (profileLoaded) setTimeout(() => loadProfileFeed(false), 1200);
+      if (profileLoaded) setTimeout(() => loadProfile(true), 1200);
       if (threadIt) setTimeout(() => openThread(threadIt, true), 1500);
     }
 
@@ -20534,7 +20534,7 @@
 
       if (good.length && bad.length) {
         setTimeout(load, 1200);
-        if (profileLoaded) setTimeout(() => loadProfileFeed(false), 1200);
+        if (profileLoaded) setTimeout(() => loadProfile(true), 1200);
 
         const failedNets = bad.map(([n]) => n);
         if (failedNets.length === 1 && $("targetSelect")) {
