@@ -3899,6 +3899,169 @@ console.log(JSON.stringify({ parts, cwParts, shortParts, manyParts }));
                 self.assertTrue(p.endswith(f" {idx + 1}/{len(out['manyParts'])}"))
 
 
+class ScheduledPostsTests(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.sched_path = Path(self.tmpdir.name) / "scheduled_posts.json"
+        self.patch_path = mock.patch.object(app, "SCHEDULED_POSTS_PATH", self.sched_path)
+        self.patch_path.start()
+
+        self.bsky_client = mock.Mock()
+        self.masto_client = mock.Mock()
+        self.patch_clients = mock.patch.dict(
+            app.CLIENTS, {"bluesky": self.bsky_client, "mastodon": self.masto_client}
+        )
+        self.patch_clients.start()
+
+    def tearDown(self):
+        self.patch_clients.stop()
+        self.patch_path.stop()
+        self.tmpdir.cleanup()
+
+    def _req(self, method, path, body=None):
+        import io
+        raw = b"" if body is None else json.dumps(body).encode("utf-8")
+        h = object.__new__(app.H)
+        h.path = path
+        h.headers = {
+            "Host": "127.0.0.1:%d" % app.PORT,
+            "Content-Length": str(len(raw)),
+            "X-CSRF-Token": app.SESSION_TOKEN,
+        }
+        h.rfile = io.BytesIO(raw)
+        h.wfile = io.BytesIO()
+        h.sent = []
+        h.send_response = lambda code: h.sent.append(("code", code))
+        h.send_header = lambda k, v: h.sent.append((k, v))
+        h.end_headers = lambda: None
+        if method == "GET":
+            h.do_GET()
+        else:
+            h.do_POST()
+        code = [v for k, v in h.sent if k == "code"][0]
+        return code, json.loads(h.wfile.getvalue())
+
+    def test_scheduled_persistence_and_0600_perms(self):
+        import os, stat
+        app.save_scheduled_posts([{"id": "a1", "scheduled_at": 2000000000, "status": "pending", "payload": {"text": "oi", "targets": ["bluesky"]}}])
+        loaded = app.load_scheduled_posts()
+        self.assertEqual(len(loaded), 1)
+        self.assertEqual(loaded[0]["id"], "a1")
+        if os.name == "posix":
+            self.assertEqual(stat.S_IMODE(os.stat(self.sched_path).st_mode), 0o600)
+
+    def test_scheduled_crud_and_missed_startup(self):
+        import time
+        future_ts = int(time.time()) + 3600
+        # Reject past date
+        code_past, _ = self._req("POST", "/api/scheduled", {
+            "scheduled_at": int(time.time()) - 600,
+            "payload": {"text": "passado", "targets": ["bluesky"]}
+        })
+        self.assertEqual(code_past, 400)
+
+        # Create scheduled post
+        code, res = self._req("POST", "/api/scheduled", {
+            "scheduled_at": future_ts,
+            "payload": {"text": "Post agendado!", "targets": ["bluesky", "mastodon"]}
+        })
+        self.assertEqual(code, 200)
+        self.assertTrue(res["ok"])
+        item_id = res["item"]["id"]
+        self.assertEqual(res["item"]["status"], "pending")
+
+        # List
+        code_g, res_g = self._req("GET", "/api/scheduled")
+        self.assertEqual(code_g, 200)
+        self.assertEqual(len(res_g["items"]), 1)
+
+        # Simulate missed on startup (>120s overdue)
+        items = app.load_scheduled_posts()
+        items[0]["scheduled_at"] = int(time.time()) - 600
+        app.save_scheduled_posts(items)
+        self.assertTrue(app.mark_missed_scheduled_posts())
+        items = app.load_scheduled_posts()
+        self.assertEqual(items[0]["status"], "missed")
+        self.bsky_client.post.assert_not_called()
+
+        # Reschedule brings it back to pending
+        new_ts = int(time.time()) + 7200
+        code_u, res_u = self._req("POST", "/api/scheduled/update", {
+            "id": item_id,
+            "scheduled_at": new_ts
+        })
+        self.assertEqual(code_u, 200)
+        self.assertEqual(res_u["item"]["status"], "pending")
+        self.assertEqual(res_u["item"]["scheduled_at"], new_ts)
+
+        # Delete
+        code_d, res_d = self._req("POST", "/api/scheduled/delete", {"id": item_id})
+        self.assertEqual(code_d, 200)
+        self.assertEqual(res_d["items"], [])
+
+    def test_scheduled_due_execution_and_partial_retry_without_duplicate(self):
+        import time
+        due_ts = int(time.time()) - 10
+        app.save_scheduled_posts([{
+            "id": "p1",
+            "scheduled_at": due_ts,
+            "created_at": due_ts - 100,
+            "updated_at": due_ts - 100,
+            "status": "pending",
+            "payload": {"text": "Olá ambas!", "targets": ["bluesky", "mastodon"]},
+            "results": {},
+            "error": ""
+        }])
+
+        self.bsky_client.post.return_value = {"uri": "at://did:plc:1/app.bsky.feed.post/1", "cid": "c1"}
+        self.masto_client.post.side_effect = RuntimeError("Timeout Mastodon")
+
+        processed = app.process_due_scheduled_posts(now=int(time.time()))
+        self.assertEqual(len(processed), 1)
+        self.assertEqual(processed[0]["status"], "partial")
+        self.assertEqual(processed[0]["results"]["bluesky"], "ok")
+        self.assertIn("Timeout Mastodon", processed[0]["results"]["mastodon"])
+        self.assertEqual(self.bsky_client.post.call_count, 1)
+        self.assertEqual(self.masto_client.post.call_count, 1)
+
+        # Retry via /api/scheduled/run_now must NOT post to bluesky again!
+        self.masto_client.post.side_effect = None
+        self.masto_client.post.return_value = {"id": "m1"}
+        code, res = self._req("POST", "/api/scheduled/run_now", {"id": "p1"})
+        self.assertEqual(code, 200)
+        self.assertEqual(res["item"]["status"], "published")
+        self.assertEqual(res["item"]["results"], {"bluesky": "ok", "mastodon": "ok"})
+        self.assertEqual(self.bsky_client.post.call_count, 1)
+        self.assertEqual(self.masto_client.post.call_count, 2)
+
+        # Clear published
+        code_c, res_c = self._req("POST", "/api/scheduled/delete", {"action": "clear_published"})
+        self.assertEqual(code_c, 200)
+        self.assertEqual(res_c["items"], [])
+
+    def test_scheduled_frontend_elements(self):
+        from pathlib import Path
+        html = Path("index.html").read_text(encoding="utf-8")
+        for marker in [
+            'id="scheduledBtn"',
+            'id="scheduledBadge"',
+            'id="scheduleOpenBtn"',
+            'id="schedulePickerBar"',
+            'id="scheduledOverlay"',
+            'id="scheduledList"',
+            "function buildCurrentPostPayload(",
+            "function openScheduledModal(",
+            "function renderScheduledList(",
+            "/api/scheduled/run_now",
+            "status_missed:",
+        ]:
+            self.assertIn(marker, html)
+
+
 if __name__ == "__main__":
     unittest.main()
 

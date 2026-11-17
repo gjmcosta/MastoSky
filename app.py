@@ -13,6 +13,8 @@ DATA_DIR = Path(_ENV_DATA_DIR).expanduser() if _ENV_DATA_DIR else DIR
 CFG_PATH = DATA_DIR / "config.json"
 USER_DATA_PATH = DATA_DIR / "user_data.json"
 _USER_DATA_LOCK = threading.Lock()
+SCHEDULED_POSTS_PATH = DATA_DIR / "scheduled_posts.json"
+_SCHEDULED_LOCK = threading.Lock()
 
 
 def secure_config_perms(path=None):
@@ -127,6 +129,377 @@ def save_user_data(updates, path=None):
         os.replace(tmp_path, path)
         secure_config_perms(path)
         return current
+
+
+def _read_scheduled_unlocked(path):
+    if not path.exists():
+        return []
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8") or "[]")
+    except Exception:
+        return []
+    return raw if isinstance(raw, list) else []
+
+
+def _write_scheduled_unlocked(items, path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = Path(f"{path}.tmp")
+    write_config(items, tmp_path)
+    os.replace(tmp_path, path)
+    secure_config_perms(path)
+
+
+def load_scheduled_posts(path=None):
+    """Carrega a fila persistida de publicações agendadas."""
+    path = Path(path or SCHEDULED_POSTS_PATH)
+    with _SCHEDULED_LOCK:
+        return _read_scheduled_unlocked(path)
+
+
+def save_scheduled_posts(items, path=None):
+    """Guarda a fila de publicações agendadas com permissões 0600."""
+    if not isinstance(items, list):
+        raise ValueError("Lista de agendamentos inválida")
+    path = Path(path or SCHEDULED_POSTS_PATH)
+    with _SCHEDULED_LOCK:
+        clean_items = items[:200]
+        _write_scheduled_unlocked(clean_items, path)
+        return clean_items
+
+
+def execute_post_payload(d, validate_only=False, target_override=None):
+    """Valida e (se validate_only=False) publica um payload de post/fio/híbrido nas redes selecionadas."""
+    if not isinstance(d, dict):
+        return 400, {"error": "JSON inválido"}
+
+    text = (d.get("text") or "").strip()
+    ref = d.get("reply")
+    if ref is not None and not (isinstance(ref, dict) and isinstance(ref.get("ref"), dict)
+                                and isinstance(ref.get("network"), str)):
+        return 400, {"error": "Resposta inválida."}
+    spoiler = (d.get("spoiler") or "").strip() or None
+    poll = d.get("poll")
+    if poll is not None and not isinstance(poll, dict):
+        return 400, {"error": "Sondagem inválida."}
+    lang = d.get("lang")
+    if lang is None:
+        lang = CFG.get("default_lang")
+    if lang is not None:
+        if not isinstance(lang, str):
+            return 400, {"error": "Idioma inválido."}
+        lang = lang.strip().lower()
+        if not lang or not re.match(r"^[a-z]{2}(-[a-z]{2})?$", lang):
+            return 400, {"error": "Idioma inválido."}
+    visibility = d.get("visibility")
+    if visibility is not None:
+        if not isinstance(visibility, str) or visibility not in ("public", "unlisted", "private", "direct"):
+            return 400, {"error": "Visibilidade inválida."}
+    quote = d.get("quote")
+    if quote is not None and not isinstance(quote, dict):
+        return 400, {"error": "Citação inválida."}
+    link_card = d.get("link_card")
+    if link_card is not None and not isinstance(link_card, dict):
+        return 400, {"error": "Pré-visualização de ligação inválida."}
+
+    if target_override is not None:
+        targets = list(target_override)
+    else:
+        targets = [ref["network"]] if ref else d.get("targets", [])
+    if (not isinstance(targets, list) or not targets
+            or not all(isinstance(t, str) for t in targets)):
+        return 400, {"error": "Escolhe pelo menos uma rede."}
+    unknown = [t for t in targets if t not in CLIENTS]
+    if unknown:
+        return 400, {"error": "Rede não configurada: " + ", ".join(unknown)}
+
+    def _parse_imgs(raw_images):
+        if not raw_images:
+            return []
+        if not isinstance(raw_images, list):
+            raise ValueError("Imagens inválidas.")
+        parsed = []
+        for img in raw_images:
+            if not isinstance(img, dict):
+                raise ValueError("Imagens inválidas.")
+            raw_data = img.get("data", "")
+            if not isinstance(raw_data, str):
+                raise ValueError("Imagens inválidas.")
+            if "," in raw_data:
+                hdr, b64 = raw_data.split(",", 1)
+                mime = hdr.split(";")[0].replace("data:", "") or "image/jpeg"
+            else:
+                mime = img.get("mime") or "image/jpeg"
+                b64 = raw_data
+            try:
+                img_bytes = base64.b64decode(b64, validate=True)
+            except (binascii.Error, ValueError):
+                raise ValueError("Imagem com codificação inválida.")
+            parsed.append({
+                "bytes": img_bytes,
+                "mime": mime,
+                "alt": img.get("alt", ""),
+                "aspectRatio": img.get("aspectRatio")
+            })
+        return parsed
+
+    def _parse_video(raw_video):
+        if not raw_video:
+            return None
+        if not isinstance(raw_video, dict):
+            raise ValueError("Vídeo inválido.")
+        raw_data = raw_video.get("data", "")
+        if not isinstance(raw_data, str) or not raw_data.strip():
+            raise ValueError("Dados do vídeo em falta.")
+        if "," in raw_data:
+            hdr, b64 = raw_data.split(",", 1)
+            mime = hdr.split(";")[0].replace("data:", "") or "video/mp4"
+        else:
+            mime = raw_video.get("mime") or "video/mp4"
+            b64 = raw_data
+        try:
+            vid_bytes = base64.b64decode(b64, validate=True)
+        except (binascii.Error, ValueError):
+            raise ValueError("Vídeo com codificação base64 inválida.")
+        if len(vid_bytes) > 50 * 1024 * 1024:
+            raise ValueError("O ficheiro de vídeo excede o tamanho máximo de 50 MB.")
+        return {
+            "bytes": vid_bytes,
+            "mime": mime,
+            "name": raw_video.get("name") or "video.mp4",
+            "alt": raw_video.get("alt", "") or "",
+            "aspectRatio": raw_video.get("aspectRatio")
+        }
+
+    def _parse_thread_list(raw_list):
+        if not isinstance(raw_list, list) or not raw_list:
+            raise ValueError("Fio inválido.")
+        if len(raw_list) > 25:
+            raise ValueError("Fio demasiado longo (máx. 25 posts).")
+        parsed_list = []
+        for idx, item in enumerate(raw_list):
+            if not isinstance(item, dict):
+                raise ValueError(f"Post #{idx+1} do fio inválido.")
+            item_text = (item.get("text") or "").strip()
+            item_imgs = _parse_imgs(item.get("images") or [])
+            item_vid = _parse_video(item.get("video"))
+            if item_imgs and item_vid:
+                raise ValueError(f"O post #{idx+1} do fio não pode conter imagens e vídeo simultaneamente.")
+            item_poll = item.get("poll") if idx == 0 else None
+            item_quote = item.get("quote") if idx == 0 else quote
+            if not item_text and not item_imgs and not item_vid and not (idx == 0 and (item_poll or item_quote)):
+                raise ValueError(f"O post #{idx+1} do fio não tem conteúdo.")
+            parsed_list.append({
+                "text": item_text,
+                "images": item_imgs,
+                "video": item_vid,
+                "spoiler": (item.get("spoiler") or "").strip() or spoiler,
+                "poll": item_poll,
+                "quote": item_quote,
+                "link_card": (item.get("link_card") or link_card) if idx == 0 else None
+            })
+        return parsed_list
+
+    raw_thread = d.get("thread")
+    raw_thread_by_net = d.get("thread_by_network")
+    thread_by_net = {}
+    if raw_thread_by_net is not None:
+        if not isinstance(raw_thread_by_net, dict):
+            return 400, {"error": "Fio inválido."}
+        for t in targets:
+            if t in raw_thread_by_net:
+                try:
+                    thread_by_net[t] = _parse_thread_list(raw_thread_by_net[t])
+                except ValueError as ve:
+                    return 400, {"error": str(ve)}
+
+    thread_items = None
+    if raw_thread is not None:
+        try:
+            thread_items = _parse_thread_list(raw_thread)
+        except ValueError as ve:
+            return 400, {"error": str(ve)}
+    elif any(t not in thread_by_net for t in targets):
+        try:
+            parsed_images = _parse_imgs(d.get("images") or [])
+            parsed_video = _parse_video(d.get("video"))
+        except ValueError as ve:
+            return 400, {"error": str(ve)}
+        if parsed_images and parsed_video:
+            return 400, {"error": "Não é possível publicar imagens e vídeo no mesmo post."}
+        if not text and not parsed_images and not parsed_video and not poll and not quote:
+            return 400, {"error": "A publicação não tem conteúdo."}
+        thread_items = [{
+            "text": text,
+            "images": parsed_images,
+            "video": parsed_video,
+            "spoiler": spoiler,
+            "poll": poll,
+            "quote": quote,
+            "link_card": link_card
+        }]
+
+    if validate_only:
+        return 200, {"ok": True}
+
+    results = {}
+    for t in targets:
+        try:
+            current_ref = ref["ref"] if ref else None
+            root_bsky = None
+            if t == "bluesky" and current_ref and "root" in current_ref:
+                root_bsky = current_ref["root"]
+
+            target_thread_items = thread_by_net.get(t, thread_items) or []
+            for idx, item in enumerate(target_thread_items):
+                item_text = item["text"]
+                item_imgs = item["images"]
+                item_vid = item.get("video")
+                item_spoiler = item["spoiler"]
+                item_poll = item["poll"]
+                item_quote = item["quote"]
+                kwargs = {"spoiler": item_spoiler, "poll": item_poll, "lang": lang, "quote": item_quote, "video": item_vid}
+                if t == "mastodon" and visibility:
+                    kwargs["visibility"] = visibility
+                if t == "bluesky" and item.get("link_card"):
+                    kwargs["link_card"] = item["link_card"]
+
+                created = CLIENTS[t].post(item_text, current_ref, item_imgs, **kwargs)
+
+                if t == "mastodon":
+                    m_id = created.get("id") if hasattr(created, "get") else None
+                    if m_id:
+                        current_ref = {"id": str(m_id)}
+                elif t == "bluesky":
+                    b_uri = created.get("uri") if hasattr(created, "get") else None
+                    b_cid = created.get("cid") if hasattr(created, "get") else None
+                    if b_uri and b_cid:
+                        if not root_bsky:
+                            root_bsky = {"uri": b_uri, "cid": b_cid}
+                        current_ref = {
+                            "root": root_bsky,
+                            "uri": b_uri,
+                            "cid": b_cid
+                        }
+
+            results[t] = "ok"
+        except Exception as e:
+            results[t] = str(e)
+    return 200, results
+
+
+def mark_missed_scheduled_posts(now=None, path=None):
+    """Marca agendamentos pendentes cujo horário já passou (>120s) no arranque como 'missed'."""
+    now_ts = int(now if now is not None else time.time())
+    path = Path(path or SCHEDULED_POSTS_PATH)
+    changed = False
+    with _SCHEDULED_LOCK:
+        items = _read_scheduled_unlocked(path)
+        for it in items:
+            if it.get("status") == "pending" and int(it.get("scheduled_at") or 0) < (now_ts - 120):
+                it["status"] = "missed"
+                it["updated_at"] = now_ts
+                changed = True
+        if changed:
+            _write_scheduled_unlocked(items, path)
+    return changed
+
+
+def _apply_scheduled_execution(item, now_ts):
+    payload = item.get("payload") or {}
+    prev_results = dict(item.get("results") or {})
+    orig_targets = payload.get("targets") or ([payload["reply"]["network"]] if isinstance(payload.get("reply"), dict) else [])
+    if item.get("status") == "partial" and prev_results:
+        run_targets = [t for t in orig_targets if prev_results.get(t) != "ok"]
+        if not run_targets:
+            run_targets = list(orig_targets)
+    else:
+        run_targets = list(orig_targets)
+
+    code, res = execute_post_payload(payload, target_override=run_targets)
+    if code != 200:
+        err_msg = res.get("error") or "Erro ao publicar agendamento."
+        for t in run_targets:
+            prev_results[t] = err_msg
+        item["results"] = prev_results
+        item["error"] = err_msg
+        item["status"] = "partial" if any(v == "ok" for v in prev_results.values()) else "failed"
+    else:
+        merged_results = dict(prev_results)
+        merged_results.update(res)
+        item["results"] = merged_results
+        good = [k for k, v in merged_results.items() if v == "ok"]
+        bad = {k: v for k, v in merged_results.items() if v != "ok"}
+        if not bad and good:
+            item["status"] = "published"
+            item["error"] = ""
+            item["published_at"] = now_ts
+        elif good and bad:
+            item["status"] = "partial"
+            item["error"] = "; ".join(f"{k}: {v}" for k, v in bad.items())
+        else:
+            item["status"] = "failed"
+            item["error"] = "; ".join(f"{k}: {v}" for k, v in bad.items()) or "Erro desconhecido."
+    item["updated_at"] = now_ts
+    return item
+
+
+def run_scheduled_item(item_id, now=None, path=None):
+    """Executa imediatamente um item agendado (ou reenvia apenas redes falhadas em 'partial')."""
+    now_ts = int(now if now is not None else time.time())
+    path = Path(path or SCHEDULED_POSTS_PATH)
+    with _SCHEDULED_LOCK:
+        items = _read_scheduled_unlocked(path)
+        target_idx = next((i for i, it in enumerate(items) if it.get("id") == item_id), None)
+        if target_idx is None:
+            return None
+        target_copy = dict(items[target_idx])
+    updated_item = _apply_scheduled_execution(target_copy, now_ts)
+    with _SCHEDULED_LOCK:
+        items = _read_scheduled_unlocked(path)
+        for i, it in enumerate(items):
+            if it.get("id") == item_id:
+                items[i] = updated_item
+                _write_scheduled_unlocked(items, path)
+                break
+    return updated_item
+
+
+def process_due_scheduled_posts(now=None, path=None):
+    """Processa agendamentos 'pending' cujo horário já chegou."""
+    now_ts = int(now if now is not None else time.time())
+    path = Path(path or SCHEDULED_POSTS_PATH)
+    with _SCHEDULED_LOCK:
+        items = _read_scheduled_unlocked(path)
+        due_ids = [
+            it.get("id") for it in items
+            if it.get("status") == "pending" and int(it.get("scheduled_at") or 0) <= now_ts
+        ]
+    processed = []
+    for item_id in due_ids:
+        res = run_scheduled_item(item_id, now=now_ts, path=path)
+        if res is not None:
+            processed.append(res)
+    return processed
+
+
+def start_scheduler_thread():
+    """Marca atrasados no arranque e inicia o ciclo em background (15s)."""
+    try:
+        mark_missed_scheduled_posts()
+    except Exception:
+        pass
+
+    def _loop():
+        while True:
+            try:
+                process_due_scheduled_posts()
+            except Exception:
+                pass
+            time.sleep(15)
+
+    t = threading.Thread(target=_loop, daemon=True)
+    t.start()
+    return t
 
 
 def load_cfg():
@@ -273,7 +646,7 @@ def run_self_update():
                     if rel_path.is_absolute() or ".." in rel_path.parts:
                         continue
                     # Nunca sobrescrever configurações e dados locais do utilizador
-                    if rel_path.name in ("config.json", "user_data.json"):
+                    if rel_path.name in ("config.json", "user_data.json", "scheduled_posts.json"):
                         continue
                     targets = [DIR / rel_path]
                     if persist_dir is not None:
@@ -3687,6 +4060,10 @@ class H(BaseHTTPRequestHandler):
             })
         if path == "/api/user_data":
             return self.send(200, {"ok": True, "data": load_user_data()})
+        if path == "/api/scheduled":
+            items = load_scheduled_posts()
+            items.sort(key=lambda it: (0 if it.get("status") in ("pending", "missed", "partial", "failed") else 1, int(it.get("scheduled_at") or 0)))
+            return self.send(200, {"ok": True, "items": items, "now": int(time.time())})
         if path == "/vendor/hls.min.js":
             return self.send(200, (DIR / "vendor" / "hls.min.js").read_bytes(), "application/javascript")
         if path.startswith("/brand/"):
@@ -3999,220 +4376,8 @@ class H(BaseHTTPRequestHandler):
             return self.send(err[0], {"error": err[1]})
         results = {}
         if self.path == "/api/post":
-            text = (d.get("text") or "").strip()
-            ref = d.get("reply")  # {"network": ..., "ref": {...}}
-            if ref is not None and not (isinstance(ref, dict) and isinstance(ref.get("ref"), dict)
-                                        and isinstance(ref.get("network"), str)):
-                return self.send(400, {"error": "Resposta inválida."})
-            spoiler = (d.get("spoiler") or "").strip() or None
-            poll = d.get("poll")
-            if poll is not None and not isinstance(poll, dict):
-                return self.send(400, {"error": "Sondagem inválida."})
-            lang = d.get("lang")
-            if lang is None:
-                lang = CFG.get("default_lang")
-            if lang is not None:
-                if not isinstance(lang, str):
-                    return self.send(400, {"error": "Idioma inválido."})
-                lang = lang.strip().lower()
-                if not lang or not re.match(r"^[a-z]{2}(-[a-z]{2})?$", lang):
-                    return self.send(400, {"error": "Idioma inválido."})
-            visibility = d.get("visibility")
-            if visibility is not None:
-                if not isinstance(visibility, str) or visibility not in ("public", "unlisted", "private", "direct"):
-                    return self.send(400, {"error": "Visibilidade inválida."})
-            quote = d.get("quote")
-            if quote is not None and not isinstance(quote, dict):
-                return self.send(400, {"error": "Citação inválida."})
-            link_card = d.get("link_card")
-            if link_card is not None and not isinstance(link_card, dict):
-                return self.send(400, {"error": "Pré-visualização de ligação inválida."})
-            targets = [ref["network"]] if ref else d.get("targets", [])
-            if (not isinstance(targets, list) or not targets
-                    or not all(isinstance(t, str) for t in targets)):
-                return self.send(400, {"error": "Escolhe pelo menos uma rede."})
-            unknown = [t for t in targets if t not in CLIENTS]
-            if unknown:
-                return self.send(400, {"error": "Rede não configurada: " + ", ".join(unknown)})
-            raw_thread = d.get("thread")
-            def _parse_imgs(raw_images):
-                if not raw_images:
-                    return []
-                if not isinstance(raw_images, list):
-                    raise ValueError("Imagens inválidas.")
-                parsed = []
-                for img in raw_images:
-                    if not isinstance(img, dict):
-                        raise ValueError("Imagens inválidas.")
-                    raw_data = img.get("data", "")
-                    if not isinstance(raw_data, str):
-                        raise ValueError("Imagens inválidas.")
-                    if "," in raw_data:
-                        hdr, b64 = raw_data.split(",", 1)
-                        mime = hdr.split(";")[0].replace("data:", "") or "image/jpeg"
-                    else:
-                        mime = img.get("mime") or "image/jpeg"
-                        b64 = raw_data
-                    try:
-                        img_bytes = base64.b64decode(b64, validate=True)
-                    except (binascii.Error, ValueError):
-                        raise ValueError("Imagem com codificação inválida.")
-                    parsed.append({
-                        "bytes": img_bytes,
-                        "mime": mime,
-                        "alt": img.get("alt", ""),
-                        "aspectRatio": img.get("aspectRatio")
-                    })
-                return parsed
-
-            def _parse_video(raw_video):
-                if not raw_video:
-                    return None
-                if not isinstance(raw_video, dict):
-                    raise ValueError("Vídeo inválido.")
-                raw_data = raw_video.get("data", "")
-                if not isinstance(raw_data, str) or not raw_data.strip():
-                    raise ValueError("Dados do vídeo em falta.")
-                if "," in raw_data:
-                    hdr, b64 = raw_data.split(",", 1)
-                    mime = hdr.split(";")[0].replace("data:", "") or "video/mp4"
-                else:
-                    mime = raw_video.get("mime") or "video/mp4"
-                    b64 = raw_data
-                try:
-                    vid_bytes = base64.b64decode(b64, validate=True)
-                except (binascii.Error, ValueError):
-                    raise ValueError("Vídeo com codificação base64 inválida.")
-                if len(vid_bytes) > 50 * 1024 * 1024:
-                    raise ValueError("O ficheiro de vídeo excede o tamanho máximo de 50 MB.")
-                return {
-                    "bytes": vid_bytes,
-                    "mime": mime,
-                    "name": raw_video.get("name") or "video.mp4",
-                    "alt": raw_video.get("alt", "") or "",
-                    "aspectRatio": raw_video.get("aspectRatio")
-                }
-
-            def _parse_thread_list(raw_list):
-                if not isinstance(raw_list, list) or not raw_list:
-                    raise ValueError("Fio inválido.")
-                if len(raw_list) > 25:
-                    raise ValueError("Fio demasiado longo (máx. 25 posts).")
-                parsed_list = []
-                for idx, item in enumerate(raw_list):
-                    if not isinstance(item, dict):
-                        raise ValueError(f"Post #{idx+1} do fio inválido.")
-                    item_text = (item.get("text") or "").strip()
-                    item_imgs = _parse_imgs(item.get("images") or [])
-                    item_vid = _parse_video(item.get("video"))
-                    if item_imgs and item_vid:
-                        raise ValueError(f"O post #{idx+1} do fio não pode conter imagens e vídeo simultaneamente.")
-                    item_poll = item.get("poll") if idx == 0 else None
-                    item_quote = item.get("quote") if idx == 0 else quote
-                    if not item_text and not item_imgs and not item_vid and not (idx == 0 and (item_poll or item_quote)):
-                        raise ValueError(f"O post #{idx+1} do fio não tem conteúdo.")
-                    parsed_list.append({
-                        "text": item_text,
-                        "images": item_imgs,
-                        "video": item_vid,
-                        "spoiler": (item.get("spoiler") or "").strip() or spoiler,
-                        "poll": item_poll,
-                        "quote": item_quote,
-                        "link_card": (item.get("link_card") or link_card) if idx == 0 else None
-                    })
-                return parsed_list
-
-            raw_thread_by_net = d.get("thread_by_network")
-            thread_by_net = {}
-            if raw_thread_by_net is not None:
-                if not isinstance(raw_thread_by_net, dict):
-                    return self.send(400, {"error": "Fio inválido."})
-                for t in targets:
-                    if t in raw_thread_by_net:
-                        try:
-                            thread_by_net[t] = _parse_thread_list(raw_thread_by_net[t])
-                        except ValueError as ve:
-                            return self.send(400, {"error": str(ve)})
-
-            thread_items = None
-            if raw_thread is not None:
-                try:
-                    thread_items = _parse_thread_list(raw_thread)
-                except ValueError as ve:
-                    return self.send(400, {"error": str(ve)})
-            elif any(t not in thread_by_net for t in targets):
-                try:
-                    parsed_images = _parse_imgs(d.get("images") or [])
-                    parsed_video = _parse_video(d.get("video"))
-                except ValueError as ve:
-                    return self.send(400, {"error": str(ve)})
-                if parsed_images and parsed_video:
-                    return self.send(400, {"error": "Não é possível publicar imagens e vídeo no mesmo post."})
-                if not text and not parsed_images and not parsed_video and not poll and not quote:
-                    return self.send(400, {"error": "A publicação não tem conteúdo."})
-                thread_items = [{
-                    "text": text,
-                    "images": parsed_images,
-                    "video": parsed_video,
-                    "spoiler": spoiler,
-                    "poll": poll,
-                    "quote": quote,
-                    "link_card": link_card
-                }]
-
-            for t in targets:
-                try:
-                    current_ref = ref["ref"] if ref else None
-                    root_bsky = None
-                    if t == "bluesky" and current_ref and "root" in current_ref:
-                        root_bsky = current_ref["root"]
-
-                    target_thread_items = thread_by_net.get(t, thread_items) or []
-                    for idx, item in enumerate(target_thread_items):
-                        item_text = item["text"]
-                        item_imgs = item["images"]
-                        item_vid = item.get("video")
-                        item_spoiler = item["spoiler"]
-                        item_poll = item["poll"]
-                        item_quote = item["quote"]
-                        kwargs = {"spoiler": item_spoiler, "poll": item_poll, "lang": lang, "quote": item_quote, "video": item_vid}
-                        if t == "mastodon" and visibility:
-                            kwargs["visibility"] = visibility
-                        if t == "bluesky" and item.get("link_card"):
-                            kwargs["link_card"] = item["link_card"]
-
-                        created = CLIENTS[t].post(item_text, current_ref, item_imgs, **kwargs)
-
-                        if t == "mastodon":
-                            m_id = None
-                            if isinstance(created, dict):
-                                m_id = created.get("id")
-                            elif hasattr(created, "get"):
-                                m_id = created.get("id")
-                            if m_id:
-                                current_ref = {"id": str(m_id)}
-                        elif t == "bluesky":
-                            b_uri = None
-                            b_cid = None
-                            if isinstance(created, dict):
-                                b_uri = created.get("uri")
-                                b_cid = created.get("cid")
-                            elif hasattr(created, "get"):
-                                b_uri = created.get("uri")
-                                b_cid = created.get("cid")
-                            if b_uri and b_cid:
-                                if not root_bsky:
-                                    root_bsky = {"uri": b_uri, "cid": b_cid}
-                                current_ref = {
-                                    "root": root_bsky,
-                                    "uri": b_uri,
-                                    "cid": b_cid
-                                }
-
-                    results[t] = "ok"
-                except Exception as e:
-                    results[t] = str(e)
-            return self.send(200, results)
+            code, res = execute_post_payload(d)
+            return self.send(code, res)
         if self.path == "/api/thread":
             try:
                 return self.send(200, CLIENTS[d["network"]].thread(d["ref"]))
@@ -4386,6 +4551,78 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, {"ok": True, "data": saved})
             except ValueError as e:
                 return self.send(400, {"ok": False, "error": str(e)})
+        if self.path == "/api/scheduled":
+            raw_ts = d.get("scheduled_at")
+            payload = d.get("payload")
+            if not isinstance(raw_ts, (int, float)):
+                return self.send(400, {"ok": False, "error": "Data/hora de agendamento inválida."})
+            sched_ts = int(raw_ts)
+            now_ts = int(time.time())
+            if sched_ts <= now_ts - 30:
+                return self.send(400, {"ok": False, "error": "A data de agendamento tem de ser no futuro."})
+            vcode, vres = execute_post_payload(payload, validate_only=True)
+            if vcode != 200:
+                return self.send(vcode, {"ok": False, "error": vres.get("error", "Publicação inválida.")})
+            new_item = {
+                "id": uuid.uuid4().hex[:16],
+                "scheduled_at": sched_ts,
+                "created_at": now_ts,
+                "updated_at": now_ts,
+                "status": "pending",
+                "payload": payload,
+                "results": {},
+                "error": ""
+            }
+            items = load_scheduled_posts()
+            items.append(new_item)
+            save_scheduled_posts(items)
+            return self.send(200, {"ok": True, "item": new_item})
+        if self.path == "/api/scheduled/update":
+            item_id = d.get("id")
+            raw_ts = d.get("scheduled_at")
+            if not item_id or not isinstance(raw_ts, (int, float)):
+                return self.send(400, {"ok": False, "error": "Parâmetros inválidos."})
+            sched_ts = int(raw_ts)
+            now_ts = int(time.time())
+            if sched_ts <= now_ts - 30:
+                return self.send(400, {"ok": False, "error": "A data de agendamento tem de ser no futuro."})
+            items = load_scheduled_posts()
+            updated = None
+            for it in items:
+                if it.get("id") == item_id:
+                    it["scheduled_at"] = sched_ts
+                    it["status"] = "pending"
+                    it["error"] = ""
+                    it["updated_at"] = now_ts
+                    updated = it
+                    break
+            if not updated:
+                return self.send(404, {"ok": False, "error": "Agendamento não encontrado."})
+            save_scheduled_posts(items)
+            return self.send(200, {"ok": True, "item": updated})
+        if self.path == "/api/scheduled/delete":
+            action = d.get("action")
+            item_id = d.get("id")
+            items = load_scheduled_posts()
+            if action == "clear_published":
+                items = [it for it in items if it.get("status") != "published"]
+            elif item_id:
+                before = len(items)
+                items = [it for it in items if it.get("id") != item_id]
+                if len(items) == before:
+                    return self.send(404, {"ok": False, "error": "Agendamento não encontrado."})
+            else:
+                return self.send(400, {"ok": False, "error": "ID em falta."})
+            save_scheduled_posts(items)
+            return self.send(200, {"ok": True, "items": items})
+        if self.path == "/api/scheduled/run_now":
+            item_id = d.get("id")
+            if not item_id:
+                return self.send(400, {"ok": False, "error": "ID em falta."})
+            updated = run_scheduled_item(item_id)
+            if not updated:
+                return self.send(404, {"ok": False, "error": "Agendamento não encontrado."})
+            return self.send(200, {"ok": True, "item": updated})
         self.send(404, {"error": "not found"})
 
 
@@ -4445,6 +4682,8 @@ def main():
 
     if args.open:
         webbrowser.open(local_url)
+
+    start_scheduler_thread()
 
     try:
         server.serve_forever()
