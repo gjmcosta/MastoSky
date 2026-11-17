@@ -3311,40 +3311,18 @@ def clean_translated_text(txt):
     return t
 
 
-def translate_text(text, target_lang=None, cfg=None):
-    """Traduz o texto de uma publicação social usando o fornecedor de IA configurado (Gemini, Ollama ou OpenAI)."""
+def _call_ai_text(sys_prompt, user_text, cfg=None, temperature=0.2, clean_fn=None):
+    """Executa um pedido de geração de texto no fornecedor de IA configurado (Gemini, Ollama ou OpenAI)."""
     if cfg is None:
         cfg = CFG
     ai_cfg = cfg.get("ai") or {}
     provider = (ai_cfg.get("provider") or "none").lower()
     if provider == "none":
-        raise ValueError("O serviço de IA não está ativado. Ativa o Google Gemini (gratuito) ou Ollama nas Definições para traduzir publicações.")
+        raise ValueError("O serviço de IA não está ativado. Ativa o Google Gemini (gratuito) ou Ollama nas Definições.")
+    if not isinstance(user_text, str) or not user_text.strip():
+        raise ValueError("Texto em falta ou inválido.")
 
-    if not isinstance(text, str) or not text.strip():
-        raise ValueError("Texto para tradução em falta ou inválido.")
-
-    target_lang = (target_lang or ai_cfg.get("lang") or "pt").lower().strip()
-    lang_name_en = {
-        "pt": "Portuguese (Portugal)",
-        "pt-pt": "Portuguese (Portugal)",
-        "pt-br": "Portuguese (Brazil)",
-        "en": "English",
-        "es": "Spanish",
-        "fr": "French",
-        "de": "German"
-    }
-    target_desc = lang_name_en.get(target_lang, "Portuguese")
-
-    sys_prompt = (
-        f"You are a professional social media translator for Bluesky and Mastodon.\n"
-        f"Translate the following user post accurately into {target_desc}.\n"
-        "STRICT RULES:\n"
-        f"- Output ONLY the direct translated text in {target_desc}, nothing else.\n"
-        "- Do NOT add quotation marks around the entire translation.\n"
-        "- Do NOT add any intro, preamble, explanations, or notes.\n"
-        "- Preserve all @mentions (e.g. @user.bsky.social), #hashtags, URLs, emojis, and line breaks exactly as in the original.\n"
-        "- Maintain the natural, informal tone suitable for social media posts."
-    )
+    post_clean = clean_fn or (lambda s: s.strip())
 
     if provider == "gemini":
         key = (ai_cfg.get("gemini_key") or "").strip()
@@ -3352,20 +3330,10 @@ def translate_text(text, target_lang=None, cfg=None):
             raise ValueError("A chave de API do Google Gemini não está configurada nas Definições.")
         configured_model = (ai_cfg.get("gemini_model") or "gemini-3.5-flash-lite").strip()
         payload = {
-            "system_instruction": {
-                "parts": [{"text": sys_prompt}]
-            },
-            "contents": [
-                {
-                    "parts": [{"text": text}]
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.2,
-                "maxOutputTokens": 2000
-            }
+            "system_instruction": {"parts": [{"text": sys_prompt}]},
+            "contents": [{"parts": [{"text": user_text}]}],
+            "generationConfig": {"temperature": temperature, "maxOutputTokens": 2000}
         }
-
         models_to_try = [configured_model]
         for fallback_m in (
             "gemini-3.5-flash-lite",
@@ -3392,10 +3360,8 @@ def translate_text(text, target_lang=None, cfg=None):
                 raw_body = getattr(e, "body", "") or ""
                 err_str = str(e)
                 clean_msg = err_str
-
                 if "timed out" in err_str.lower():
                     clean_msg = "O pedido ao Google Gemini excedeu o tempo limite (timeout). Tenta novamente."
-
                 for source in (raw_body, err_str.split(": ", 1)[-1] if ": " in err_str else ""):
                     if source:
                         try:
@@ -3406,50 +3372,31 @@ def translate_text(text, target_lang=None, cfg=None):
                                 break
                         except Exception:
                             pass
-
-                # Se o modelo rejeitar system_instruction ou parâmetros de generationConfig com 400 / invalid argument,
-                # tenta formato simplificado com o prompt no corpo de contents
                 if getattr(e, "status", None) == 400 or "invalid argument" in clean_msg.lower():
                     try:
-                        p_simple = {
-                            "contents": [
-                                {
-                                    "parts": [{"text": f"{sys_prompt}\n\nPost to translate:\n{text}"}]
-                                }
-                            ]
-                        }
+                        p_simple = {"contents": [{"parts": [{"text": f"{sys_prompt}\n\n{user_text}"}]}]}
                         res = http("POST", url, data=p_simple, timeout=30)
                         used_model = current_model
                         break
                     except Exception:
                         pass
-
                 last_err_msg = clean_msg
                 suggested_match = re.search(r"models/([a-zA-Z0-9\.\-_]+)", clean_msg)
-                if suggested_match:
-                    sugg = suggested_match.group(1)
-                    if sugg not in models_to_try:
-                        models_to_try.append(sugg)
-
-                # Se o modelo falhar por incompatibilidade/descontinuação (404), erro de argumento (400) ou sobrecarga (503, 429)
+                if suggested_match and suggested_match.group(1) not in models_to_try:
+                    models_to_try.append(suggested_match.group(1))
                 is_retryable = (
                     getattr(e, "status", None) in (400, 404, 429, 503)
                     or "404" in err_str
                     or "503" in err_str
-                    or "not found" in clean_msg.lower()
-                    or "no longer available" in clean_msg.lower()
-                    or "deprecated" in clean_msg.lower()
-                    or "high demand" in clean_msg.lower()
-                    or "overloaded" in clean_msg.lower()
-                    or "invalid argument" in clean_msg.lower()
-                    or "try again later" in clean_msg.lower()
-                    or "resource has been exhausted" in clean_msg.lower()
+                    or any(w in clean_msg.lower() for w in (
+                        "not found", "no longer available", "deprecated", "high demand",
+                        "overloaded", "invalid argument", "try again later", "resource has been exhausted"
+                    ))
                 )
                 if is_retryable:
                     time.sleep(0.5)
                     continue
-                else:
-                    raise ValueError(f"Erro Gemini API: {clean_msg}")
+                raise ValueError(f"Erro Gemini API: {clean_msg}")
 
         if res is None:
             if "high demand" in last_err_msg.lower() or "overloaded" in last_err_msg.lower():
@@ -3458,8 +3405,7 @@ def translate_text(text, target_lang=None, cfg=None):
                 raise ValueError("Limite de quota diária do Google Gemini atingido. Aguarda a renovação da quota ou adiciona uma nova chave gratuita nas Definições.")
             raise ValueError(f"Erro Gemini API: {last_err_msg}")
 
-        # Se mudámos de modelo devido a incompatibilidade ou descontinuação, guarda nas definições
-        if used_model != configured_model and ("no longer available" in last_err_msg.lower() or "deprecated" in last_err_msg.lower() or "not found" in last_err_msg.lower() or "invalid argument" in last_err_msg.lower()):
+        if used_model != configured_model and any(w in last_err_msg.lower() for w in ("no longer available", "deprecated", "not found", "invalid argument")):
             try:
                 if "ai" in CFG:
                     CFG["ai"]["gemini_model"] = used_model
@@ -3471,7 +3417,7 @@ def translate_text(text, target_lang=None, cfg=None):
             candidates = res.get("candidates") or []
             if candidates and candidates[0].get("content", {}).get("parts"):
                 txt = candidates[0]["content"]["parts"][0].get("text", "").strip()
-                cleaned = clean_translated_text(txt)
+                cleaned = post_clean(txt)
                 if cleaned:
                     return cleaned
         except Exception:
@@ -3485,19 +3431,13 @@ def translate_text(text, target_lang=None, cfg=None):
         base_url = (ai_cfg.get("ollama_url") or "http://localhost:11434").strip().rstrip("/")
         model = (ai_cfg.get("ollama_model") or "llama3.2").strip()
         url = f"{base_url}/api/generate"
-        payload = {
-            "model": model,
-            "system": sys_prompt,
-            "prompt": text,
-            "stream": False
-        }
+        payload = {"model": model, "system": sys_prompt, "prompt": user_text, "stream": False}
         try:
             res = http("POST", url, data=payload, timeout=45)
         except ApiError as e:
             raise ValueError(f"Erro ao ligar ao Ollama ({e}). Verifica se o servidor local está em execução em {base_url}.")
-
         txt = (res.get("response") or "").strip()
-        cleaned = clean_translated_text(txt)
+        cleaned = post_clean(txt)
         if cleaned:
             return cleaned
         if "error" in res:
@@ -3509,16 +3449,14 @@ def translate_text(text, target_lang=None, cfg=None):
         key = (ai_cfg.get("openai_key") or "").strip()
         model = (ai_cfg.get("openai_model") or "gpt-4o-mini").strip()
         url = f"{base_url}/chat/completions"
-        headers = {}
-        if key:
-            headers["Authorization"] = f"Bearer {key}"
+        headers = {"Authorization": f"Bearer {key}"} if key else {}
         payload = {
             "model": model,
             "messages": [
                 {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": text}
+                {"role": "user", "content": user_text}
             ],
-            "temperature": 0.2,
+            "temperature": temperature,
             "max_tokens": 1500
         }
         try:
@@ -3537,12 +3475,11 @@ def translate_text(text, target_lang=None, cfg=None):
                     except Exception:
                         pass
             raise ValueError(f"Erro OpenAI API: {clean_msg}")
-
         try:
             choices = res.get("choices") or []
             if choices and choices[0].get("message", {}).get("content"):
                 txt = choices[0]["message"]["content"].strip()
-                cleaned = clean_translated_text(txt)
+                cleaned = post_clean(txt)
                 if cleaned:
                     return cleaned
         except Exception:
@@ -3554,6 +3491,70 @@ def translate_text(text, target_lang=None, cfg=None):
 
     else:
         raise ValueError(f"Fornecedor de IA desconhecido: '{provider}'.")
+
+
+def translate_text(text, target_lang=None, cfg=None):
+    """Traduz o texto de uma publicação social usando o fornecedor de IA configurado (Gemini, Ollama ou OpenAI)."""
+    if cfg is None:
+        cfg = CFG
+    ai_cfg = cfg.get("ai") or {}
+    provider = (ai_cfg.get("provider") or "none").lower()
+    if provider == "none":
+        raise ValueError("O serviço de IA não está ativado. Ativa o Google Gemini (gratuito) ou Ollama nas Definições para traduzir publicações.")
+
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("Texto para tradução em falta ou inválido.")
+
+    target_lang = (target_lang or ai_cfg.get("lang") or "pt").lower().strip()
+    lang_name_en = {
+        "pt": "Portuguese (Portugal)",
+        "pt-pt": "Portuguese (Portugal)",
+        "pt-br": "Portuguese (Brazil)",
+        "en": "English",
+        "es": "Spanish",
+        "fr": "French",
+        "de": "German"
+    }
+    target_desc = lang_name_en.get(target_lang, "Portuguese")
+    sys_prompt = (
+        f"You are a professional social media translator for Bluesky and Mastodon.\n"
+        f"Translate the following user post accurately into {target_desc}.\n"
+        "STRICT RULES:\n"
+        f"- Output ONLY the direct translated text in {target_desc}, nothing else.\n"
+        "- Do NOT add quotation marks around the entire translation.\n"
+        "- Do NOT add any intro, preamble, explanations, or notes.\n"
+        "- Preserve all @mentions (e.g. @user.bsky.social), #hashtags, URLs, emojis, and line breaks exactly as in the original.\n"
+        "- Maintain the natural, informal tone suitable for social media posts."
+    )
+    return _call_ai_text(sys_prompt, text, cfg=cfg, temperature=0.2, clean_fn=clean_translated_text)
+
+
+def summarize_catchup_posts(posts, hours=12, target_lang=None, cfg=None):
+    """Gera um resumo estruturado por tópicos dos destaques recentes da Timeline."""
+    if not isinstance(posts, list) or not posts:
+        raise ValueError("Não há publicações suficientes para resumir.")
+    if cfg is None:
+        cfg = CFG
+    ai_cfg = cfg.get("ai") or {}
+    target_lang = (target_lang or ai_cfg.get("lang") or "pt").lower().strip()
+    lang_desc = "English" if target_lang.startswith("en") else "Portuguese (Portugal)"
+    lines = []
+    for idx, p in enumerate(posts[:25]):
+        if not isinstance(p, dict):
+            continue
+        author = str(p.get("author") or p.get("handle") or "User").strip()
+        net = str(p.get("network") or "").strip()
+        txt = str(p.get("text") or "").strip().replace("\n", " ")
+        if txt:
+            lines.append(f"{idx+1}. [{net}] {author}: {txt[:280]}")
+    if not lines:
+        raise ValueError("As publicações selecionadas não contêm texto para resumir.")
+    sys_prompt = (
+        f"You are summarizing a user's unified Bluesky + Mastodon timeline from the last {hours} hours in {lang_desc}.\n"
+        "Create a concise, friendly 'Catch-Up' digest grouped into 3 to 5 bullet points highlighting the main topics, discussions, and noteworthy posts.\n"
+        "Mention key authors (@handle or name) when relevant. Do NOT invent anything outside the provided posts."
+    )
+    return _call_ai_text(sys_prompt, "\n".join(lines), cfg=cfg, temperature=0.3)
 
 
 _TAILSCALE_NET = ipaddress.ip_network("100.64.0.0/10")
@@ -4438,6 +4439,15 @@ class H(BaseHTTPRequestHandler):
             try:
                 translated = translate_text(text_to_translate, target_lang=target_lang)
                 return self.send(200, {"ok": True, "translated": translated, "target_lang": target_lang})
+            except Exception as e:
+                return self.send(200, {"ok": False, "error": str(e)})
+        if self.path == "/api/catchup_summary":
+            posts = d.get("posts")
+            hours = d.get("hours", 12)
+            lang = d.get("lang")
+            try:
+                summary = summarize_catchup_posts(posts, hours=hours, target_lang=lang)
+                return self.send(200, {"ok": True, "summary": summary})
             except Exception as e:
                 return self.send(200, {"ok": False, "error": str(e)})
         if self.path == "/api/setup":

@@ -287,6 +287,17 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .handle-map-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 9px;border-radius:8px;background:var(--surface-1);border:1px solid var(--line);font-size:12px}
 .handle-map-pair{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .handle-map-sugs{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.tl-filter-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;padding:6px 8px;background:var(--surface-1);border:1px solid var(--line);border-radius:12px}
+.tl-filter-pills{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tl-pill{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:9px;padding:4px 9px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .15s}
+.tl-pill:hover{color:var(--ink);background:var(--surface-2)}
+.tl-pill.active{color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--card));border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.tl-catchup-btn{border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));background:color-mix(in srgb,var(--accent) 12%,var(--card));color:var(--accent);border-radius:9px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;margin-left:auto;transition:all .15s}
+.tl-catchup-btn:hover{background:var(--accent);color:#fff}
+.catchup-box{max-width:640px;width:100%;max-height:88vh;display:flex;flex-direction:column}
+.catchup-controls{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.catchup-ai-box{background:color-mix(in srgb,var(--accent) 9%,var(--surface-1));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;line-height:1.5;white-space:pre-wrap;color:var(--ink)}
+.catchup-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;padding-right:4px;max-height:58vh}
 .partial-post-box{max-width:520px;width:100%}
 .partial-post-list{display:flex;flex-direction:column;gap:10px;margin:14px 0}
 .partial-post-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;background:var(--surface-1);border:1px solid var(--line)}
@@ -2154,6 +2165,15 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
       <div class="deck-col-body" id="colTimelineBody">
         <div id="pTimeline">
           <button type="button" class="new-posts-pill" id="timelineNewPostsPill" onclick="scrollColToTop('timeline')" hidden></button>
+          <div class="tl-filter-bar" id="tlFilterBar">
+            <div class="tl-filter-pills">
+              <button type="button" class="tl-pill active" data-tl-net="all" data-i18n="feed.filter_all">Ambas</button>
+              <button type="button" class="tl-pill" data-tl-net="bluesky">🦋 Bluesky</button>
+              <button type="button" class="tl-pill" data-tl-net="mastodon">🐘 Mastodon</button>
+              <button type="button" class="tl-pill" id="tlHideBoostsBtn" data-i18n="feed.filter_no_boosts">Sem boosts</button>
+            </div>
+            <button type="button" class="tl-catchup-btn" id="catchUpBtn" data-i18n="catchup.btn">✨ O que perdi?</button>
+          </div>
           <div id="errors"></div>
           <div id="feed"></div>
         </div>
@@ -2948,6 +2968,30 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
     </div>
   </div>
 
+  <div id="catchUpOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="catchUpTitle">
+    <div class="setup-box catchup-box">
+      <div class="setup-header">
+        <h2 id="catchUpTitle" style="display:inline-flex;align-items:center;gap:8px">
+          <span>✨</span>
+          <span data-i18n="catchup.title">O que perdi? (Catch-Up)</span>
+        </h2>
+        <button type="button" class="setup-close-btn" id="closeCatchUp" title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
+      </div>
+      <p class="setup-desc" data-i18n="catchup.desc">Os destaques com mais interação da tua Timeline recente, num só olhar.</p>
+      <div class="catchup-controls">
+        <div class="tl-filter-pills" id="catchUpHoursPills">
+          <button type="button" class="tl-pill" data-cu-hours="6">6h</button>
+          <button type="button" class="tl-pill active" data-cu-hours="12">12h</button>
+          <button type="button" class="tl-pill" data-cu-hours="24">24h</button>
+        </div>
+        <button type="button" class="send-sm" id="catchUpAiBtn" data-i18n="catchup.ai_btn">✨ Resumir com IA</button>
+      </div>
+      <div id="catchUpMeta" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+      <div id="catchUpAiBox" class="catchup-ai-box" hidden></div>
+      <div id="catchUpFeed" class="catchup-list"></div>
+    </div>
+  </div>
+
   <div id="userProfileOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="userProfileModalTitle">
     <div class="setup-box user-profile-box">
       <div class="setup-header">
@@ -3487,6 +3531,9 @@ const I18N = {
       new_notifs_pill_one: "↑ 1 nova notificação",
       new_notifs_pill_many: "↑ {n} novas notificações",
       empty_timeline: "Ainda não há posts para mostrar. Segue mais contas ou adiciona a outra rede!",
+      filter_all: "Ambas",
+      filter_no_boosts: "Sem boosts",
+      empty_filtered: "Nenhuma publicação corresponde aos filtros selecionados.",
       empty_explore: "Sem posts em alta para mostrar.",
       empty_notifs: "Sem notificações por agora.",
       empty_profile: "Ainda não tens publicações para mostrar.",
@@ -3498,6 +3545,16 @@ const I18N = {
       error_server: "Não consegui falar com o servidor local.",
       error_loading_posts: "Erro ao carregar publicações: {err}",
       error_loading_profile: "Erro ao carregar perfil: {err}"
+    },
+    catchup: {
+      btn: "✨ O que perdi?",
+      title: "O que perdi? (Catch-Up)",
+      desc: "Os destaques com mais interação da tua Timeline recente, num só olhar.",
+      ai_btn: "✨ Resumir com IA",
+      ai_loading: "A gerar resumo da Timeline...",
+      ai_not_configured: "Configura um fornecedor de IA (Gemini ou Ollama) nas Definições para gerar resumos automáticos.",
+      meta: "{total} publicações nas últimas {hours}h · Top {shown} destaques",
+      empty: "Nenhuma publicação encontrada nas últimas {hours} horas com os filtros atuais."
     },
     post: {
       shared_by: "Partilhado por {name}",
@@ -4070,6 +4127,9 @@ const I18N = {
       new_notifs_pill_one: "↑ 1 new notification",
       new_notifs_pill_many: "↑ {n} new notifications",
       empty_timeline: "No posts yet. Follow more accounts or connect the other network!",
+      filter_all: "Both",
+      filter_no_boosts: "No reposts",
+      empty_filtered: "No posts match the active filters.",
       empty_explore: "No trending posts to show.",
       empty_notifs: "No notifications yet.",
       empty_profile: "You don't have any posts yet.",
@@ -4081,6 +4141,16 @@ const I18N = {
       error_server: "Could not communicate with local server.",
       error_loading_posts: "Error loading posts: {err}",
       error_loading_profile: "Error loading profile: {err}"
+    },
+    catchup: {
+      btn: "✨ Catch Me Up",
+      title: "What Did I Miss? (Catch-Up)",
+      desc: "Top highlights with the highest engagement from your recent timeline.",
+      ai_btn: "✨ Summarize with AI",
+      ai_loading: "Summarizing your timeline...",
+      ai_not_configured: "Configure an AI provider (Gemini or Ollama) in Settings to generate AI summaries.",
+      meta: "{total} posts in the last {hours}h · Top {shown} highlights",
+      empty: "No posts found in the last {hours} hours for the active filters."
     },
     post: {
       shared_by: "Shared by {name}",
@@ -5569,6 +5639,7 @@ function isAnyModalOpen() {
     "userProfileOverlay",
     "draftsOverlay",
     "scheduledOverlay",
+    "catchUpOverlay",
     "crossPostOverlay",
     "shortcutsOverlay",
     "imageLightbox",
@@ -5714,6 +5785,10 @@ window.addEventListener("keydown", (e) => {
     }
     if ($("scheduledOverlay") && !$("scheduledOverlay").hidden) {
       closeScheduledModal();
+      return;
+    }
+    if ($("catchUpOverlay") && !$("catchUpOverlay").hidden) {
+      closeCatchUpModal();
       return;
     }
     if ($("newConvoModalOverlay") && !$("newConvoModalOverlay").hidden) {
@@ -6897,15 +6972,166 @@ function scrollColToTop(colId) {
   }, 400);
 }
 
+let timelineFilterNet = localStorage.getItem("mastosky_tl_filter_net") || "all";
+if (!["all", "bluesky", "mastodon"].includes(timelineFilterNet)) timelineFilterNet = "all";
+let timelineHideBoosts = localStorage.getItem("mastosky_tl_hide_boosts") === "true";
+
+function syncTimelineFilterUI() {
+  document.querySelectorAll("[data-tl-net]").forEach(btn => {
+    btn.classList.toggle("active", btn.getAttribute("data-tl-net") === timelineFilterNet);
+  });
+  const hb = $("tlHideBoostsBtn");
+  if (hb) hb.classList.toggle("active", timelineHideBoosts);
+}
+
+function getFilteredTimelineItems() {
+  let list = muteMode === "hide" ? items.filter(it => !getMutedMatch(it)) : items;
+  if (timelineHideBoosts) {
+    list = list.filter(it => !it.boosted_by);
+  }
+  if (timelineFilterNet !== "all") {
+    list = list.filter(it => it.network === timelineFilterNet);
+  }
+  return list;
+}
+
 function render() {
+  syncTimelineFilterUI();
   const feed = $("feed");
   feed.replaceChildren();
-  const filtered = muteMode === "hide" ? items.filter(it => !getMutedMatch(it)) : items;
-  const visible = groupCrossPosts(filtered);
-  if (!visible.length) feed.append(el("div", "empty", t("feed.empty_timeline")));
+  const filtered = getFilteredTimelineItems();
+  const visible = timelineFilterNet === "all" ? groupCrossPosts(filtered) : filtered;
+  if (!visible.length) {
+    const emptyMsg = items.length ? t("feed.empty_filtered") : t("feed.empty_timeline");
+    feed.append(el("div", "empty", emptyMsg));
+  }
   for (const it of visible) feed.append(postCard(it));
   renderLoadMore(feed, timelineCursors, loadMoreTimeline);
 }
+
+document.querySelectorAll("[data-tl-net]").forEach(btn => {
+  btn.onclick = () => {
+    timelineFilterNet = btn.getAttribute("data-tl-net") || "all";
+    try { localStorage.setItem("mastosky_tl_filter_net", timelineFilterNet); } catch (_) {}
+    render();
+  };
+});
+if ($("tlHideBoostsBtn")) {
+  $("tlHideBoostsBtn").onclick = () => {
+    timelineHideBoosts = !timelineHideBoosts;
+    try { localStorage.setItem("mastosky_tl_hide_boosts", timelineHideBoosts ? "true" : "false"); } catch (_) {}
+    render();
+  };
+}
+
+let catchUpHours = 12;
+let catchUpRankedCache = [];
+
+function getCatchUpRankedPosts(hours) {
+  const cutoffMs = Date.now() - (hours * 3600 * 1000);
+  const base = getFilteredTimelineItems().filter(it => {
+    const ts = Date.parse(it.time || "");
+    return !Number.isNaN(ts) && ts >= cutoffMs;
+  });
+  const deduped = timelineFilterNet === "all" ? groupCrossPosts(base) : base;
+  const scored = deduped.map(it => {
+    const score = (Number(it.likes) || 0) + (Number(it.boosts) || 0) * 1.5 + (Number(it.replies) || 0) * 2;
+    return { it, score, ts: Date.parse(it.time || "") || 0 };
+  });
+  scored.sort((a, b) => (b.score - a.score) || (b.ts - a.ts));
+  return { totalInWindow: deduped.length, top: scored.slice(0, 20).map(x => x.it) };
+}
+
+function renderCatchUpFeed() {
+  const feedEl = $("catchUpFeed");
+  const metaEl = $("catchUpMeta");
+  if (!feedEl) return;
+  document.querySelectorAll("[data-cu-hours]").forEach(b => {
+    b.classList.toggle("active", Number(b.getAttribute("data-cu-hours")) === catchUpHours);
+  });
+  const { totalInWindow, top } = getCatchUpRankedPosts(catchUpHours);
+  catchUpRankedCache = top;
+  if (metaEl) {
+    metaEl.textContent = t("catchup.meta", { total: totalInWindow, hours: catchUpHours, shown: top.length });
+  }
+  feedEl.replaceChildren();
+  if (!top.length) {
+    feedEl.append(el("div", "empty", t("catchup.empty", { hours: catchUpHours })));
+    return;
+  }
+  top.forEach(it => feedEl.append(postCard(it)));
+}
+
+function openCatchUpModal() {
+  const overlay = $("catchUpOverlay");
+  if (!overlay) return;
+  const aiBox = $("catchUpAiBox");
+  if (aiBox) { aiBox.hidden = true; aiBox.textContent = ""; }
+  overlay.hidden = false;
+  document.body.style.overflow = "hidden";
+  renderCatchUpFeed();
+}
+
+function closeCatchUpModal() {
+  const overlay = $("catchUpOverlay");
+  if (!overlay) return;
+  overlay.hidden = true;
+  document.body.style.overflow = "";
+}
+
+async function generateCatchUpAiSummary() {
+  const aiBox = $("catchUpAiBox");
+  const btn = $("catchUpAiBtn");
+  if (!aiBox || !btn) return;
+  if (!aiConfig || !aiConfig.provider || aiConfig.provider === "none") {
+    aiBox.hidden = false;
+    aiBox.textContent = t("catchup.ai_not_configured");
+    return;
+  }
+  if (!catchUpRankedCache.length) return;
+  btn.disabled = true;
+  aiBox.hidden = false;
+  aiBox.textContent = t("catchup.ai_loading");
+  try {
+    const payloadPosts = catchUpRankedCache.map(it => ({
+      author: it.name || it.handle,
+      handle: it.handle,
+      network: it.network,
+      text: (it.text || "").trim()
+    }));
+    const res = await api("/api/catchup_summary", {
+      posts: payloadPosts,
+      hours: catchUpHours,
+      lang: currentLang
+    });
+    if (res && res.ok && res.summary) {
+      aiBox.textContent = res.summary;
+    } else {
+      aiBox.textContent = (res && res.error) || "Erro ao gerar resumo.";
+    }
+  } catch (err) {
+    aiBox.textContent = err.message || "Erro ao gerar resumo.";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+if ($("catchUpBtn")) $("catchUpBtn").onclick = openCatchUpModal;
+if ($("closeCatchUp")) $("closeCatchUp").onclick = closeCatchUpModal;
+if ($("catchUpOverlay")) {
+  $("catchUpOverlay").onclick = (e) => {
+    if (e.target === $("catchUpOverlay")) closeCatchUpModal();
+  };
+}
+document.querySelectorAll("[data-cu-hours]").forEach(btn => {
+  btn.onclick = () => {
+    catchUpHours = Number(btn.getAttribute("data-cu-hours")) || 12;
+    const aiBox = $("catchUpAiBox");
+    if (aiBox) { aiBox.hidden = true; aiBox.textContent = ""; }
+    renderCatchUpFeed();
+  };
+});
+if ($("catchUpAiBtn")) $("catchUpAiBtn").onclick = generateCatchUpAiSummary;
 
 async function loadMoreTimeline() {
   const q = new URLSearchParams();

@@ -4117,6 +4117,49 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
             self.assertEqual(out["bskyRes"]["changed"], 1)
             self.assertEqual(out["cnt"], 1)
 
+    def test_timeline_filters_and_catchup_feature(self):
+        from pathlib import Path
+        from unittest import mock
+
+        html = Path("index.html").read_text(encoding="utf-8")
+        for marker in [
+            'id="tlFilterBar"',
+            'data-tl-net="all"',
+            'data-tl-net="bluesky"',
+            'data-tl-net="mastodon"',
+            'id="tlHideBoostsBtn"',
+            'id="catchUpBtn"',
+            'id="catchUpOverlay"',
+            'id="catchUpHoursPills"',
+            'id="catchUpAiBtn"',
+            'id="catchUpFeed"',
+            "mastosky_tl_filter_net",
+            "mastosky_tl_hide_boosts",
+            "function getFilteredTimelineItems(",
+            "function getCatchUpRankedPosts(",
+            "function generateCatchUpAiSummary(",
+            "/api/catchup_summary",
+        ]:
+            self.assertIn(marker, html)
+
+        with mock.patch.object(app, "CFG", {"ai": {"provider": "gemini", "gemini_key": "k"}}):
+            with mock.patch.object(app, "http", return_value={
+                "candidates": [{"content": {"parts": [{"text": "• Tópico 1\n• Tópico 2"}]}}]
+            }):
+                code, res = self._req("POST", "/api/catchup_summary", {
+                    "hours": 12,
+                    "lang": "pt",
+                    "posts": [{"author": "Alice", "network": "bluesky", "text": "Novidades hoje!"}]
+                })
+                self.assertEqual(code, 200)
+                self.assertTrue(res["ok"])
+                self.assertIn("Tópico 1", res["summary"])
+
+        # Empty posts returns ok=False cleanly
+        code_e, res_e = self._req("POST", "/api/catchup_summary", {"posts": [], "hours": 6})
+        self.assertEqual(code_e, 200)
+        self.assertFalse(res_e["ok"])
+
 
 if __name__ == "__main__":
     unittest.main()
