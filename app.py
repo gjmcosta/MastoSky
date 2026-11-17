@@ -15,6 +15,7 @@ USER_DATA_PATH = DATA_DIR / "user_data.json"
 _USER_DATA_LOCK = threading.Lock()
 _INDEX_HTML_CACHE = {"mtime_ns": None, "token": None, "bytes": None, "gz": None}
 _INDEX_CACHE_LOCK = threading.Lock()
+_API_EXECUTOR = ThreadPoolExecutor(max_workers=8, thread_name_prefix="mastosky-api")
 SCHEDULED_POSTS_PATH = DATA_DIR / "scheduled_posts.json"
 _SCHEDULED_LOCK = threading.Lock()
 
@@ -716,6 +717,7 @@ def http(method, url, data=None, token=None, headers=None, timeout=30):
     def _make_req():
         r = urllib.request.Request(url, method=method)
         r.add_header("User-Agent", "MastoSky/1.0")
+        r.add_header("Accept-Encoding", "gzip")
         if token:
             r.add_header("Authorization", "Bearer " + token)
         if headers:
@@ -741,6 +743,9 @@ def http(method, url, data=None, token=None, headers=None, timeout=30):
                 raw = r.read()
                 if not raw:
                     return {}
+                enc = (r.headers.get("Content-Encoding") or "").lower() if hasattr(r, "headers") and hasattr(r.headers, "get") else ""
+                if "gzip" in enc:
+                    raw = zlib.decompress(raw, 16 + zlib.MAX_WBITS)
                 try:
                     return json.loads(raw)
                 except (json.JSONDecodeError, ValueError) as err:
@@ -4431,13 +4436,12 @@ class H(BaseHTTPRequestHandler):
                     return c.name, its, nxt, None
                 except Exception as e:
                     return c.name, [], None, str(e)
-            with ThreadPoolExecutor() as ex:
-                for name, its, nxt, err in ex.map(get, active_clients):
-                    network_items[name] = its
-                    if nxt:
-                        next_cursors[name] = nxt
-                    if err:
-                        errors[name] = err
+            for name, its, nxt, err in _API_EXECUTOR.map(get, active_clients):
+                network_items[name] = its
+                if nxt:
+                    next_cursors[name] = nxt
+                if err:
+                    errors[name] = err
             if what == "explore":
                 items = []
                 lists = list(network_items.values())
@@ -4483,14 +4487,13 @@ class H(BaseHTTPRequestHandler):
                 except Exception as e:
                     return c.name, None, str(e)
 
-            with ThreadPoolExecutor() as ex:
-                for name, res, err in ex.map(do_search, active_clients):
-                    if err:
-                        errors[name] = err
-                    elif res:
-                        all_posts.extend(res.get("posts", []))
-                        all_actors.extend(res.get("actors", []))
-                        all_hashtags.extend(res.get("hashtags", []))
+            for name, res, err in _API_EXECUTOR.map(do_search, active_clients):
+                if err:
+                    errors[name] = err
+                elif res:
+                    all_posts.extend(res.get("posts", []))
+                    all_actors.extend(res.get("actors", []))
+                    all_hashtags.extend(res.get("hashtags", []))
 
             all_posts.sort(key=lambda x: x.get("time") or "", reverse=True)
 
@@ -4515,12 +4518,11 @@ class H(BaseHTTPRequestHandler):
                 except Exception as e:
                     return c.name, None, str(e)
 
-            with ThreadPoolExecutor() as ex:
-                for name, res, err in ex.map(fetch_convos, active_clients):
-                    if err:
-                        errors[name] = err
-                    elif res:
-                        all_convos.extend(res.get("convos", []))
+            for name, res, err in _API_EXECUTOR.map(fetch_convos, active_clients):
+                if err:
+                    errors[name] = err
+                elif res:
+                    all_convos.extend(res.get("convos", []))
 
             all_convos.sort(key=lambda c: parse_time(c.get("last_time")), reverse=True)
             total_unread = sum(1 for c in all_convos if c.get("unread"))
