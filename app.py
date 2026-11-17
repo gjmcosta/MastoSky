@@ -4093,35 +4093,54 @@ class H(BaseHTTPRequestHandler):
                     "aspectRatio": raw_video.get("aspectRatio")
                 }
 
-            if raw_thread is not None:
-                if not isinstance(raw_thread, list) or not raw_thread:
-                    return self.send(400, {"error": "Fio inválido."})
-                if len(raw_thread) > 25:
-                    return self.send(400, {"error": "Fio demasiado longo (máx. 25 posts)."})
-                thread_items = []
-                for idx, item in enumerate(raw_thread):
+            def _parse_thread_list(raw_list):
+                if not isinstance(raw_list, list) or not raw_list:
+                    raise ValueError("Fio inválido.")
+                if len(raw_list) > 25:
+                    raise ValueError("Fio demasiado longo (máx. 25 posts).")
+                parsed_list = []
+                for idx, item in enumerate(raw_list):
                     if not isinstance(item, dict):
-                        return self.send(400, {"error": f"Post #{idx+1} do fio inválido."})
+                        raise ValueError(f"Post #{idx+1} do fio inválido.")
                     item_text = (item.get("text") or "").strip()
-                    try:
-                        item_imgs = _parse_imgs(item.get("images") or [])
-                        item_vid = _parse_video(item.get("video"))
-                    except ValueError as ve:
-                        return self.send(400, {"error": str(ve)})
+                    item_imgs = _parse_imgs(item.get("images") or [])
+                    item_vid = _parse_video(item.get("video"))
                     if item_imgs and item_vid:
-                        return self.send(400, {"error": f"O post #{idx+1} do fio não pode conter imagens e vídeo simultaneamente."})
-                    if not item_text and not item_imgs and not item_vid:
-                        return self.send(400, {"error": f"O post #{idx+1} do fio não tem conteúdo."})
-                    thread_items.append({
+                        raise ValueError(f"O post #{idx+1} do fio não pode conter imagens e vídeo simultaneamente.")
+                    item_poll = item.get("poll") if idx == 0 else None
+                    item_quote = item.get("quote") if idx == 0 else quote
+                    if not item_text and not item_imgs and not item_vid and not (idx == 0 and (item_poll or item_quote)):
+                        raise ValueError(f"O post #{idx+1} do fio não tem conteúdo.")
+                    parsed_list.append({
                         "text": item_text,
                         "images": item_imgs,
                         "video": item_vid,
                         "spoiler": (item.get("spoiler") or "").strip() or spoiler,
-                        "poll": item.get("poll") if idx == 0 else None,
-                        "quote": item.get("quote") if idx == 0 else quote,
+                        "poll": item_poll,
+                        "quote": item_quote,
                         "link_card": (item.get("link_card") or link_card) if idx == 0 else None
                     })
-            else:
+                return parsed_list
+
+            raw_thread_by_net = d.get("thread_by_network")
+            thread_by_net = {}
+            if raw_thread_by_net is not None:
+                if not isinstance(raw_thread_by_net, dict):
+                    return self.send(400, {"error": "Fio inválido."})
+                for t in targets:
+                    if t in raw_thread_by_net:
+                        try:
+                            thread_by_net[t] = _parse_thread_list(raw_thread_by_net[t])
+                        except ValueError as ve:
+                            return self.send(400, {"error": str(ve)})
+
+            thread_items = None
+            if raw_thread is not None:
+                try:
+                    thread_items = _parse_thread_list(raw_thread)
+                except ValueError as ve:
+                    return self.send(400, {"error": str(ve)})
+            elif any(t not in thread_by_net for t in targets):
                 try:
                     parsed_images = _parse_imgs(d.get("images") or [])
                     parsed_video = _parse_video(d.get("video"))
@@ -4148,7 +4167,8 @@ class H(BaseHTTPRequestHandler):
                     if t == "bluesky" and current_ref and "root" in current_ref:
                         root_bsky = current_ref["root"]
 
-                    for idx, item in enumerate(thread_items):
+                    target_thread_items = thread_by_net.get(t, thread_items) or []
+                    for idx, item in enumerate(target_thread_items):
                         item_text = item["text"]
                         item_imgs = item["images"]
                         item_vid = item.get("video")

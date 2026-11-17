@@ -220,6 +220,8 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .bar-right{display:flex;align-items:center;gap:10px;margin-left:auto}
 .count{color:var(--muted);font:12px var(--mono);font-variant-numeric:tabular-nums}
 .count.over{color:var(--danger);font-weight:700}
+.count.hybrid{color:var(--accent);font-weight:600;background:color-mix(in srgb,var(--accent) 14%,transparent);padding:2px 8px;border-radius:10px;font-size:11.5px}
+.tool.tool--split-ready{color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
 .send{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:0 18px;height:36px;font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s,background .15s}
 .send:hover:not(:disabled){opacity:.9}
 .send:disabled{opacity:.35;cursor:default}
@@ -1796,6 +1798,7 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
   <symbol id="i-arrow-up" viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/><polyline points="5 12 12 5 19 12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-thread" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke="currentColor" stroke-width="1.75" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
+  <symbol id="i-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="20" y1="4" x2="8.12" y2="15.88" stroke="currentColor" stroke-width="1.75"/><line x1="14.47" y1="14.48" x2="20" y2="20" stroke="currentColor" stroke-width="1.75"/><line x1="8.12" y1="8.12" x2="12" y2="12" stroke="currentColor" stroke-width="1.75"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.75"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
   <symbol id="i-draft" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="9" x2="8" y2="9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="5.5" width="19" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><line x1="6.5" y1="9.5" x2="6.51" y2="9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="9.5" x2="10.01" y2="9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="13.5" y1="9.5" x2="13.51" y2="9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="9.5" x2="17.01" y2="9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="6.5" y1="13" x2="6.51" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="13" x2="17.01" y2="13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="14" x2="13.5" y2="14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
@@ -2009,6 +2012,10 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
             <button type="button" class="tool" id="addThreadBtn" title="Adicionar ao fio (Thread)" data-i18n-title="composer.add_thread_title" aria-label="Adicionar ao fio">
               <svg class="ico"><use href="#i-thread"/></svg>
               <span class="tool-label" data-i18n="composer.add_thread">+ Fio</span>
+            </button>
+            <button type="button" class="tool" id="splitThreadBtn" title="Dividir texto automaticamente em fio (Thread)" data-i18n-title="composer.split_thread_title" aria-label="Dividir em fio" hidden>
+              <svg class="ico"><use href="#i-scissors"/></svg>
+              <span class="tool-label" data-i18n="composer.split_thread">Dividir em fio</span>
             </button>
             <button type="button" class="tool" id="attachBtn" title="Anexar imagens ou vídeo" data-i18n-title="composer.attach_title" aria-label="Anexar imagens ou vídeo">
               <svg class="ico"><use href="#i-image"/></svg>
@@ -3219,6 +3226,11 @@ const I18N = {
       thread_ph: "Continua o teu fio...",
       thread_rm: "Remover do fio",
       thread_published: "Fio publicado com sucesso!",
+      split_thread: "Dividir em fio",
+      split_thread_title: "Dividir automaticamente o texto longo em vários posts numerados (1/2, 2/2…)",
+      hybrid_count: "🐘 {masto}/500 · 🦋 Fio ({bskyCount})",
+      hybrid_count_tip: "Modo Híbrido: publica 1 post único no Mastodon (até 500) e divide automaticamente em {bskyCount} posts numerados no Bluesky",
+      send_hybrid: "Publicar (1 🐘 + {count} 🦋)",
       partial_title: "Publicação Parcial",
       partial_desc: "A publicação foi concluída numa rede, mas falhou noutra. Podes tentar novamente apenas nas redes em falta sem duplicar o post onde já teve sucesso.",
       partial_success_label: "Publicado com sucesso!",
@@ -3761,6 +3773,11 @@ const I18N = {
       thread_ph: "Continue your thread...",
       thread_rm: "Remove from thread",
       thread_published: "Thread published successfully!",
+      split_thread: "Split into thread",
+      split_thread_title: "Automatically split long text into numbered thread posts (1/2, 2/2…)",
+      hybrid_count: "🐘 {masto}/500 · 🦋 Thread ({bskyCount})",
+      hybrid_count_tip: "Hybrid Mode: publishes 1 single post on Mastodon (up to 500) and auto-splits into {bskyCount} numbered posts on Bluesky",
+      send_hybrid: "Publish (1 🐘 + {count} 🦋)",
       partial_title: "Partial Post",
       partial_desc: "The post was published to one network, but failed on another. You can retry only on the failed networks without duplicating where it already succeeded.",
       partial_success_label: "Published successfully!",
@@ -6063,6 +6080,7 @@ function normalizeCrossPostText(it) {
     .replace(/https?:\/\/\S+/gi, " ")
     .replace(/(?:^|\s)(?:www\.)?[a-z0-9-]+(?:\.[a-z]{2,})+\/\S*/gi, " ")
     .replace(/@([a-z0-9_-]+)(?:@[a-z0-9.-]+|\.[a-z0-9.-]+)/gi, "@$1")
+    .replace(/\s+\d+\/\d+\s*$/, "")
     .normalize("NFKC")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
@@ -10277,6 +10295,179 @@ async function handleThreadImages(post, files) {
   }
 }
 
+function computeExtraBskyLen() {
+  let extraBskyLen = 0;
+  const cwVal = hasCW && $("cwInput") ? $("cwInput").value.trim() : "";
+  if (cwVal) {
+    extraBskyLen += [..."⚠️ [CW: " + cwVal + "]\n\n"].length;
+  }
+  const filledOpts = hasPoll ? pollOptions.map(o => o.trim()).filter(Boolean) : [];
+  if (hasPoll && filledOpts.length) {
+    extraBskyLen += [..."\n\n📊 Sondagem (1d):"].length;
+    for (let i = 0; i < filledOpts.length; i++) {
+      extraBskyLen += [..."\n" + (i + 1) + "️⃣ " + filledOpts[i]].length;
+    }
+  }
+  return extraBskyLen;
+}
+
+function splitTextIntoChunks(rawText, maxLimit, extraFirstPostLen = 0, suffixReserve = 4) {
+  const chunks = [];
+  let remaining = String(rawText || "").replace(/\r\n/g, "\n").trim();
+  const utf16ToCp = (str, u16Idx) => [...str.slice(0, u16Idx)].length;
+
+  while (remaining.length > 0) {
+    const isFirst = chunks.length === 0;
+    const budget = Math.max(12, maxLimit - (isFirst ? extraFirstPostLen : 0) - suffixReserve);
+    const cp = [...remaining];
+    if (cp.length <= budget) {
+      chunks.push(remaining.trim());
+      break;
+    }
+
+    const peekLen = Math.min(cp.length, budget + 1);
+    const peekStr = cp.slice(0, peekLen).join("");
+    let cutCp = -1;
+
+    // 1. Parágrafo (\n\n)
+    const paraRe = /\n\s*\n/g;
+    let m;
+    let bestPara = -1;
+    while ((m = paraRe.exec(peekStr)) !== null) {
+      const cpEnd = utf16ToCp(peekStr, m.index);
+      if (cpEnd > 0 && cpEnd <= budget) bestPara = cpEnd;
+    }
+    if (bestPara >= Math.floor(budget * 0.35)) cutCp = bestPara;
+
+    // 2. Quebra de linha simples (\n)
+    if (cutCp < 0) {
+      const nlU16 = peekStr.lastIndexOf("\n");
+      if (nlU16 > 0) {
+        const nlCp = utf16ToCp(peekStr, nlU16);
+        if (nlCp >= Math.floor(budget * 0.4) && nlCp <= budget) cutCp = nlCp;
+      }
+    }
+
+    // 3. Fim de frase (. ! ? …) seguido de espaço
+    if (cutCp < 0) {
+      const sentRe = /[.!?…]+["'»”)]*(?=\s)/g;
+      let bestSent = -1;
+      while ((m = sentRe.exec(peekStr)) !== null) {
+        const cpEnd = utf16ToCp(peekStr, m.index + m[0].length);
+        if (cpEnd > 0 && cpEnd <= budget) bestSent = cpEnd;
+      }
+      if (bestSent >= Math.floor(budget * 0.45)) cutCp = bestSent;
+    }
+
+    // 4. Fronteira de palavra (espaço)
+    if (cutCp < 0) {
+      const wsRe = /\s+/g;
+      let bestWs = -1;
+      while ((m = wsRe.exec(peekStr)) !== null) {
+        const cpStart = utf16ToCp(peekStr, m.index);
+        if (cpStart > 0 && cpStart <= budget) bestWs = cpStart;
+      }
+      if (bestWs > 0) cutCp = bestWs;
+    }
+
+    // 5. Fallback: corte exato numa palavra sem espaços acima do limite
+    if (cutCp <= 0) cutCp = Math.min(budget, cp.length);
+
+    const piece = cp.slice(0, cutCp).join("").trimEnd();
+    chunks.push(piece || cp.slice(0, Math.min(budget, cp.length)).join(""));
+    remaining = cp.slice(cutCp).join("").replace(/^\s+/, "");
+  }
+  return chunks;
+}
+
+function splitTextIntoThread(rawText, maxLimit, extraFirstPostLen = 0) {
+  const clean = String(rawText || "").replace(/\r\n/g, "\n").trim();
+  if (!clean) return [];
+  if ([...clean].length + extraFirstPostLen <= maxLimit) {
+    return [clean];
+  }
+  let chunks = splitTextIntoChunks(clean, maxLimit, extraFirstPostLen, 4);
+  if (chunks.length >= 10) {
+    chunks = splitTextIntoChunks(clean, maxLimit, extraFirstPostLen, 6);
+  }
+  const total = chunks.length;
+  if (total <= 1) return chunks;
+  return chunks.map((chunk, idx) => `${chunk} ${idx + 1}/${total}`);
+}
+
+function splitComposerIntoThread() {
+  const ta = $("text");
+  if (!ta) return;
+  const targets = reply ? [reply.network] : selected();
+  const splitLimit = (!targets.length || targets.includes("bluesky")) ? LIMITS.bluesky : LIMITS.mastodon;
+  const extraFirst = targets.includes("bluesky") ? computeExtraBskyLen() : 0;
+
+  if (threadPosts.length === 0) {
+    const raw = ta.value || "";
+    let parts = splitTextIntoThread(raw, splitLimit, extraFirst);
+    if (parts.length <= 1 && /\n\s*\n/.test(raw.trim())) {
+      const paraParts = raw.trim().split(/\n\s*\n+/).map(s => s.trim()).filter(Boolean);
+      if (paraParts.length > 1) {
+        parts = paraParts.map((s, idx) => `${s} ${idx + 1}/${paraParts.length}`);
+      }
+    }
+    if (parts.length <= 1) return;
+    const capped = parts.slice(0, 25);
+    if (capped.length < parts.length) {
+      capped.forEach((s, idx) => {
+        capped[idx] = s.replace(/\s+\d+\/\d+\s*$/, "") + ` ${idx + 1}/${capped.length}`;
+      });
+    }
+    ta.value = capped[0];
+    threadPosts = capped.slice(1).map(partText => ({
+      id: nextThreadId++,
+      text: partText,
+      images: []
+    }));
+  } else {
+    const stripNum = s => String(s || "").replace(/\s+\d+\/\d+\s*$/, "").trim();
+    const buildExpanded = (reserve) => {
+      const out = [];
+      const mainClean = stripNum(ta.value);
+      const mainParts = mainClean ? splitTextIntoChunks(mainClean, splitLimit, extraFirst, reserve) : [""];
+      mainParts.forEach(part => out.push({ text: part }));
+      threadPosts.forEach(p => {
+        const cleanP = stripNum(p.text);
+        if (!cleanP) {
+          out.push({ text: "", images: p.images || [], video: p.video || null });
+          return;
+        }
+        const pParts = splitTextIntoChunks(cleanP, splitLimit, 0, reserve);
+        pParts.forEach((part, subIdx) => {
+          out.push({
+            text: part,
+            images: subIdx === 0 ? (p.images || []) : [],
+            video: subIdx === 0 ? (p.video || null) : null
+          });
+        });
+      });
+      return out;
+    };
+    let expanded = buildExpanded(threadPosts.length + 1 >= 10 ? 6 : 4);
+    if (expanded.length >= 10) {
+      expanded = buildExpanded(6);
+    }
+    const capped = expanded.slice(0, 25);
+    const total = capped.length;
+    if (total <= 1) return;
+    ta.value = capped[0].text ? `${capped[0].text} 1/${total}` : "";
+    threadPosts = capped.slice(1).map((item, idx) => ({
+      id: nextThreadId++,
+      text: item.text ? `${item.text} ${idx + 2}/${total}` : "",
+      images: item.images || [],
+      video: item.video || null
+    }));
+  }
+
+  renderThreadPosts();
+  update();
+}
+
 function addThreadPost() {
   if (threadPosts.length >= 24) return;
   threadPosts.push({ id: nextThreadId++, text: "", images: [] });
@@ -10292,6 +10483,9 @@ function addThreadPost() {
 
 if ($("addThreadBtn")) {
   $("addThreadBtn").onclick = addThreadPost;
+}
+if ($("splitThreadBtn")) {
+  $("splitThreadBtn").onclick = splitComposerIntoThread;
 }
 
 let composerLinkCard = null;
@@ -10436,24 +10630,33 @@ function update() {
   const text = $("text").value;
   const lenText = [...text].length;
 
-  let extraBskyLen = 0;
-  const cwVal = hasCW ? $("cwInput").value.trim() : "";
-  if (cwVal) {
-    extraBskyLen += [..."⚠️ [CW: " + cwVal + "]\n\n"].length;
-  }
+  const extraBskyLen = computeExtraBskyLen();
   const filledOpts = hasPoll ? pollOptions.map(o => o.trim()).filter(Boolean) : [];
-  if (hasPoll && filledOpts.length) {
-    extraBskyLen += [..."\n\n📊 Sondagem (1d):"].length;
-    for (let i = 0; i < filledOpts.length; i++) {
-      extraBskyLen += [..."\n" + (i + 1) + "️⃣ " + filledOpts[i]].length;
-    }
-  }
 
   const limit = targets.length ? Math.min(...targets.map(n => LIMITS[n])) : 300;
   const effectiveLen = (targets.includes("bluesky") ? lenText + extraBskyLen : lenText);
 
-  $("count").textContent = effectiveLen + " / " + limit;
-  $("count").classList.toggle("over", effectiveLen > limit);
+  const isBoth = !reply && targets.includes("bluesky") && targets.includes("mastodon");
+  const lenMasto = lenText;
+  const lenBsky = lenText + extraBskyLen;
+  const isHybridAutoThread = isBoth && threadPosts.length === 0 && lenBsky > LIMITS.bluesky && lenMasto <= LIMITS.mastodon;
+
+  let bskyParts = null;
+  let bskyValid = false;
+  if (isHybridAutoThread) {
+    bskyParts = splitTextIntoThread(text, LIMITS.bluesky, extraBskyLen);
+    const bskyFirstTotal = bskyParts.length ? ([...bskyParts[0]].length + extraBskyLen) : 0;
+    bskyValid = bskyParts.length >= 2 && bskyParts.length <= 25 && bskyFirstTotal <= LIMITS.bluesky && bskyParts.slice(1).every(p => [...p].length <= LIMITS.bluesky);
+    $("count").textContent = t("composer.hybrid_count", {masto: lenMasto, bskyCount: bskyParts.length});
+    $("count").title = t("composer.hybrid_count_tip", {bskyCount: bskyParts.length});
+    $("count").classList.add("hybrid");
+    $("count").classList.remove("over");
+  } else {
+    $("count").textContent = effectiveLen + " / " + limit;
+    $("count").title = "";
+    $("count").classList.remove("hybrid");
+    $("count").classList.toggle("over", effectiveLen > limit);
+  }
 
   // Exclusividade mútua entre Sondagem, Imagens e Vídeo
   if (images.length > 0 || attachedVideo) {
@@ -10496,15 +10699,32 @@ function update() {
   const hasContent = lenText > 0 || images.length > 0 || Boolean(attachedVideo) || (hasPoll && filledOpts.length >= 2) || Boolean(quote);
 
   let threadValid = true;
+  let anyThreadOver = false;
   if (threadPosts.length > 0) {
     threadValid = threadPosts.every(p => {
       const pLen = [...(p.text || "")].length;
+      if (pLen > limit) anyThreadOver = true;
+      const cSpan = $("threadCount_" + p.id);
+      if (cSpan) {
+        cSpan.textContent = pLen + " / " + limit;
+        cSpan.classList.toggle("over", pLen > limit);
+      }
       const hasPostContent = (p.text || "").trim().length > 0 || (p.images && p.images.length > 0) || Boolean(p.video);
       return hasPostContent && pLen <= limit;
     });
   }
 
-  if (threadPosts.length > 0) {
+  const splitBtn = $("splitThreadBtn");
+  if (splitBtn) {
+    const overAny = effectiveLen > limit || anyThreadOver;
+    const hasParas = threadPosts.length === 0 && /\n\s*\n/.test(text.trim()) && lenText > 0;
+    splitBtn.hidden = !(overAny || hasParas);
+    splitBtn.classList.toggle("tool--split-ready", overAny);
+  }
+
+  if (isHybridAutoThread && bskyParts) {
+    $("send").textContent = t("composer.send_hybrid", {count: bskyParts.length});
+  } else if (threadPosts.length > 0) {
     $("send").textContent = t("composer.publish_thread", {count: threadPosts.length + 1});
   } else if (reply) {
     $("send").textContent = t("actions.reply") || "Responder";
@@ -10527,7 +10747,8 @@ function update() {
   updateNetToggleUI();
   updateVisToggleUI();
 
-  $("send").disabled = !hasContent || !pollValid || effectiveLen > limit || !targets.length || !threadValid;
+  const textValid = isHybridAutoThread ? bskyValid : effectiveLen <= limit;
+  $("send").disabled = !hasContent || !pollValid || !textValid || !targets.length || !threadValid;
   scheduleAutoSave();
   scheduleComposerLinkPreview();
 }
@@ -11475,6 +11696,318 @@ if ($("partialPostOverlay")) {
 }
 if ($("finishPartialPostBtn")) {
   $("finishPartialPostBtn").onclick = () => {
+    if (pendingPartialData) {
+      clearComposer(pendingPartialData.threadPayload);
+      pendingPartialData = null;
+    }
+    closePartialPostModal();
+    const msg = $("msg");
+    if (msg) {
+      msg.className = "msg";
+      msg.textContent = t("composer.posted");
+    }
+  };
+}
+if ($("editPartialPostBtn")) {
+  $("editPartialPostBtn").onclick = () => {
+    closePartialPostModal();
+    const msg = $("msg");
+    if (msg) {
+      msg.className = "msg err";
+      msg.textContent = t("composer.partial_editing_note") || "Podes rever a tua publicação e reenviar apenas para a rede em falta.";
+    }
+    $("text").focus();
+  };
+}
+if ($("retryPartialPostBtn")) {
+  $("retryPartialPostBtn").onclick = async () => {
+    if (!pendingPartialData) return;
+    const { good, bad, bodyPayload, threadPayload } = pendingPartialData;
+    const retryTargets = bad.map(([n]) => n);
+    const retryBtn = $("retryPartialPostBtn");
+    const retryTxt = $("retryPartialPostText");
+
+    if (retryBtn) retryBtn.disabled = true;
+    if (retryTxt) retryTxt.textContent = t("composer.partial_retrying");
+
+    const retryBody = { ...bodyPayload, targets: retryTargets };
+    if (retryBody.reply && !retryTargets.includes(retryBody.reply.network)) {
+      delete retryBody.reply;
+    }
+
+    try {
+      const res = await api("/api/post", retryBody);
+      const newBad = Object.entries(res).filter(([, v]) => v !== "ok");
+      const newGood = Object.entries(res).filter(([, v]) => v === "ok");
+
+      if (newBad.length === 0) {
+        closePartialPostModal();
+        clearComposer(threadPayload);
+        const msg = $("msg");
+        if (msg) {
+          msg.className = "msg";
+          msg.textContent = threadPayload ? (t("composer.thread_published") || "Fio publicado com sucesso!") : t("composer.posted");
+        }
+        pendingPartialData = null;
+      } else {
+        const combinedGood = [...good, ...newGood];
+        pendingPartialData = { good: combinedGood, bad: newBad, bodyPayload, threadPayload };
+        openPartialPostModal(combinedGood, newBad, bodyPayload, threadPayload);
+      }
+    } catch (err) {
+      showAppAlert(err.message || "Erro ao reenviar.");
+      if (retryBtn) retryBtn.disabled = false;
+      if (retryTxt) {
+        if (retryTargets.length === 1) {
+          retryTxt.textContent = t("composer.partial_retry_btn", {net: LABEL[retryTargets[0]]});
+        } else {
+          retryTxt.textContent = t("composer.partial_retry_all_failed");
+        }
+      }
+    }
+  };
+}
+
+function closeBoostMenu() {
+  if (activeBoostMenu) {
+    activeBoostMenu.remove();
+    activeBoostMenu = null;
+  }
+}
+
+document.addEventListener("click", (e) => {
+  if (activeBoostMenu && !activeBoostMenu.contains(e.target)) {
+    closeBoostMenu();
+  }
+});
+window.addEventListener("scroll", closeBoostMenu, {passive: true});
+
+function openBoostMenu(it, btn) {
+  if (activeBoostMenu) {
+    const isSame = activeBoostMenu._btn === btn;
+    closeBoostMenu();
+    if (isSame) return;
+  }
+
+  const menu = el("div", "boost-popover");
+  menu._btn = btn;
+
+  // Secção: Partilhar noutra rede
+  const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
+  if (networks.length > 1 && networks.includes(otherNet)) {
+    const secOut = el("div", "boost-header", t("share_menu.out_net"));
+    const btnCross = el("button", "boost-btn-cross");
+    btnCross.innerHTML = '🔀 <span>' + t("share_menu.cross_post", {net: LABEL[otherNet]}) + '</span>';
+    btnCross.onclick = (e) => {
+      e.stopPropagation();
+      closeBoostMenu();
+      openCrossPostModal(it);
+    };
+    menu.append(secOut, btnCross, el("div", "boost-divider"));
+  }
+
+  // Secção: Nesta rede
+  const secIn = el("div", "boost-header", t("share_menu.in_net", {net: LABEL[it.network]}));
+  const btnRepost = el("button", null);
+  btnRepost.innerHTML = ICONS.boost + " <span>" + (it.boosted ? t("share_menu.undo_repost") : t("share_menu.repost")) + "</span>";
+  btnRepost.onclick = (e) => {
+    e.stopPropagation();
+    closeBoostMenu();
+    act(it, "boost", btn);
+  };
+
+  const btnQuote = el("button", null);
+  btnQuote.innerHTML = '💬 <span>' + t("share_menu.quote") + '</span>';
+  btnQuote.onclick = (e) => {
+    e.stopPropagation();
+    closeBoostMenu();
+    startQuote(it, true);
+  };
+
+  menu.append(secIn, btnRepost, btnQuote);
+  document.body.append(menu);
+
+  const rect = btn.getBoundingClientRect();
+  menu.style.top = (rect.bottom + 4) + "px";
+  menu.style.left = Math.max(10, Math.min(window.innerWidth - 225, rect.left - 10)) + "px";
+
+  activeBoostMenu = menu;
+}
+
+let crossPostTarget = null;
+let crossPostTheme = "cosmic";
+
+const FONT_SANS = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+function getCanvasWrappedLines(ctx, text, maxWidth, maxLines = 14) {
+  if (!text) return [];
+  const paragraphs = text.split(/\r?\n/);
+  const lines = [];
+
+  for (let p = 0; p < paragraphs.length; p++) {
+    const rawPara = paragraphs[p].trim();
+    if (!rawPara) {
+      if (lines.length > 0 && lines.length < maxLines) {
+        lines.push("");
+      }
+      continue;
+    }
+    const words = rawPara.split(/\s+/);
+    let currentLine = "";
+
+    for (let w = 0; w < words.length; w++) {
+      const testLine = currentLine ? (currentLine + " " + words[w]) : words[w];
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = words[w];
+        if (lines.length >= maxLines - 1) {
+          currentLine += " …";
+          break;
+        }
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    if (lines.length >= maxLines) break;
+  }
+  return lines;
+}
+
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 12) {
+  const words = text.split(/\s+/);
+  let line = "";
+  let lineCount = 0;
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + (line ? " " : "") + words[n];
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth && n > 0) {
+      ctx.fillText(line, x, y);
+      line = words[n];
+      y += lineHeight;
+      lineCount++;
+      if (lineCount >= maxLines - 1 && n < words.length - 1) {
+        line += " …";
+        break;
+      }
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line, x, y);
+  return y + lineHeight;
+}
+
+function loadImgSafe(url) {
+  return new Promise((resolve) => {
+    if (!url) return resolve(null);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => {
+      // Se o proxy falhou, tenta carregar diretamente da URL com CORS anónimo
+      const direct = new Image();
+      direct.crossOrigin = "anonymous";
+      direct.onload = () => resolve(direct);
+      direct.onerror = () => {
+        // Fallback: carregar diretamente sem crossOrigin
+        const noCors = new Image();
+        noCors.onload = () => resolve(noCors);
+        noCors.onerror = () => resolve(null);
+        noCors.src = url;
+      };
+      direct.src = url;
+    };
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      img.src = "/api/proxy_image?url=" + encodeURIComponent(url);
+    } else {
+      img.src = url;
+    }
+  });
+}
+
+function drawRoundedImage(ctx, img, x, y, w, h, r = 16, fit = "cover") {
+  if (!img) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.clip();
+
+  const nw = img.naturalWidth || img.width || 1;
+  const nh = img.naturalHeight || img.height || 1;
+  const imgRatio = nw / nh;
+  const targetRatio = w / h;
+
+  if (fit === "contain") {
+    // Fundo elegante de contraste para imagens que não preenchem a totalidade da caixa
+    const bgGrad = ctx.createLinearGradient(x, y, x, y + h);
+    bgGrad.addColorStop(0, "rgba(8, 12, 26, 0.75)");
+    bgGrad.addColorStop(1, "rgba(4, 7, 16, 0.92)");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(x, y, w, h);
+
+    let dw, dh, dx, dy;
+    if (imgRatio > targetRatio) {
+      dw = w;
+      dh = dw / imgRatio;
+      dx = x;
+      dy = y + (h - dh) / 2;
+    } else {
+      dh = h;
+      dw = dh * imgRatio;
+      dx = x + (w - dw) / 2;
+      dy = y;
+    }
+    ctx.drawImage(img, 0, 0, nw, nh, dx, dy, dw, dh);
+  } else {
+    let sx, sy, sw, sh;
+    if (imgRatio > targetRatio) {
+      sh = nh;
+      sw = sh * targetRatio;
+      sx = (nw - sw) / 2;
+      sy = 0;
+    } else {
+      sw = nw;
+      sh = sw / targetRatio;
+      sx = 0;
+      sy = (nh - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+  }
+  ctx.restore();
+
+  // Borda subtil
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  ctx.strokeStyle = "rgba(255,255,255,0.14)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawRichLinkCard(ctx, x, y, w, h, r = 16, m = {}) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, r);
+  const bgGrad = ctx.createLinearGradient(x, y, x, y + h);
+  bgGrad.addColorStop(0, "#151B38");
+  bgGrad.addColorStop(1, "#0D1126");
+  ctx.fillStyle = bgGrad;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(77, 178, 255, 0.28)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const pad = 30;
+  const innerW = w - pad * 2;
+  const domain = (m.url || "").replace(/^https?:\/\//, "").split("/")[0] || "LINK";
+  ctx.fillStyle = "#4DB2FF";
+  ctx.font = "bold 18px " + FONT_SANS;
   ctx.fillText("🔗 " + domain.toUpperCase(), x + pad, y + pad + 14);
 
   const title = m.title || domain;
@@ -12605,26 +13138,47 @@ $("send").onclick = async () => {
     expires_in: parseInt($("pollDuration").value, 10)
   } : null;
 
-  const mastoActive = reply ? (reply.network === "mastodon") : selected().includes("mastodon");
+  const activeTargets = reply ? [reply.network] : selected();
+  const mastoActive = activeTargets.includes("mastodon");
   const visibility = (mastoActive && $("mastoVisibility")) ? $("mastoVisibility").value : null;
+  const linkCardPayload = (!images.length && !attachedVideo && !hasPoll && !quote && composerLinkCard) ? composerLinkCard : null;
+
+  const rawTextVal = $("text").value;
+  const rawTrimmedText = rawTextVal.trim();
+  const extraBskyLen = computeExtraBskyLen();
+  const lenMasto = [...rawTextVal].length;
+  const lenBsky = lenMasto + extraBskyLen;
+  const isBothTargets = !reply && activeTargets.includes("bluesky") && activeTargets.includes("mastodon");
+  const isHybridAutoThread = isBothTargets && threadPosts.length === 0 && lenBsky > LIMITS.bluesky && lenMasto <= LIMITS.mastodon;
 
   let threadPayload = null;
+  let threadByNetworkPayload = null;
   if (threadPosts.length > 0) {
     threadPayload = [
-      { text: $("text").value.trim(), images, video: attachedVideo, spoiler, poll, quote },
+      { text: rawTrimmedText, images, video: attachedVideo, spoiler, poll, quote },
       ...threadPosts.map(p => ({
         text: (p.text || "").trim(),
         images: p.images || [],
         video: p.video || null
       }))
     ];
+  } else if (isHybridAutoThread) {
+    const bskyParts = splitTextIntoThread(rawTextVal, LIMITS.bluesky, extraBskyLen);
+    threadByNetworkPayload = {
+      mastodon: [
+        { text: rawTrimmedText, images, video: attachedVideo, spoiler, poll, quote, link_card: linkCardPayload }
+      ],
+      bluesky: bskyParts.map((partText, idx) => idx === 0
+        ? { text: partText, images, video: attachedVideo, spoiler, poll, quote, link_card: linkCardPayload }
+        : { text: partText, images: [], video: null }
+      )
+    };
   }
 
-  const linkCardPayload = (!images.length && !attachedVideo && !hasPoll && !quote && composerLinkCard) ? composerLinkCard : null;
   const replyPayload = reply ? { network: reply.network, ref: reply.ref } : null;
   const body = reply
-    ? {text: $("text").value, reply: replyPayload, images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload}
-    : {text: $("text").value, targets: selected(), images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload};
+    ? {text: rawTextVal, reply: replyPayload, images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload}
+    : {text: rawTextVal, targets: activeTargets, images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload, ...(threadByNetworkPayload ? { thread_by_network: threadByNetworkPayload } : {})};
 
   if (attachedVideo || (threadPayload && threadPayload.some(p => p.video))) {
     $("msg").className = "msg";
@@ -12646,14 +13200,14 @@ $("send").onclick = async () => {
       updateNetToggleUI();
     }
 
-    openPartialPostModal(good, bad, body, threadPayload);
+    openPartialPostModal(good, bad, body, threadPayload || threadByNetworkPayload);
   } else if (bad.length) {
     msg.className = "msg err";
     msg.textContent = t("composer.post_failed", {err: bad.map(([n, v]) => LABEL[n] + " (" + v + ")").join("; ")});
   } else {
     msg.className = "msg";
-    msg.textContent = threadPayload ? (t("composer.thread_published") || "Fio publicado com sucesso!") : t("composer.posted");
-    clearComposer(threadPayload);
+    msg.textContent = (threadPayload || threadByNetworkPayload) ? (t("composer.thread_published") || "Fio publicado com sucesso!") : t("composer.posted");
+    clearComposer(threadPayload || threadByNetworkPayload);
   }
   update();
 };

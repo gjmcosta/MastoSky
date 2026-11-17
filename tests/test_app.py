@@ -483,6 +483,48 @@ class PostHandlerTests(unittest.TestCase):
             # Call 3: in_reply_to 1002
             self.assertEqual(masto_client.post.call_args_list[2][0][1], {"id": "1002"})
 
+    def test_thread_by_network_hybrid_post(self):
+        from unittest import mock
+        masto_client = mock.Mock()
+        masto_client.post.return_value = {"id": "5001"}
+        self.client.post.side_effect = [
+            {"uri": "at://did:plc:123/app.bsky.feed.post/h1", "cid": "cid_h1"},
+            {"uri": "at://did:plc:123/app.bsky.feed.post/h2", "cid": "cid_h2"},
+        ]
+        full_420_text = "A" * 420
+        part1 = "A" * 290 + " 1/2"
+        part2 = "A" * 130 + " 2/2"
+        with mock.patch.dict(app.CLIENTS, {"mastodon": masto_client}):
+            payload = {
+                "text": full_420_text,
+                "targets": ["mastodon", "bluesky"],
+                "thread_by_network": {
+                    "mastodon": [{"text": full_420_text}],
+                    "bluesky": [{"text": part1}, {"text": part2}],
+                },
+            }
+            code, r = self._post("/api/post", payload)
+            self.assertEqual(code, 200)
+            self.assertEqual(r, {"mastodon": "ok", "bluesky": "ok"})
+            self.assertEqual(masto_client.post.call_count, 1)
+            self.assertEqual(masto_client.post.call_args[0][0], full_420_text)
+            self.assertEqual(self.client.post.call_count, 2)
+            self.assertEqual(self.client.post.call_args_list[0][0][0], part1)
+            self.assertIsNone(self.client.post.call_args_list[0][0][1])
+            self.assertEqual(self.client.post.call_args_list[1][0][0], part2)
+            self.assertEqual(
+                self.client.post.call_args_list[1][0][1],
+                {
+                    "root": {"uri": "at://did:plc:123/app.bsky.feed.post/h1", "cid": "cid_h1"},
+                    "uri": "at://did:plc:123/app.bsky.feed.post/h1",
+                    "cid": "cid_h1",
+                },
+            )
+
+        # Invalid thread_by_network payload returns 400
+        bad_code, _ = self._post("/api/post", {"targets": ["bluesky"], "thread_by_network": "bad"})
+        self.assertEqual(bad_code, 400)
+
     def test_reply_post_endpoint(self):
         from unittest import mock
         masto_client = mock.Mock()
@@ -3797,6 +3839,64 @@ class UiRefinementsAndCwTests(unittest.TestCase):
         ]
         for marker in required:
             self.assertIn(marker, self.html)
+
+    def test_hybrid_limit_and_auto_thread_feature(self):
+        required = [
+            'id="splitThreadBtn"',
+            'id="i-scissors"',
+            ".count.hybrid",
+            ".tool.tool--split-ready",
+            "function computeExtraBskyLen(",
+            "function splitTextIntoChunks(",
+            "function splitTextIntoThread(",
+            "function splitComposerIntoThread(",
+            "thread_by_network:",
+            "split_thread:",
+            "split_thread_title:",
+            "hybrid_count:",
+            "hybrid_count_tip:",
+            "send_hybrid:",
+            '.replace(/\\s+\\d+\\/\\d+\\s*$/, "")',
+        ]
+        for marker in required:
+            self.assertIn(marker, self.html)
+
+        import json, re, shutil, subprocess
+        node_bin = shutil.which("node")
+        if node_bin:
+            m = re.search(
+                r"(function splitTextIntoChunks[\s\S]*?^}\n\nfunction splitTextIntoThread[\s\S]*?^})",
+                self.html,
+                re.M,
+            )
+            self.assertIsNotNone(m, "Funções splitTextIntoChunks/splitTextIntoThread não encontradas")
+            js_test = m.group(1) + """
+const longText = (
+  "Primeira frase longa com emojis 🎉🚀 para validar contagem de codepoints no Bluesky e Mastodon. " +
+  "Segunda frase com conteúdo suficiente para testar o corte limpo entre sentenças sem partir palavras ao meio.\\n\\n" +
+  "Terceiro parágrafo com mais detalhes sobre o modo híbrido entre 301 e 500 caracteres no MastoSky!"
+);
+const parts = splitTextIntoThread(longText, 300, 0);
+const cwParts = splitTextIntoThread(longText, 300, 28);
+const shortParts = splitTextIntoThread("Texto curto.", 300, 0);
+const veryLong = Array.from({length: 14}, (_, i) => "Parágrafo número " + (i + 1) + " com texto suficiente para gerar mais de dez partes no fio.").join("\\n\\n");
+const manyParts = splitTextIntoThread(veryLong, 100, 0);
+console.log(JSON.stringify({ parts, cwParts, shortParts, manyParts }));
+"""
+            res = subprocess.run([node_bin, "-e", js_test], capture_output=True, text=True)
+            self.assertEqual(res.returncode, 0, res.stderr)
+            out = json.loads(res.stdout)
+            self.assertEqual(out["shortParts"], ["Texto curto."])
+            self.assertEqual(len(out["parts"]), 2)
+            self.assertTrue(out["parts"][0].endswith(" 1/2"))
+            self.assertTrue(out["parts"][1].endswith(" 2/2"))
+            for p in out["parts"]:
+                self.assertLessEqual(len(p), 300)
+            self.assertLessEqual(len(out["cwParts"][0]) + 28, 300)
+            self.assertGreaterEqual(len(out["manyParts"]), 10)
+            for idx, p in enumerate(out["manyParts"]):
+                self.assertLessEqual(len(p), 100)
+                self.assertTrue(p.endswith(f" {idx + 1}/{len(out['manyParts'])}"))
 
 
 if __name__ == "__main__":
