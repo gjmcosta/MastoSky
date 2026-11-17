@@ -271,6 +271,22 @@ textarea{width:100%;min-height:84px;resize:vertical;border:0;background:none;col
 .sched-net-results{font-size:11.5px;line-height:1.4;color:var(--muted);background:var(--surface-2);border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:2px}
 .sched-resched-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px}
 .sched-resched-row input[type="datetime-local"]{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 7px;font-size:12px;font-family:var(--sans)}
+.mention-ac-menu{position:fixed;z-index:2600;min-width:260px;max-width:360px;max-height:260px;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.35);padding:5px;display:flex;flex-direction:column;gap:2px}
+.mention-ac-item{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:8px;border:0;background:transparent;color:var(--ink);text-align:left;cursor:pointer;width:100%;font:inherit;transition:background .12s}
+.mention-ac-item:hover,.mention-ac-item.active{background:color-mix(in srgb,var(--accent) 16%,var(--surface-1))}
+.mention-ac-ava{width:28px;height:28px;border-radius:50%;object-fit:cover;flex:none;background:var(--surface-2)}
+.mention-ac-meta{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+.mention-ac-name{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mention-ac-handle{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mention-ac-badges{display:inline-flex;align-items:center;gap:4px;flex:none;font-size:11px}
+.mention-ac-map-pill{font-size:10px;font-weight:700;padding:1px 5px;border-radius:8px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
+.mention-ac-empty{padding:10px 12px;font-size:12px;color:var(--muted);text-align:center}
+.handle-map-form{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.handle-map-form input{flex:1 1 160px;min-width:130px;padding:6px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:12.5px}
+.handle-map-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.handle-map-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 9px;border-radius:8px;background:var(--surface-1);border:1px solid var(--line);font-size:12px}
+.handle-map-pair{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.handle-map-sugs{display:flex;flex-direction:column;gap:5px;margin-top:8px}
 .partial-post-box{max-width:520px;width:100%}
 .partial-post-list{display:flex;flex-direction:column;gap:10px;margin:14px 0}
 .partial-post-item{display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;background:var(--surface-1);border:1px solid var(--line)}
@@ -2097,6 +2113,7 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
         </div>
       </div>
       <div class="bsky-note" id="bskyNote" style="font-size:12px;color:var(--muted);margin-top:6px" hidden data-i18n="composer.bsky_note">No Bluesky, o aviso de conteúdo é incluído como prefixo de texto e a sondagem em formato de texto (no Mastodon são nativos).</div>
+      <div class="bsky-note" id="mentionMapNote" style="font-size:12px;color:var(--accent);margin-top:4px" hidden></div>
       <div class="msg" id="msg" role="status"></div>
     </section>
   </div>
@@ -2581,6 +2598,22 @@ body.view-deck .msg-thread-wrap{height:100%;min-height:0;max-height:none}
               </label>
               <div style="font-size:11.5px;color:var(--muted);margin:3px 0 0 24px;line-height:1.4" data-i18n="setup.crosstalk_desc">
                 Funde num único cartão (🐘 + 🦋) os posts publicados em simultâneo no Mastodon e Bluesky, dando prioridade ao Mastodon.
+              </div>
+            </div>
+            <div id="handleMapSection" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+              <div style="font-size:12.5px;font-weight:600;color:var(--ink)" data-i18n="setup.handle_map_title">🔗 Mapeamento de @menções entre Redes</div>
+              <div style="font-size:11.5px;color:var(--muted);margin:3px 0 6px;line-height:1.4" data-i18n="setup.handle_map_desc">
+                Associa handles equivalentes (ex: @pessoa.bsky.social ↔ @pessoa@mastodon.social) para adaptar automaticamente as menções ao publicar em simultâneo.
+              </div>
+              <div class="handle-map-form">
+                <input type="text" id="mapBskyHandleInput" placeholder="@pessoa.bsky.social" autocomplete="off">
+                <input type="text" id="mapMastoHandleInput" placeholder="@pessoa@mastodon.social" autocomplete="off">
+                <button type="button" class="send-sm" id="addHandleMapBtn" data-i18n="setup.handle_map_add">+ Associar</button>
+              </div>
+              <div id="handleMapList" class="handle-map-list"></div>
+              <div id="handleMapSuggestionsWrap" style="margin-top:8px" hidden>
+                <div style="font-size:11px;font-weight:600;color:var(--muted)" data-i18n="setup.handle_map_sugs">Sugestões detetadas via Crosstalk:</div>
+                <div id="handleMapSuggestions" class="handle-map-sugs"></div>
               </div>
             </div>
           </div>
@@ -3292,6 +3325,7 @@ const I18N = {
       hybrid_count: "🐘 {masto}/500 · 🦋 Fio ({bskyCount})",
       hybrid_count_tip: "Modo Híbrido: publica 1 post único no Mastodon (até 500) e divide automaticamente em {bskyCount} posts numerados no Bluesky",
       send_hybrid: "Publicar (1 🐘 + {count} 🦋)",
+      mention_mapped_note: "🔗 {n} menção(ões) serão adaptadas automaticamente para cada rede ao publicar.",
       partial_title: "Publicação Parcial",
       partial_desc: "A publicação foi concluída numa rede, mas falhou noutra. Podes tentar novamente apenas nas redes em falta sem duplicar o post onde já teve sucesso.",
       partial_success_label: "Publicado com sucesso!",
@@ -3596,6 +3630,11 @@ const I18N = {
       deck_col_profile: "Perfil",
       crosstalk_label: "Agrupar publicações duplicadas entre redes (Crosstalk)",
       crosstalk_desc: "Funde num único cartão (🐘 + 🦋) os posts publicados em simultâneo no Mastodon e Bluesky, dando prioridade ao Mastodon.",
+      handle_map_title: "🔗 Mapeamento de @menções entre Redes",
+      handle_map_desc: "Associa handles equivalentes (ex: @pessoa.bsky.social ↔ @pessoa@mastodon.social) para adaptar automaticamente as menções ao publicar em simultâneo.",
+      handle_map_add: "+ Associar",
+      handle_map_sugs: "Sugestões detetadas via Crosstalk:",
+      handle_map_empty: "Ainda não há pares associados.",
       active_session: "Sessão ativa",
       bsky_pass_label: "Palavra-passe da aplicação (*App Password*):",
       bsky_help: "Gera em bsky.app > Definições > Privacidade e Segurança > Palavras-passe da aplicação.",
@@ -3869,6 +3908,7 @@ const I18N = {
       hybrid_count: "🐘 {masto}/500 · 🦋 Thread ({bskyCount})",
       hybrid_count_tip: "Hybrid Mode: publishes 1 single post on Mastodon (up to 500) and auto-splits into {bskyCount} numbered posts on Bluesky",
       send_hybrid: "Publish (1 🐘 + {count} 🦋)",
+      mention_mapped_note: "🔗 {n} mention(s) will be automatically adapted for each network on publish.",
       partial_title: "Partial Post",
       partial_desc: "The post was published to one network, but failed on another. You can retry only on the failed networks without duplicating where it already succeeded.",
       partial_success_label: "Published successfully!",
@@ -4173,6 +4213,11 @@ const I18N = {
       deck_col_profile: "Profile",
       crosstalk_label: "Group duplicate cross-network posts (Crosstalk)",
       crosstalk_desc: "Merges simultaneous Mastodon and Bluesky posts into a single card (🐘 + 🦋), prioritizing Mastodon by default.",
+      handle_map_title: "🔗 Cross-Network @mention Mapping",
+      handle_map_desc: "Link equivalent handles (e.g. @user.bsky.social ↔ @user@mastodon.social) to adapt mentions automatically when cross-posting.",
+      handle_map_add: "+ Link",
+      handle_map_sugs: "Suggestions detected via Crosstalk:",
+      handle_map_empty: "No linked handles yet.",
       active_session: "Active session",
       bsky_pass_label: "App Password:",
       bsky_help: "Generate at bsky.app > Settings > Privacy and Security > App Passwords.",
@@ -6191,6 +6236,98 @@ document.addEventListener("click", openExternalLinkClick, true);
 
 let crosstalkDedupEnabled = localStorage.getItem("mastosky_crosstalk_dedup") !== "false";
 const crosstalkActiveNet = new Map();
+const crosstalkDiscoveredPairs = new Map();
+
+function normalizeHandleToken(h) {
+  let s = String(h || "").trim().toLowerCase();
+  if (!s) return "";
+  if (!s.startsWith("@")) s = "@" + s;
+  return s;
+}
+
+let handleMappings = (() => {
+  try {
+    const raw = localStorage.getItem("mastosky_handle_mappings");
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter(m => m && m.bluesky && m.mastodon) : [];
+  } catch (_) {
+    return [];
+  }
+})();
+
+function saveHandleMappings(syncServer = true) {
+  try { localStorage.setItem("mastosky_handle_mappings", JSON.stringify(handleMappings)); } catch (_) {}
+  if (syncServer && typeof syncPrefsToServer === "function") syncPrefsToServer();
+}
+
+function getAllActiveHandlePairs() {
+  const seen = new Set();
+  const list = [];
+  for (const m of handleMappings) {
+    const b = normalizeHandleToken(m.bluesky);
+    const ms = normalizeHandleToken(m.mastodon);
+    if (!b || !ms) continue;
+    const key = b + "|" + ms;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    list.push({ bluesky: b, mastodon: ms, name: m.name || "", explicit: true });
+  }
+  for (const [, p] of crosstalkDiscoveredPairs.entries()) {
+    const b = normalizeHandleToken(p.bluesky);
+    const ms = normalizeHandleToken(p.mastodon);
+    if (!b || !ms) continue;
+    const key = b + "|" + ms;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    list.push({ bluesky: b, mastodon: ms, name: p.name || "", explicit: false });
+  }
+  return list;
+}
+
+function findMappedHandle(rawHandle, targetNet) {
+  const norm = normalizeHandleToken(rawHandle);
+  if (!norm) return null;
+  const pairs = getAllActiveHandlePairs();
+  for (const p of pairs) {
+    if (p.bluesky === norm || p.mastodon === norm) {
+      return targetNet === "mastodon" ? p.mastodon : p.bluesky;
+    }
+  }
+  return null;
+}
+
+function applyHandleMappings(text, targetNet) {
+  const src = String(text || "");
+  if (!src || !targetNet) return { text: src, changed: 0 };
+  let changed = 0;
+  const out = src.replace(/(^|[^\w@])(@[a-zA-Z0-9._-]+(?:@[a-zA-Z0-9.-]+)?)/g, (full, prefix, mention) => {
+    const mapped = findMappedHandle(mention, targetNet);
+    if (mapped && mapped.toLowerCase() !== mention.toLowerCase()) {
+      changed++;
+      return prefix + mapped;
+    }
+    return full;
+  });
+  return { text: out, changed };
+}
+
+function countActiveMappedMentions(text, targets) {
+  const src = String(text || "");
+  if (!src || !Array.isArray(targets) || !targets.length) return 0;
+  const matched = new Set();
+  const re = /(^|[^\w@])(@[a-zA-Z0-9._-]+(?:@[a-zA-Z0-9.-]+)?)/g;
+  let m;
+  while ((m = re.exec(src)) !== null) {
+    const mention = m[2];
+    for (const net of targets) {
+      const mapped = findMappedHandle(mention, net);
+      if (mapped && mapped.toLowerCase() !== mention.toLowerCase()) {
+        matched.add(mention.toLowerCase());
+      }
+    }
+  }
+  return matched.size;
+}
 
 function normalizeCrossPostText(it) {
   if (!it) return "";
@@ -6298,6 +6435,15 @@ function groupCrossPosts(list) {
       const b = list[matchIdx];
       const mastoIt = a.network === "mastodon" ? a : b;
       const bskyIt = a.network === "bluesky" ? a : b;
+      const mHandle = normalizeHandleToken(mastoIt.author_handle || mastoIt.handle);
+      const bHandle = normalizeHandleToken(bskyIt.author_handle || bskyIt.handle);
+      if (mHandle && bHandle) {
+        crosstalkDiscoveredPairs.set(bHandle + "|" + mHandle, {
+          bluesky: bHandle,
+          mastodon: mHandle,
+          name: mastoIt.name || bskyIt.name || ""
+        });
+      }
       const groupKey = getPostKey(mastoIt) + "|" + getPostKey(bskyIt);
       const activeNet = crosstalkActiveNet.get(groupKey) || "mastodon";
       const activeIt = activeNet === "bluesky" ? bskyIt : mastoIt;
@@ -10864,6 +11010,20 @@ function update() {
   if (noteEl) {
     noteEl.hidden = !(bskyActive && (hasCW || hasPoll));
   }
+  const mentionNoteEl = $("mentionMapNote");
+  if (mentionNoteEl) {
+    const activeTargetsList = reply ? [reply.network] : targets;
+    let mappedCount = countActiveMappedMentions(text, activeTargetsList);
+    if (threadPosts.length > 0) {
+      threadPosts.forEach(p => { mappedCount += countActiveMappedMentions(p.text || "", activeTargetsList); });
+    }
+    if (mappedCount > 0) {
+      mentionNoteEl.textContent = t("composer.mention_mapped_note", { n: mappedCount });
+      mentionNoteEl.hidden = false;
+    } else {
+      mentionNoteEl.hidden = true;
+    }
+  }
   if ($("mastoVisibility")) {
     $("mastoVisibility").hidden = true;
   }
@@ -11075,7 +11235,8 @@ function getSyncPreferences() {
     deck_columns: Array.isArray(deckColumns) ? [...deckColumns] : [],
     notif_sound: Boolean(notifSoundEnabled),
     notif_types: (notifTypesEnabled && typeof notifTypesEnabled === "object") ? { ...notifTypesEnabled } : {},
-    crosstalk_dedup: Boolean(crosstalkDedupEnabled)
+    crosstalk_dedup: Boolean(crosstalkDedupEnabled),
+    handle_mappings: Array.isArray(handleMappings) ? handleMappings.map(m => ({ bluesky: m.bluesky, mastodon: m.mastodon, name: m.name || "" })) : []
   };
   if (!isCompactMobileViewport()) {
     prefs.view_mode = viewMode;
@@ -11225,8 +11386,21 @@ function applySyncedUserData(serverData, isInitialMerge = false) {
         crosstalkDedupEnabled = p.crosstalk_dedup;
         localStorage.setItem("mastosky_crosstalk_dedup", crosstalkDedupEnabled ? "true" : "false");
         if ($("cfgCrosstalkDedup")) $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
+  if (typeof renderHandleMappingsUI === "function") renderHandleMappingsUI();
         render();
         if (exploreItems && exploreItems.length) renderExplore();
+      }
+      if (Array.isArray(p.handle_mappings)) {
+        const mergedMap = new Map();
+        [...handleMappings, ...p.handle_mappings].forEach(m => {
+          if (!m || !m.bluesky || !m.mastodon) return;
+          const b = normalizeHandleToken(m.bluesky);
+          const ms = normalizeHandleToken(m.mastodon);
+          if (b && ms) mergedMap.set(b + "|" + ms, { bluesky: b, mastodon: ms, name: m.name || "" });
+        });
+        handleMappings = Array.from(mergedMap.values());
+        saveHandleMappings(false);
+        if (typeof renderHandleMappingsUI === "function") renderHandleMappingsUI();
       }
       if (p.notif_types && typeof p.notif_types === "object") {
         notifTypesEnabled = { ...notifTypesEnabled, ...p.notif_types };
@@ -11618,7 +11792,8 @@ function exportBackupData() {
       notif_desktop: (typeof notifDesktopEnabled !== "undefined") ? notifDesktopEnabled : false,
       notif_types: (typeof notifTypesEnabled !== "undefined") ? notifTypesEnabled : {},
       mute_mode: (typeof muteMode !== "undefined") ? muteMode : "warn",
-      crosstalk_dedup: (typeof crosstalkDedupEnabled !== "undefined") ? crosstalkDedupEnabled : true
+      crosstalk_dedup: (typeof crosstalkDedupEnabled !== "undefined") ? crosstalkDedupEnabled : true,
+      handle_mappings: Array.isArray(handleMappings) ? handleMappings : []
     }
   };
 
@@ -11735,8 +11910,21 @@ function importBackupData(file) {
           crosstalkDedupEnabled = p.crosstalk_dedup;
           localStorage.setItem("mastosky_crosstalk_dedup", crosstalkDedupEnabled ? "true" : "false");
           if ($("cfgCrosstalkDedup")) $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
+  if (typeof renderHandleMappingsUI === "function") renderHandleMappingsUI();
           render();
           if (exploreItems && exploreItems.length) renderExplore();
+        }
+        if (Array.isArray(p.handle_mappings)) {
+          const mergedMap = new Map();
+          [...handleMappings, ...p.handle_mappings].forEach(m => {
+            if (!m || !m.bluesky || !m.mastodon) return;
+            const b = normalizeHandleToken(m.bluesky);
+            const ms = normalizeHandleToken(m.mastodon);
+            if (b && ms) mergedMap.set(b + "|" + ms, { bluesky: b, mastodon: ms, name: m.name || "" });
+          });
+          handleMappings = Array.from(mergedMap.values());
+          saveHandleMappings(false);
+          if (typeof renderHandleMappingsUI === "function") renderHandleMappingsUI();
         }
       }
 
@@ -13281,31 +13469,64 @@ function buildCurrentPostPayload() {
   let threadPayload = null;
   let threadByNetworkPayload = null;
   if (threadPosts.length > 0) {
-    threadPayload = [
-      { text: rawTrimmedText, images, video: attachedVideo, spoiler, poll, quote },
-      ...threadPosts.map(p => ({
-        text: (p.text || "").trim(),
-        images: p.images || [],
-        video: p.video || null
-      }))
-    ];
+    if (isBothTargets) {
+      const mastoItems = [
+        { text: applyHandleMappings(rawTrimmedText, "mastodon").text, images, video: attachedVideo, spoiler, poll, quote, link_card: linkCardPayload },
+        ...threadPosts.map(p => ({ text: applyHandleMappings((p.text || "").trim(), "mastodon").text, images: p.images || [], video: p.video || null }))
+      ];
+      const bskyItems = [
+        { text: applyHandleMappings(rawTrimmedText, "bluesky").text, images, video: attachedVideo, spoiler, poll, quote, link_card: linkCardPayload },
+        ...threadPosts.map(p => ({ text: applyHandleMappings((p.text || "").trim(), "bluesky").text, images: p.images || [], video: p.video || null }))
+      ];
+      const differs = mastoItems.some((it, i) => it.text !== bskyItems[i].text);
+      if (differs) {
+        threadByNetworkPayload = { mastodon: mastoItems, bluesky: bskyItems };
+      } else {
+        threadPayload = mastoItems;
+      }
+    } else {
+      const singleNet = activeTargets[0];
+      threadPayload = [
+        { text: applyHandleMappings(rawTrimmedText, singleNet).text, images, video: attachedVideo, spoiler, poll, quote },
+        ...threadPosts.map(p => ({
+          text: applyHandleMappings((p.text || "").trim(), singleNet).text,
+          images: p.images || [],
+          video: p.video || null
+        }))
+      ];
+    }
   } else if (isHybridAutoThread) {
-    const bskyParts = splitTextIntoThread(rawTextVal, LIMITS.bluesky, extraBskyLen);
+    const mastoMapped = applyHandleMappings(rawTrimmedText, "mastodon").text;
+    const bskyMappedFull = applyHandleMappings(rawTextVal, "bluesky").text;
+    const bskyParts = splitTextIntoThread(bskyMappedFull, LIMITS.bluesky, extraBskyLen);
     threadByNetworkPayload = {
       mastodon: [
-        { text: rawTrimmedText, images, video: attachedVideo, spoiler, poll, quote, link_card: linkCardPayload }
+        { text: mastoMapped, images, video: attachedVideo, spoiler, poll, quote, link_card: linkCardPayload }
       ],
       bluesky: bskyParts.map((partText, idx) => idx === 0
         ? { text: partText, images, video: attachedVideo, spoiler, poll, quote, link_card: linkCardPayload }
         : { text: partText, images: [], video: null }
       )
     };
+  } else if (isBothTargets) {
+    const mastoMapped = applyHandleMappings(rawTrimmedText, "mastodon").text;
+    const bskyMapped = applyHandleMappings(rawTrimmedText, "bluesky").text;
+    if (mastoMapped !== bskyMapped) {
+      threadByNetworkPayload = {
+        mastodon: [{ text: mastoMapped, images, video: attachedVideo, spoiler, poll, quote, link_card: linkCardPayload }],
+        bluesky: [{ text: bskyMapped, images, video: attachedVideo, spoiler, poll, quote, link_card: linkCardPayload }]
+      };
+    }
   }
+
+  const singleMappedText = (!isBothTargets && activeTargets.length === 1)
+    ? applyHandleMappings(rawTextVal, activeTargets[0]).text
+    : rawTextVal;
 
   const replyPayload = reply ? { network: reply.network, ref: reply.ref } : null;
   const body = reply
-    ? {text: rawTextVal, reply: replyPayload, images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload}
-    : {text: rawTextVal, targets: activeTargets, images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload, ...(threadByNetworkPayload ? { thread_by_network: threadByNetworkPayload } : {})};
+    ? {text: singleMappedText, reply: replyPayload, images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload}
+    : {text: singleMappedText, targets: activeTargets, images, video: attachedVideo, spoiler, poll, visibility, quote, link_card: linkCardPayload, lang: currentLang, thread: threadPayload, ...(threadByNetworkPayload ? { thread_by_network: threadByNetworkPayload } : {})};
 
   return { body, threadPayload, threadByNetworkPayload };
 }
@@ -13760,6 +13981,7 @@ async function openSetup(mandatory = false) {
   });
   if ($("cfgMuteModeSelect")) $("cfgMuteModeSelect").value = muteMode;
   if ($("cfgCrosstalkDedup")) $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
+  if (typeof renderHandleMappingsUI === "function") renderHandleMappingsUI();
   renderMutedWordsChips();
   if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
   if ($("cfgNotifDesktop")) $("cfgNotifDesktop").checked = notifDesktopEnabled;
@@ -14017,6 +14239,354 @@ if ($("cfgCrosstalkDedup")) {
     if (exploreItems && exploreItems.length) renderExplore();
   };
 }
+
+// --- MAPEAMENTO DE HANDLES E AUTOCOMPLETE DE @MENÇÕES ---
+function renderHandleMappingsUI() {
+  const listEl = $("handleMapList");
+  const sugWrap = $("handleMapSuggestionsWrap");
+  const sugEl = $("handleMapSuggestions");
+  if (!listEl) return;
+
+  listEl.replaceChildren();
+  if (!handleMappings.length) {
+    listEl.append(el("div", null, t("setup.handle_map_empty")));
+    listEl.lastChild.style.fontSize = "11.5px";
+    listEl.lastChild.style.color = "var(--muted)";
+  } else {
+    handleMappings.forEach((m, idx) => {
+      const row = el("div", "handle-map-row");
+      const pair = el("div", "handle-map-pair");
+      pair.append(
+        document.createTextNode("🦋 " + m.bluesky + " ↔ 🐘 " + m.mastodon)
+      );
+      const rmBtn = el("button", "rm-sm", "✕");
+      rmBtn.type = "button";
+      rmBtn.onclick = () => {
+        handleMappings.splice(idx, 1);
+        saveHandleMappings();
+        renderHandleMappingsUI();
+        update();
+      };
+      row.append(pair, rmBtn);
+      listEl.append(row);
+    });
+  }
+
+  if (sugWrap && sugEl) {
+    const existingKeys = new Set(
+      handleMappings.map(m => normalizeHandleToken(m.bluesky) + "|" + normalizeHandleToken(m.mastodon))
+    );
+    const sugs = [];
+    for (const [k, p] of crosstalkDiscoveredPairs.entries()) {
+      if (!existingKeys.has(k)) sugs.push(p);
+      if (sugs.length >= 6) break;
+    }
+    sugEl.replaceChildren();
+    if (!sugs.length) {
+      sugWrap.hidden = true;
+    } else {
+      sugWrap.hidden = false;
+      sugs.forEach(p => {
+        const row = el("div", "handle-map-row");
+        const pair = el("div", "handle-map-pair");
+        pair.textContent = `🦋 ${p.bluesky} ↔ 🐘 ${p.mastodon}`;
+        const addBtn = el("button", "ghost-sm", t("setup.handle_map_add"));
+        addBtn.type = "button";
+        addBtn.onclick = () => {
+          handleMappings.push({ bluesky: p.bluesky, mastodon: p.mastodon, name: p.name || "" });
+          saveHandleMappings();
+          renderHandleMappingsUI();
+          update();
+        };
+        row.append(pair, addBtn);
+        sugEl.append(row);
+      });
+    }
+  }
+}
+
+if ($("addHandleMapBtn")) {
+  $("addHandleMapBtn").onclick = () => {
+    const bInp = $("mapBskyHandleInput");
+    const mInp = $("mapMastoHandleInput");
+    if (!bInp || !mInp) return;
+    const b = normalizeHandleToken(bInp.value);
+    const ms = normalizeHandleToken(mInp.value);
+    if (!b || !ms || b === "@" || ms === "@") return;
+    const exists = handleMappings.some(x => normalizeHandleToken(x.bluesky) === b && normalizeHandleToken(x.mastodon) === ms);
+    if (!exists) {
+      handleMappings.push({ bluesky: b, mastodon: ms, name: "" });
+      saveHandleMappings();
+    }
+    bInp.value = "";
+    mInp.value = "";
+    renderHandleMappingsUI();
+    update();
+  };
+}
+
+let mentionAcState = {
+  ta: null,
+  startIdx: -1,
+  endIdx: -1,
+  query: "",
+  items: [],
+  activeIdx: 0,
+  timer: null,
+  reqId: 0
+};
+const _mentionSearchCache = new Map();
+
+function closeMentionAc() {
+  const menu = $("mentionAcMenu");
+  if (menu) menu.hidden = true;
+  mentionAcState.ta = null;
+  mentionAcState.items = [];
+  mentionAcState.activeIdx = 0;
+  if (mentionAcState.timer) {
+    clearTimeout(mentionAcState.timer);
+    mentionAcState.timer = null;
+  }
+}
+
+function collectLocalMentionActors(queryLower, activeNets) {
+  const out = [];
+  const seen = new Set();
+  const pairs = getAllActiveHandlePairs();
+  const mappedSet = new Set();
+  pairs.forEach(p => {
+    mappedSet.add(p.bluesky);
+    mappedSet.add(p.mastodon);
+  });
+
+  const pushActor = (net, handle, name, avatar, isMapped) => {
+    if (!handle || (activeNets.length && !activeNets.includes(net))) return;
+    const hNorm = normalizeHandleToken(handle);
+    if (!hNorm || hNorm === "@") return;
+    const key = net + ":" + hNorm;
+    if (seen.has(key)) return;
+    const hay = (hNorm + " " + String(name || "")).toLowerCase();
+    if (queryLower && !hay.includes(queryLower)) return;
+    seen.add(key);
+    out.push({
+      network: net,
+      handle: hNorm,
+      name: name || hNorm,
+      avatar: avatar || "",
+      mapped: Boolean(isMapped || mappedSet.has(hNorm)),
+      local: true
+    });
+  };
+
+  pairs.forEach(p => {
+    if (activeNets.includes("mastodon")) pushActor("mastodon", p.mastodon, p.name || p.mastodon, "", true);
+    if (activeNets.includes("bluesky")) pushActor("bluesky", p.bluesky, p.name || p.bluesky, "", true);
+  });
+
+  const sources = [...(items || []), ...(exploreItems || []), ...(notifs || [])];
+  for (const it of sources) {
+    if (!it || !it.network) continue;
+    pushActor(it.network, it.author_handle || it.handle, it.name, it.avatar, false);
+    if (out.length >= 12) break;
+  }
+  return out;
+}
+
+function positionMentionAcMenu(ta) {
+  const menu = $("mentionAcMenu");
+  if (!menu || !ta) return;
+  const r = ta.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - r.bottom;
+  menu.style.left = Math.max(8, Math.min(window.innerWidth - 280, r.left)) + "px";
+  if (spaceBelow >= 200 || spaceBelow >= r.top) {
+    menu.style.top = Math.min(window.innerHeight - 16, r.bottom + 4) + "px";
+    menu.style.bottom = "auto";
+  } else {
+    menu.style.bottom = (window.innerHeight - r.top + 4) + "px";
+    menu.style.top = "auto";
+  }
+}
+
+function renderMentionAcMenu() {
+  const menu = $("mentionAcMenu");
+  if (!menu) return;
+  if (!mentionAcState.ta || !mentionAcState.items.length) {
+    menu.hidden = true;
+    return;
+  }
+  menu.replaceChildren();
+  mentionAcState.items.forEach((actor, idx) => {
+    const btn = el("button", "mention-ac-item" + (idx === mentionAcState.activeIdx ? " active" : ""));
+    btn.type = "button";
+    btn.setAttribute("role", "option");
+    btn.setAttribute("aria-selected", idx === mentionAcState.activeIdx ? "true" : "false");
+
+    if (actor.avatar) {
+      const img = el("img", "mention-ac-ava");
+      img.src = su(actor.avatar) || "";
+      img.alt = "";
+      btn.append(img);
+    } else {
+      const ph = el("div", "mention-ac-ava");
+      ph.style.display = "grid";
+      ph.style.placeItems = "center";
+      ph.style.fontSize = "13px";
+      ph.textContent = actor.network === "bluesky" ? "🦋" : "🐘";
+      btn.append(ph);
+    }
+
+    const meta = el("div", "mention-ac-meta");
+    meta.append(
+      el("div", "mention-ac-name", actor.name || actor.handle),
+      el("div", "mention-ac-handle", actor.handle)
+    );
+
+    const badges = el("div", "mention-ac-badges");
+    if (actor.mapped) {
+      badges.append(el("span", "mention-ac-map-pill", "🔗"));
+    }
+    badges.append(document.createTextNode(actor.network === "bluesky" ? "🦋" : "🐘"));
+    btn.append(meta, badges);
+
+    btn.onmousedown = (e) => {
+      e.preventDefault();
+      insertMentionAc(idx);
+    };
+    menu.append(btn);
+  });
+  positionMentionAcMenu(mentionAcState.ta);
+  menu.hidden = false;
+}
+
+function insertMentionAc(idx) {
+  const actor = mentionAcState.items[idx];
+  const ta = mentionAcState.ta;
+  if (!actor || !ta) return;
+  const val = ta.value || "";
+  const before = val.slice(0, mentionAcState.startIdx);
+  const after = val.slice(mentionAcState.endIdx);
+  const insertStr = actor.handle + (after.startsWith(" ") ? "" : " ");
+  ta.value = before + insertStr + after;
+  const newPos = before.length + insertStr.length;
+  ta.focus();
+  ta.setSelectionRange(newPos, newPos);
+  closeMentionAc();
+  if (ta.id === "text") {
+    update();
+  } else {
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+}
+
+function updateMentionAutocomplete(ta) {
+  if (!ta) return;
+  const pos = typeof ta.selectionStart === "number" ? ta.selectionStart : 0;
+  const val = (ta.value || "").slice(0, pos);
+  const m = val.match(/(?:^|[\s(\["'])@([a-zA-Z0-9._-]{1,50}(?:@[a-zA-Z0-9.-]*)?)$/);
+  if (!m) {
+    closeMentionAc();
+    return;
+  }
+  const query = m[1];
+  const startIdx = val.length - query.length - 1;
+  const activeNets = reply ? [reply.network] : selected();
+
+  mentionAcState.ta = ta;
+  mentionAcState.startIdx = startIdx;
+  mentionAcState.endIdx = pos;
+  mentionAcState.query = query;
+  mentionAcState.activeIdx = 0;
+
+  const localMatches = collectLocalMentionActors(query.toLowerCase(), activeNets);
+  mentionAcState.items = localMatches.slice(0, 8);
+  renderMentionAcMenu();
+
+  if (mentionAcState.timer) clearTimeout(mentionAcState.timer);
+  const cacheKey = activeNets.join(",") + ":" + query.toLowerCase();
+  const cached = _mentionSearchCache.get(cacheKey);
+  if (cached && (Date.now() - cached.ts < 60000)) {
+    const merged = [...localMatches];
+    const seen = new Set(merged.map(a => a.network + ":" + a.handle));
+    cached.actors.forEach(a => {
+      const h = normalizeHandleToken(a.handle);
+      if (!seen.has(a.network + ":" + h)) {
+        seen.add(a.network + ":" + h);
+        merged.push({ ...a, handle: h, mapped: Boolean(findMappedHandle(h, a.network === "bluesky" ? "mastodon" : "bluesky")) });
+      }
+    });
+    mentionAcState.items = merged.slice(0, 8);
+    renderMentionAcMenu();
+    return;
+  }
+
+  const reqId = ++mentionAcState.reqId;
+  mentionAcState.timer = setTimeout(async () => {
+    try {
+      const netParam = activeNets.length === 1 ? ("&network=" + encodeURIComponent(activeNets[0])) : "";
+      const res = await api(`/api/search?q=${encodeURIComponent(query)}&type=actors&limit=8${netParam}`);
+      if (reqId !== mentionAcState.reqId || mentionAcState.ta !== ta) return;
+      const remoteActors = (res && Array.isArray(res.actors)) ? res.actors : [];
+      _mentionSearchCache.set(cacheKey, { ts: Date.now(), actors: remoteActors });
+      const merged = [...collectLocalMentionActors(query.toLowerCase(), activeNets)];
+      const seen = new Set(merged.map(a => a.network + ":" + a.handle));
+      remoteActors.forEach(a => {
+        if (!a || !a.handle || (activeNets.length && !activeNets.includes(a.network))) return;
+        const h = normalizeHandleToken(a.handle);
+        if (!seen.has(a.network + ":" + h)) {
+          seen.add(a.network + ":" + h);
+          merged.push({
+            network: a.network,
+            handle: h,
+            name: a.name || h,
+            avatar: a.avatar || "",
+            mapped: Boolean(findMappedHandle(h, a.network === "bluesky" ? "mastodon" : "bluesky"))
+          });
+        }
+      });
+      mentionAcState.items = merged.slice(0, 8);
+      mentionAcState.activeIdx = 0;
+      renderMentionAcMenu();
+    } catch (_) {}
+  }, 240);
+}
+
+document.addEventListener("input", (e) => {
+  const tEl = e.target;
+  if (tEl && (tEl.id === "text" || tEl.classList.contains("thread-textarea"))) {
+    updateMentionAutocomplete(tEl);
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  const menu = $("mentionAcMenu");
+  if (!menu || menu.hidden || !mentionAcState.items.length) return;
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    e.stopPropagation();
+    mentionAcState.activeIdx = (mentionAcState.activeIdx + 1) % mentionAcState.items.length;
+    renderMentionAcMenu();
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    e.stopPropagation();
+    mentionAcState.activeIdx = (mentionAcState.activeIdx - 1 + mentionAcState.items.length) % mentionAcState.items.length;
+    renderMentionAcMenu();
+  } else if (e.key === "Enter" || e.key === "Tab") {
+    e.preventDefault();
+    e.stopPropagation();
+    insertMentionAc(mentionAcState.activeIdx);
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    e.stopPropagation();
+    closeMentionAc();
+  }
+}, true);
+
+document.addEventListener("click", (e) => {
+  const menu = $("mentionAcMenu");
+  if (menu && !menu.hidden && !menu.contains(e.target) && e.target !== mentionAcState.ta) {
+    closeMentionAc();
+  }
+});
 
 if ($("addMutedWordBtn") && $("mutedWordInput")) {
   $("addMutedWordBtn").onclick = () => addMutedWord($("mutedWordInput").value);
@@ -14372,5 +14942,6 @@ setInterval(() => {
 }, 120000);
 setInterval(() => checkAppUpdate(false), 1800000);
 </script>
+  <div id="mentionAcMenu" class="mention-ac-menu" hidden role="listbox" aria-label="Sugestões de menção"></div>
 </body>
 </html>

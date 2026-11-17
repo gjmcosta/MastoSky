@@ -4061,6 +4061,62 @@ class ScheduledPostsTests(unittest.TestCase):
         ]:
             self.assertIn(marker, html)
 
+    def test_mention_autocomplete_and_handle_mapping_feature(self):
+        import json, re, shutil, subprocess
+        from pathlib import Path
+
+        html = Path("index.html").read_text(encoding="utf-8")
+        for marker in [
+            'id="mentionAcMenu"',
+            'id="mentionMapNote"',
+            'id="handleMapSection"',
+            'id="mapBskyHandleInput"',
+            'id="mapMastoHandleInput"',
+            'id="addHandleMapBtn"',
+            'id="handleMapList"',
+            'id="handleMapSuggestions"',
+            "mastosky_handle_mappings",
+            "function normalizeHandleToken(",
+            "function findMappedHandle(",
+            "function applyHandleMappings(",
+            "function countActiveMappedMentions(",
+            "function renderHandleMappingsUI(",
+            "function updateMentionAutocomplete(",
+            "function insertMentionAc(",
+            "handle_map_title:",
+            "mention_mapped_note:",
+        ]:
+            self.assertIn(marker, html)
+
+        node_bin = shutil.which("node")
+        if node_bin:
+            m = re.search(
+                r"(function normalizeHandleToken[\s\S]*?function countActiveMappedMentions[\s\S]*?^})",
+                html,
+                re.M,
+            )
+            self.assertIsNotNone(m, "Funções de mapeamento de handles não encontradas")
+            js_test = """
+const localStorage = { getItem: () => null, setItem: () => {} };
+""" + m.group(1) + """
+handleMappings = [{ bluesky: "@alice.bsky.social", mastodon: "@alice@mastodon.social", name: "Alice" }];
+const crosstalkDiscoveredPairs = new Map([
+  ["@bob.bsky.social|@bob@fosstodon.org", { bluesky: "@bob.bsky.social", mastodon: "@bob@fosstodon.org", name: "Bob" }]
+]);
+const mastoRes = applyHandleMappings("Olá @alice.bsky.social e @bob.bsky.social!", "mastodon");
+const bskyRes = applyHandleMappings("Olá @alice@mastodon.social!", "bluesky");
+const cnt = countActiveMappedMentions("Oi @alice.bsky.social e @desconhecido.bsky.social", ["mastodon", "bluesky"]);
+console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
+"""
+            res = subprocess.run([node_bin, "-e", js_test], capture_output=True, text=True)
+            self.assertEqual(res.returncode, 0, res.stderr)
+            out = json.loads(res.stdout)
+            self.assertEqual(out["mastoRes"]["text"], "Olá @alice@mastodon.social e @bob@fosstodon.org!")
+            self.assertEqual(out["mastoRes"]["changed"], 2)
+            self.assertEqual(out["bskyRes"]["text"], "Olá @alice.bsky.social!")
+            self.assertEqual(out["bskyRes"]["changed"], 1)
+            self.assertEqual(out["cnt"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
