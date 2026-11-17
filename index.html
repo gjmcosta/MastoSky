@@ -812,6 +812,36 @@
       font-variant-numeric: tabular-nums
     }
 
+    .prev-alt-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 2;
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1.2;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid transparent;
+      transition: all .15s;
+      user-select: none
+    }
+
+    .prev-alt-badge.is-ok {
+      background: rgba(16, 185, 129, 0.88);
+      color: #fff;
+      border-color: rgba(52, 211, 153, 0.5)
+    }
+
+    .prev-alt-badge.is-missing {
+      background: rgba(245, 158, 11, 0.9);
+      color: #0B1020;
+      border-color: rgba(251, 191, 36, 0.7)
+    }
+
     .prev-video-player-wrap {
       position: relative;
       width: 100%;
@@ -8368,6 +8398,10 @@
                   Funde num único cartão os posts publicados em simultâneo no Mastodon e Bluesky, dando
                   prioridade ao Mastodon.
                 </div>
+                <label class="setup-check-item" style="padding:0;font-weight:600;margin-top:10px">
+                  <input type="checkbox" id="cfgWarnMissingAlt" checked>
+                  <span data-i18n="setup.warn_missing_alt_label">Avisar antes de publicar imagens sem descrição ALT</span>
+                </label>
               </div>
               <div id="handleMapSection" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
                 <div style="font-size:12.5px;font-weight:600;color:var(--ink)" data-i18n="setup.handle_map_title">🔗
@@ -9203,6 +9237,9 @@
           poll_dur_7d: "7 dias",
           attach_img: "Imagem",
           attach_title: "Anexar imagens ou vídeo",
+          alt_badge_ok: "✓ ALT",
+          alt_badge_missing: "⚠️ Sem ALT",
+          alt_warn_confirm: "Tens {n} imagem(ns) sem texto alternativo (ALT). Queres publicar mesmo assim?",
           video_ready: "Vídeo pronto para publicar",
           video_remove: "Remover vídeo",
           video_alt_ph: "Descrição acessível do vídeo (alt text)...",
@@ -9589,6 +9626,7 @@
           deck_col_profile: "Perfil",
           crosstalk_label: "Agrupar publicações duplicadas entre redes (Crosstalk)",
           crosstalk_desc: "Funde num único cartão os posts publicados em simultâneo no Mastodon e Bluesky, dando prioridade ao Mastodon.",
+          warn_missing_alt_label: "Avisar antes de publicar imagens sem descrição ALT",
           handle_map_title: "🔗 Mapeamento de @menções entre Redes",
           handle_map_desc: "Associa handles equivalentes (ex: @pessoa.bsky.social ↔ @pessoa@mastodon.social) para adaptar automaticamente as menções ao publicar em simultâneo.",
           handle_map_add: "+ Associar",
@@ -9807,6 +9845,9 @@
           poll_dur_7d: "7 days",
           attach_img: "Image",
           attach_title: "Attach images or video",
+          alt_badge_ok: "✓ ALT",
+          alt_badge_missing: "⚠️ No ALT",
+          alt_warn_confirm: "You have {n} image(s) without alt text. Publish anyway?",
           video_ready: "Video ready to publish",
           video_remove: "Remove video",
           video_alt_ph: "Video accessibility description (alt text)...",
@@ -10193,6 +10234,7 @@
           deck_col_profile: "Profile",
           crosstalk_label: "Group duplicate cross-network posts (Crosstalk)",
           crosstalk_desc: "Merges simultaneous Mastodon and Bluesky posts into a single card, prioritizing Mastodon by default.",
+          warn_missing_alt_label: "Warn before publishing images without ALT text",
           handle_map_title: "🔗 Cross-Network @mention Mapping",
           handle_map_desc: "Link equivalent handles (e.g. @user.bsky.social ↔ @user@mastodon.social) to adapt mentions automatically when cross-posting.",
           handle_map_add: "+ Link",
@@ -12267,6 +12309,7 @@
     document.addEventListener("click", openExternalLinkClick, true);
 
     let crosstalkDedupEnabled = localStorage.getItem("mastosky_crosstalk_dedup") !== "false";
+    let warnMissingAlt = localStorage.getItem("mastosky_warn_missing_alt") !== "false";
     const crosstalkActiveNet = new Map();
     const crosstalkDiscoveredPairs = new Map();
 
@@ -15978,6 +16021,23 @@
       container.append(card);
     }
 
+    function attachAltBadge(card, imgObj, inpEl) {
+      const badge = el("span", "prev-alt-badge");
+      const sync = () => {
+        const ok = Boolean((imgObj.alt || "").trim());
+        badge.className = "prev-alt-badge " + (ok ? "is-ok" : "is-missing");
+        badge.textContent = ok ? t("composer.alt_badge_ok") : t("composer.alt_badge_missing");
+        badge.title = t("composer.img_alt_ph");
+      };
+      badge.onclick = (e) => {
+        e.stopPropagation();
+        inpEl.focus();
+      };
+      sync();
+      card.append(badge);
+      return sync;
+    }
+
     function renderPreviews() {
       const box = $("previews");
       box.replaceChildren();
@@ -16097,7 +16157,8 @@
         inp.type = "text";
         inp.placeholder = t("composer.img_alt_ph");
         inp.value = img.alt || "";
-        inp.oninput = () => { img.alt = inp.value; };
+        const syncAltBadge = attachAltBadge(card, img, inp);
+        inp.oninput = () => { img.alt = inp.value; syncAltBadge(); };
 
         const aiBtn = el("button", "prev-ai-btn");
         aiBtn.type = "button";
@@ -16803,7 +16864,8 @@
         inp.type = "text";
         inp.placeholder = t("composer.img_alt_ph");
         inp.value = img.alt || "";
-        inp.oninput = () => { img.alt = inp.value; };
+        const syncAltBadge = attachAltBadge(card, img, inp);
+        inp.oninput = () => { img.alt = inp.value; syncAltBadge(); };
 
         const aiBtn = el("button", "prev-ai-btn");
         aiBtn.type = "button";
@@ -17600,6 +17662,7 @@
         notif_sound: Boolean(notifSoundEnabled),
         notif_types: (notifTypesEnabled && typeof notifTypesEnabled === "object") ? { ...notifTypesEnabled } : {},
         crosstalk_dedup: Boolean(crosstalkDedupEnabled),
+        warn_missing_alt: Boolean(warnMissingAlt),
         handle_mappings: Array.isArray(handleMappings) ? handleMappings.map(m => ({ bluesky: m.bluesky, mastodon: m.mastodon, name: m.name || "" })) : []
       };
       if (!isCompactMobileViewport()) {
@@ -17753,6 +17816,11 @@
             if (typeof renderHandleMappingsUI === "function") renderHandleMappingsUI();
             render();
             if (exploreItems && exploreItems.length) renderExplore();
+          }
+          if (typeof p.warn_missing_alt === "boolean" && p.warn_missing_alt !== warnMissingAlt) {
+            warnMissingAlt = p.warn_missing_alt;
+            localStorage.setItem("mastosky_warn_missing_alt", warnMissingAlt ? "true" : "false");
+            if ($("cfgWarnMissingAlt")) $("cfgWarnMissingAlt").checked = warnMissingAlt;
           }
           if (Array.isArray(p.handle_mappings)) {
             const mergedMap = new Map();
@@ -19896,6 +19964,18 @@
     }
 
     $("send").onclick = async () => {
+      if (warnMissingAlt) {
+        const missingCount = images.filter(im => !(im.alt || "").trim()).length
+          + threadPosts.reduce((acc, tp) => acc + (tp.images || []).filter(im => !(im.alt || "").trim()).length, 0);
+        if (missingCount > 0) {
+          const ok = await askConfirm(t("composer.alt_warn_confirm", { n: missingCount }));
+          if (!ok) {
+            const firstMissing = document.querySelector("#previews .prev-alt-badge.is-missing, #threadList .prev-alt-badge.is-missing");
+            if (firstMissing) firstMissing.click();
+            return;
+          }
+        }
+      }
       $("send").disabled = true;
       if ($("scheduleOpenBtn")) $("scheduleOpenBtn").disabled = true;
       const { body, threadPayload, threadByNetworkPayload } = buildCurrentPostPayload();
@@ -20603,6 +20683,15 @@
         if (typeof syncPrefsToServer === "function") syncPrefsToServer();
         render();
         if (exploreItems && exploreItems.length) renderExplore();
+      };
+    }
+
+    if ($("cfgWarnMissingAlt")) {
+      $("cfgWarnMissingAlt").checked = warnMissingAlt;
+      $("cfgWarnMissingAlt").onchange = () => {
+        warnMissingAlt = $("cfgWarnMissingAlt").checked;
+        localStorage.setItem("mastosky_warn_missing_alt", warnMissingAlt ? "true" : "false");
+        if (typeof syncPrefsToServer === "function") syncPrefsToServer();
       };
     }
 

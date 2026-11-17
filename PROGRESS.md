@@ -294,6 +294,10 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - Extração HTML limpa com proteção SSRF (`GET /api/reader` / `fetch_article_reader()`), botão **`📖 Ler`** nos cartões `.ext-card` (mantendo o clique no cartão a abrir em nova janela) e modal `#readerOverlay` com controlos de tamanho de letra (`A-` / `A+`).
 - **Refinamentos de UX e Hiperligações:**
   - Links externos abertos em nova janela (`target="_blank"` + `rel="opener"`), alinhamento dos botões do modal de cross-post e destaque primário no botão de publicação dupla.
+- **Identidade Visual, Navegação Mobile & Performance (v0.8.5):**
+  - **Barra de Filtros da Timeline & Ícones de Marca:** `#tlFilterBar` alinhada em 5 colunas simétricas idênticas às Notificações (`.notif-header-bar`), substituição global de emojis `🦋`/`🐘`/`📖` pelos ícones vetoriais oficiais (`#i-brand-bsky`, `#i-brand-masto`, `#i-book`, `#i-no-boosts`, `#i-sparkles`).
+  - **Mobile iOS/Android & Tipografia:** Topo limpo sem abas duplicadas (`#topNavWrap .tabs` oculto em `<768px`) e Dock Bar fixa sempre visível em baixo com círculos `36×36px` simétricos (`stroke-width="1.75"`), badge de notificações compacto sem estrela oculta, dimensionamento corrigido do modal `#catchUpOverlay` (`box-sizing: border-box` e altura dinâmica `100dvh`), contraste `--accent-solid` (`#6558F5`) nos botões primários escuros, `-webkit-font-smoothing: antialiased`, `tabular-nums` e `--serif` no *Reader View*.
+  - **Performance Backend & Frontend:** Compressão `gzip` (`zlib`) em `Handler.send()` e `http()`, cache em memória pré-comprimida de `index.html` (`_INDEX_HTML_CACHE`), pool persistente `_API_EXECUTOR`, *polling* pausado quando `document.hidden`, `content-visibility: auto` em `.post`, *blur* reduzido para `10px` em mobile, `loading="lazy"`/`decoding="async"` em `el("img")` e *scroll listeners* com `requestAnimationFrame`.
 
 ---
 
