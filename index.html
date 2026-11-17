@@ -2004,8 +2004,12 @@
       background: color-mix(in srgb, var(--accent) 12%, var(--card));
       color: var(--accent);
       border-radius: 8px;
-      padding: 2px 8px;
+      padding: 3px 9px;
       font-size: 11.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
@@ -5272,9 +5276,9 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            gap: 2px;
+            gap: 0;
             border-radius: 32px;
-            padding: 5px 6px;
+            padding: 6px 8px;
             box-sizing: border-box;
             background: color-mix(in srgb, var(--card) 92%, transparent);
             backdrop-filter: blur(20px);
@@ -5284,10 +5288,10 @@
           }
 
           .side-nav-btn {
-            width: 34px;
-            height: 34px;
-            flex: 1 1 auto;
-            max-width: 40px;
+            width: 36px;
+            height: 36px;
+            flex: 0 0 36px;
+            max-width: 36px;
             border-radius: 50%;
             display: grid;
             place-items: center;
@@ -5295,8 +5299,9 @@
           }
 
           .side-nav-btn svg {
-            width: 18px;
-            height: 18px;
+            width: 19px;
+            height: 19px;
+            display: block;
           }
 
           .side-nav-btn[data-tab="timeline"] {
@@ -7137,6 +7142,12 @@
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor"
         stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
     </symbol>
+    <symbol id="i-book" viewBox="0 0 24 24">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" fill="none" stroke="currentColor" stroke-width="1.75"
+        stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" fill="none" stroke="currentColor" stroke-width="1.75"
+        stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
   </svg>
   <div class="cosmos-bg" aria-hidden="true">
     <div class="cosmos-glow"></div>
@@ -7148,7 +7159,7 @@
     <div class="side-nav-inner">
       <button type="button" class="side-nav-btn active" data-tab="timeline" title="Timeline"
         data-i18n-title="tabs.timeline" aria-label="Timeline">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
@@ -7156,7 +7167,7 @@
       </button>
       <button type="button" class="side-nav-btn" data-tab="explore" title="Em Alta" data-i18n-title="tabs.explore"
         aria-label="Em Alta">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path
             d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
@@ -7164,7 +7175,7 @@
       </button>
       <button type="button" class="side-nav-btn" data-tab="search" title="Pesquisa" data-i18n-title="tabs.search"
         aria-label="Pesquisa">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
           <line x1="16.5" y1="16.5" x2="21" y2="21" />
@@ -7178,7 +7189,7 @@
       </button>
       <button type="button" class="side-nav-btn" data-tab="notifs" title="Notificações" data-i18n-title="tabs.notifs"
         aria-label="Notificações">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -7188,7 +7199,7 @@
       </button>
       <button type="button" class="side-nav-btn" data-tab="messages" title="Mensagens" data-i18n-title="tabs.messages"
         aria-label="Mensagens">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
@@ -7197,7 +7208,7 @@
       </button>
       <button type="button" class="side-nav-btn" data-tab="profile" title="Perfil" data-i18n-title="tabs.profile"
         aria-label="Perfil">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
@@ -7206,7 +7217,7 @@
       <div class="side-nav-divider"></div>
       <button type="button" class="side-nav-btn side-nav-compose" id="sideComposeBtn" title="Novo post"
         data-i18n-title="nav.new_post" aria-label="Novo post">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 20h9" />
           <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
@@ -8814,7 +8825,9 @@
       <div class="setup-box reader-box">
         <div class="setup-header">
           <h2 id="readerModalTitle" style="display:inline-flex;align-items:center;gap:8px;font-size:15px">
-            <span>📖</span>
+            <svg class="ico" style="width:18px;height:18px;color:var(--accent)">
+              <use href="#i-book" />
+            </svg>
             <span id="readerSiteLabel" data-i18n="reader.title">Leitura Limpa</span>
           </h2>
           <button type="button" class="setup-close-btn" id="closeReader" title="Fechar (Esc)"
@@ -9444,7 +9457,7 @@
           alt_view: "Ver descrição da imagem (ALT)",
           crosstalk_switch_to: "Publicado nas duas redes · Ver versão {net}",
           crosstalk_active: "Publicado nas duas redes · A ver versão {net}",
-          read_clean: "📖 Ler"
+          read_clean: "Ler"
         },
         reader: {
           title: "Leitura Limpa",
@@ -10048,7 +10061,7 @@
           alt_view: "View image description (ALT)",
           crosstalk_switch_to: "Published on both networks · View {net} version",
           crosstalk_active: "Published on both networks · Viewing {net} version",
-          read_clean: "📖 Read"
+          read_clean: "Read"
         },
         reader: {
           title: "Reader View",
@@ -11906,7 +11919,9 @@
           domRow.append(el("span", "ext-domain", hostLabel || "LINK"));
           const safeExtUrl = su(x.url);
           if (safeExtUrl) {
-            const readBtn = el("button", "ext-read-btn", t("post.read_clean"));
+            const readBtn = el("button", "ext-read-btn");
+            readBtn.innerHTML = '<svg class="ico-inline" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-book"/></svg>';
+            readBtn.append(" " + t("post.read_clean"));
             readBtn.type = "button";
             readBtn.onclick = (e) => {
               e.preventDefault();
