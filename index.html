@@ -14444,23 +14444,114 @@
         const targetPost = (n.target_post && (n.target_post.uri || n.target_post.id || n.target_post.url)) ? {
           network: n.network,
           id: n.target_post.uri || (n.target_post.id ? String(n.target_post.id) : null) || n.target_post.url,
+          ref: n.ref || (n.target_post.uri ? { uri: n.target_post.uri, cid: n.target_post.cid } : (n.target_post.id ? { id: String(n.target_post.id) } : null)),
+          url: n.target_post.url || n.url,
+          author_id: n.target_post.author_id,
+          handle: n.target_post.author_handle || n.handle,
+          name: n.target_post.author_name || n.name,
+          avatar: n.target_post.author_avatar || n.avatar,
+          text: n.target_post.text || n.text || "",
+          html: n.html || "",
+          media: n.media || [],
+          quote: n.quote || null,
+          liked: Boolean(n.target_post.liked ?? n.liked),
+          likes: n.target_post.likes ?? n.likes ?? 0,
+          boosted: Boolean(n.target_post.boosted ?? n.boosted),
           boosts: n.target_post.boosts ?? n.boosts ?? 0,
           replies: n.target_post.replies ?? n.replies ?? 0,
           time: n.target_post.time || n.time,
           cid: n.target_post.cid || null,
           uri: n.target_post.uri || null
-        } : null;
+        } : (n.ref || (n.url && (n.url.includes("/post/") || /\/\d+/.test(n.url))) ? {
+          network: n.network,
+          id: (n.ref && typeof n.ref === "object" && (n.ref.uri || n.ref.id)) ? (n.ref.uri || String(n.ref.id)) : n.id,
+          ref: n.ref,
+          url: n.url,
+          author_id: n.author_id,
+          handle: n.handle,
+          name: n.name,
+          avatar: n.avatar,
+          text: n.text || "",
+          html: n.html || "",
+          media: n.media || [],
+          quote: n.quote || null,
+          liked: Boolean(n.liked),
+          likes: n.likes || 0,
+          boosted: Boolean(n.boosted),
+          boosts: n.boosts || 0,
+          replies: n.replies || 0
+        } : null);
 
-        const p = el("div", "post " + n.network + (isFresh ? " fresh" : ""));
+        const postKey = targetPost ? getPostKey(targetPost) : key;
+        const isReplyTarget = Boolean(reply && targetPost && getPostKey(reply) === postKey);
+        const isThreadTarget = Boolean(threadIt && targetPost && getPostKey(threadIt) === postKey);
+
+        const p = el("article", "post notif " + n.network + (isFresh ? " fresh" : "") + (isReplyTarget ? " is-reply-target" : "") + (isThreadTarget ? " is-thread-active" : ""));
         p.dataset.notifKey = key;
+        if (postKey) p.dataset.postKey = postKey;
+        if (isFresh) {
+          const dot = el("span", "notif-unread-dot");
+          dot.title = t("notifs.unread_label") || "Não lida";
+          p.append(dot);
+        }
+
+        p.onmouseenter = () => {
+          if (p.classList.contains("fresh")) {
+            p._hoverTimer = setTimeout(() => {
+              markSingleNotifRead(n, p);
+            }, 350);
+          }
+        };
+        p.onmouseleave = () => {
+          if (p._hoverTimer) clearTimeout(p._hoverTimer);
+        };
+
+        if (isFresh && notifObserver) {
+          notifObserver.observe(p);
+        }
+
+        const onNotifProfile = (e) => {
+          e.stopPropagation();
+          markSingleNotifRead(n, p);
+          openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
+        };
 
         if (isRepostNotif) {
           const tp = n.target_post;
-          const banner = el("div", "notif-boost-banner");
-          banner.innerHTML = (NOTIF_ICONS[n.kind] || NOTIF_ICONS.boost) + " ";
-          banner.append(el("span", null, t("post.shared_by", { name: n.name || n.handle })));
-          p.append(banner);
+          // 1. Banner superior estilo timeline com indicação da ação e do utilizador que a fez
+          const boostBar = el("div", "boost notif-boost-banner");
+          const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
+          g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
+          g.title = t("notifs." + (n.kind || "other"));
+          g.setAttribute("aria-hidden", "true");
+          boostBar.append(g);
 
+          if (n.avatar) {
+            const i = el("img", "boost-av author-link");
+            i.src = su(n.avatar) || "";
+            i.alt = "";
+            i.title = t("post.view_profile", { name: n.name || n.handle });
+            i.onclick = onNotifProfile;
+            boostBar.append(i);
+          }
+
+          const sNameWrap = el("span", "author-link notif-author");
+          sNameWrap.title = t("post.view_profile", { name: n.name || n.handle });
+          sNameWrap.onclick = onNotifProfile;
+          if (n.name_html) sNameWrap.innerHTML = n.name_html;
+          else sNameWrap.textContent = n.name;
+
+          const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
+          const sMeta = el("span", "notif-meta", n.handle);
+          boostBar.append(sNameWrap, sVerb, sMeta, netBadge(n.network));
+
+          const notifWhen = el("span", "when", ago(n.time));
+          notifWhen.title = fullDateStr(n.time);
+          notifWhen.style.marginLeft = "auto";
+          boostBar.append(notifWhen);
+          p.append(boostBar);
+
+          // 2. Cabeçalho do post original (idêntico à timeline)
           const head = el("div", "head");
           const onOrigProfile = (e) => {
             e.stopPropagation();
@@ -14468,12 +14559,13 @@
             openUserProfile(n.network, tp.author_id || tp.author_handle);
           };
           if (tp.author_avatar) {
-            const av = el("img", "author-link");
-            av.src = su(tp.author_avatar) || "";
-            av.alt = "";
-            av.title = t("post.view_profile", { name: tp.author_name || tp.author_handle });
-            av.onclick = onOrigProfile;
-            head.append(av);
+            const origImg = el("img", "author-link");
+            origImg.src = su(tp.author_avatar) || "";
+            origImg.alt = "";
+            origImg.loading = "lazy";
+            origImg.title = t("post.view_profile", { name: tp.author_name || tp.author_handle });
+            origImg.onclick = onOrigProfile;
+            head.append(origImg);
           } else {
             head.append(el("div", "ph"));
           }
@@ -14500,11 +14592,6 @@
           head.append(who, origWhen);
           p.append(head);
         } else {
-          const onNotifProfile = (e) => {
-            e.stopPropagation();
-            markSingleNotifRead(n, p);
-            openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
-          };
           const head = el("div", "head");
           const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
           g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
@@ -14631,6 +14718,8 @@
                 });
                 if (res && res.translated) {
                   translatedBox = el("div", "post-translated-box");
+                  const badge = el("div", "post-translated-badge");
+                  badge.innerHTML = ICONS.translate + ' <span>' + t("actions.translated_with_ai") + '</span>';
                   const content = el("div", "post-translated-text", res.translated);
                   translatedBox.append(badge, content);
                   const bodyEl = p.querySelector(".body");
