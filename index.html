@@ -40,12 +40,13 @@
       --ink: #0B1020;
       --muted: #555C85;
       --accent: #5B4BDB;
+      --accent-solid: #5B4BDB;
       --star: #F0B400;
       --bsky: #0A78D6;
       --masto: #5B4BDB;
       --danger: #D32F2F;
       --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-      --serif: var(--sans);
+      --serif: Georgia, "New York", "Times New Roman", serif;
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       color-scheme: light;
     }
@@ -61,6 +62,7 @@
         --ink: #EEF0FF;
         --muted: #A9B0D6;
         --accent: #9AA0FF;
+        --accent-solid: #6558F5;
         --star: #FFD66B;
         --bsky: #4DB2FF;
         --masto: #9AA0FF;
@@ -79,6 +81,7 @@
       --ink: #EEF0FF;
       --muted: #A9B0D6;
       --accent: #9AA0FF;
+      --accent-solid: #6558F5;
       --star: #FFD66B;
       --bsky: #4DB2FF;
       --masto: #9AA0FF;
@@ -96,6 +99,7 @@
       --ink: #0B1020;
       --muted: #555C85;
       --accent: #5B4BDB;
+      --accent-solid: #5B4BDB;
       --star: #F0B400;
       --bsky: #0A78D6;
       --masto: #5B4BDB;
@@ -160,8 +164,19 @@
       background: var(--bg);
       color: var(--ink);
       font: 15px/1.5 var(--sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
       position: relative;
       min-height: 100vh
+    }
+
+    .count,
+    .acts button span,
+    .badge,
+    .side-nav-badge,
+    .filter-badge,
+    .when {
+      font-variant-numeric: tabular-nums
     }
 
     main {
@@ -616,7 +631,7 @@
     }
 
     .send-sm {
-      background: var(--accent);
+      background: var(--accent-solid);
       color: #fff;
       border: 0;
       border-radius: 6px;
@@ -654,7 +669,7 @@
     }
 
     .update-pill:hover {
-      background: var(--accent);
+      background: var(--accent-solid);
       color: #fff;
       transform: translateY(-1px)
     }
@@ -1203,7 +1218,7 @@
     }
 
     .send {
-      background: var(--accent);
+      background: var(--accent-solid);
       color: #fff;
       border: 0;
       border-radius: 10px;
@@ -1889,8 +1904,8 @@
     }
 
     .tl-filter-bar .tl-catchup-btn:hover {
-      background: var(--accent);
-      border-color: var(--accent);
+      background: var(--accent-solid);
+      border-color: var(--accent-solid);
       color: #fff
     }
 
@@ -2063,6 +2078,7 @@
 
     .reader-content {
       max-width: 66ch;
+      font-family: var(--serif);
       font-size: var(--reader-font, 16px);
       line-height: 1.72;
       color: var(--ink)
@@ -4919,7 +4935,7 @@
     }
 
     .side-nav-btn.active {
-      background: var(--accent);
+      background: var(--accent-solid);
       color: #fff;
       box-shadow: 0 4px 12px rgba(91, 75, 219, 0.35)
     }
@@ -4960,7 +4976,7 @@
     }
 
     .side-nav-btn.side-nav-compose:hover {
-      background: var(--accent);
+      background: var(--accent-solid);
       color: #fff
     }
 
@@ -5298,7 +5314,7 @@
           /* Botão de novo post em destaque no meio da barra mobile */
           .side-nav-btn.side-nav-compose {
             order: 4;
-            background: var(--accent) !important;
+            background: var(--accent-solid) !important;
             color: #fff !important;
             box-shadow: 0 4px 12px rgba(91, 75, 219, 0.4);
             transform: scale(1.05);
@@ -6799,7 +6815,7 @@
           width: 36px;
           height: 36px;
           border-radius: 50%;
-          background: var(--accent);
+          background: var(--accent-solid);
           color: #fff;
           border: none;
           display: inline-flex;
