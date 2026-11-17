@@ -14341,7 +14341,6 @@
           p.classList.add("clickable-post");
           p.onclick = (e) => {
             if (e.target.closest("a, button, input, textarea, select, video, .media, .author-link, .quote-box")) return;
-... [truncated for diff preview]
             const sel = window.getSelection ? window.getSelection().toString() : "";
             if (sel && sel.trim().length > 0) return;
             markSingleNotifRead(n, p);
