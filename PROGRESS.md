@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
 > **Data de atualização:** 17 de Novembro de 2026  
-> **Versão:** v0.8.4  
+> **Versão:** v0.8.5  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 206 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 211 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -301,6 +301,12 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - **Estado Visual de Acessibilidade (`ALT` nas Imagens Anexadas):** Crachás `✓ ALT` / `⚠️ Sem ALT` nas miniaturas do compositor e fios (`attachAltBadge()`), com foco rápido ao clicar e aviso opcional antes de publicar (`#cfgWarnMissingAlt` / `warnMissingAlt`).
   - **Agrupamento Visual de Republicações na Timeline (*estilo Phanpy*):** Compactação automática de sequências de boosts consecutivos do mesmo autor (`groupBoostClusters()`, `renderBoostCluster()`, `#cfgBoostCluster`).
   - **Gestão de Imagens no Compositor:** Reordenação das imagens anexadas (`←` / `→` e *drag-and-drop* em `attachImageCardControls()`) e modal de **Recorte Rápido** (`#cropModalOverlay`, `openCropModal()`) com predefinições `Livre`, `1:1`, `16:9` e `4:5`.
+- **Qualidade JS, Mute Words Unificados, Feeds/Listas, Sondagens & Offline PWA:**
+  - **Prevenção de `ReferenceError` nos Testes (`tests/js_lint.py`):** analisador de escopo JavaScript integrado na suíte de testes (`test_index_javascript_no_undeclared_identifiers`) para detetar identificadores não declarados antes de chegar ao browser.
+  - **Mute Words Unificados:** preservação dos próprios posts (`is_own`), inspeção de `target_post`, e suporte completo nas Notificações (ocultar ou colapsar com aviso via `createMutedContentWrapper()`).
+  - **Feeds Personalizados (Bluesky) & Listas (Mastodon):** endpoints `GET /api/lists` e `GET /api/list_feed`, coluna dedicada `#colLists` no Deck e seletor rápido `#exploreSourceSelect` no Explorar.
+  - **Sondagens (*Polls*) do Mastodon:** extração em `Masto.item()`, votação via `POST /api/poll/vote` e renderização interativa com barras percentuais em `renderPostPoll()`.
+  - **Service Worker PWA (`GET /sw.js`):** cache *Cache-First* para assets estáticos e *Network-First* para a interface e feeds de leitura (sem cache de tokens/dados sensíveis).
 
 ---
 

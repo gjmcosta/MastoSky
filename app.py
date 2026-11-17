@@ -4376,6 +4376,38 @@ class H(BaseHTTPRequestHandler):
             mpath = DIR / "manifest.json"
             if mpath.is_file():
                 return self.send(200, mpath.read_bytes(), "application/manifest+json")
+        if path == "/sw.js":
+            sw_code = (
+                f'const CACHE_NAME = "mastosky-v{VERSION}";\n'
+                'const PRECACHE = ["/manifest.json", "/vendor/hls.min.js", "/brand/favicon.svg"];\n'
+                'const NETWORK_FIRST_APIS = ["/api/timeline", "/api/notifications", "/api/explore", "/api/lists", "/api/list_feed", "/api/status"];\n'
+                'self.addEventListener("install", (e) => {\n'
+                '  self.skipWaiting();\n'
+                '  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(PRECACHE)).catch(() => {}));\n'
+                '});\n'
+                'self.addEventListener("activate", (e) => {\n'
+                '  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))).then(() => self.clients.claim()));\n'
+                '});\n'
+                'self.addEventListener("fetch", (e) => {\n'
+                '  if (e.request.method !== "GET") return;\n'
+                '  const url = new URL(e.request.url);\n'
+                '  if (url.origin !== self.location.origin) return;\n'
+                '  if (url.pathname.startsWith("/brand/") || url.pathname.startsWith("/vendor/") || url.pathname === "/manifest.json") {\n'
+                '    e.respondWith(caches.match(e.request).then((cached) => cached || fetch(e.request).then((res) => {\n'
+                '      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)); }\n'
+                '      return res;\n'
+                '    })));\n'
+                '    return;\n'
+                '  }\n'
+                '  if (url.pathname === "/" || url.pathname === "/index.html" || NETWORK_FIRST_APIS.includes(url.pathname)) {\n'
+                '    e.respondWith(fetch(e.request).then((res) => {\n'
+                '      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)); }\n'
+                '      return res;\n'
+                '    }).catch(() => caches.match(e.request)));\n'
+                '  }\n'
+                '});\n'
+            )
+            return self.send(200, sw_code.encode("utf-8"), "application/javascript")
         if path == "/api/lan":
             local_ip = get_local_ip()
             lan_url = f"http://{local_ip}:{PORT}"

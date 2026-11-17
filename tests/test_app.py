@@ -2375,6 +2375,31 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("function renderPostPoll(it)", html)
         self.assertIn('"/api/poll/vote"', html)
 
+    def test_pwa_service_worker_served_and_registered(self):
+        import http.server, threading, urllib.request
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), app.H)
+        port = srv.server_address[1]
+        t = threading.Thread(target=srv.serve_forever, daemon=True)
+        t.start()
+        try:
+            with mock.patch.object(app, "PORT", port):
+                req = urllib.request.Request(f"http://127.0.0.1:{port}/sw.js")
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    self.assertEqual(resp.status, 200)
+                    self.assertIn("application/javascript", resp.headers.get("Content-Type", ""))
+                    body = resp.read().decode("utf-8")
+                    self.assertIn("mastosky-v", body)
+                    self.assertIn("/api/timeline", body)
+                    self.assertNotIn("/api/csrf", body)
+                    self.assertNotIn("/api/user_data", body)
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn('navigator.serviceWorker.register("/sw.js")', html)
+
     def test_keyboard_shortcuts_feature(self):
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()
