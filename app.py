@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """MastoSky: cliente local-first Bluesky + Mastodon (127.0.0.1)."""
-import argparse, base64, binascii, hmac, html, ipaddress, json, os, re, secrets, socket, ssl, stat, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser
+import argparse, base64, binascii, hmac, html, ipaddress, json, os, re, secrets, socket, ssl, stat, subprocess, sys, threading, time, urllib.error, urllib.parse, urllib.request, uuid, webbrowser, zlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
@@ -4148,9 +4148,21 @@ class H(BaseHTTPRequestHandler):
 
     def send(self, code, body, ctype="application/json"):
         b = body if isinstance(body, bytes) else json.dumps(body).encode()
+        compressible = (
+            ctype.startswith("text/")
+            or ctype in ("application/json", "application/javascript", "image/svg+xml", "application/manifest+json")
+        )
+        accept_enc = (self.headers.get("Accept-Encoding") or "").lower()
+        use_gzip = compressible and len(b) >= 1024 and "gzip" in accept_enc
+        if use_gzip:
+            comp = zlib.compressobj(level=6, wbits=16 + zlib.MAX_WBITS)
+            b = comp.compress(b) + comp.flush()
         self.send_response(code)
         ct_header = ctype if (ctype.startswith("image/") and ctype != "image/svg+xml") or ctype == "application/octet-stream" else (ctype + "; charset=utf-8")
         self.send_header("Content-Type", ct_header)
+        if use_gzip:
+            self.send_header("Content-Encoding", "gzip")
+            self.send_header("Vary", "Accept-Encoding")
         self.send_header("Content-Length", str(len(b)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")

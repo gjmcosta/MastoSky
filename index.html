@@ -2793,7 +2793,9 @@
       border-left: 4px solid var(--c);
       border-radius: 4px 12px 12px 4px;
       padding: 12px 14px;
-      margin-bottom: 10px
+      margin-bottom: 10px;
+      content-visibility: auto;
+      contain-intrinsic-size: auto 180px
     }
 
     .post.bluesky {
@@ -5046,9 +5048,9 @@
         position: sticky;
         top: 0;
         z-index: 100;
-        background: color-mix(in srgb, var(--bg) 92%, transparent);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        background: color-mix(in srgb, var(--bg) 94%, transparent);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         margin: calc(-14px - env(safe-area-inset-top, 0px)) -14px 12px -14px;
         padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 4px 14px;
         border-bottom: 1px solid var(--line);
@@ -5280,9 +5282,9 @@
             border-radius: 32px;
             padding: 6px 8px;
             box-sizing: border-box;
-            background: color-mix(in srgb, var(--card) 92%, transparent);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: color-mix(in srgb, var(--card) 94%, transparent);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--line);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
           }
@@ -11117,6 +11119,10 @@
       const e = document.createElement(tag);
       if (cls) e.className = cls;
       if (text != null) e.textContent = text;
+      if (tag === "img") {
+        e.loading = "lazy";
+        e.decoding = "async";
+      }
       return e;
     }
 
@@ -14329,8 +14335,6 @@
                 });
                 if (res && res.translated) {
                   translatedBox = el("div", "post-translated-box");
-                  const badge = el("div", "post-translated-badge");
-                  badge.innerHTML = ICONS.translate + ' <span>' + t("actions.translated_with_ai") + '</span>';
                   const content = el("div", "post-translated-text", res.translated);
                   translatedBox.append(badge, content);
                   const bodyEl = p.querySelector(".body");
@@ -21270,7 +21274,9 @@
     applyViewMode(viewMode);
     updateDraftsBadge();
     refreshScheduledBadge();
-    setInterval(refreshScheduledBadge, 30000);
+    setInterval(() => {
+      if (!document.hidden) refreshScheduledBadge();
+    }, 30000);
     checkAndRestoreAutoDraft();
     initSavedEvents();
     initConvoEvents();
@@ -21294,7 +21300,11 @@
     if (initTab === "profile") loadProfile();
     else loadProfile(true);
     checkAppUpdate(false);
-    setInterval(() => {
+    let lastPollAt = Date.now();
+    let needsBackgroundRefresh = false;
+    function runPeriodicPoll() {
+      lastPollAt = Date.now();
+      needsBackgroundRefresh = false;
       load();
       loadNotifs();
       loadConversations(true);
@@ -21302,8 +21312,23 @@
       if (tab === "saved") renderSavedFeed();
       if (tab === "messages" && !activeConvo) loadConversations();
       if (tab === "profile") loadProfile(true);
+    }
+    setInterval(() => {
+      if (document.hidden) {
+        needsBackgroundRefresh = true;
+        return;
+      }
+      runPeriodicPoll();
     }, 120000);
-    setInterval(() => checkAppUpdate(false), 1800000);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && (needsBackgroundRefresh || Date.now() - lastPollAt >= 120000)) {
+        refreshScheduledBadge();
+        runPeriodicPoll();
+      }
+    });
+    setInterval(() => {
+      if (!document.hidden) checkAppUpdate(false);
+    }, 1800000);
   </script>
   <div id="mentionAcMenu" class="mention-ac-menu" hidden role="listbox" aria-label="Sugestões de menção"></div>
 </body>
