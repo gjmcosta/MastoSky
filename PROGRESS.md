@@ -298,17 +298,15 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - **Barra de Filtros da Timeline & Ícones de Marca:** `#tlFilterBar` alinhada em 5 colunas simétricas idênticas às Notificações (`.notif-header-bar`), substituição global de emojis `🦋`/`🐘`/`📖` pelos ícones vetoriais oficiais (`#i-brand-bsky`, `#i-brand-masto`, `#i-book`, `#i-no-boosts`, `#i-sparkles`).
   - **Mobile iOS/Android & Tipografia:** Topo limpo sem abas duplicadas (`#topNavWrap .tabs` oculto em `<768px`) e Dock Bar fixa sempre visível em baixo com círculos `36×36px` simétricos (`stroke-width="1.75"`), badge de notificações compacto sem estrela oculta, dimensionamento corrigido do modal `#catchUpOverlay` (`box-sizing: border-box` e altura dinâmica `100dvh`), contraste `--accent-solid` (`#6558F5`) nos botões primários escuros, `-webkit-font-smoothing: antialiased`, `tabular-nums` e `--serif` no *Reader View*.
   - **Performance Backend & Frontend:** Compressão `gzip` (`zlib`) em `Handler.send()` e `http()`, cache em memória pré-comprimida de `index.html` (`_INDEX_HTML_CACHE`), pool persistente `_API_EXECUTOR`, *polling* pausado quando `document.hidden`, `content-visibility: auto` em `.post`, *blur* reduzido para `10px` em mobile, `loading="lazy"`/`decoding="async"` em `el("img")` e *scroll listeners* com `requestAnimationFrame`.
+  - **Estado Visual de Acessibilidade (`ALT` nas Imagens Anexadas):** Crachás `✓ ALT` / `⚠️ Sem ALT` nas miniaturas do compositor e fios (`attachAltBadge()`), com foco rápido ao clicar e aviso opcional antes de publicar (`#cfgWarnMissingAlt` / `warnMissingAlt`).
+  - **Agrupamento Visual de Republicações na Timeline (*estilo Phanpy*):** Compactação automática de sequências de boosts consecutivos do mesmo autor (`groupBoostClusters()`, `renderBoostCluster()`, `#cfgBoostCluster`).
+  - **Gestão de Imagens no Compositor:** Reordenação das imagens anexadas (`←` / `→` e *drag-and-drop* em `attachImageCardControls()`) e modal de **Recorte Rápido** (`#cropModalOverlay`, `openCropModal()`) com predefinições `Livre`, `1:1`, `16:9` e `4:5`.
 
 ---
 
 ## 📋 4. Próximos Passos e Roadmap Pendente
 
-1. **Melhorias de UX / UI Pendentes:**
-   - **Estado Visual de Acessibilidade (`ALT` nas Imagens Anexadas):** Crachás visuais `⚠️ Sem ALT` / `✓ ALT` nas miniaturas do compositor + aviso opcional antes de publicar.
-   - **Agrupamento Visual de Republicações / Fios na Timeline (*estilo Phanpy*):** Compactar sequências de vários boosts do mesmo autor.
-   - **Gestão de Imagens no Compositor:** Reordenar as 4 imagens anexadas e recorte rápido.
-
-2. **Acesso Remoto Seguro & Empacotamento / Mobile Nativo (Opcional):**
+1. **Acesso Remoto Seguro & Empacotamento / Mobile Nativo (Opcional):**
    - Documentação complementar Tailscale / Cloudflare Tunnel e avaliação futura de wrapper nativo iOS/iPadOS/Android.
 
 ---

@@ -915,6 +915,116 @@
       border-color: var(--accent)
     }
 
+    .prev-card.dragging-img {
+      opacity: 0.45
+    }
+
+    .prev-card.drag-over-img {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent)
+    }
+
+    .prev-img-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px
+    }
+
+    .prev-tool-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px
+    }
+
+    .prev-tool-btn {
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--muted);
+      border-radius: 5px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1.25;
+      transition: all .15s
+    }
+
+    .prev-tool-btn:hover:not(:disabled) {
+      color: var(--ink);
+      border-color: var(--accent);
+      background: var(--surface-2)
+    }
+
+    .prev-tool-btn:disabled {
+      opacity: 0.35;
+      cursor: default
+    }
+
+    .crop-box {
+      max-width: 560px;
+      width: 100%;
+      box-sizing: border-box
+    }
+
+    .crop-presets {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px
+    }
+
+    .crop-stage-wrap {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #070b16;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      padding: 8px;
+      min-height: 180px
+    }
+
+    .crop-stage {
+      position: relative;
+      display: inline-block;
+      line-height: 0;
+      user-select: none;
+      touch-action: none
+    }
+
+    .crop-stage canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 54dvh;
+      border-radius: 4px
+    }
+
+    .crop-rect {
+      position: absolute;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+      cursor: move;
+      touch-action: none;
+      box-sizing: border-box
+    }
+
+    .crop-handle {
+      position: absolute;
+      right: -7px;
+      bottom: -7px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent-solid);
+      border: 2px solid #fff;
+      cursor: nwse-resize;
+      touch-action: none
+    }
+
     .prev-card img {
       width: 100%;
       height: 85px;
@@ -2834,6 +2944,59 @@
 
     .post.mastodon {
       --c: var(--masto)
+    }
+
+    .boost-cluster {
+      margin-bottom: 10px
+    }
+
+    .boost-cluster-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 12px;
+      margin-top: -4px;
+      margin-bottom: 6px;
+      background: var(--surface-1);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      text-align: left;
+      box-sizing: border-box
+    }
+
+    .boost-cluster-toggle:hover {
+      color: var(--ink);
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      background: var(--surface-2)
+    }
+
+    .boost-cluster-toggle-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .boost-cluster-toggle-left .ico {
+      width: 14px;
+      height: 14px;
+      color: var(--accent);
+      flex-shrink: 0
+    }
+
+    .boost-cluster-rest {
+      padding-left: 10px;
+      border-left: 2px dashed color-mix(in srgb, var(--accent) 35%, var(--line))
     }
 
     .boost {
@@ -8402,6 +8565,10 @@
                   <input type="checkbox" id="cfgWarnMissingAlt" checked>
                   <span data-i18n="setup.warn_missing_alt_label">Avisar antes de publicar imagens sem descrição ALT</span>
                 </label>
+                <label class="setup-check-item" style="padding:0;font-weight:600;margin-top:10px">
+                  <input type="checkbox" id="cfgBoostCluster" checked>
+                  <span data-i18n="setup.boost_cluster_label">Agrupar sequências de republicações na Timeline (estilo Phanpy)</span>
+                </label>
               </div>
               <div id="handleMapSection" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
                 <div style="font-size:12.5px;font-weight:600;color:var(--ink)" data-i18n="setup.handle_map_title">🔗
@@ -8887,6 +9054,39 @@
       </div>
     </div>
 
+    <div id="cropModalOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true"
+      aria-labelledby="cropModalTitle" style="z-index:1030">
+      <div class="setup-box crop-box">
+        <div class="setup-header">
+          <h2 id="cropModalTitle" style="display:inline-flex;align-items:center;gap:8px">
+            <span>✂️</span>
+            <span data-i18n="composer.crop_title">Recorte Rápido</span>
+          </h2>
+          <button type="button" class="setup-close-btn" id="closeCropModal" title="Fechar (Esc)"
+            data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
+        </div>
+        <div class="crop-presets" id="cropPresets">
+          <button type="button" class="tl-pill active" data-crop-ratio="free"
+            data-i18n="composer.crop_free">Livre</button>
+          <button type="button" class="tl-pill" data-crop-ratio="1">1:1</button>
+          <button type="button" class="tl-pill" data-crop-ratio="1.7777777777777777">16:9</button>
+          <button type="button" class="tl-pill" data-crop-ratio="0.8">4:5</button>
+        </div>
+        <div class="crop-stage-wrap">
+          <div class="crop-stage" id="cropStage">
+            <canvas id="cropCanvas"></canvas>
+            <div class="crop-rect" id="cropRect">
+              <div class="crop-handle" id="cropHandle"></div>
+            </div>
+          </div>
+        </div>
+        <div class="setup-actions" style="margin-top:12px">
+          <button type="button" class="ghost" id="cancelCropBtn" data-i18n="cross_post.cancel">Cancelar</button>
+          <button type="button" class="send" id="applyCropBtn" data-i18n="composer.crop_apply">Aplicar recorte</button>
+        </div>
+      </div>
+    </div>
+
     <div id="userProfileOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true"
       aria-labelledby="userProfileModalTitle">
       <div class="setup-box user-profile-box">
@@ -9240,6 +9440,12 @@
           alt_badge_ok: "✓ ALT",
           alt_badge_missing: "⚠️ Sem ALT",
           alt_warn_confirm: "Tens {n} imagem(ns) sem texto alternativo (ALT). Queres publicar mesmo assim?",
+          crop_title: "Recorte Rápido",
+          crop_free: "Livre",
+          crop_apply: "Aplicar recorte",
+          crop_btn_title: "Recortar imagem",
+          move_left_title: "Mover para a esquerda",
+          move_right_title: "Mover para a direita",
           video_ready: "Vídeo pronto para publicar",
           video_remove: "Remover vídeo",
           video_alt_ph: "Descrição acessível do vídeo (alt text)...",
@@ -9464,6 +9670,8 @@
           empty_timeline: "Ainda não há posts para mostrar. Segue mais contas ou adiciona a outra rede!",
           filter_all: "Ambas",
           filter_no_boosts: "Sem boosts",
+          boost_cluster_more: "+ {n} republicações de {name}",
+          boost_cluster_less: "Recolher republicações de {name}",
           empty_filtered: "Nenhuma publicação corresponde aos filtros selecionados.",
           empty_explore: "Sem posts em alta para mostrar.",
           empty_notifs: "Sem notificações por agora.",
@@ -9627,6 +9835,7 @@
           crosstalk_label: "Agrupar publicações duplicadas entre redes (Crosstalk)",
           crosstalk_desc: "Funde num único cartão os posts publicados em simultâneo no Mastodon e Bluesky, dando prioridade ao Mastodon.",
           warn_missing_alt_label: "Avisar antes de publicar imagens sem descrição ALT",
+          boost_cluster_label: "Agrupar sequências de republicações na Timeline (estilo Phanpy)",
           handle_map_title: "🔗 Mapeamento de @menções entre Redes",
           handle_map_desc: "Associa handles equivalentes (ex: @pessoa.bsky.social ↔ @pessoa@mastodon.social) para adaptar automaticamente as menções ao publicar em simultâneo.",
           handle_map_add: "+ Associar",
@@ -9848,6 +10057,12 @@
           alt_badge_ok: "✓ ALT",
           alt_badge_missing: "⚠️ No ALT",
           alt_warn_confirm: "You have {n} image(s) without alt text. Publish anyway?",
+          crop_title: "Quick Crop",
+          crop_free: "Free",
+          crop_apply: "Apply crop",
+          crop_btn_title: "Crop image",
+          move_left_title: "Move left",
+          move_right_title: "Move right",
           video_ready: "Video ready to publish",
           video_remove: "Remove video",
           video_alt_ph: "Video accessibility description (alt text)...",
@@ -10072,6 +10287,8 @@
           empty_timeline: "No posts yet. Follow more accounts or connect the other network!",
           filter_all: "Both",
           filter_no_boosts: "No reposts",
+          boost_cluster_more: "+ {n} more boosts by {name}",
+          boost_cluster_less: "Collapse boosts by {name}",
           empty_filtered: "No posts match the active filters.",
           empty_explore: "No trending posts to show.",
           empty_notifs: "No notifications yet.",
@@ -10235,6 +10452,7 @@
           crosstalk_label: "Group duplicate cross-network posts (Crosstalk)",
           crosstalk_desc: "Merges simultaneous Mastodon and Bluesky posts into a single card, prioritizing Mastodon by default.",
           warn_missing_alt_label: "Warn before publishing images without ALT text",
+          boost_cluster_label: "Group consecutive boosts in Timeline (Phanpy style)",
           handle_map_title: "🔗 Cross-Network @mention Mapping",
           handle_map_desc: "Link equivalent handles (e.g. @user.bsky.social ↔ @user@mastodon.social) to adapt mentions automatically when cross-posting.",
           handle_map_add: "+ Link",
@@ -11618,6 +11836,7 @@
         "draftsOverlay",
         "scheduledOverlay",
         "catchUpOverlay",
+        "cropModalOverlay",
         "readerOverlay",
         "crossPostOverlay",
         "shortcutsOverlay",
@@ -12310,6 +12529,8 @@
 
     let crosstalkDedupEnabled = localStorage.getItem("mastosky_crosstalk_dedup") !== "false";
     let warnMissingAlt = localStorage.getItem("mastosky_warn_missing_alt") !== "false";
+    let boostClusterEnabled = localStorage.getItem("mastosky_boost_cluster") !== "false";
+    const expandedBoostClusters = new Set();
     const crosstalkActiveNet = new Map();
     const crosstalkDiscoveredPairs = new Map();
 
@@ -12995,6 +13216,86 @@
       return list;
     }
 
+    function groupBoostClusters(list) {
+      if (!boostClusterEnabled || timelineHideBoosts || !Array.isArray(list) || list.length < 2) {
+        return (list || []).map(it => ({ type: "single", item: it }));
+      }
+      const out = [];
+      let i = 0;
+      while (i < list.length) {
+        const cur = list[i];
+        if (!cur || !cur.boosted_by) {
+          out.push({ type: "single", item: cur });
+          i++;
+          continue;
+        }
+        const boosterKey = cur.boosted_by.trim().toLowerCase();
+        const run = [cur];
+        let j = i + 1;
+        while (j < list.length && list[j] && list[j].boosted_by && list[j].boosted_by.trim().toLowerCase() === boosterKey) {
+          run.push(list[j]);
+          j++;
+        }
+        if (run.length >= 2) {
+          const firstKey = cur.url || cur.uri || cur.id || String(i);
+          out.push({
+            type: "cluster",
+            key: boosterKey + "|" + firstKey,
+            booster: cur.boosted_by,
+            items: run
+          });
+        } else {
+          out.push({ type: "single", item: cur });
+        }
+        i = j;
+      }
+      return out;
+    }
+
+    function renderBoostCluster(cluster) {
+      const wrap = el("div", "boost-cluster");
+      const first = cluster.items[0];
+      const rest = cluster.items.slice(1);
+      wrap.append(postCard(first));
+
+      const restWrap = el("div", "boost-cluster-rest");
+      let isOpen = expandedBoostClusters.has(cluster.key);
+      restWrap.hidden = !isOpen;
+      if (isOpen) {
+        for (const it of rest) restWrap.append(postCard(it));
+      }
+
+      const toggleBtn = el("button", "boost-cluster-toggle");
+      toggleBtn.type = "button";
+      const updateToggle = () => {
+        const label = isOpen
+          ? t("feed.boost_cluster_less", { name: cluster.booster })
+          : t("feed.boost_cluster_more", { n: rest.length, name: cluster.booster });
+        toggleBtn.innerHTML =
+          `<span class="boost-cluster-toggle-left"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-repost"/></svg><span></span></span>` +
+          `<span>${isOpen ? "▴" : "▾"}</span>`;
+        toggleBtn.querySelector(".boost-cluster-toggle-left span").textContent = label;
+        toggleBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      };
+      updateToggle();
+      toggleBtn.onclick = () => {
+        isOpen = !isOpen;
+        if (isOpen) {
+          expandedBoostClusters.add(cluster.key);
+          if (!restWrap.childElementCount) {
+            for (const it of rest) restWrap.append(postCard(it));
+          }
+        } else {
+          expandedBoostClusters.delete(cluster.key);
+        }
+        restWrap.hidden = !isOpen;
+        updateToggle();
+      };
+
+      wrap.append(toggleBtn, restWrap);
+      return wrap;
+    }
+
     function render() {
       syncTimelineFilterUI();
       const feed = $("feed");
@@ -13005,7 +13306,9 @@
         const emptyMsg = items.length ? t("feed.empty_filtered") : t("feed.empty_timeline");
         feed.append(el("div", "empty", emptyMsg));
       }
-      for (const it of visible) feed.append(postCard(it));
+      for (const entry of groupBoostClusters(visible)) {
+        feed.append(entry.type === "cluster" ? renderBoostCluster(entry) : postCard(entry.item));
+      }
       renderLoadMore(feed, timelineCursors, loadMoreTimeline);
     }
 
@@ -14126,116 +14429,6 @@
           liked: Boolean(n.target_post.liked ?? n.liked),
           likes: n.target_post.likes ?? n.likes ?? 0,
           boosted: Boolean(n.target_post.boosted ?? n.boosted),
-          boosts: n.target_post.boosts ?? n.boosts ?? 0,
-          replies: n.target_post.replies ?? n.replies ?? 0
-        } : (n.ref || (n.url && (n.url.includes("/post/") || /\/\d+/.test(n.url))) ? {
-          network: n.network,
-          id: (n.ref && typeof n.ref === "object" && (n.ref.uri || n.ref.id)) ? (n.ref.uri || String(n.ref.id)) : n.id,
-          ref: n.ref,
-          url: n.url,
-          author_id: n.author_id,
-          handle: n.handle,
-          name: n.name,
-          avatar: n.avatar,
-          text: n.text || "",
-          html: n.html || "",
-          media: n.media || [],
-          quote: n.quote || null,
-          liked: Boolean(n.liked),
-          likes: n.likes || 0,
-          boosted: Boolean(n.boosted),
-          boosts: n.boosts || 0,
-          replies: n.replies || 0
-        } : null);
-
-        const postKey = targetPost ? getPostKey(targetPost) : key;
-        const isReplyTarget = Boolean(reply && targetPost && getPostKey(reply) === postKey);
-        const isThreadTarget = Boolean(threadIt && targetPost && getPostKey(threadIt) === postKey);
-
-        const p = el("article", "post notif " + n.network + (isFresh ? " fresh" : "") + (isReplyTarget ? " is-reply-target" : "") + (isThreadTarget ? " is-thread-active" : ""));
-        p.dataset.notifKey = key;
-        if (postKey) p.dataset.postKey = postKey;
-        if (isFresh) {
-          const dot = el("span", "notif-unread-dot");
-          dot.title = t("notifs.unread_label") || "Não lida";
-          p.append(dot);
-        }
-
-        p.onmouseenter = () => {
-          if (p.classList.contains("fresh")) {
-            p._hoverTimer = setTimeout(() => {
-              markSingleNotifRead(n, p);
-            }, 350);
-          }
-        };
-        p.onmouseleave = () => {
-          if (p._hoverTimer) clearTimeout(p._hoverTimer);
-        };
-
-        if (isFresh && notifObserver) {
-          notifObserver.observe(p);
-        }
-
-        const onNotifProfile = (e) => {
-          e.stopPropagation();
-          markSingleNotifRead(n, p);
-          openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
-        };
-
-        if (isRepostNotif) {
-          const tp = n.target_post;
-          // 1. Banner superior estilo timeline com indicação da ação e do utilizador que a fez
-          const boostBar = el("div", "boost notif-boost-banner");
-          const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
-          g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
-          g.title = t("notifs." + (n.kind || "other"));
-          g.setAttribute("aria-hidden", "true");
-          boostBar.append(g);
-
-          if (n.avatar) {
-            const i = el("img", "boost-av author-link");
-            i.src = su(n.avatar) || "";
-            i.alt = "";
-            i.title = t("post.view_profile", { name: n.name || n.handle });
-            i.onclick = onNotifProfile;
-            boostBar.append(i);
-          }
-
-          const sNameWrap = el("span", "author-link notif-author");
-          sNameWrap.title = t("post.view_profile", { name: n.name || n.handle });
-          sNameWrap.onclick = onNotifProfile;
-          if (n.name_html) sNameWrap.innerHTML = n.name_html;
-          else sNameWrap.textContent = n.name;
-
-          const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
-          const sMeta = el("span", "notif-meta", n.handle);
-          boostBar.append(sNameWrap, sVerb, sMeta, netBadge(n.network));
-
-          const notifWhen = el("span", "when", ago(n.time));
-          notifWhen.title = fullDateStr(n.time);
-          notifWhen.style.marginLeft = "auto";
-          boostBar.append(notifWhen);
-          p.append(boostBar);
-
-          // 2. Cabeçalho do post original (idêntico à timeline)
-          const head = el("div", "head");
-          const onOrigProfile = (e) => {
-            e.stopPropagation();
-            markSingleNotifRead(n, p);
-            openUserProfile(n.network, tp.author_id || tp.author_handle);
-          };
-          if (tp.author_avatar) {
-            const origImg = el("img", "author-link");
-            origImg.src = su(tp.author_avatar) || "";
-            origImg.alt = "";
-            origImg.loading = "lazy";
-            origImg.title = t("post.view_profile", { name: tp.author_name || tp.author_handle });
-            origImg.onclick = onOrigProfile;
-            head.append(origImg);
-          } else {
-            head.append(el("div", "ph"));
-          }
-
           const who = el("div", "who");
           const bOrigName = el("b", "author-link");
           if (tp.author_name_html) bOrigName.innerHTML = tp.author_name_html;
@@ -16038,6 +16231,204 @@
       return sync;
     }
 
+    let _dragImgState = null;
+    function attachImageCardControls(card, imgList, idx, rerenderFn) {
+      if (imgList.length > 1) {
+        card.draggable = true;
+        card.addEventListener("dragstart", (e) => {
+          _dragImgState = { list: imgList, idx };
+          card.classList.add("dragging-img");
+          if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+        });
+        card.addEventListener("dragend", () => {
+          _dragImgState = null;
+          card.classList.remove("dragging-img");
+        });
+        card.addEventListener("dragover", (e) => {
+          if (!_dragImgState || _dragImgState.list !== imgList || _dragImgState.idx === idx) return;
+          e.preventDefault();
+          card.classList.add("drag-over-img");
+        });
+        card.addEventListener("dragleave", () => card.classList.remove("drag-over-img"));
+        card.addEventListener("drop", (e) => {
+          card.classList.remove("drag-over-img");
+          if (!_dragImgState || _dragImgState.list !== imgList || _dragImgState.idx === idx) return;
+          e.preventDefault();
+          const [moved] = imgList.splice(_dragImgState.idx, 1);
+          imgList.splice(idx, 0, moved);
+          _dragImgState = null;
+          rerenderFn();
+          update();
+        });
+      }
+
+      const bar = el("div", "prev-img-tools");
+      const moveGrp = el("div", "prev-tool-group");
+      if (imgList.length > 1) {
+        const leftBtn = el("button", "prev-tool-btn", "←");
+        leftBtn.type = "button";
+        leftBtn.title = t("composer.move_left_title");
+        leftBtn.disabled = idx === 0;
+        leftBtn.onclick = () => {
+          if (idx <= 0) return;
+          [imgList[idx - 1], imgList[idx]] = [imgList[idx], imgList[idx - 1]];
+          rerenderFn();
+          update();
+        };
+
+        const rightBtn = el("button", "prev-tool-btn", "→");
+        rightBtn.type = "button";
+        rightBtn.title = t("composer.move_right_title");
+        rightBtn.disabled = idx >= imgList.length - 1;
+        rightBtn.onclick = () => {
+          if (idx >= imgList.length - 1) return;
+          [imgList[idx + 1], imgList[idx]] = [imgList[idx], imgList[idx + 1]];
+          rerenderFn();
+          update();
+        };
+        moveGrp.append(leftBtn, rightBtn);
+      }
+
+      const cropBtn = el("button", "prev-tool-btn", "✂️");
+      cropBtn.type = "button";
+      cropBtn.title = t("composer.crop_btn_title");
+      cropBtn.onclick = () => openCropModal(imgList[idx], () => {
+        rerenderFn();
+        update();
+      });
+
+      bar.append(moveGrp, cropBtn);
+      return bar;
+    }
+
+    function openCropModal(imgObj, onApply) {
+      const overlay = $("cropModalOverlay");
+      const canvas = $("cropCanvas");
+      const rectEl = $("cropRect");
+      const handleEl = $("cropHandle");
+      if (!overlay || !canvas || !rectEl || !imgObj || !imgObj.data) return;
+
+      const sourceImg = new Image();
+      sourceImg.onload = () => {
+        const maxW = Math.min(500, window.innerWidth - 64);
+        const maxH = Math.min(400, Math.round(window.innerHeight * 0.52));
+        const scale = Math.min(1, maxW / sourceImg.width, maxH / sourceImg.height);
+        const dispW = Math.max(80, Math.round(sourceImg.width * scale));
+        const dispH = Math.max(80, Math.round(sourceImg.height * scale));
+        canvas.width = dispW;
+        canvas.height = dispH;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(sourceImg, 0, 0, dispW, dispH);
+
+        let ratio = null;
+        let box = { x: 0, y: 0, w: dispW, h: dispH };
+
+        const syncBox = () => {
+          rectEl.style.left = box.x + "px";
+          rectEl.style.top = box.y + "px";
+          rectEl.style.width = box.w + "px";
+          rectEl.style.height = box.h + "px";
+        };
+
+        const applyRatio = (rVal) => {
+          ratio = rVal === "free" ? null : Number(rVal);
+          document.querySelectorAll("#cropPresets [data-crop-ratio]").forEach(b => {
+            b.classList.toggle("active", b.getAttribute("data-crop-ratio") === String(rVal));
+          });
+          if (!ratio) {
+            box = { x: 0, y: 0, w: dispW, h: dispH };
+          } else {
+            let w = dispW;
+            let h = w / ratio;
+            if (h > dispH) {
+              h = dispH;
+              w = h * ratio;
+            }
+            box = {
+              x: Math.round((dispW - w) / 2),
+              y: Math.round((dispH - h) / 2),
+              w: Math.round(w),
+              h: Math.round(h)
+            };
+          }
+          syncBox();
+        };
+
+        document.querySelectorAll("#cropPresets [data-crop-ratio]").forEach(b => {
+          b.onclick = () => applyRatio(b.getAttribute("data-crop-ratio"));
+        });
+        applyRatio("free");
+
+        let dragMode = null;
+        let startPt = { x: 0, y: 0 };
+        let startBox = null;
+
+        const onPointerDown = (mode, e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dragMode = mode;
+          startPt = { x: e.clientX, y: e.clientY };
+          startBox = { ...box };
+        };
+        rectEl.onpointerdown = (e) => onPointerDown("move", e);
+        handleEl.onpointerdown = (e) => onPointerDown("resize", e);
+
+        const onPointerMove = (e) => {
+          if (!dragMode || !startBox) return;
+          const dx = e.clientX - startPt.x;
+          const dy = e.clientY - startPt.y;
+          if (dragMode === "move") {
+            box.x = Math.max(0, Math.min(dispW - startBox.w, Math.round(startBox.x + dx)));
+            box.y = Math.max(0, Math.min(dispH - startBox.h, Math.round(startBox.y + dy)));
+          } else {
+            let nw = Math.max(36, Math.min(dispW - startBox.x, Math.round(startBox.w + dx)));
+            let nh = ratio ? Math.round(nw / ratio) : Math.max(36, Math.min(dispH - startBox.y, Math.round(startBox.h + dy)));
+            if (ratio && startBox.y + nh > dispH) {
+              nh = dispH - startBox.y;
+              nw = Math.round(nh * ratio);
+            }
+            if (nw >= 36 && nh >= 36) {
+              box.w = nw;
+              box.h = nh;
+            }
+          }
+          syncBox();
+        };
+        const onPointerUp = () => { dragMode = null; };
+
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp);
+
+        const cleanup = () => {
+          window.removeEventListener("pointermove", onPointerMove);
+          window.removeEventListener("pointerup", onPointerUp);
+          overlay.hidden = true;
+        };
+
+        $("closeCropModal").onclick = cleanup;
+        $("cancelCropBtn").onclick = cleanup;
+        overlay.onclick = (e) => { if (e.target === overlay) cleanup(); };
+        $("applyCropBtn").onclick = () => {
+          const sx = Math.round((box.x / dispW) * sourceImg.width);
+          const sy = Math.round((box.y / dispH) * sourceImg.height);
+          const sw = Math.max(1, Math.round((box.w / dispW) * sourceImg.width));
+          const sh = Math.max(1, Math.round((box.h / dispH) * sourceImg.height));
+          const out = document.createElement("canvas");
+          out.width = sw;
+          out.height = sh;
+          out.getContext("2d").drawImage(sourceImg, sx, sy, sw, sh, 0, 0, sw, sh);
+          const isPng = imgObj.data.startsWith("data:image/png");
+          imgObj.data = out.toDataURL(isPng ? "image/png" : "image/jpeg", 0.92);
+          imgObj.aspectRatio = { width: sw, height: sh };
+          cleanup();
+          if (onApply) onApply();
+        };
+
+        overlay.hidden = false;
+      };
+      sourceImg.src = imgObj.data;
+    }
+
     function renderPreviews() {
       const box = $("previews");
       box.replaceChildren();
@@ -16167,7 +16558,8 @@
         aiBtn.onclick = () => requestAiAltForImage(img, inp, aiBtn);
 
         inpWrap.append(inp, aiBtn);
-        card.append(thumb, inpWrap, rm);
+        const toolsBar = attachImageCardControls(card, images, idx, renderPreviews);
+        card.append(thumb, toolsBar, inpWrap, rm);
         box.append(card);
       });
     }
@@ -16874,7 +17266,8 @@
         aiBtn.onclick = () => requestAiAltForImage(img, inp, aiBtn);
 
         inpWrap.append(inp, aiBtn);
-        card.append(thumb, inpWrap, rm);
+        const toolsBar = attachImageCardControls(card, post.images, idx, () => renderThreadItemPreviews(post, wrap));
+        card.append(thumb, toolsBar, inpWrap, rm);
         wrap.append(card);
       });
     }
@@ -17663,6 +18056,7 @@
         notif_types: (notifTypesEnabled && typeof notifTypesEnabled === "object") ? { ...notifTypesEnabled } : {},
         crosstalk_dedup: Boolean(crosstalkDedupEnabled),
         warn_missing_alt: Boolean(warnMissingAlt),
+        boost_cluster: Boolean(boostClusterEnabled),
         handle_mappings: Array.isArray(handleMappings) ? handleMappings.map(m => ({ bluesky: m.bluesky, mastodon: m.mastodon, name: m.name || "" })) : []
       };
       if (!isCompactMobileViewport()) {
@@ -17821,6 +18215,12 @@
             warnMissingAlt = p.warn_missing_alt;
             localStorage.setItem("mastosky_warn_missing_alt", warnMissingAlt ? "true" : "false");
             if ($("cfgWarnMissingAlt")) $("cfgWarnMissingAlt").checked = warnMissingAlt;
+          }
+          if (typeof p.boost_cluster === "boolean" && p.boost_cluster !== boostClusterEnabled) {
+            boostClusterEnabled = p.boost_cluster;
+            localStorage.setItem("mastosky_boost_cluster", boostClusterEnabled ? "true" : "false");
+            if ($("cfgBoostCluster")) $("cfgBoostCluster").checked = boostClusterEnabled;
+            render();
           }
           if (Array.isArray(p.handle_mappings)) {
             const mergedMap = new Map();
@@ -20692,6 +21092,16 @@
         warnMissingAlt = $("cfgWarnMissingAlt").checked;
         localStorage.setItem("mastosky_warn_missing_alt", warnMissingAlt ? "true" : "false");
         if (typeof syncPrefsToServer === "function") syncPrefsToServer();
+      };
+    }
+
+    if ($("cfgBoostCluster")) {
+      $("cfgBoostCluster").checked = boostClusterEnabled;
+      $("cfgBoostCluster").onchange = () => {
+        boostClusterEnabled = $("cfgBoostCluster").checked;
+        localStorage.setItem("mastosky_boost_cluster", boostClusterEnabled ? "true" : "false");
+        if (typeof syncPrefsToServer === "function") syncPrefsToServer();
+        render();
       };
     }
 
