@@ -1789,8 +1789,14 @@
 
     .tl-filter-pills {
       display: flex;
-      align-items: stretch;
+      align-items: center;
       gap: 4px;
+      flex-wrap: wrap
+    }
+
+    .tl-filter-bar .tl-filter-pills {
+      align-items: stretch;
+      flex-wrap: nowrap;
       width: 100%;
       flex: 1;
       min-width: 0
@@ -1927,9 +1933,12 @@
     .catchup-box {
       max-width: 640px;
       width: 100%;
-      max-height: 88vh;
+      max-height: 88dvh;
       display: flex;
-      flex-direction: column
+      flex-direction: column;
+      box-sizing: border-box;
+      min-width: 0;
+      overflow: hidden
     }
 
     .catchup-controls {
@@ -1959,9 +1968,13 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      flex: 1 1 auto;
+      min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
       padding-right: 4px;
-      max-height: 58vh
+      max-height: 58dvh
     }
 
     .ext-domain-row {
@@ -4135,6 +4148,7 @@
       place-items: center;
       z-index: 999;
       padding: 16px;
+      box-sizing: border-box;
       overflow-y: auto
     }
 
@@ -4154,6 +4168,7 @@
       max-width: 480px;
       width: 100%;
       padding: 22px;
+      box-sizing: border-box;
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
       animation: popIn .2s ease-out
     }
@@ -4917,15 +4932,26 @@
       position: absolute;
       top: 2px;
       right: 2px;
+      top: 0;
+      right: 0;
       display: flex;
       align-items: center;
       gap: 2px;
       padding: 0 4px;
+      justify-content: center;
+      min-width: 16px;
+      padding: 1px 5px;
       border-radius: 10px;
       background: var(--star);
       color: #0B1020;
       font-size: 10px;
       font-weight: 700
+      font-weight: 700;
+      line-height: 1.2
+    }
+
+    .side-nav-badge .star-badge {
+      display: none
     }
 
     .side-nav-btn.side-nav-compose {
@@ -5035,20 +5061,33 @@
         display: flex !important;
       }
 
-      /* No telemóvel não precisamos do modal de ligar telemóvel nem dos atalhos de teclado desktop */
       /* No telemóvel não precisamos do modal de ligar telemóvel, dos atalhos de teclado desktop nem do alternador Deck */
       #mobileConnectBtn,
-      #shortcutsBtn {
+      #shortcutsBtn,
+      #viewToggleBtn,
+      #topNavWrap .tabs {
+        display: none !important;
+      }
 
-        #shortcutsBtn,
-        #viewToggleBtn,
-        #topNavWrap .tabs {
-          display: none !important;
-        }
+      body {
+        padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+      }
 
-        body {
-          padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
-        }
+      .setup-overlay {
+        padding: calc(10px + env(safe-area-inset-top, 0px)) 10px calc(10px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .setup-box.catchup-box {
+        max-width: 100%;
+        width: 100%;
+        max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        padding: 14px;
+      }
+
+      .catchup-list {
+        max-height: none;
+        padding-right: 0;
+      }
 
         .header-nav-group {
           display: inline-flex !important;
@@ -5187,39 +5226,31 @@
           }
         }
 
-        /* Barra flutuante de navegação rápida em mobile (Dock Bar) */
-        /* Barra flutuante de navegação rápida em mobile (Dock Bar sempre visível) */
-        .side-nav-rail {
-          left: 50%;
-          bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-          bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-          top: auto;
-          width: calc(100vw - 20px);
-          max-width: 410px;
-          transform: translateX(-50%) translateY(30px);
-          opacity: 1 !important;
-          pointer-events: auto !important;
-          transform: translateX(-50%) translateY(0) !important;
-          z-index: 900;
-          box-sizing: border-box;
-          pointer-events: none;
-        }
+      /* Barra flutuante de navegação rápida em mobile (Dock Bar sempre visível) */
+      .side-nav-rail {
+        left: 50%;
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        top: auto;
+        width: calc(100vw - 20px);
+        max-width: 410px;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: translateX(-50%) translateY(0) !important;
+        z-index: 900;
+        box-sizing: border-box;
+      }
 
-        .side-nav-rail.visible {
-          opacity: 1;
-          pointer-events: auto;
-          transform: translateX(-50%) translateY(0);
+      .side-nav-btn .side-nav-badge {
+        top: -2px;
+        right: -2px;
+        min-width: 15px;
+        font-size: 9px;
+        padding: 1px 4px;
+        line-height: 1.15;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+      }
 
-          .side-nav-btn .side-nav-badge {
-            top: -3px;
-            right: -4px;
-            font-size: 9px;
-            padding: 1px 4px;
-            line-height: 1.15;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-          }
-
-          .side-nav-inner {
+      .side-nav-inner {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
@@ -14310,6 +14341,7 @@
           p.classList.add("clickable-post");
           p.onclick = (e) => {
             if (e.target.closest("a, button, input, textarea, select, video, .media, .author-link, .quote-box")) return;
+... [truncated for diff preview]
             const sel = window.getSelection ? window.getSelection().toString() : "";
             if (sel && sel.trim().length > 0) return;
             markSingleNotifRead(n, p);
