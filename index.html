@@ -14500,6 +14500,11 @@
           head.append(who, origWhen);
           p.append(head);
         } else {
+          const onNotifProfile = (e) => {
+            e.stopPropagation();
+            markSingleNotifRead(n, p);
+            openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
+          };
           const head = el("div", "head");
           const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
           g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;

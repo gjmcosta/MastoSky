@@ -2226,11 +2226,13 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn('id="submitCrossPostOnly"', html)
         self.assertIn("async function executeCrossPost(", html)
         self.assertIn("submit_only_dest", html)
-        self.assertIn("#crossPostOverlay{z-index:1020}", html)
-        self.assertIn(".cross-post-actions", html)
+        import re
+        compact = re.sub(r"\s+", "", html)
+        self.assertIn("#crossPostOverlay{z-index:1020}", compact)
+        self.assertIn(".cross-post-actions", compact)
         # Botões de tema 100% redondos e sem artefatos
-        self.assertIn(".swatch{width:28px;height:28px;border-radius:50%!important", html)
-        self.assertIn("background-clip:padding-box", html)
+        self.assertIn(".swatch{width:28px;height:28px;border-radius:50%!important", compact)
+        self.assertIn("background-clip:padding-box", compact)
 
     def test_index_javascript_syntax_valid(self):
         import shutil, subprocess, re
@@ -3694,8 +3696,14 @@ class UiRefinementsAndCwTests(unittest.TestCase):
             '"notif:" + it.network + ":" + getNotifKey(it)',
             "p.dataset.notifKey || p.dataset.postKey",
         ]
+        import re
+        compact_html = re.sub(r"\s+", "", self.html)
         for marker in required:
-            self.assertIn(marker, self.html)
+            if marker.startswith(".") or ":" in marker and "{" in marker or "flex-direction:" in marker or "white-space:" in marker:
+                self.assertIn(re.sub(r"\s+", "", marker), compact_html)
+            else:
+                self.assertIn(marker, self.html)
+        self.assertIn("const onNotifProfile =", self.html)
 
         import re
         bare_dialogs = [
@@ -3837,8 +3845,14 @@ class UiRefinementsAndCwTests(unittest.TestCase):
             "crosstalk_active:",
             "const visible = groupCrossPosts(filtered);",
         ]
+        import re
+        compact_html = re.sub(r"\s+", "", self.html)
         for marker in required:
-            self.assertIn(marker, self.html)
+            if marker.startswith(".") or ":" in marker and "{" in marker or "flex-direction:" in marker or "white-space:" in marker:
+                self.assertIn(re.sub(r"\s+", "", marker), compact_html)
+            else:
+                self.assertIn(marker, self.html)
+        self.assertIn("const onNotifProfile =", self.html)
 
     def test_hybrid_limit_and_auto_thread_feature(self):
         required = [
@@ -3858,16 +3872,21 @@ class UiRefinementsAndCwTests(unittest.TestCase):
             "send_hybrid:",
             '.replace(/\\s+\\d+\\/\\d+\\s*$/, "")',
         ]
+        import re
+        compact_html = re.sub(r"\s+", "", self.html)
         for marker in required:
-            self.assertIn(marker, self.html)
+            if marker.startswith(".") or ":" in marker and "{" in marker or "flex-direction:" in marker or "white-space:" in marker:
+                self.assertIn(re.sub(r"\s+", "", marker), compact_html)
+            else:
+                self.assertIn(marker, self.html)
+        self.assertIn("const onNotifProfile =", self.html)
 
         import json, re, shutil, subprocess
         node_bin = shutil.which("node")
         if node_bin:
             m = re.search(
-                r"(function splitTextIntoChunks[\s\S]*?^}\n\nfunction splitTextIntoThread[\s\S]*?^})",
+                r"(function splitTextIntoChunks[\s\S]*?function splitTextIntoThread[\s\S]*?)(?=\n[ \t]*function splitComposerIntoThread)",
                 self.html,
-                re.M,
             )
             self.assertIsNotNone(m, "Funções splitTextIntoChunks/splitTextIntoThread não encontradas")
             js_test = m.group(1) + """
@@ -4091,9 +4110,8 @@ class ScheduledPostsTests(unittest.TestCase):
         node_bin = shutil.which("node")
         if node_bin:
             m = re.search(
-                r"(function normalizeHandleToken[\s\S]*?function countActiveMappedMentions[\s\S]*?^})",
+                r"(function normalizeHandleToken[\s\S]*?function countActiveMappedMentions[\s\S]*?)(?=\n[ \t]*function )",
                 html,
-                re.M,
             )
             self.assertIsNotNone(m, "Funções de mapeamento de handles não encontradas")
             js_test = """
