@@ -2705,7 +2705,42 @@ class Masto:
         }
         if name_html:
             out["name_html"] = name_html
+        if isinstance(x.get("poll"), dict):
+            out["poll"] = self._normalize_poll(x["poll"])
         return out
+
+    @staticmethod
+    def _normalize_poll(poll_obj):
+        if not isinstance(poll_obj, dict) or not poll_obj.get("id"):
+            return None
+        opts = []
+        for opt in (poll_obj.get("options") or []):
+            if isinstance(opt, dict):
+                opts.append({
+                    "title": str(opt.get("title") or ""),
+                    "votes_count": int(opt.get("votes_count") or 0) if opt.get("votes_count") is not None else 0,
+                })
+        own_votes = [int(v) for v in (poll_obj.get("own_votes") or []) if isinstance(v, int)]
+        return {
+            "id": str(poll_obj["id"]),
+            "expires_at": poll_obj.get("expires_at"),
+            "expired": bool(poll_obj.get("expired")),
+            "multiple": bool(poll_obj.get("multiple")),
+            "votes_count": int(poll_obj.get("votes_count") or 0),
+            "voters_count": poll_obj.get("voters_count"),
+            "voted": bool(poll_obj.get("voted")),
+            "own_votes": own_votes,
+            "options": opts,
+        }
+
+    def vote_poll(self, poll_id, choices):
+        if not poll_id or not re.fullmatch(r"[A-Za-z0-9_-]+", str(poll_id)):
+            raise ValueError("ID de sondagem inválido.")
+        if not isinstance(choices, list) or not choices or not all(isinstance(c, int) and c >= 0 for c in choices):
+            raise ValueError("Opções de voto inválidas.")
+        safe_id = urllib.parse.quote(str(poll_id), safe="")
+        res = self.call("POST", f"/api/v1/polls/{safe_id}/votes", data={"choices": choices})
+        return self._normalize_poll(res)
 
     def _fetch_statuses(self, path, cursor=None, params=None):
         p = {"limit": 40}
@@ -2770,6 +2805,39 @@ class Masto:
         if name_html:
             out["name_html"] = name_html
         return out
+
+    @staticmethod
+    def _normalize_poll(poll_obj):
+        if not isinstance(poll_obj, dict) or not poll_obj.get("id"):
+            return None
+        opts = []
+        for opt in (poll_obj.get("options") or []):
+            if isinstance(opt, dict):
+                opts.append({
+                    "title": str(opt.get("title") or ""),
+                    "votes_count": int(opt.get("votes_count") or 0) if opt.get("votes_count") is not None else 0,
+                })
+        own_votes = [int(v) for v in (poll_obj.get("own_votes") or []) if isinstance(v, int)]
+        return {
+            "id": str(poll_obj["id"]),
+            "expires_at": poll_obj.get("expires_at"),
+            "expired": bool(poll_obj.get("expired")),
+            "multiple": bool(poll_obj.get("multiple")),
+            "votes_count": int(poll_obj.get("votes_count") or 0),
+            "voters_count": poll_obj.get("voters_count"),
+            "voted": bool(poll_obj.get("voted")),
+            "own_votes": own_votes,
+            "options": opts,
+        }
+
+    def vote_poll(self, poll_id, choices):
+        if not poll_id or not re.fullmatch(r"[A-Za-z0-9_-]+", str(poll_id)):
+            raise ValueError("ID de sondagem inválido.")
+        if not isinstance(choices, list) or not choices or not all(isinstance(c, int) and c >= 0 for c in choices):
+            raise ValueError("Opções de voto inválidas.")
+        safe_id = urllib.parse.quote(str(poll_id), safe="")
+        res = self.call("POST", f"/api/v1/polls/{safe_id}/votes", data={"choices": choices})
+        return self._normalize_poll(res)
 
     def profile(self):
         acc = self.call("GET", "/api/v1/accounts/verify_credentials")
@@ -4721,6 +4789,19 @@ class H(BaseHTTPRequestHandler):
                 if isinstance(res, dict) and "uri" in res:
                     out["uri"] = res["uri"]
                 return self.send(200, out)
+            except Exception as e:
+                return self.send(200, {"ok": False, "error": str(e)})
+        if self.path == "/api/poll/vote":
+            net = (d.get("network") or "mastodon").strip().lower()
+            poll_id = d.get("poll_id")
+            choices = d.get("choices")
+            if net != "mastodon" or net not in CLIENTS:
+                return self.send(400, {"ok": False, "error": "Sondagens apenas disponíveis no Mastodon configurado."})
+            try:
+                updated = CLIENTS[net].vote_poll(poll_id, choices)
+                return self.send(200, {"ok": True, "poll": updated})
+            except ValueError as ve:
+                return self.send(400, {"ok": False, "error": str(ve)})
             except Exception as e:
                 return self.send(200, {"ok": False, "error": str(e)})
         if self.path == "/api/follow":

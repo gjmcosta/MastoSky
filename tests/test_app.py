@@ -2335,6 +2335,46 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn('id="deckListSelect"', html)
         self.assertIn("function initListsFeature()", html)
 
+    def test_mastodon_poll_rendering_and_voting(self):
+        masto = app.Masto({"instance": "https://mastodon.social", "token": "tok"})
+        st = {
+            "id": "99",
+            "created_at": "2026-11-17T20:00:00Z",
+            "content": "<p>Qual preferes?</p>",
+            "account": {"id": "1", "username": "u", "acct": "u@mastodon.social", "display_name": "U"},
+            "poll": {
+                "id": "p1",
+                "expires_at": "2026-11-18T20:00:00Z",
+                "expired": False,
+                "multiple": False,
+                "votes_count": 10,
+                "voted": False,
+                "own_votes": [],
+                "options": [{"title": "A", "votes_count": 4}, {"title": "B", "votes_count": 6}],
+            },
+        }
+        it = masto.item(st)
+        self.assertEqual(it["poll"]["id"], "p1")
+        self.assertEqual(len(it["poll"]["options"]), 2)
+
+        def fake_vote(method, path, data=None, **kw):
+            self.assertEqual(method, "POST")
+            self.assertEqual(path, "/api/v1/polls/p1/votes")
+            self.assertEqual(data, {"choices": [1]})
+            return {**st["poll"], "voted": True, "own_votes": [1], "votes_count": 11}
+
+        masto.call = fake_vote
+        voted = masto.vote_poll("p1", [1])
+        self.assertTrue(voted["voted"])
+        self.assertEqual(voted["own_votes"], [1])
+        with self.assertRaises(ValueError):
+            masto.vote_poll("../bad", [0])
+
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn("function renderPostPoll(it)", html)
+        self.assertIn('"/api/poll/vote"', html)
+
     def test_keyboard_shortcuts_feature(self):
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()

@@ -7097,6 +7097,96 @@
       background: var(--surface);
       color: var(--ink);
     }
+
+    .post-poll {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .post-poll-opt {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      overflow: hidden;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .post-poll-opt.is-result {
+      cursor: default;
+    }
+
+    .post-poll-opt.is-voted {
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .post-poll-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      pointer-events: none;
+      transition: width .25s ease;
+    }
+
+    .post-poll-opt-label {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .post-poll-opt-pct {
+      position: relative;
+      z-index: 1;
+      font-size: 12px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .post-poll-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 2px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .post-poll-vote-btn {
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      background: var(--accent-solid, var(--accent));
+      color: #fff;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .post-poll-vote-btn:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
@@ -9820,7 +9910,12 @@
           alt_view: "Ver descrição da imagem (ALT)",
           crosstalk_switch_to: "Publicado nas duas redes · Ver versão {net}",
           crosstalk_active: "Publicado nas duas redes · A ver versão {net}",
-          read_clean: "Ler"
+          read_clean: "Ler",
+          poll_vote: "Votar",
+          poll_votes_one: "{n} voto",
+          poll_votes_many: "{n} votos",
+          poll_closed: "Encerrada",
+          poll_open: "Aberta"
         },
         reader: {
           title: "Leitura Limpa",
@@ -10446,7 +10541,12 @@
           alt_view: "View image description (ALT)",
           crosstalk_switch_to: "Published on both networks · View {net} version",
           crosstalk_active: "Published on both networks · Viewing {net} version",
-          read_clean: "Read"
+          read_clean: "Read",
+          poll_vote: "Vote",
+          poll_votes_one: "{n} vote",
+          poll_votes_many: "{n} votes",
+          poll_closed: "Closed",
+          poll_open: "Open"
         },
         reader: {
           title: "Reader View",
@@ -12913,6 +13013,86 @@
       return out;
     }
 
+    function renderPostPoll(it) {
+      const box = el("div", "post-poll");
+      const draw = () => {
+        box.replaceChildren();
+        const poll = it.poll;
+        if (!poll || !Array.isArray(poll.options)) return;
+        const showResults = Boolean(poll.voted || poll.expired);
+        const totalVotes = Number(poll.votes_count || 0);
+        const ownSet = new Set(Array.isArray(poll.own_votes) ? poll.own_votes : []);
+        const selected = new Set();
+
+        const voteBtn = !showResults ? el("button", "post-poll-vote-btn", t("post.poll_vote")) : null;
+        if (voteBtn) {
+          voteBtn.type = "button";
+          voteBtn.disabled = true;
+        }
+
+        poll.options.forEach((opt, idx) => {
+          const row = el(showResults ? "div" : "label", "post-poll-opt" + (showResults ? " is-result" : "") + (ownSet.has(idx) ? " is-voted" : ""));
+          row.onclick = (e) => e.stopPropagation();
+
+          if (showResults) {
+            const pct = totalVotes > 0 ? Math.round((Number(opt.votes_count || 0) * 100) / totalVotes) : 0;
+            const bar = el("div", "post-poll-bar");
+            bar.style.width = pct + "%";
+            const lbl = el("span", "post-poll-opt-label", (ownSet.has(idx) ? "✓ " : "") + opt.title);
+            const pctEl = el("span", "post-poll-opt-pct", pct + "%");
+            row.append(bar, lbl, pctEl);
+          } else {
+            const inp = document.createElement("input");
+            inp.type = poll.multiple ? "checkbox" : "radio";
+            inp.name = "poll_" + poll.id + "_" + Math.random().toString(36).slice(2, 7);
+            inp.value = String(idx);
+            inp.onchange = () => {
+              if (!poll.multiple) selected.clear();
+              if (inp.checked) selected.add(idx);
+              else selected.delete(idx);
+              if (voteBtn) voteBtn.disabled = selected.size === 0;
+            };
+            const lbl = el("span", "post-poll-opt-label");
+            lbl.append(inp, el("span", null, opt.title));
+            row.append(lbl);
+          }
+          box.append(row);
+        });
+
+        const footer = el("div", "post-poll-footer");
+        const votesLabel = totalVotes === 1 ? t("post.poll_votes_one", { n: 1 }) : t("post.poll_votes_many", { n: totalVotes });
+        const stateLabel = poll.expired ? t("post.poll_closed") : t("post.poll_open");
+        footer.append(el("span", null, `${votesLabel} · ${stateLabel}`));
+
+        if (voteBtn) {
+          voteBtn.onclick = async (e) => {
+            e.stopPropagation();
+            if (!selected.size) return;
+            voteBtn.disabled = true;
+            try {
+              const res = await api("/api/poll/vote", {
+                network: it.network,
+                poll_id: poll.id,
+                choices: Array.from(selected).sort((a, b) => a - b)
+              });
+              if (res && res.ok && res.poll) {
+                it.poll = res.poll;
+                draw();
+              } else {
+                voteBtn.disabled = false;
+              }
+            } catch (_) {
+              voteBtn.disabled = false;
+            }
+          };
+          footer.append(voteBtn);
+        }
+        box.append(footer);
+      };
+      draw();
+      return box;
+    }
+
     function postCard(it, o = {}) {
       const postKey = getPostKey(it);
       const isReplyTarget = Boolean(reply && getPostKey(reply) === postKey);
@@ -13022,6 +13202,7 @@
 
       const m = renderMedia(it.media);
       const qEl = it.quote ? renderQuote(it.quote) : null;
+      const pollEl = it.poll ? renderPostPoll(it) : null;
 
       if (cwText) {
         const cwBanner = el("div", "cw-banner");
@@ -13034,6 +13215,7 @@
         cwContent.append(body);
         if (m) cwContent.append(m);
         if (qEl) cwContent.append(qEl);
+        if (pollEl) cwContent.append(pollEl);
         cwBtn.onclick = (e) => {
           e.stopPropagation();
           const willShow = cwContent.hidden;
@@ -13047,6 +13229,7 @@
         contentTarget.append(body);
         if (m) contentTarget.append(m);
         if (qEl) contentTarget.append(qEl);
+        if (pollEl) contentTarget.append(pollEl);
       }
       const acts = el("div", "acts");
       const bR = el("button", "act-btn act-reply" + (isReplyTarget ? " active" : ""));
