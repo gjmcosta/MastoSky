@@ -7068,6 +7068,35 @@
       width: 16px;
       height: 16px
     }
+
+    .lists-source-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .lists-source-select {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .lists-source-select option {
+      background: var(--surface);
+      color: var(--ink);
+    }
   </style>
 </head>
 
@@ -7984,6 +8013,9 @@
         </div>
         <div class="deck-col-body" id="colExploreBody">
           <div id="pExplore" hidden>
+            <div class="lists-source-bar" id="exploreSourceBar">
+              <select id="exploreSourceSelect" class="lists-source-select" aria-label="Fonte de Explorar"></select>
+            </div>
             <button type="button" class="new-posts-pill" id="exploreNewPostsPill" onclick="scrollColToTop('explore')"
               hidden></button>
             <div id="eerrors"></div>
@@ -8348,6 +8380,51 @@
         </div>
       </div>
 
+      <div class="deck-col" id="colLists" data-col="lists">
+        <div class="deck-col-head">
+          <div class="deck-col-head-left">
+            <span class="deck-col-grip" title="Arrastar para reordenar" data-i18n-title="deck.drag_tip"><svg
+                class="ico">
+                <use href="#i-drag-grip" />
+              </svg></span>
+            <span class="deck-col-title" data-i18n="header.col_lists">Feeds & Listas</span>
+          </div>
+          <div class="deck-col-actions">
+            <button type="button" class="deck-act-btn deck-move-left" onclick="moveDeckColumn('lists', -1)"
+              title="Mover para a esquerda" data-i18n-title="deck.move_left"><svg class="ico">
+                <use href="#i-arrow-left" />
+              </svg></button>
+            <button type="button" class="deck-act-btn deck-move-right" onclick="moveDeckColumn('lists', 1)"
+              title="Mover para a direita" data-i18n-title="deck.move_right"><svg class="ico">
+                <use href="#i-arrow-right" />
+              </svg></button>
+            <button type="button" class="deck-act-btn" onclick="loadSelectedListFeed(true)" title="Atualizar"
+              data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px">
+                <use href="#i-refresh" />
+              </svg></button>
+            <button type="button" class="deck-act-btn"
+              onclick="$('colListsBody').scrollTo({top:0,behavior:'smooth'})" title="Topo"
+              data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px">
+                <use href="#i-arrow-up" />
+              </svg></button>
+            <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('lists')"
+              title="Fechar coluna" data-i18n-title="deck.close_col"><svg class="ico">
+                <use href="#i-close" />
+              </svg></button>
+          </div>
+        </div>
+        <div class="deck-col-body" id="colListsBody">
+          <div id="pLists" hidden>
+            <div class="lists-source-bar">
+              <select id="deckListSelect" class="lists-source-select" aria-label="Selecionar Feed ou Lista"></select>
+            </div>
+            <div id="listsErrors"></div>
+            <div id="listsFeed"></div>
+          </div>
+          <div id="threadLists" hidden></div>
+        </div>
+      </div>
+
       <div class="deck-col" id="colProfile" data-col="profile">
         <div class="deck-col-head">
           <div class="deck-col-head-left">
@@ -8574,6 +8651,8 @@
                       data-i18n="setup.deck_col_notifs">Notificações</span></label>
                   <label class="setup-check-item"><input type="checkbox" id="chkColMessages"> <span
                       data-i18n="setup.deck_col_messages">Mensagens</span></label>
+                  <label class="setup-check-item"><input type="checkbox" id="chkColLists"> <span
+                      data-i18n="setup.deck_col_lists">Feeds & Listas</span></label>
                   <label class="setup-check-item"><input type="checkbox" id="chkColProfile"> <span
                       data-i18n="setup.deck_col_profile">Perfil</span></label>
                 </div>
@@ -9427,6 +9506,7 @@
           col_search: "Pesquisa",
           col_saved: "Guardados",
           col_messages: "Mensagens",
+          col_lists: "Feeds & Listas",
           shortcuts_title: "Atalhos de teclado (?)",
           mobile_connect_title: "Ligar Telemóvel / iPad"
         },
@@ -9438,6 +9518,13 @@
           notifs: "Notificações",
           messages: "Mensagens",
           profile: "Perfil"
+        },
+        lists: {
+          explore_trending: "✨ Em Alta (Explorar)",
+          select_ph: "Escolher Feed ou Lista...",
+          empty_none: "Nenhum Feed Bluesky ou Lista Mastodon encontrado.",
+          loading: "A carregar feed...",
+          empty_feed: "Sem publicações neste feed/lista."
         },
         nav: {
           new_post: "Novo post",
@@ -9860,6 +9947,7 @@
           deck_col_saved: "Guardados",
           deck_col_notifs: "Notificações",
           deck_col_messages: "Mensagens (Direct Messages)",
+          deck_col_lists: "Feeds & Listas",
           deck_col_profile: "Perfil",
           crosstalk_label: "Agrupar publicações duplicadas entre redes (Crosstalk)",
           crosstalk_desc: "Funde num único cartão os posts publicados em simultâneo no Mastodon e Bluesky, dando prioridade ao Mastodon.",
@@ -10044,6 +10132,7 @@
           col_search: "Search",
           col_saved: "Saved",
           col_messages: "Messages",
+          col_lists: "Feeds & Lists",
           shortcuts_title: "Keyboard shortcuts (?)",
           mobile_connect_title: "Connect Mobile / iPad"
         },
@@ -10055,6 +10144,13 @@
           notifs: "Notifications",
           messages: "Messages",
           profile: "Profile"
+        },
+        lists: {
+          explore_trending: "✨ Trending (Explore)",
+          select_ph: "Choose Feed or List...",
+          empty_none: "No Bluesky Feeds or Mastodon Lists found.",
+          loading: "Loading feed...",
+          empty_feed: "No posts in this feed/list yet."
         },
         nav: {
           new_post: "New post",
@@ -10477,6 +10573,7 @@
           deck_col_saved: "Saved",
           deck_col_notifs: "Notifications",
           deck_col_messages: "Messages (Direct Messages)",
+          deck_col_lists: "Feeds & Lists",
           deck_col_profile: "Profile",
           crosstalk_label: "Group duplicate cross-network posts (Crosstalk)",
           crosstalk_desc: "Merges simultaneous Mastodon and Bluesky posts into a single card, prioritizing Mastodon by default.",
@@ -10693,7 +10790,7 @@
       return isCompactMobileViewport() ? "mastosky_view_mode_mobile" : "mastosky_view_mode";
     }
     let viewMode = localStorage.getItem(getViewModeStorageKey()) || "single";
-    const ALL_DECK_COLS = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
+    const ALL_DECK_COLS = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "lists", "profile"];
     let deckColumns = (() => {
       try {
         const raw = JSON.parse(localStorage.getItem("mastosky_deck_columns") || '["compose","timeline","explore","notifs"]');
@@ -10879,13 +10976,14 @@
       saved: { titleKey: "header.col_saved", defTitle: "Guardados", icon: "#i-bookmark" },
       notifs: { titleKey: "header.col_notifs", defTitle: "Notificações", icon: "#i-vis-public" },
       messages: { titleKey: "header.col_messages", defTitle: "Mensagens", icon: "#i-message" },
+      lists: { titleKey: "header.col_lists", defTitle: "Feeds & Listas", icon: "#i-poll" },
       profile: { titleKey: "tabs.profile", defTitle: "Perfil", icon: "#i-net-both" },
       thread: { titleKey: "header.col_thread", defTitle: "Conversa", icon: "#i-thread" }
     };
 
     function applyDeckColumnVisibility() {
       if (viewMode !== "deck") return;
-      const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
+      const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "lists", "profile"];
       allCols.forEach(c => {
         const el = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
         if (!el) return;
@@ -10966,7 +11064,7 @@
     }
 
     function syncDeckColsCheckboxes() {
-      const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
+      const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "lists", "profile"];
       colIds.forEach(c => {
         const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
         if (chk) chk.checked = deckColumns.includes(c);
@@ -10978,7 +11076,7 @@
       if (!list) return;
       list.replaceChildren();
 
-      const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
+      const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "lists", "profile"];
       const available = allCols.filter(c => !deckColumns.includes(c));
 
       if (!available.length) {
@@ -11120,8 +11218,13 @@
         if ($("pSaved")) $("pSaved").hidden = false;
         $("pNotifs").hidden = false;
         if ($("pMessages")) $("pMessages").hidden = false;
+        if ($("pLists")) $("pLists").hidden = false;
         if ($("pProfile")) $("pProfile").hidden = false;
         if (!exploreItems.length) loadExplore();
+        if (deckColumns.includes("lists") && !listsItems.length) {
+          if (!availableLists.length) loadAvailableLists().then(() => loadSelectedListFeed());
+          else loadSelectedListFeed();
+        }
         renderSavedFeed();
         if (!notifs) loadNotifs();
         if (!conversations.length) loadConversations(true);
@@ -11381,6 +11484,7 @@
       if (typeof render === "function" && Array.isArray(items) && items.length) render();
       if (typeof renderNotifs === "function" && Array.isArray(notifs) && notifs.length) renderNotifs();
       if (typeof renderExplore === "function" && Array.isArray(exploreItems) && exploreItems.length) renderExplore();
+      if (typeof renderSelectedListFeed === "function" && Array.isArray(listsItems) && listsItems.length) renderSelectedListFeed();
       if (typeof renderSavedFeed === "function") renderSavedFeed();
       if (typeof renderSearchResults === "function" && typeof searchResultsData !== "undefined" && searchResultsData) {
         renderSearchResults(searchResultsData);
@@ -11761,6 +11865,7 @@
           saved: $("colSavedBody"),
           notifs: $("colNotifsBody"),
           messages: $("colMessagesBody"),
+          lists: $("colListsBody"),
           profile: $("colProfileBody"),
           thread: $("colThreadBody")
         };
@@ -13668,7 +13773,178 @@
       }
     }
 
+    let availableLists = [];
+    let activeListKey = localStorage.getItem("mastosky_active_list") || "";
+    let listsItems = [];
+    let listsCursors = {};
+    let exploreSourceKey = "";
+
+    function parseListKey(key) {
+      const idx = String(key || "").indexOf("::");
+      if (idx <= 0) return null;
+      return { network: key.slice(0, idx), id: key.slice(idx + 2) };
+    }
+
+    function populateListSelects() {
+      const expSel = $("exploreSourceSelect");
+      const deckSel = $("deckListSelect");
+      const buildOptions = (sel, includeTrending) => {
+        if (!sel) return;
+        sel.replaceChildren();
+        if (includeTrending) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = t("lists.explore_trending");
+          sel.append(opt);
+        } else if (!availableLists.length) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = t("lists.select_ph");
+          sel.append(opt);
+        }
+        const bskyFeeds = availableLists.filter(x => x.network === "bluesky");
+        const mastoLists = availableLists.filter(x => x.network === "mastodon");
+        if (bskyFeeds.length) {
+          const grp = document.createElement("optgroup");
+          grp.label = "Bluesky Feeds";
+          bskyFeeds.forEach(item => {
+            const o = document.createElement("option");
+            o.value = item.network + "::" + item.id;
+            o.textContent = (item.pinned ? "📌 " : "") + item.name;
+            grp.append(o);
+          });
+          sel.append(grp);
+        }
+        if (mastoLists.length) {
+          const grp = document.createElement("optgroup");
+          grp.label = "Mastodon Listas";
+          mastoLists.forEach(item => {
+            const o = document.createElement("option");
+            o.value = item.network + "::" + item.id;
+            o.textContent = item.name;
+            grp.append(o);
+          });
+          sel.append(grp);
+        }
+      };
+      buildOptions(expSel, true);
+      if (expSel) expSel.value = exploreSourceKey;
+      buildOptions(deckSel, false);
+      if (deckSel) {
+        if (!activeListKey && availableLists.length) {
+          activeListKey = availableLists[0].network + "::" + availableLists[0].id;
+          localStorage.setItem("mastosky_active_list", activeListKey);
+        }
+        if (activeListKey) deckSel.value = activeListKey;
+      }
+    }
+
+    async function loadAvailableLists() {
+      try {
+        const d = await api("/api/lists");
+        availableLists = (d && Array.isArray(d.items)) ? d.items : [];
+        populateListSelects();
+        const errList = Object.entries((d && d.errors) || {}).map(([n, e]) => el("div", "banner", (LABEL[n] || n) + ": " + e));
+        if ($("listsErrors")) $("listsErrors").replaceChildren(...errList);
+      } catch (e) {
+        console.error("loadAvailableLists() error:", e);
+      }
+    }
+
+    function renderSelectedListFeed() {
+      const feed = $("listsFeed");
+      if (!feed) return;
+      feed.replaceChildren();
+      if (!availableLists.length && !listsItems.length) {
+        feed.append(el("div", "empty", t("lists.empty_none")));
+        return;
+      }
+      const filtered = muteMode === "hide" ? listsItems.filter(it => !getMutedMatch(it)) : listsItems;
+      const visible = groupCrossPosts(filtered);
+      if (!visible.length) {
+        feed.append(el("div", "empty", t("lists.empty_feed")));
+        return;
+      }
+      for (const it of visible) feed.append(postCard(it));
+      renderLoadMore(feed, listsCursors, loadMoreSelectedListFeed);
+    }
+
+    async function loadSelectedListFeed(reset = true) {
+      const parsed = parseListKey(activeListKey);
+      if (!parsed) {
+        listsItems = [];
+        listsCursors = {};
+        renderSelectedListFeed();
+        return;
+      }
+      if (reset && $("listsFeed")) {
+        $("listsFeed").replaceChildren(el("div", "empty", t("lists.loading")));
+      }
+      try {
+        const q = new URLSearchParams({ network: parsed.network, id: parsed.id });
+        const d = await api("/api/list_feed?" + q.toString());
+        if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
+        if ($("listsErrors")) $("listsErrors").replaceChildren();
+        listsItems = dedupSort([], d.items || [], false);
+        listsCursors = d.cursor ? { [parsed.network]: d.cursor } : {};
+        renderSelectedListFeed();
+      } catch (e) {
+        if ($("listsErrors")) $("listsErrors").replaceChildren(el("div", "banner", e.message || t("feed.error_server")));
+        if ($("listsFeed")) $("listsFeed").replaceChildren();
+      }
+    }
+
+    async function loadMoreSelectedListFeed() {
+      const parsed = parseListKey(activeListKey);
+      const cursor = parsed ? listsCursors[parsed.network] : null;
+      if (!parsed || !cursor) return;
+      const q = new URLSearchParams({ network: parsed.network, id: parsed.id, cursor });
+      const d = await api("/api/list_feed?" + q.toString());
+      listsCursors = d.cursor ? { [parsed.network]: d.cursor } : {};
+      listsItems = dedupSort(listsItems, d.items || [], false);
+      renderSelectedListFeed();
+    }
+
+    function initListsFeature() {
+      const expSel = $("exploreSourceSelect");
+      if (expSel) {
+        expSel.onchange = () => {
+          exploreSourceKey = expSel.value || "";
+          exploreItems = [];
+          exploreCursors = {};
+          loadExplore();
+        };
+      }
+      const deckSel = $("deckListSelect");
+      if (deckSel) {
+        deckSel.onchange = () => {
+          activeListKey = deckSel.value || "";
+          localStorage.setItem("mastosky_active_list", activeListKey);
+          listsItems = [];
+          listsCursors = {};
+          loadSelectedListFeed(true);
+        };
+      }
+      populateListSelects();
+      loadAvailableLists().then(() => {
+        if ((viewMode === "deck" && deckColumns.includes("lists")) || tab === "lists") {
+          loadSelectedListFeed(true);
+        }
+      });
+    }
+
     async function loadMoreExplore() {
+      const parsed = parseListKey(exploreSourceKey);
+      if (parsed) {
+        const cursor = exploreCursors[parsed.network];
+        if (!cursor) return;
+        const q = new URLSearchParams({ network: parsed.network, id: parsed.id, cursor });
+        const d = await api("/api/list_feed?" + q.toString());
+        exploreCursors = d.cursor ? { [parsed.network]: d.cursor } : {};
+        exploreItems = dedupSort(exploreItems, d.items || [], false);
+        renderExplore();
+        return;
+      }
       const q = new URLSearchParams();
       if (exploreCursors.bluesky) q.set("cursor_bluesky", exploreCursors.bluesky);
       if (exploreCursors.mastodon) q.set("cursor_mastodon", exploreCursors.mastodon);
@@ -13680,10 +13956,14 @@
 
     async function loadExplore() {
       try {
-        const d = await api("/api/explore");
+        const parsed = parseListKey(exploreSourceKey);
+        const url = parsed
+          ? "/api/list_feed?" + new URLSearchParams({ network: parsed.network, id: parsed.id }).toString()
+          : "/api/explore";
+        const d = await api(url);
         if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
         const newItems = d.items || [];
-        exploreCursors = d.cursors || {};
+        exploreCursors = parsed ? (d.cursor ? { [parsed.network]: d.cursor } : {}) : (d.cursors || {});
         const errList = Object.entries(d.errors || {}).map(([n, e]) => el("div", "banner", (LABEL[n] || n) + ": " + e));
         $("eerrors").replaceChildren(...errList);
 
@@ -15592,6 +15872,7 @@
           saved: "colSaved",
           notifs: "colNotifs",
           messages: "colMessages",
+          lists: "colLists",
           profile: "colProfile"
         };
         const colId = colMap[newTab];
@@ -15602,6 +15883,10 @@
         activeDeckCol = newTab;
         updateActiveDeckColUI();
         if (newTab === "saved") renderSavedFeed();
+        if (newTab === "lists") {
+          if (!availableLists.length) loadAvailableLists().then(() => loadSelectedListFeed());
+          else if (!listsItems.length) loadSelectedListFeed();
+        }
         if (newTab === "messages") {
           if (!conversations.length) loadConversations();
           else renderConversationList();
@@ -15613,8 +15898,9 @@
         if ($("pSaved")) $("pSaved").hidden = newTab !== "saved";
         $("pNotifs").hidden = newTab !== "notifs";
         if ($("pMessages")) $("pMessages").hidden = newTab !== "messages";
+        if ($("pLists")) $("pLists").hidden = newTab !== "lists";
         $("pProfile").hidden = newTab !== "profile";
-        ["Timeline", "Explore", "Search", "Saved", "Notifs", "Profile"].forEach(c => {
+        ["Timeline", "Explore", "Search", "Saved", "Notifs", "Lists", "Profile"].forEach(c => {
           const th = $("thread" + c);
           if (th) { th.hidden = true; th.replaceChildren(); }
           if (typeof threadHistory !== "undefined") threadHistory[c.toLowerCase()] = [];
@@ -20973,7 +21259,7 @@
       if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
       if ($("cfgViewModeSelect")) $("cfgViewModeSelect").value = viewMode;
       if ($("deckColsConfig")) $("deckColsConfig").hidden = viewMode !== "deck";
-      const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
+      const colIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "lists", "profile"];
       colIds.forEach(c => {
         const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
         if (chk) chk.checked = deckColumns.includes(c);
@@ -21206,7 +21492,7 @@
       $("cfgViewModeSelect").value = viewMode;
       $("cfgViewModeSelect").onchange = (e) => applyViewMode(e.target.value);
     }
-    const deckColIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
+    const deckColIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "lists", "profile"];
     deckColIds.forEach(c => {
       const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
       if (chk) {
@@ -21912,6 +22198,7 @@
           if (deckColId === "explore") loadExplore();
           else if (deckColId === "notifs") loadNotifs();
           else if (deckColId === "messages") loadConversations(true);
+          else if (deckColId === "lists") loadSelectedListFeed(true);
           else if (deckColId === "profile") loadProfile(true);
           else {
             load();
@@ -21950,8 +22237,9 @@
     updateLanBadges();
     initServerSync();
     initTouchPullToRefresh();
+    initListsFeature();
 
-    const validTabs = ["timeline", "explore", "search", "saved", "notifs", "messages", "profile"];
+    const validTabs = ["timeline", "explore", "search", "saved", "notifs", "messages", "lists", "profile"];
     const hashTab = (location.hash || "").replace("#", "");
     const initTab = validTabs.includes(hashTab) ? hashTab : "timeline";
     setTab(initTab);

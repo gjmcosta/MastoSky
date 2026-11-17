@@ -2277,6 +2277,64 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("const notifBodyTarget = createMutedContentWrapper(p, notifMutedMatch);", html)
         self.assertIn("if (typeof renderNotifs === \"function\" && Array.isArray(notifs) && notifs.length) renderNotifs();", html)
 
+    def test_custom_feeds_and_lists_backend_and_frontend(self):
+        bsky = app.Bsky({"handle": "user.bsky.social", "app_password": "app-pw"})
+        bsky.did = "did:plc:me"
+        bsky.jwt = "jwt"
+        bsky.pds = "https://bsky.social"
+        calls = []
+
+        def fake_bsky_call(method, nsid, data=None, params=None, headers=None):
+            calls.append((method, nsid, params))
+            if nsid == "app.bsky.actor.getPreferences":
+                return {
+                    "preferences": [{
+                        "$type": "app.bsky.actor.defs#savedFeedsPrefV2",
+                        "items": [
+                            {"type": "feed", "value": "at://did:plc:abc/app.bsky.feed.generator/tech", "pinned": True},
+                            {"type": "timeline", "value": "following", "pinned": True},
+                        ],
+                    }]
+                }
+            if nsid == "app.bsky.feed.getFeedGenerators":
+                return {
+                    "feeds": [{
+                        "uri": "at://did:plc:abc/app.bsky.feed.generator/tech",
+                        "displayName": "Tech News",
+                        "description": "Tech feed",
+                        "avatar": "https://cdn.bsky.app/avatar.jpg",
+                    }]
+                }
+            if nsid == "app.bsky.feed.getFeed":
+                return {"feed": [], "cursor": "next-c1"}
+            return {}
+
+        bsky.call = fake_bsky_call
+        feeds = bsky.get_custom_feeds()
+        self.assertEqual(len(feeds), 1)
+        self.assertEqual(feeds[0]["name"], "Tech News")
+        self.assertTrue(feeds[0]["pinned"])
+        its, nxt = bsky.custom_feed("at://did:plc:abc/app.bsky.feed.generator/tech", cursor="c0")
+        self.assertEqual(its, [])
+        self.assertEqual(nxt, "next-c1")
+        with self.assertRaises(ValueError):
+            bsky.custom_feed("https://invalid.example/feed")
+
+        masto = app.Masto({"instance": "https://mastodon.social", "token": "tok"})
+        masto.call = lambda m, p, **kw: [{"id": "42", "title": "Devs", "replies_policy": "list"}] if p == "/api/v1/lists" else []
+        lists = masto.get_lists()
+        self.assertEqual(lists, [{"id": "42", "network": "mastodon", "name": "Devs", "replies_policy": "list"}])
+        with self.assertRaises(ValueError):
+            masto.list_timeline("../bad")
+
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn('id="colLists"', html)
+        self.assertIn('id="chkColLists"', html)
+        self.assertIn('id="exploreSourceSelect"', html)
+        self.assertIn('id="deckListSelect"', html)
+        self.assertIn("function initListsFeature()", html)
+
     def test_keyboard_shortcuts_feature(self):
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()

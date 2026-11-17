@@ -1849,6 +1849,60 @@ class Bsky:
         feed = r.get("feed", [])
         return [self.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
 
+    def get_custom_feeds(self):
+        r = self.call("GET", "app.bsky.actor.getPreferences")
+        prefs = r.get("preferences", [])
+        uris = []
+        pinned_set = set()
+        for pref in prefs:
+            ptype = pref.get("$type", "")
+            if ptype == "app.bsky.actor.defs#savedFeedsPrefV2":
+                for item in pref.get("items", []):
+                    if item.get("type") == "feed" and item.get("value"):
+                        uri = item["value"]
+                        if uri not in uris:
+                            uris.append(uri)
+                        if item.get("pinned"):
+                            pinned_set.add(uri)
+            elif ptype == "app.bsky.actor.defs#savedFeedsPref":
+                for uri in pref.get("pinned", []):
+                    if uri and uri.startswith("at://"):
+                        pinned_set.add(uri)
+                        if uri not in uris:
+                            uris.append(uri)
+                for uri in pref.get("saved", []):
+                    if uri and uri.startswith("at://") and uri not in uris:
+                        uris.append(uri)
+        if not uris:
+            return []
+        gens_resp = self.call("GET", "app.bsky.feed.getFeedGenerators", params={"feeds": uris[:25]})
+        by_uri = {f.get("uri"): f for f in gens_resp.get("feeds", []) if f.get("uri")}
+        out = []
+        for uri in uris[:25]:
+            fg = by_uri.get(uri)
+            if not fg:
+                continue
+            out.append({
+                "id": uri,
+                "network": "bluesky",
+                "name": fg.get("displayName") or uri.rsplit("/", 1)[-1],
+                "description": fg.get("description") or "",
+                "avatar": safe_url(fg.get("avatar")),
+                "pinned": uri in pinned_set,
+            })
+        out.sort(key=lambda x: (not x["pinned"], x["name"].lower()))
+        return out
+
+    def custom_feed(self, feed_uri, cursor=None):
+        if not feed_uri or not str(feed_uri).startswith("at://"):
+            raise ValueError("URI de feed Bluesky inválido.")
+        params = {"feed": str(feed_uri), "limit": 40}
+        if cursor:
+            params["cursor"] = cursor
+        r = self.call("GET", "app.bsky.feed.getFeed", params=params)
+        feed = r.get("feed", [])
+        return [self.item(it["post"], it.get("reason"), it.get("reply")) for it in feed], r.get("cursor")
+
     def thread(self, ref):
         uri = None
         if isinstance(ref, str):
@@ -2674,6 +2728,27 @@ class Masto:
 
     def explore(self, cursor=None):
         return self._fetch_statuses("/api/v1/trends/statuses", cursor=cursor)
+
+    def get_lists(self):
+        r = self.call("GET", "/api/v1/lists")
+        out = []
+        for item in (r or []):
+            if not isinstance(item, dict) or not item.get("id"):
+                continue
+            out.append({
+                "id": str(item["id"]),
+                "network": "mastodon",
+                "name": item.get("title") or "Lista",
+                "replies_policy": item.get("replies_policy", "list"),
+            })
+        out.sort(key=lambda x: x["name"].lower())
+        return out
+
+    def list_timeline(self, list_id, cursor=None):
+        if not list_id or not re.fullmatch(r"[A-Za-z0-9_-]+", str(list_id)):
+            raise ValueError("ID de lista Mastodon inválido.")
+        safe_id = urllib.parse.quote(str(list_id), safe="")
+        return self._fetch_statuses(f"/api/v1/timelines/list/{safe_id}", cursor=cursor)
 
     def _format_acc(self, acc):
         name_plain = acc.get("display_name") or acc.get("username", "")
@@ -4457,6 +4532,49 @@ class H(BaseHTTPRequestHandler):
                     items += its
                 items = sort_items(items)
             return self.send(200, {"items": items, "errors": errors, "networks": list(CLIENTS), "cursors": next_cursors})
+        if path == "/api/lists":
+            if not CLIENTS:
+                return self.send(200, {"items": [], "errors": {}, "networks": []})
+            qs = urllib.parse.parse_qs(parsed.query)
+            target_net = qs.get("network", [None])[0]
+            active_clients = [c for c in CLIENTS.values() if not target_net or c.name == target_net]
+
+            def fetch_lists(c):
+                try:
+                    if c.name == "bluesky":
+                        return c.name, c.get_custom_feeds(), None
+                    if c.name == "mastodon":
+                        return c.name, c.get_lists(), None
+                    return c.name, [], None
+                except Exception as e:
+                    return c.name, [], str(e)
+
+            all_lists, errors = [], {}
+            for name, lst, err in _API_EXECUTOR.map(fetch_lists, active_clients):
+                all_lists.extend(lst)
+                if err:
+                    errors[name] = err
+            return self.send(200, {"items": all_lists, "errors": errors, "networks": list(CLIENTS)})
+        if path == "/api/list_feed":
+            qs = urllib.parse.parse_qs(parsed.query)
+            net = qs.get("network", [""])[0].strip().lower()
+            feed_id = qs.get("id", [""])[0].strip()
+            cursor = qs.get("cursor", [None])[0]
+            if net not in ("bluesky", "mastodon") or not feed_id:
+                return self.send(400, {"error": "Parâmetros inválidos (network e id são obrigatórios)."})
+            client = CLIENTS.get(net)
+            if not client:
+                return self.send(400, {"error": f"Rede {net} não configurada."})
+            try:
+                if net == "bluesky":
+                    its, nxt = client.custom_feed(feed_id, cursor=cursor)
+                else:
+                    its, nxt = client.list_timeline(feed_id, cursor=cursor)
+                return self.send(200, {"items": its, "cursor": nxt, "network": net, "id": feed_id})
+            except ValueError as ve:
+                return self.send(400, {"error": str(ve)})
+            except Exception as e:
+                return self.send(500, {"error": str(e)})
         if path == "/api/search":
             if not CLIENTS:
                 return self.send(200, {"posts": [], "actors": [], "hashtags": [], "errors": {}})
