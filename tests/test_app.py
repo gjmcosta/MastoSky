@@ -2266,6 +2266,17 @@ class ProxyImageTests(unittest.TestCase):
             f"Identificadores JS não declarados no index.html: {undeclared[:10]}",
         )
 
+    def test_unified_mute_words_behavior(self):
+        with open("index.html", "r", encoding="utf-8") as f:
+            html = f.read()
+        self.assertIn("if (!it || it.is_own || !mutedWords.length) return null;", html)
+        self.assertIn("if (it.target_post)", html)
+        self.assertIn("function createMutedContentWrapper(container, mutedMatch)", html)
+        self.assertIn("const contentTarget = createMutedContentWrapper(p, mutedMatch);", html)
+        self.assertIn('if (muteMode === "hide" && getMutedMatch(n)) return false;', html)
+        self.assertIn("const notifBodyTarget = createMutedContentWrapper(p, notifMutedMatch);", html)
+        self.assertIn("if (typeof renderNotifs === \"function\" && Array.isArray(notifs) && notifs.length) renderNotifs();", html)
+
     def test_keyboard_shortcuts_feature(self):
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()
