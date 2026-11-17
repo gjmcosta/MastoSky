@@ -13,6 +13,8 @@ DATA_DIR = Path(_ENV_DATA_DIR).expanduser() if _ENV_DATA_DIR else DIR
 CFG_PATH = DATA_DIR / "config.json"
 USER_DATA_PATH = DATA_DIR / "user_data.json"
 _USER_DATA_LOCK = threading.Lock()
+_INDEX_HTML_CACHE = {"mtime_ns": None, "token": None, "bytes": None, "gz": None}
+_INDEX_CACHE_LOCK = threading.Lock()
 SCHEDULED_POSTS_PATH = DATA_DIR / "scheduled_posts.json"
 _SCHEDULED_LOCK = threading.Lock()
 
@@ -4146,17 +4148,20 @@ class H(BaseHTTPRequestHandler):
 
         return True
 
-    def send(self, code, body, ctype="application/json"):
+    def send(self, code, body, ctype="application/json", precompressed_gz=None):
         b = body if isinstance(body, bytes) else json.dumps(body).encode()
         compressible = (
             ctype.startswith("text/")
             or ctype in ("application/json", "application/javascript", "image/svg+xml", "application/manifest+json")
         )
         accept_enc = (self.headers.get("Accept-Encoding") or "").lower()
-        use_gzip = compressible and len(b) >= 1024 and "gzip" in accept_enc
+        use_gzip = compressible and "gzip" in accept_enc and (precompressed_gz is not None or len(b) >= 1024)
         if use_gzip:
-            comp = zlib.compressobj(level=6, wbits=16 + zlib.MAX_WBITS)
-            b = comp.compress(b) + comp.flush()
+            if precompressed_gz is not None:
+                b = precompressed_gz
+            else:
+                comp = zlib.compressobj(level=6, wbits=16 + zlib.MAX_WBITS)
+                b = comp.compress(b) + comp.flush()
         self.send_response(code)
         ct_header = ctype if (ctype.startswith("image/") and ctype != "image/svg+xml") or ctype == "application/octet-stream" else (ctype + "; charset=utf-8")
         self.send_header("Content-Type", ct_header)
@@ -4192,12 +4197,27 @@ class H(BaseHTTPRequestHandler):
         if not self.allowed():
             return self.send(403, {"error": "forbidden"})
         if path in ("/", "/index.html"):
-            html_text = (DIR / "index.html").read_text(encoding="utf-8")
-            if '<meta name="csrf-token"' in html_text:
-                html_text = re.sub(r'<meta name="csrf-token" content="[^"]*">', f'<meta name="csrf-token" content="{SESSION_TOKEN}">', html_text)
-            else:
-                html_text = html_text.replace("</head>", f'<meta name="csrf-token" content="{SESSION_TOKEN}">\n</head>', 1)
-            return self.send(200, html_text.encode("utf-8"), "text/html")
+            index_path = DIR / "index.html"
+            mtime_ns = index_path.stat().st_mtime_ns
+            with _INDEX_CACHE_LOCK:
+                if (
+                    _INDEX_HTML_CACHE["mtime_ns"] == mtime_ns
+                    and _INDEX_HTML_CACHE["token"] == SESSION_TOKEN
+                    and _INDEX_HTML_CACHE["bytes"] is not None
+                ):
+                    raw_b = _INDEX_HTML_CACHE["bytes"]
+                    gz_b = _INDEX_HTML_CACHE["gz"]
+                else:
+                    html_text = index_path.read_text(encoding="utf-8")
+                    if '<meta name="csrf-token"' in html_text:
+                        html_text = re.sub(r'<meta name="csrf-token" content="[^"]*">', f'<meta name="csrf-token" content="{SESSION_TOKEN}">', html_text)
+                    else:
+                        html_text = html_text.replace("</head>", f'<meta name="csrf-token" content="{SESSION_TOKEN}">\n</head>', 1)
+                    raw_b = html_text.encode("utf-8")
+                    comp = zlib.compressobj(level=6, wbits=16 + zlib.MAX_WBITS)
+                    gz_b = comp.compress(raw_b) + comp.flush()
+                    _INDEX_HTML_CACHE.update({"mtime_ns": mtime_ns, "token": SESSION_TOKEN, "bytes": raw_b, "gz": gz_b})
+            return self.send(200, raw_b, "text/html", precompressed_gz=gz_b)
         if path == "/api/csrf":
             return self.send(200, {"token": SESSION_TOKEN})
         if path == "/api/version":

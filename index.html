@@ -10573,7 +10573,14 @@
       }
       lastScrollY = curY;
     }
-    window.addEventListener("scroll", handleScrollNav, { passive: true });
+    let _scrollNavRaf = 0;
+    window.addEventListener("scroll", () => {
+      if (_scrollNavRaf) return;
+      _scrollNavRaf = requestAnimationFrame(() => {
+        _scrollNavRaf = 0;
+        handleScrollNav();
+      });
+    }, { passive: true });
 
     const DECK_COL_INFO = {
       compose: { titleKey: "header.col_compose", defTitle: "Novo post", icon: "#i-draft" },
@@ -21122,13 +21129,18 @@
     if ($("selfUpdateBtn")) $("selfUpdateBtn").onclick = triggerSelfUpdate;
 
     function initNewPostsPillDismissers() {
+      const pendingRaf = {};
       const checkDismiss = (colId) => {
-        const sc = getColScrollContainer(colId);
-        const top = sc === window ? window.scrollY : sc.scrollTop;
-        if (top < 30) {
-          const pill = $(colId + "NewPostsPill");
-          if (pill && !pill.hidden) pill.hidden = true;
-        }
+        if (pendingRaf[colId]) return;
+        pendingRaf[colId] = requestAnimationFrame(() => {
+          pendingRaf[colId] = 0;
+          const sc = getColScrollContainer(colId);
+          const top = sc === window ? window.scrollY : sc.scrollTop;
+          if (top < 30) {
+            const pill = $(colId + "NewPostsPill");
+            if (pill && !pill.hidden) pill.hidden = true;
+          }
+        });
       };
 
       window.addEventListener("scroll", () => {
@@ -21294,11 +21306,14 @@
     handleIncomingShareParams();
     load();
     loadNotifs();
-    loadConversations(true);
     if (initTab === "explore") loadExplore();
     if (initTab === "saved") renderSavedFeed();
     if (initTab === "profile") loadProfile();
-    else loadProfile(true);
+    if (initTab === "messages") loadConversations(true);
+    setTimeout(() => {
+      if (initTab !== "messages") loadConversations(true);
+      if (initTab !== "profile") loadProfile(true);
+    }, 350);
     checkAppUpdate(false);
     let lastPollAt = Date.now();
     let needsBackgroundRefresh = false;
