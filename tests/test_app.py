@@ -4228,6 +4228,19 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         ]:
             self.assertIn(marker, html)
 
+    def test_dual_progress_rings_feature(self):
+        from pathlib import Path
+        html = Path("index.html").read_text(encoding="utf-8")
+        for marker in [
+            'id="countRings"',
+            ".count-rings",
+            ".count-ring.net-bluesky",
+            ".count-ring.net-mastodon",
+            "function updateCountRings(",
+            "updateCountRings(targets, lenMasto, lenBsky, isHybridAutoThread);",
+        ]:
+            self.assertIn(marker, html)
+
 
 if __name__ == "__main__":
     unittest.main()
