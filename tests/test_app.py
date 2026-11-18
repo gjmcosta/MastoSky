@@ -4442,6 +4442,65 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
             self.assertTrue(status_data["ai"]["has_gemini_key"])
             self.assertTrue(status_data["ai"]["has_openai_key"])
 
+    def test_mastodon_edit_status_and_frontend_edit_feature(self):
+        m = app.Masto({"instance": "https://mastodon.social", "token": "tok"})
+        m.me = {"id": "42", "acct": "user"}
+
+        def fake_call(method, path, data=None, form=False):
+            if method == "GET" and path == "/api/v1/statuses/99/source":
+                return {"id": "99", "text": "Texto original", "spoiler_text": "CW"}
+            if method == "GET" and path == "/api/v1/statuses/99":
+                return {"id": "99", "media_attachments": [{"id": "m1"}]}
+            if method == "PUT" and path == "/api/v1/statuses/99":
+                self.assertEqual(data["status"], "Texto editado")
+                self.assertEqual(data["spoiler_text"], "CW2")
+                self.assertEqual(data["media_ids"], ["m1"])
+                return {
+                    "id": "99",
+                    "url": "https://mastodon.social/@user/99",
+                    "content": "<p>Texto editado</p>",
+                    "spoiler_text": "CW2",
+                    "created_at": "2026-11-18T22:00:00Z",
+                    "account": {"id": "42", "acct": "user", "display_name": "User", "avatar": "", "url": ""},
+                    "replies_count": 0,
+                    "reblogs_count": 0,
+                    "favourites_count": 0,
+                    "media_attachments": [],
+                }
+            raise AssertionError(f"Unexpected call: {method} {path}")
+
+        with mock.patch.object(m, "call", side_effect=fake_call):
+            src = m.get_status_source("99")
+            self.assertEqual(src["text"], "Texto original")
+            self.assertEqual(src["media_ids"], ["m1"])
+
+            with mock.patch.dict(app.CLIENTS, {"mastodon": m}, clear=False):
+                code, res_src = self._req("GET", "/api/post_source?network=mastodon&id=99")
+                self.assertEqual(code, 200)
+                self.assertTrue(res_src["ok"])
+                self.assertEqual(res_src["text"], "Texto original")
+
+                code_ed, res_ed = self._req("POST", "/api/edit", {
+                    "network": "mastodon",
+                    "ref": {"id": "99"},
+                    "text": "Texto editado",
+                    "cw": "CW2",
+                    "media_ids": ["m1"],
+                })
+                self.assertEqual(code_ed, 200)
+                self.assertTrue(res_ed["ok"])
+                self.assertEqual(res_ed["item"]["cw"], "CW2")
+
+        html = Path("index.html").read_text(encoding="utf-8")
+        for marker in [
+            'id="editPostOverlay"',
+            "act-edit",
+            "function openEditPostModal(",
+            "function submitEditPost(",
+            "function reeditBlueskyPost(",
+        ]:
+            self.assertIn(marker, html)
+
 
 if __name__ == "__main__":
     unittest.main()

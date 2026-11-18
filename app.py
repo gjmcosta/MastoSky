@@ -3064,6 +3064,41 @@ class Masto:
             raise ApiError(f"Ação desconhecida: {action}")
         return self.call("POST", endpoints[action])
 
+    def get_status_source(self, status_id):
+        """Obtém o texto fonte (plain) e media_ids de um status próprio no Mastodon."""
+        sid = str(status_id or "").strip()
+        if not sid:
+            raise ApiError("ID de publicação em falta.")
+        src = self.call("GET", f"/api/v1/statuses/{sid}/source")
+        media_ids = []
+        try:
+            st = self.call("GET", f"/api/v1/statuses/{sid}")
+            media_ids = [str(m["id"]) for m in (st.get("media_attachments") or []) if m.get("id")]
+        except Exception:
+            pass
+        return {
+            "text": src.get("text") or "",
+            "spoiler_text": src.get("spoiler_text") or "",
+            "media_ids": media_ids,
+        }
+
+    def edit_status(self, status_id, text, cw="", media_ids=None):
+        """Edita um status existente no Mastodon e devolve o item normalizado."""
+        sid = str(status_id or "").strip()
+        if not sid:
+            raise ApiError("ID de publicação em falta.")
+        clean_text = (text or "").strip()
+        if not clean_text and not media_ids:
+            raise ApiError("O texto da publicação não pode estar vazio.")
+        data = {
+            "status": clean_text,
+            "spoiler_text": (cw or "").strip(),
+        }
+        if media_ids:
+            data["media_ids"] = list(media_ids)
+        updated = self.call("PUT", f"/api/v1/statuses/{sid}", data)
+        return self.item(updated)
+
     def follow(self, actor):
         acc_id = str(actor).strip().lstrip("@")
         if not acc_id.isdigit():
@@ -4527,6 +4562,17 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, fetch_article_reader(target_url))
             except Exception as e:
                 return self.send(400, {"ok": False, "error": str(e)})
+        if path == "/api/post_source":
+            qs = urllib.parse.parse_qs(parsed.query)
+            net = (qs.get("network", ["mastodon"])[0] or "").strip().lower()
+            sid = (qs.get("id", [""])[0] or "").strip()
+            if net != "mastodon" or net not in CLIENTS:
+                return self.send(400, {"ok": False, "error": "Fonte apenas disponível para Mastodon configurado."})
+            try:
+                src = CLIENTS[net].get_status_source(sid)
+                return self.send(200, {"ok": True, **src})
+            except Exception as e:
+                return self.send(400, {"ok": False, "error": str(e)})
         if path == "/api/local_image":
             qs = urllib.parse.parse_qs(parsed.query)
             target_path = qs.get("path", [None])[0]
@@ -4854,6 +4900,22 @@ class H(BaseHTTPRequestHandler):
                 if isinstance(res, dict) and "uri" in res:
                     out["uri"] = res["uri"]
                 return self.send(200, out)
+            except Exception as e:
+                return self.send(200, {"ok": False, "error": str(e)})
+        if self.path == "/api/edit":
+            net = (d.get("network") or "").strip().lower()
+            ref = d.get("ref") or {}
+            sid = ref.get("id") if isinstance(ref, dict) else d.get("id")
+            if net != "mastodon" or net not in CLIENTS:
+                return self.send(400, {"ok": False, "error": "Edição nativa apenas disponível para Mastodon configurado."})
+            try:
+                updated_item = CLIENTS[net].edit_status(
+                    sid,
+                    d.get("text") or "",
+                    cw=d.get("cw") or "",
+                    media_ids=d.get("media_ids") or None,
+                )
+                return self.send(200, {"ok": True, "item": updated_item})
             except Exception as e:
                 return self.send(200, {"ok": False, "error": str(e)})
         if self.path == "/api/poll/vote":

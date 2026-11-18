@@ -9844,6 +9844,30 @@
     <button type="button" id="netStatusCloseBtn" class="net-status-close" title="Fechar" aria-label="Fechar">✕</button>
   </div>
 
+  <div id="editPostOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="editPostTitle">
+    <div class="setup-box" style="max-width:520px">
+      <div class="setup-header" style="margin-bottom:12px">
+        <h2 id="editPostTitle" style="font-size:17px;margin:0" data-i18n="actions.edit_modal_title">✏️ Editar publicação</h2>
+        <button type="button" class="setup-close-btn" id="closeEditPostBtn" onclick="closeEditPostModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <input type="text" id="editPostCwInput" placeholder="Aviso de conteúdo (opcional)"
+          data-i18n-ph="actions.edit_cw_ph"
+          style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;font-size:13px;box-sizing:border-box">
+        <textarea id="editPostText" rows="5" maxlength="500"
+          style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:14px;line-height:1.45;resize:vertical;box-sizing:border-box"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)">
+          <span id="editPostMsg" class="msg" style="margin:0"></span>
+          <span id="editPostCount" style="font-variant-numeric:tabular-nums">0 / 500</span>
+        </div>
+      </div>
+      <div class="setup-actions" style="margin-top:14px">
+        <button type="button" class="ghost" onclick="closeEditPostModal()" data-i18n="setup.cancel_btn">Cancelar</button>
+        <button type="button" class="send" id="saveEditPostBtn" onclick="submitEditPost()" data-i18n="actions.edit_save_btn">Guardar alterações</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const I18N = {
       pt: {
@@ -10108,6 +10132,15 @@
           translate: "Traduzir com IA",
           translated_with_ai: "Traduzido com IA",
           confirm_delete: "Tens a certeza que queres eliminar esta publicação?",
+          edit: "Editar publicação",
+          edit_bsky: "Apagar e editar no compositor",
+          edit_modal_title: "✏️ Editar publicação",
+          edit_cw_ph: "Aviso de conteúdo (opcional)",
+          edit_save_btn: "Guardar alterações",
+          edit_saving: "A guardar...",
+          edit_success: "Publicação atualizada!",
+          confirm_reedit_bsky: "O Bluesky não permite editar publicações diretamente. Queres apagar esta publicação e reabrir o texto no compositor?",
+          reedit_ready: "Texto restaurado no compositor.",
           load_more: "Carregar mais",
           loading: "A carregar...",
           back: "← Voltar"
@@ -10751,6 +10784,15 @@
           translate: "Translate with AI",
           translated_with_ai: "Translated with AI",
           confirm_delete: "Are you sure you want to delete this post?",
+          edit: "Edit post",
+          edit_bsky: "Delete and edit in composer",
+          edit_modal_title: "✏️ Edit post",
+          edit_cw_ph: "Content warning (optional)",
+          edit_save_btn: "Save changes",
+          edit_saving: "Saving...",
+          edit_success: "Post updated!",
+          confirm_reedit_bsky: "Bluesky doesn't support editing posts directly. Do you want to delete this post and reopen the text in the composer?",
+          reedit_ready: "Text restored to composer.",
           load_more: "Load more",
           loading: "Loading...",
           back: "← Back"
@@ -11992,6 +12034,7 @@
       bookmarkFill: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
       thread: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
       translate: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2" width="12.5" height="11.5" rx="2.5"/><path d="M14 10.5h6a2.5 2.5 0 0 1 2.5 2.5v6.5a2.5 2.5 0 0 1-2.5 2.5h-7.5a2.5 2.5 0 0 1-2.5-2.5V13.5"/><path d="M7.75 4.2v1.6M4.5 5.8h6.5M9.6 5.8c-.5 2.4-2 4.2-4.6 5.3M5.6 7c1.2 1.8 2.8 3.2 4.8 4.1"/><path d="M14.2 19.5l2.6-5.8 2.6 5.8M15 17.8h3.6"/></svg>',
+      edit: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
       trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>'
     };
     function netBadge(n) {
@@ -13632,6 +13675,18 @@
       }
 
       if (it.is_own) {
+        const bE = el("button", "act-btn act-edit");
+        const isBsky = it.network === "bluesky";
+        bE.title = t(isBsky ? "actions.edit_bsky" : "actions.edit");
+        bE.setAttribute("aria-label", bE.title);
+        bE.innerHTML = ICONS.edit;
+        bE.onclick = (e) => {
+          e.stopPropagation();
+          if (isBsky) reeditBlueskyPost(it, p);
+          else openEditPostModal(it, p);
+        };
+        acts.append(bE);
+
         const bD = el("button", "act-btn act-del");
         bD.title = t("actions.delete");
         bD.setAttribute("aria-label", t("actions.delete"));
@@ -21848,6 +21903,127 @@
           $("msg").className = "msg err";
           $("msg").textContent = t("composer.delete_failed", { err: r.error || "erro" });
         }
+      } catch (err) {
+        $("msg").className = "msg err";
+        $("msg").textContent = "Erro: " + err.message;
+      }
+    }
+
+    let editPostState = null;
+
+    function updateEditPostCount() {
+      const ta = $("editPostText");
+      const cnt = $("editPostCount");
+      if (ta && cnt) cnt.textContent = `${ta.value.length} / 500`;
+    }
+
+    if ($("editPostText")) {
+      $("editPostText").addEventListener("input", updateEditPostCount);
+    }
+
+    function closeEditPostModal() {
+      const ov = $("editPostOverlay");
+      if (ov) ov.hidden = true;
+      editPostState = null;
+    }
+
+    async function openEditPostModal(it, postEl) {
+      const ov = $("editPostOverlay");
+      const ta = $("editPostText");
+      const cw = $("editPostCwInput");
+      const msg = $("editPostMsg");
+      if (!ov || !ta) return;
+      editPostState = { item: it, postEl, media_ids: [] };
+      if (msg) { msg.className = "msg"; msg.textContent = t("actions.loading"); }
+      if (cw) cw.value = it.cw || "";
+      const tmp = document.createElement("div");
+      tmp.innerHTML = it.text || "";
+      ta.value = (tmp.textContent || "").trim();
+      updateEditPostCount();
+      ov.hidden = false;
+      ta.focus();
+      try {
+        const sid = it.ref && it.ref.id ? it.ref.id : "";
+        if (sid) {
+          const src = await api(`/api/post_source?network=mastodon&id=${encodeURIComponent(sid)}`);
+          if (src && src.ok) {
+            if (typeof src.text === "string") ta.value = src.text;
+            if (cw && typeof src.spoiler_text === "string") cw.value = src.spoiler_text;
+            if (Array.isArray(src.media_ids)) editPostState.media_ids = src.media_ids;
+            updateEditPostCount();
+          }
+        }
+        if (msg) msg.textContent = "";
+      } catch (_) {
+        if (msg) msg.textContent = "";
+      }
+    }
+
+    async function submitEditPost() {
+      if (!editPostState || !editPostState.item) return;
+      const ta = $("editPostText");
+      const cw = $("editPostCwInput");
+      const msg = $("editPostMsg");
+      const btn = $("saveEditPostBtn");
+      const text = ta ? ta.value : "";
+      const cwVal = cw ? cw.value : "";
+      if (btn) btn.disabled = true;
+      if (msg) { msg.className = "msg"; msg.textContent = t("actions.edit_saving"); }
+      try {
+        const res = await api("/api/edit", {
+          network: editPostState.item.network,
+          ref: editPostState.item.ref,
+          text,
+          cw: cwVal,
+          media_ids: editPostState.media_ids || []
+        });
+        if (res && res.ok && res.item) {
+          const newCard = postCard(res.item);
+          if (editPostState.postEl && editPostState.postEl.parentNode) {
+            editPostState.postEl.replaceWith(newCard);
+          }
+          closeEditPostModal();
+          $("msg").className = "msg";
+          $("msg").textContent = t("actions.edit_success");
+          setTimeout(() => { if ($("msg").textContent === t("actions.edit_success")) $("msg").textContent = ""; }, 3000);
+        } else {
+          if (msg) { msg.className = "msg err"; msg.textContent = (res && res.error) || "Erro ao editar"; }
+        }
+      } catch (err) {
+        if (msg) { msg.className = "msg err"; msg.textContent = "Erro: " + err.message; }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function reeditBlueskyPost(it, postEl) {
+      if (!(await askConfirm(t("actions.confirm_reedit_bsky")))) return;
+      try {
+        const r = await api("/api/action", { network: it.network, action: "delete", ref: it.ref });
+        if (!r || !r.ok) {
+          $("msg").className = "msg err";
+          $("msg").textContent = t("composer.delete_failed", { err: (r && r.error) || "erro" });
+          return;
+        }
+        if (postEl) postEl.remove();
+        const tmp = document.createElement("div");
+        tmp.innerHTML = it.text || "";
+        const plainTxt = (tmp.textContent || "").trim();
+        if ($("text")) {
+          $("text").value = plainTxt;
+          $("text").dispatchEvent(new Event("input"));
+          $("text").scrollIntoView({ behavior: "smooth", block: "center" });
+          $("text").focus();
+        }
+        if (it.cw && $("cwInput") && $("cwRow")) {
+          $("cwRow").hidden = false;
+          $("cwInput").value = it.cw;
+        }
+        const bskyBtn = document.querySelector('#targetSeg button[data-v="bluesky"]');
+        if (bskyBtn) bskyBtn.click();
+        $("msg").className = "msg";
+        $("msg").textContent = t("actions.reedit_ready");
+        setTimeout(() => { if ($("msg").textContent === t("actions.reedit_ready")) $("msg").textContent = ""; }, 3500);
       } catch (err) {
         $("msg").className = "msg err";
         $("msg").textContent = "Erro: " + err.message;
