@@ -1882,8 +1882,8 @@
     }
 
     .handle-map-form input {
-      flex: 1 1 160px;
-      min-width: 130px;
+      flex: 1 1 185px;
+      min-width: 150px;
       padding: 6px 9px;
       border-radius: 8px;
       border: 1px solid var(--line);
@@ -4396,9 +4396,12 @@
     .setup-box.settings-dialog {
       max-width: 960px;
       width: 100%;
+      height: min(740px, calc(100dvh - 32px));
       max-height: calc(100dvh - 32px);
-      overflow-y: auto;
-      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 0;
       border-radius: 16px;
       box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45)
     }
@@ -4408,9 +4411,10 @@
       justify-content: space-between;
       align-items: flex-start;
       gap: 16px;
-      margin-bottom: 16px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid var(--line)
+      margin-bottom: 0;
+      padding: 20px 26px 14px;
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0
     }
 
     .setup-box.settings-dialog .setup-header h2 {
@@ -4448,21 +4452,95 @@
       transform: scale(1.05)
     }
 
-    .settings-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      align-items: start
+    .settings-shell {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden
     }
 
-    .settings-col {
+    .settings-nav {
+      width: 224px;
+      flex-shrink: 0;
+      padding: 16px 12px;
+      border-right: 1px solid var(--line);
+      background: var(--surface-2);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto
+    }
+
+    .settings-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      font: 600 13px var(--sans);
+      text-align: left;
+      cursor: pointer;
+      transition: all .15s
+    }
+
+    .settings-nav-btn:hover {
+      background: var(--card);
+      color: var(--ink)
+    }
+
+    .settings-nav-btn.active {
+      background: var(--card);
+      color: var(--ink);
+      border-color: var(--line);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12)
+    }
+
+    .settings-nav-btn .settings-nav-ico {
+      font-size: 15px;
+      line-height: 1;
+      flex-shrink: 0
+    }
+
+    .settings-panels {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 20px 26px
+    }
+
+    .settings-tab-panel {
       display: flex;
       flex-direction: column;
       gap: 14px
     }
 
-    .settings-col .setup-section {
+    .settings-tab-panel[hidden] {
+      display: none !important
+    }
+
+    .settings-tab-panel .setup-section {
       margin-bottom: 0
+    }
+
+    .setup-footer {
+      padding: 12px 26px 18px;
+      border-top: 1px solid var(--line);
+      background: var(--card);
+      flex-shrink: 0
+    }
+
+    .setup-footer .msg {
+      margin-top: 0;
+      margin-bottom: 8px
+    }
+
+    .setup-footer .msg:empty {
+      display: none
     }
 
     .setup-box.settings-dialog .setup-actions {
@@ -4470,20 +4548,57 @@
       justify-content: flex-end;
       align-items: center;
       gap: 10px;
-      margin-top: 18px;
-      padding-top: 14px;
-      border-top: 1px solid var(--line)
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none
     }
 
     @media (max-width:820px) {
       .setup-box.settings-dialog {
-        padding: 18px 16px;
-        max-width: 100%
+        padding: 0;
+        max-width: 100%;
+        height: calc(100dvh - 24px)
       }
 
-      .settings-grid {
-        grid-template-columns: 1fr;
-        gap: 12px
+      .setup-box.settings-dialog .setup-header {
+        padding: 16px 16px 12px
+      }
+
+      .settings-shell {
+        flex-direction: column
+      }
+
+      .settings-nav {
+        width: 100%;
+        flex-direction: row;
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+        padding: 8px 12px;
+        gap: 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none
+      }
+
+      .settings-nav::-webkit-scrollbar {
+        display: none
+      }
+
+      .settings-nav-btn {
+        width: auto;
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding: 7px 12px;
+        font-size: 12.5px
+      }
+
+      .settings-panels {
+        padding: 14px 16px
+      }
+
+      .setup-footer {
+        padding: 12px 16px 14px
       }
     }
 
@@ -5323,6 +5438,12 @@
       .setup-box.reader-box,
       .setup-box.drafts-box {
         overflow-y: hidden;
+      }
+
+      .setup-box.settings-dialog {
+        padding: 0;
+        overflow-y: hidden;
+        height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       }
 
       .user-profile-modal-body,
@@ -8728,95 +8849,74 @@
           </div>
         </div>
 
-        <div class="settings-grid">
-          <div class="settings-col">
-            <div class="setup-section">
-              <div class="setup-sec-title"><span>⚙️ <span data-i18n="setup.pref_title">Preferências</span></span></div>
-              <label><span data-i18n="setup.lang_label">Idioma da interface:</span>
-                <select id="cfgLangSelect"
-                  style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-                  <option value="pt">Português (PT)</option>
-                  <option value="en">English (EN)</option>
-                </select>
-              </label>
-              <label style="display:block;margin-top:10px"><span data-i18n="setup.theme_label">Tema da interface:</span>
-                <select id="cfgThemeSelect"
-                  style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-                  <option id="optThemeSys" value="system">Automático (Sistema)</option>
-                  <option id="optThemeLight" value="light">Modo Claro</option>
-                  <option id="optThemeDark" value="dark">Modo Escuro</option>
-                </select>
-              </label>
-              <label style="display:block;margin-top:10px"><span data-i18n="setup.nav_mode_label">Navegação no
-                  scroll:</span>
-                <select id="cfgNavModeSelect"
-                  style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-                  <option id="optNavSidebar" value="sidebar">Barra lateral flutuante (Recomendado)</option>
-                  <option id="optNavSticky" value="sticky">Cabeçalho fixo no topo</option>
-                  <option id="optNavNone" value="none">Estático (Sem elementos fixos)</option>
-                </select>
-              </label>
-              <label style="display:block;margin-top:10px"><span data-i18n="setup.view_mode_label">Disposição da
-                  interface:</span>
-                <select id="cfgViewModeSelect"
-                  style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-                  <option id="optViewSingle" value="single">Coluna única (Timeline simples)</option>
-                  <option id="optViewDeck" value="deck">Colunas múltiplas (Deck View)</option>
-                </select>
-              </label>
-              <div id="deckColsConfig"
-                style="margin-top:10px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line)"
-                hidden>
-                <div style="font-size:12.5px;font-weight:600;margin-bottom:4px;color:var(--ink)"
-                  data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
-                <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px" data-i18n="setup.deck_col_order_tip">
-                  Podes arrastar as colunas ou usar as setas no cabeçalho do Deck para reordenar.</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
-                  <label class="setup-check-item"><input type="checkbox" id="chkColCompose"> <span
-                      data-i18n="setup.deck_col_compose">Novo post</span></label>
-                  <label class="setup-check-item"><input type="checkbox" id="chkColTimeline"> <span
-                      data-i18n="setup.deck_col_timeline">Timeline</span></label>
-                  <label class="setup-check-item"><input type="checkbox" id="chkColExplore"> <span
-                      data-i18n="setup.deck_col_explore">Em Alta</span></label>
-                  <label class="setup-check-item"><input type="checkbox" id="chkColSearch"> <span
-                      data-i18n="setup.deck_col_search">Pesquisa</span></label>
-                  <label class="setup-check-item"><input type="checkbox" id="chkColSaved"> <span
-                      data-i18n="setup.deck_col_saved">Guardados</span></label>
-                  <label class="setup-check-item"><input type="checkbox" id="chkColNotifs"> <span
-                      data-i18n="setup.deck_col_notifs">Notificações</span></label>
-                  <label class="setup-check-item"><input type="checkbox" id="chkColMessages"> <span
-                      data-i18n="setup.deck_col_messages">Mensagens</span></label>
-                  <label class="setup-check-item"><input type="checkbox" id="chkColLists"> <span
-                      data-i18n="setup.deck_col_lists">Feeds & Listas</span></label>
-                  <label class="setup-check-item"><input type="checkbox" id="chkColProfile"> <span
-                      data-i18n="setup.deck_col_profile">Perfil</span></label>
-                </div>
+        <div class="settings-shell">
+          <nav class="settings-nav" id="settingsNav" role="tablist" aria-label="Categorias de configuração">
+            <button type="button" class="settings-nav-btn active" role="tab" aria-selected="true"
+              data-settings-tab="accounts" onclick="setSettingsTab('accounts')">
+              <span class="settings-nav-ico">🔌</span>
+              <span data-i18n="setup.tab_accounts">Contas & Redes</span>
+            </button>
+            <button type="button" class="settings-nav-btn" role="tab" aria-selected="false"
+              data-settings-tab="appearance" onclick="setSettingsTab('appearance')">
+              <span class="settings-nav-ico">🎨</span>
+              <span data-i18n="setup.tab_appearance">Aparência & Feed</span>
+            </button>
+            <button type="button" class="settings-nav-btn" role="tab" aria-selected="false"
+              data-settings-tab="ai" onclick="setSettingsTab('ai')">
+              <span class="settings-nav-ico">🤖</span>
+              <span data-i18n="setup.tab_ai">IA & Acessibilidade</span>
+            </button>
+            <button type="button" class="settings-nav-btn" role="tab" aria-selected="false"
+              data-settings-tab="notifs" onclick="setSettingsTab('notifs')">
+              <span class="settings-nav-ico">🔔</span>
+              <span data-i18n="setup.tab_notifs">Notificações & Filtros</span>
+            </button>
+            <button type="button" class="settings-nav-btn" role="tab" aria-selected="false"
+              data-settings-tab="system" onclick="setSettingsTab('system')">
+              <span class="settings-nav-ico">⚙️</span>
+              <span data-i18n="setup.tab_system">Sistema & Dados</span>
+            </button>
+          </nav>
+
+          <div class="settings-panels" id="settingsPanels">
+            <!-- TAB 1: Contas & Redes -->
+            <div class="settings-tab-panel" data-settings-panel="accounts" role="tabpanel">
+              <div class="setup-section">
+                <div class="setup-sec-title"><span class="inline-net-label"><svg class="ico net-ico-bsky">
+                      <use href="#i-brand-bsky" />
+                    </svg> Bluesky</span><span id="cfgBskyActive" class="star-badge" title="Sessão ativa"
+                    data-i18n-title="setup.active_session" hidden></span></div>
+                <label>Handle:
+                  <input type="text" id="cfgBskyHandle" placeholder="ex: o-teu-nome.bsky.social" autocomplete="off">
+                </label>
+                <label><span data-i18n="setup.bsky_pass_label">Palavra-passe da aplicação (*App Password*):</span>
+                  <input type="password" id="cfgBskyPass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off">
+                </label>
+                <small class="setup-help" data-i18n="setup.bsky_help">Gera em bsky.app &gt; Definições &gt; Privacidade e
+                  Segurança &gt; Palavras-passe da aplicação.</small>
               </div>
-              <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
-                <label class="setup-check-item" style="padding:0;font-weight:600">
-                  <input type="checkbox" id="cfgCrosstalkDedup" checked>
-                  <span data-i18n="setup.crosstalk_label">Agrupar publicações duplicadas entre redes (Crosstalk)</span>
+
+              <div class="setup-section">
+                <div class="setup-sec-title"><span class="inline-net-label"><svg class="ico net-ico-masto">
+                      <use href="#i-brand-masto" />
+                    </svg> Mastodon</span><span id="cfgMastoActive" class="star-badge" title="Sessão ativa"
+                    data-i18n-title="setup.active_session" hidden></span></div>
+                <label><span data-i18n="setup.masto_inst_label">Instância:</span>
+                  <input type="text" id="cfgMastoInst" placeholder="ex: mastodon.social" autocomplete="off">
                 </label>
-                <div style="font-size:11.5px;color:var(--muted);margin:3px 0 0 24px;line-height:1.4"
-                  data-i18n="setup.crosstalk_desc">
-                  Funde num único cartão os posts publicados em simultâneo no Mastodon e Bluesky, dando
-                  prioridade ao Mastodon.
-                </div>
-                <label class="setup-check-item" style="padding:0;font-weight:600;margin-top:10px">
-                  <input type="checkbox" id="cfgWarnMissingAlt" checked>
-                  <span data-i18n="setup.warn_missing_alt_label">Avisar antes de publicar imagens sem descrição
-                    ALT</span>
+                <label><span data-i18n="setup.masto_token_label">Token de acesso:</span>
+                  <input type="password" id="cfgMastoToken" placeholder="O teu access token" autocomplete="off">
                 </label>
-                <label class="setup-check-item" style="padding:0;font-weight:600;margin-top:10px">
-                  <input type="checkbox" id="cfgBoostCluster" checked>
-                  <span data-i18n="setup.boost_cluster_label">Agrupar sequências de republicações na Timeline (estilo
-                    Phanpy)</span>
-                </label>
+                <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt;
+                  Desenvolvimento &gt; Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses,
+                  read:notifications, write:statuses, write:media, write:favourites. No campo Instância indica apenas o
+                  domínio (ex: mastodon.social).</small>
               </div>
-              <div id="handleMapSection" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
-                <div style="font-size:12.5px;font-weight:600;color:var(--ink)" data-i18n="setup.handle_map_title">🔗
-                  Mapeamento de @menções entre Redes</div>
-                <div style="font-size:11.5px;color:var(--muted);margin:3px 0 6px;line-height:1.4"
+
+              <div class="setup-section" id="handleMapSection">
+                <div class="setup-sec-title"><span data-i18n="setup.handle_map_title">🔗 Mapeamento de @menções entre
+                    Redes</span></div>
+                <div style="font-size:12px;color:var(--muted);margin:0 0 8px;line-height:1.45"
                   data-i18n="setup.handle_map_desc">
                   Associa handles equivalentes (ex: @pessoa.bsky.social ↔ @pessoa@mastodon.social) para adaptar
                   automaticamente as menções ao publicar em simultâneo.
@@ -8836,297 +8936,367 @@
               </div>
             </div>
 
-            <div class="setup-section">
-              <div class="setup-sec-title"><span>🔔 <span data-i18n="setup.notifs_sec_title">Alertas e
-                    Notificações</span></span></div>
-              <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;margin-top:8px">
-                <div>
-                  <label class="setup-check-item" style="padding:0;font-weight:600">
-                    <input type="checkbox" id="cfgNotifSound">
-                    <span data-i18n="notifs.sound_title">Sons espaciais de notificação</span>
-                  </label>
-                  <div style="font-size:11.5px;color:var(--muted);margin:3px 0 8px 24px" data-i18n="notifs.sound_desc">
-                    Efeitos sonoros cósmicos e discretos sintetizados via Web Audio.
-                  </div>
-                  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:24px">
-                    <button type="button" class="notif-sound-btn" onclick="testSpatialSound('reply')"
-                      title="Ouvir som de resposta">
-                      <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_reply">Resposta</span>
-                    </button>
-                    <button type="button" class="notif-sound-btn" onclick="testSpatialSound('like')"
-                      title="Ouvir som de gosto">
-                      <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_like">Gosto</span>
-                    </button>
-                    <button type="button" class="notif-sound-btn" onclick="testSpatialSound('boost')"
-                      title="Ouvir som de partilha">
-                      <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_boost">Partilha</span>
-                    </button>
-                    <button type="button" class="notif-sound-btn" onclick="testSpatialSound('follow')"
-                      title="Ouvir som de seguidor">
-                      <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_follow">Seguidor</span>
-                    </button>
-                  </div>
-                  <div style="display:flex;align-items:center;gap:10px;margin:10px 0 0 24px">
-                    <label for="cfgNotifVolume" style="font-size:12px;color:var(--muted);white-space:nowrap"
-                      data-i18n="notifs.volume_label">Volume:</label>
-                    <input type="range" id="cfgNotifVolume" min="10" max="100" step="5" value="75"
-                      style="flex:1;max-width:180px;accent-color:var(--accent);cursor:pointer">
-                    <span id="cfgNotifVolumeVal"
-                      style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px">75%</span>
-                  </div>
-                </div>
-
-                <div style="border-top:1px solid var(--line);padding-top:10px">
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                    <label class="setup-check-item" style="padding:0;font-weight:600">
-                      <input type="checkbox" id="cfgNotifDesktop">
-                      <span data-i18n="notifs.desktop_title">Notificações no ambiente de trabalho</span>
-                    </label>
-                    <span id="cfgDesktopNotifStatus" style="font-size:11.5px;font-weight:600"></span>
-                  </div>
-                  <div style="font-size:11.5px;color:var(--muted);margin:3px 0 6px 24px"
-                    data-i18n="notifs.desktop_desc">
-                    Recebe avisos no ecrã quando chegam novas interações.
-                  </div>
-                  <div id="cfgDesktopNotifPermBox" style="margin-left:24px" hidden>
-                    <button type="button" class="setup-secondary-btn" onclick="requestDesktopNotificationPermission()"
-                      data-i18n="notifs.desktop_req_btn">
-                      Pedir autorização ao navegador
-                    </button>
-                  </div>
-                </div>
-
-                <div style="border-top:1px solid var(--line);padding-top:10px">
-                  <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--ink)"
-                    data-i18n="notifs.types_title">Alertar para:</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
-                    <label class="setup-check-item">
-                      <input type="checkbox" id="cfgNotifTypeReplies" checked>
-                      <span data-i18n="notifs.type_replies">Respostas & Menções</span>
-                    </label>
-                    <label class="setup-check-item">
-                      <input type="checkbox" id="cfgNotifTypeLikes" checked>
-                      <span data-i18n="notifs.type_likes">Gostos</span>
-                    </label>
-                    <label class="setup-check-item">
-                      <input type="checkbox" id="cfgNotifTypeBoosts" checked>
-                      <span data-i18n="notifs.type_boosts">Partilhas</span>
-                    </label>
-                    <label class="setup-check-item">
-                      <input type="checkbox" id="cfgNotifTypeFollows" checked>
-                      <span data-i18n="notifs.type_follows">Seguidores</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="setup-section" id="mutedWordsSection">
-              <div class="setup-sec-title"><span>🔇 <span data-i18n="setup.muted_title">Palavras Silenciadas &
-                    Filtros</span></span></div>
-              <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45"
-                data-i18n="setup.muted_desc">
-                Esconde ou avisa em publicações que contenham estas palavras-chave ou hashtags no texto ou aviso de
-                conteúdo.
-              </p>
-              <label><span data-i18n="setup.muted_mode_label">Comportamento do filtro:</span>
-                <select id="cfgMuteModeSelect"
-                  style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-                  <option id="optMuteWarn" value="warn" data-i18n="setup.muted_mode_warn">Mostrar aviso colapsável
-                  </option>
-                  <option id="optMuteHide" value="hide" data-i18n="setup.muted_mode_hide">Ocultar completamente</option>
-                </select>
-              </label>
-              <div class="muted-add-row">
-                <input type="text" id="mutedWordInput" placeholder="Adicionar palavra ou #hashtag..."
-                  data-i18n-ph="setup.muted_ph" autocomplete="off">
-                <button type="button" class="setup-secondary-btn" id="addMutedWordBtn"
-                  data-i18n="setup.muted_add_btn">Adicionar</button>
-              </div>
-              <div id="mutedChipsList" class="muted-chips-list"></div>
-            </div>
-
-            <div class="setup-section" id="backupSection">
-              <div class="setup-sec-title"><span>💾 <span data-i18n="setup.backup_title">Cópia de Segurança &
-                    Dados</span></span></div>
-              <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45"
-                data-i18n="setup.backup_desc">
-                Exporta ou restaura os teus rascunhos, posts guardados, preferências e ordem das colunas num ficheiro
-                JSON seguro.
-              </p>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <button type="button" class="setup-secondary-btn" id="exportBackupBtn"
-                  style="display:inline-flex;align-items:center;gap:6px">
-                  <span>⬇️</span> <span data-i18n="setup.backup_export_btn">Exportar Backup (JSON)</span>
-                </button>
-                <button type="button" class="setup-secondary-btn" id="importBackupBtn"
-                  style="display:inline-flex;align-items:center;gap:6px">
-                  <span>⬆️</span> <span data-i18n="setup.backup_import_btn">Restaurar Backup</span>
-                </button>
-                <input type="file" id="importBackupFileInput" accept=".json,application/json" style="display:none">
-              </div>
-              <div id="backupFeedbackMsg" class="msg" style="margin-top:8px"></div>
-            </div>
-
-            <div class="setup-section" id="mobileLanSection">
-              <div class="setup-sec-title"><span>📱 <span data-i18n="setup.mobile_title">Acesso Móvel & PWA (Telemóvel /
-                    iPad)</span></span></div>
-              <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45"
-                data-i18n="setup.mobile_desc">
-                Acede ao MastoSky a partir de qualquer iPhone, iPad ou Android na tua rede Wi-Fi e instala-o como app no
-                ecrã inicial.
-              </p>
-              <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap">
-                <span id="settingsLanBadgeText" style="font-size:12px;color:var(--muted)">...</span>
-                <button type="button" class="setup-secondary-btn" id="openMobileModalFromSettings"
-                  style="display:inline-flex;align-items:center;gap:6px">
-                  <span data-i18n="setup.mobile_btn">Ver QR Code & Instruções ↗</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-col">
-            <div class="setup-section">
-              <div class="setup-sec-title"><span class="inline-net-label"><svg class="ico net-ico-bsky">
-                    <use href="#i-brand-bsky" />
-                  </svg> Bluesky</span><span id="cfgBskyActive" class="star-badge" title="Sessão ativa"
-                  data-i18n-title="setup.active_session" hidden></span></div>
-              <label>Handle:
-                <input type="text" id="cfgBskyHandle" placeholder="ex: o-teu-nome.bsky.social" autocomplete="off">
-              </label>
-              <label><span data-i18n="setup.bsky_pass_label">Palavra-passe da aplicação (*App Password*):</span>
-                <input type="password" id="cfgBskyPass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off">
-              </label>
-              <small class="setup-help" data-i18n="setup.bsky_help">Gera em bsky.app &gt; Definições &gt; Privacidade e
-                Segurança &gt; Palavras-passe da aplicação.</small>
-            </div>
-
-            <div class="setup-section">
-              <div class="setup-sec-title"><span class="inline-net-label"><svg class="ico net-ico-masto">
-                    <use href="#i-brand-masto" />
-                  </svg> Mastodon</span><span id="cfgMastoActive" class="star-badge" title="Sessão ativa"
-                  data-i18n-title="setup.active_session" hidden></span></div>
-              <label><span data-i18n="setup.masto_inst_label">Instância:</span>
-                <input type="text" id="cfgMastoInst" placeholder="ex: mastodon.social" autocomplete="off">
-              </label>
-              <label><span data-i18n="setup.masto_token_label">Token de acesso:</span>
-                <input type="password" id="cfgMastoToken" placeholder="O teu access token" autocomplete="off">
-              </label>
-              <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt;
-                Desenvolvimento &gt; Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses,
-                read:notifications, write:statuses, write:media, write:favourites. No campo Instância indica apenas o
-                domínio (ex: mastodon.social).</small>
-            </div>
-
-            <div class="setup-section" id="aiConfigSection">
-              <div class="setup-sec-title"><span>🤖 <span data-i18n="setup.ai_title">Acessibilidade & IA
-                    (Alt-Text)</span></span></div>
-              <label><span data-i18n="setup.ai_provider_label">Fornecedor de IA:</span>
-                <select id="cfgAiProvider"
-                  style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-                  <option value="none" data-i18n="setup.ai_prov_none">Desativado (Manual)</option>
-                  <option value="gemini" data-i18n="setup.ai_prov_gemini">Google Gemini (Grátis - Recomendado)</option>
-                  <option value="ollama" data-i18n="setup.ai_prov_ollama">Ollama (100% Local)</option>
-                  <option value="openai" data-i18n="setup.ai_prov_openai">Compatível OpenAI / LocalAI</option>
-                </select>
-              </label>
-
-              <label style="display:block;margin-top:10px">
-                <span data-i18n="setup.ai_lang_label">Idioma do Alt-Text:</span>
-                <select id="cfgAiLang"
-                  style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-                  <option value="pt-pt" data-i18n="setup.ai_lang_pt_pt">Português (Portugal)</option>
-                  <option value="pt-br" data-i18n="setup.ai_lang_pt_br">Português (Brasil)</option>
-                  <option value="en" data-i18n="setup.ai_lang_en">Inglês (English)</option>
-                  <option value="es" data-i18n="setup.ai_lang_es">Espanhol (Español)</option>
-                  <option value="fr" data-i18n="setup.ai_lang_fr">Francês (Français)</option>
-                  <option value="ui" data-i18n="setup.ai_lang_ui">Seguir idioma da interface</option>
-                </select>
-              </label>
-
-              <!-- Gemini Fields -->
-              <div id="aiGeminiBox" style="margin-top:10px" hidden>
-                <label><span data-i18n="setup.ai_gemini_key_label">Chave de API do Google AI Studio (*API Key*):</span>
-                  <input type="password" id="cfgAiGeminiKey" placeholder="AIzaSy..." autocomplete="off">
-                </label>
-                <label style="margin-top:8px"><span data-i18n="setup.ai_gemini_model_label">Modelo Gemini:</span>
-                  <select id="cfgAiGeminiModel"
-                    style="width:100%;margin-top:4px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
-                    <option value="gemini-3.5-flash">Gemini 3.5 Flash (Recomendado - Mais Estável)</option>
-                    <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Mais Rápido e Leve)</option>
-                    <option value="gemini-3.8-flash">Gemini 3.8 Flash (Mais Recente)</option>
-                    <option value="gemini-flash-latest">Gemini Flash (Versão Automática)</option>
+            <!-- TAB 2: Aparência & Feed -->
+            <div class="settings-tab-panel" data-settings-panel="appearance" role="tabpanel" hidden>
+              <div class="setup-section">
+                <div class="setup-sec-title"><span>🎨 <span data-i18n="setup.pref_title">Preferências de
+                      Interface</span></span></div>
+                <label><span data-i18n="setup.lang_label">Idioma da interface:</span>
+                  <select id="cfgLangSelect"
+                    style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                    <option value="pt">Português (PT)</option>
+                    <option value="en">English (EN)</option>
                   </select>
                 </label>
-                <small class="setup-help" data-i18n="setup.ai_gemini_help">Gera gratuitamente em aistudio.google.com
-                  &gt; Get API key. Não requer cartão de crédito.</small>
+                <label style="display:block;margin-top:10px"><span data-i18n="setup.theme_label">Tema da
+                    interface:</span>
+                  <select id="cfgThemeSelect"
+                    style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                    <option id="optThemeSys" value="system">Automático (Sistema)</option>
+                    <option id="optThemeLight" value="light">Modo Claro</option>
+                    <option id="optThemeDark" value="dark">Modo Escuro</option>
+                  </select>
+                </label>
+                <label style="display:block;margin-top:10px"><span data-i18n="setup.nav_mode_label">Navegação no
+                    scroll:</span>
+                  <select id="cfgNavModeSelect"
+                    style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                    <option id="optNavSidebar" value="sidebar">Barra lateral flutuante (Recomendado)</option>
+                    <option id="optNavSticky" value="sticky">Cabeçalho fixo no topo</option>
+                    <option id="optNavNone" value="none">Estático (Sem elementos fixos)</option>
+                  </select>
+                </label>
+                <label style="display:block;margin-top:10px"><span data-i18n="setup.view_mode_label">Disposição da
+                    interface:</span>
+                  <select id="cfgViewModeSelect"
+                    style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                    <option id="optViewSingle" value="single">Coluna única (Timeline simples)</option>
+                    <option id="optViewDeck" value="deck">Colunas múltiplas (Deck View)</option>
+                  </select>
+                </label>
+                <div id="deckColsConfig"
+                  style="margin-top:10px;padding:12px;background:var(--surface-2);border-radius:8px;border:1px solid var(--line)"
+                  hidden>
+                  <div style="font-size:12.5px;font-weight:600;margin-bottom:4px;color:var(--ink)"
+                    data-i18n="setup.deck_cols_label">Colunas visíveis no Deck:</div>
+                  <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px"
+                    data-i18n="setup.deck_col_order_tip">
+                    Podes arrastar as colunas ou usar as setas no cabeçalho do Deck para reordenar.</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
+                    <label class="setup-check-item"><input type="checkbox" id="chkColCompose"> <span
+                        data-i18n="setup.deck_col_compose">Novo post</span></label>
+                    <label class="setup-check-item"><input type="checkbox" id="chkColTimeline"> <span
+                        data-i18n="setup.deck_col_timeline">Timeline</span></label>
+                    <label class="setup-check-item"><input type="checkbox" id="chkColExplore"> <span
+                        data-i18n="setup.deck_col_explore">Em Alta</span></label>
+                    <label class="setup-check-item"><input type="checkbox" id="chkColSearch"> <span
+                        data-i18n="setup.deck_col_search">Pesquisa</span></label>
+                    <label class="setup-check-item"><input type="checkbox" id="chkColSaved"> <span
+                        data-i18n="setup.deck_col_saved">Guardados</span></label>
+                    <label class="setup-check-item"><input type="checkbox" id="chkColNotifs"> <span
+                        data-i18n="setup.deck_col_notifs">Notificações</span></label>
+                    <label class="setup-check-item"><input type="checkbox" id="chkColMessages"> <span
+                        data-i18n="setup.deck_col_messages">Mensagens</span></label>
+                    <label class="setup-check-item"><input type="checkbox" id="chkColLists"> <span
+                        data-i18n="setup.deck_col_lists">Feeds & Listas</span></label>
+                    <label class="setup-check-item"><input type="checkbox" id="chkColProfile"> <span
+                        data-i18n="setup.deck_col_profile">Perfil</span></label>
+                  </div>
+                </div>
               </div>
 
-              <!-- Ollama Fields -->
-              <div id="aiOllamaBox" style="margin-top:10px" hidden>
-                <label><span data-i18n="setup.ai_ollama_url_label">Endereço do Ollama (Local):</span>
-                  <input type="text" id="cfgAiOllamaUrl" placeholder="http://localhost:11434" autocomplete="off">
+              <div class="setup-section">
+                <div class="setup-sec-title"><span>📰 <span data-i18n="setup.feed_pref_title">Comportamento da
+                      Timeline</span></span></div>
+                <label class="setup-check-item" style="padding:0;font-weight:600">
+                  <input type="checkbox" id="cfgCrosstalkDedup" checked>
+                  <span data-i18n="setup.crosstalk_label">Agrupar publicações duplicadas entre redes (Crosstalk)</span>
                 </label>
-                <label style="margin-top:8px"><span data-i18n="setup.ai_ollama_model_label">Nome do Modelo com
-                    Visão:</span>
-                  <input type="text" id="cfgAiOllamaModel" placeholder="llama3.2-vision ou moondream"
-                    autocomplete="off">
-                </label>
-                <small class="setup-help" data-i18n="setup.ai_ollama_help">Certifica-te que o Ollama está a correr com
-                  um modelo de visão (ex: 'ollama run llama3.2-vision').</small>
-              </div>
-
-              <!-- OpenAI Compatible Fields -->
-              <div id="aiOpenAiBox" style="margin-top:10px" hidden>
-                <label><span data-i18n="setup.ai_openai_url_label">URL Base da API:</span>
-                  <input type="text" id="cfgAiOpenAiUrl" placeholder="https://api.openai.com/v1" autocomplete="off">
-                </label>
-                <label style="margin-top:8px"><span data-i18n="setup.ai_openai_key_label">Chave de API (opcional para
-                    modelos locais):</span>
-                  <input type="password" id="cfgAiOpenAiKey" placeholder="sk-..." autocomplete="off">
-                </label>
-                <label style="margin-top:8px"><span data-i18n="setup.ai_openai_model_label">Modelo:</span>
-                  <input type="text" id="cfgAiOpenAiModel" placeholder="gpt-4o-mini" autocomplete="off">
-                </label>
-              </div>
-
-              <!-- Auto Generate Checkbox -->
-              <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:10px">
-                <label class="setup-check-item" style="padding:0;font-weight:500">
-                  <input type="checkbox" id="cfgAiAuto">
-                  <span data-i18n="setup.ai_auto_label">Gerar Alt-Text automaticamente ao anexar imagens</span>
+                <div style="font-size:11.5px;color:var(--muted);margin:3px 0 0 24px;line-height:1.4"
+                  data-i18n="setup.crosstalk_desc">
+                  Funde num único cartão os posts publicados em simultâneo no Mastodon e Bluesky, dando
+                  prioridade ao Mastodon.
+                </div>
+                <label class="setup-check-item" style="padding:0;font-weight:600;margin-top:12px">
+                  <input type="checkbox" id="cfgBoostCluster" checked>
+                  <span data-i18n="setup.boost_cluster_label">Agrupar sequências de republicações na Timeline (estilo
+                    Phanpy)</span>
                 </label>
               </div>
             </div>
 
-            <div class="setup-section update-section">
-              <div class="setup-sec-title"><span>🔄 <span data-i18n="update.section_title">Versão e
-                    Atualizações</span></span></div>
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-                <div>
-                  <div style="font-size:13px;font-weight:600;color:var(--ink)">MastoSky <span id="appVersionBadge"
-                      style="opacity:0.85">v0.8.0</span></div>
-                  <div id="updateStatusText" style="font-size:12px;color:var(--muted);margin-top:2px"
-                    data-i18n="update.checking">A verificar atualizações...</div>
+            <!-- TAB 3: IA & Acessibilidade -->
+            <div class="settings-tab-panel" data-settings-panel="ai" role="tabpanel" hidden>
+              <div class="setup-section" id="aiConfigSection">
+                <div class="setup-sec-title"><span>🤖 <span data-i18n="setup.ai_title">Acessibilidade & IA</span></span>
                 </div>
-                <div style="display:flex;gap:8px;align-items:center">
-                  <button type="button" class="ghost-sm" id="checkUpdateBtn"
-                    data-i18n="update.btn_check">Verificar</button>
-                  <button type="button" class="send-sm" id="selfUpdateBtn" style="display:inline-flex"
-                    data-i18n="update.btn_update">Atualizar agora</button>
+                <label><span data-i18n="setup.ai_provider_label">Fornecedor de IA:</span>
+                  <select id="cfgAiProvider"
+                    style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                    <option value="none" data-i18n="setup.ai_prov_none">Desativado (Manual)</option>
+                    <option value="gemini" data-i18n="setup.ai_prov_gemini">Google Gemini (Grátis - Recomendado)</option>
+                    <option value="ollama" data-i18n="setup.ai_prov_ollama">Ollama (100% Local)</option>
+                    <option value="openai" data-i18n="setup.ai_prov_openai">Compatível OpenAI / LocalAI</option>
+                  </select>
+                </label>
+
+                <label style="display:block;margin-top:10px">
+                  <span data-i18n="setup.ai_lang_label">Idioma do Alt-Text:</span>
+                  <select id="cfgAiLang"
+                    style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                    <option value="pt-pt" data-i18n="setup.ai_lang_pt_pt">Português (Portugal)</option>
+                    <option value="pt-br" data-i18n="setup.ai_lang_pt_br">Português (Brasil)</option>
+                    <option value="en" data-i18n="setup.ai_lang_en">Inglês (English)</option>
+                    <option value="es" data-i18n="setup.ai_lang_es">Espanhol (Español)</option>
+                    <option value="fr" data-i18n="setup.ai_lang_fr">Francês (Français)</option>
+                    <option value="ui" data-i18n="setup.ai_lang_ui">Seguir idioma da interface</option>
+                  </select>
+                </label>
+
+                <!-- Gemini Fields -->
+                <div id="aiGeminiBox" style="margin-top:10px" hidden>
+                  <label><span data-i18n="setup.ai_gemini_key_label">Chave de API do Google AI Studio (*API Key*):</span>
+                    <input type="password" id="cfgAiGeminiKey" placeholder="AIzaSy..." autocomplete="off">
+                  </label>
+                  <label style="margin-top:8px"><span data-i18n="setup.ai_gemini_model_label">Modelo Gemini:</span>
+                    <select id="cfgAiGeminiModel"
+                      style="width:100%;margin-top:4px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                      <option value="gemini-3.5-flash">Gemini 3.5 Flash (Recomendado - Mais Estável)</option>
+                      <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash Lite (Mais Rápido e Leve)</option>
+                      <option value="gemini-3.8-flash">Gemini 3.8 Flash (Mais Recente)</option>
+                      <option value="gemini-flash-latest">Gemini Flash (Versão Automática)</option>
+                    </select>
+                  </label>
+                  <small class="setup-help" data-i18n="setup.ai_gemini_help">Gera gratuitamente em aistudio.google.com
+                    &gt; Get API key. Não requer cartão de crédito.</small>
+                </div>
+
+                <!-- Ollama Fields -->
+                <div id="aiOllamaBox" style="margin-top:10px" hidden>
+                  <label><span data-i18n="setup.ai_ollama_url_label">Endereço do Ollama (Local):</span>
+                    <input type="text" id="cfgAiOllamaUrl" placeholder="http://localhost:11434" autocomplete="off">
+                  </label>
+                  <label style="margin-top:8px"><span data-i18n="setup.ai_ollama_model_label">Nome do Modelo com
+                      Visão:</span>
+                    <input type="text" id="cfgAiOllamaModel" placeholder="llama3.2-vision ou moondream"
+                      autocomplete="off">
+                  </label>
+                  <small class="setup-help" data-i18n="setup.ai_ollama_help">Certifica-te que o Ollama está a correr com
+                    um modelo de visão (ex: 'ollama run llama3.2-vision').</small>
+                </div>
+
+                <!-- OpenAI Compatible Fields -->
+                <div id="aiOpenAiBox" style="margin-top:10px" hidden>
+                  <label><span data-i18n="setup.ai_openai_url_label">URL Base da API:</span>
+                    <input type="text" id="cfgAiOpenAiUrl" placeholder="https://api.openai.com/v1" autocomplete="off">
+                  </label>
+                  <label style="margin-top:8px"><span data-i18n="setup.ai_openai_key_label">Chave de API (opcional para
+                      modelos locais):</span>
+                    <input type="password" id="cfgAiOpenAiKey" placeholder="sk-..." autocomplete="off">
+                  </label>
+                  <label style="margin-top:8px"><span data-i18n="setup.ai_openai_model_label">Modelo:</span>
+                    <input type="text" id="cfgAiOpenAiModel" placeholder="gpt-4o-mini" autocomplete="off">
+                  </label>
+                </div>
+
+                <!-- Auto Generate & Missing ALT Warning -->
+                <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:8px">
+                  <label class="setup-check-item" style="padding:0;font-weight:500">
+                    <input type="checkbox" id="cfgAiAuto">
+                    <span data-i18n="setup.ai_auto_label">Gerar Alt-Text automaticamente ao anexar imagens</span>
+                  </label>
+                  <label class="setup-check-item" style="padding:0;font-weight:500">
+                    <input type="checkbox" id="cfgWarnMissingAlt" checked>
+                    <span data-i18n="setup.warn_missing_alt_label">Avisar antes de publicar imagens sem descrição
+                      ALT</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: Notificações & Filtros -->
+            <div class="settings-tab-panel" data-settings-panel="notifs" role="tabpanel" hidden>
+              <div class="setup-section">
+                <div class="setup-sec-title"><span>🔔 <span data-i18n="setup.notifs_sec_title">Alertas e
+                      Notificações</span></span></div>
+                <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;margin-top:8px">
+                  <div>
+                    <label class="setup-check-item" style="padding:0;font-weight:600">
+                      <input type="checkbox" id="cfgNotifSound">
+                      <span data-i18n="notifs.sound_title">Sons espaciais de notificação</span>
+                    </label>
+                    <div style="font-size:11.5px;color:var(--muted);margin:3px 0 8px 24px" data-i18n="notifs.sound_desc">
+                      Efeitos sonoros cósmicos e discretos sintetizados via Web Audio.
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-left:24px">
+                      <button type="button" class="notif-sound-btn" onclick="testSpatialSound('reply')"
+                        title="Ouvir som de resposta">
+                        <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_reply">Resposta</span>
+                      </button>
+                      <button type="button" class="notif-sound-btn" onclick="testSpatialSound('like')"
+                        title="Ouvir som de gosto">
+                        <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_like">Gosto</span>
+                      </button>
+                      <button type="button" class="notif-sound-btn" onclick="testSpatialSound('boost')"
+                        title="Ouvir som de partilha">
+                        <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_boost">Partilha</span>
+                      </button>
+                      <button type="button" class="notif-sound-btn" onclick="testSpatialSound('follow')"
+                        title="Ouvir som de seguidor">
+                        <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_follow">Seguidor</span>
+                      </button>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;margin:10px 0 0 24px">
+                      <label for="cfgNotifVolume" style="font-size:12px;color:var(--muted);white-space:nowrap"
+                        data-i18n="notifs.volume_label">Volume:</label>
+                      <input type="range" id="cfgNotifVolume" min="10" max="100" step="5" value="75"
+                        style="flex:1;max-width:180px;accent-color:var(--accent);cursor:pointer">
+                      <span id="cfgNotifVolumeVal"
+                        style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px">75%</span>
+                    </div>
+                  </div>
+
+                  <div style="border-top:1px solid var(--line);padding-top:10px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                      <label class="setup-check-item" style="padding:0;font-weight:600">
+                        <input type="checkbox" id="cfgNotifDesktop">
+                        <span data-i18n="notifs.desktop_title">Notificações no ambiente de trabalho</span>
+                      </label>
+                      <span id="cfgDesktopNotifStatus" style="font-size:11.5px;font-weight:600"></span>
+                    </div>
+                    <div style="font-size:11.5px;color:var(--muted);margin:3px 0 6px 24px"
+                      data-i18n="notifs.desktop_desc">
+                      Recebe avisos no ecrã quando chegam novas interações.
+                    </div>
+                    <div id="cfgDesktopNotifPermBox" style="margin-left:24px" hidden>
+                      <button type="button" class="setup-secondary-btn" onclick="requestDesktopNotificationPermission()"
+                        data-i18n="notifs.desktop_req_btn">
+                        Pedir autorização ao navegador
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style="border-top:1px solid var(--line);padding-top:10px">
+                    <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--ink)"
+                      data-i18n="notifs.types_title">Alertar para:</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px">
+                      <label class="setup-check-item">
+                        <input type="checkbox" id="cfgNotifTypeReplies" checked>
+                        <span data-i18n="notifs.type_replies">Respostas & Menções</span>
+                      </label>
+                      <label class="setup-check-item">
+                        <input type="checkbox" id="cfgNotifTypeLikes" checked>
+                        <span data-i18n="notifs.type_likes">Gostos</span>
+                      </label>
+                      <label class="setup-check-item">
+                        <input type="checkbox" id="cfgNotifTypeBoosts" checked>
+                        <span data-i18n="notifs.type_boosts">Partilhas</span>
+                      </label>
+                      <label class="setup-check-item">
+                        <input type="checkbox" id="cfgNotifTypeFollows" checked>
+                        <span data-i18n="notifs.type_follows">Seguidores</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="setup-section" id="mutedWordsSection">
+                <div class="setup-sec-title"><span>🔇 <span data-i18n="setup.muted_title">Palavras Silenciadas &
+                      Filtros</span></span></div>
+                <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45"
+                  data-i18n="setup.muted_desc">
+                  Esconde ou avisa em publicações que contenham estas palavras-chave ou hashtags no texto ou aviso de
+                  conteúdo.
+                </p>
+                <label><span data-i18n="setup.muted_mode_label">Comportamento do filtro:</span>
+                  <select id="cfgMuteModeSelect"
+                    style="width:100%;margin-top:6px;padding:6px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">
+                    <option id="optMuteWarn" value="warn" data-i18n="setup.muted_mode_warn">Mostrar aviso colapsável
+                    </option>
+                    <option id="optMuteHide" value="hide" data-i18n="setup.muted_mode_hide">Ocultar completamente</option>
+                  </select>
+                </label>
+                <div class="muted-add-row">
+                  <input type="text" id="mutedWordInput" placeholder="Adicionar palavra ou #hashtag..."
+                    data-i18n-ph="setup.muted_ph" autocomplete="off">
+                  <button type="button" class="setup-secondary-btn" id="addMutedWordBtn"
+                    data-i18n="setup.muted_add_btn">Adicionar</button>
+                </div>
+                <div id="mutedChipsList" class="muted-chips-list"></div>
+              </div>
+            </div>
+
+            <!-- TAB 5: Sistema & Dados -->
+            <div class="settings-tab-panel" data-settings-panel="system" role="tabpanel" hidden>
+              <div class="setup-section" id="backupSection">
+                <div class="setup-sec-title"><span>💾 <span data-i18n="setup.backup_title">Cópia de Segurança &
+                      Dados</span></span></div>
+                <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45"
+                  data-i18n="setup.backup_desc">
+                  Exporta ou restaura os teus rascunhos, posts guardados, preferências e ordem das colunas num ficheiro
+                  JSON seguro.
+                </p>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                  <button type="button" class="setup-secondary-btn" id="exportBackupBtn"
+                    style="display:inline-flex;align-items:center;gap:6px">
+                    <span>⬇️</span> <span data-i18n="setup.backup_export_btn">Exportar Backup (JSON)</span>
+                  </button>
+                  <button type="button" class="setup-secondary-btn" id="importBackupBtn"
+                    style="display:inline-flex;align-items:center;gap:6px">
+                    <span>⬆️</span> <span data-i18n="setup.backup_import_btn">Restaurar Backup</span>
+                  </button>
+                  <input type="file" id="importBackupFileInput" accept=".json,application/json" style="display:none">
+                </div>
+                <div id="backupFeedbackMsg" class="msg" style="margin-top:8px"></div>
+              </div>
+
+              <div class="setup-section" id="mobileLanSection">
+                <div class="setup-sec-title"><span>📱 <span data-i18n="setup.mobile_title">Acesso Móvel & PWA (Telemóvel /
+                      iPad)</span></span></div>
+                <p style="font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.45"
+                  data-i18n="setup.mobile_desc">
+                  Acede ao MastoSky a partir de qualquer iPhone, iPad ou Android na tua rede Wi-Fi e instala-o como app no
+                  ecrã inicial.
+                </p>
+                <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+                  <span id="settingsLanBadgeText" style="font-size:12px;color:var(--muted)">...</span>
+                  <button type="button" class="setup-secondary-btn" id="openMobileModalFromSettings"
+                    style="display:inline-flex;align-items:center;gap:6px">
+                    <span data-i18n="setup.mobile_btn">Ver QR Code & Instruções ↗</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setup-section update-section">
+                <div class="setup-sec-title"><span>🔄 <span data-i18n="update.section_title">Versão e
+                      Atualizações</span></span></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:var(--ink)">MastoSky <span id="appVersionBadge"
+                        style="opacity:0.85">v0.8.5</span></div>
+                    <div id="updateStatusText" style="font-size:12px;color:var(--muted);margin-top:2px"
+                      data-i18n="update.checking">A verificar atualizações...</div>
+                  </div>
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <button type="button" class="ghost-sm" id="checkUpdateBtn"
+                      data-i18n="update.btn_check">Verificar</button>
+                    <button type="button" class="send-sm" id="selfUpdateBtn" style="display:inline-flex"
+                      data-i18n="update.btn_update">Atualizar agora</button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div id="setupMsg" class="msg"></div>
-
-        <div class="setup-actions">
-          <button type="button" class="ghost" id="cancelSetupBtn" onclick="closeSetup()"
-            data-i18n="setup.cancel_btn">Cancelar</button>
-          <button type="button" class="send" id="saveSetupBtn" data-i18n="setup.save_btn">Guardar e Iniciar</button>
+        <div class="setup-footer">
+          <div id="setupMsg" class="msg"></div>
+          <div class="setup-actions">
+            <button type="button" class="ghost" id="cancelSetupBtn" onclick="closeSetup()"
+              data-i18n="setup.cancel_btn">Cancelar</button>
+            <button type="button" class="send" id="saveSetupBtn" data-i18n="setup.save_btn">Guardar e Iniciar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -10070,7 +10240,13 @@
         setup: {
           title: "Configuração do MastoSky",
           desc: "Podes ligar ambas as redes ou apenas uma. As tuas credenciais são guardadas localmente e nunca saem do teu computador.",
-          pref_title: "Preferências",
+          tab_accounts: "Contas & Redes",
+          tab_appearance: "Aparência & Feed",
+          tab_ai: "IA & Acessibilidade",
+          tab_notifs: "Notificações & Filtros",
+          tab_system: "Sistema & Dados",
+          pref_title: "Preferências de Interface",
+          feed_pref_title: "Comportamento da Timeline",
           notifs_sec_title: "Alertas e Notificações",
           lang_title: "Idioma / Language",
           lang_label: "Idioma da interface:",
@@ -10113,7 +10289,7 @@
           masto_inst_label: "Instância:",
           masto_token_label: "Token de acesso:",
           masto_help: "Gera na tua instância em Preferências > Desenvolvimento > Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Indica apenas o domínio da instância (ex: mastodon.social), sem o teu @utilizador.",
-          ai_title: "Acessibilidade & IA (Alt-Text)",
+          ai_title: "Acessibilidade & IA",
           ai_provider_label: "Fornecedor de IA:",
           ai_prov_none: "Desativado (Manual)",
           ai_prov_gemini: "Google Gemini (Grátis - Recomendado)",
@@ -10702,7 +10878,13 @@
         setup: {
           title: "MastoSky Settings",
           desc: "You can connect both networks or just one. Your credentials are saved locally and never leave your computer.",
-          pref_title: "Preferences",
+          tab_accounts: "Accounts & Networks",
+          tab_appearance: "Appearance & Feed",
+          tab_ai: "AI & Accessibility",
+          tab_notifs: "Notifications & Filters",
+          tab_system: "System & Data",
+          pref_title: "Interface Preferences",
+          feed_pref_title: "Timeline Behavior",
           notifs_sec_title: "Alerts & Notifications",
           lang_title: "Language / Idioma",
           lang_label: "Interface language:",
@@ -10745,7 +10927,7 @@
           masto_inst_label: "Instance:",
           masto_token_label: "Access token:",
           masto_help: "Generate in your instance Preferences > Development > New Application. Keep default Redirect URI and check scopes: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Enter only the instance domain (e.g. mastodon.social), without your @handle.",
-          ai_title: "Accessibility & AI (Alt-Text)",
+          ai_title: "Accessibility & AI",
           ai_provider_label: "AI Provider:",
           ai_prov_none: "Disabled (Manual)",
           ai_prov_gemini: "Google Gemini (Free - Recommended)",
@@ -21533,11 +21715,30 @@
       }
     }
 
+    let activeSettingsTab = "accounts";
+
+    function setSettingsTab(tabId) {
+      activeSettingsTab = tabId || "accounts";
+      const navBtns = document.querySelectorAll("#settingsNav .settings-nav-btn");
+      navBtns.forEach(btn => {
+        const isOn = btn.getAttribute("data-settings-tab") === activeSettingsTab;
+        btn.classList.toggle("active", isOn);
+        btn.setAttribute("aria-selected", isOn ? "true" : "false");
+      });
+      const panels = document.querySelectorAll("#settingsPanels .settings-tab-panel");
+      panels.forEach(panel => {
+        panel.hidden = panel.getAttribute("data-settings-panel") !== activeSettingsTab;
+      });
+      const panelsWrap = $("settingsPanels");
+      if (panelsWrap) panelsWrap.scrollTop = 0;
+    }
+
     async function openSetup(mandatory = false) {
       $("setupOverlay").hidden = false;
       $("setupOverlay").scrollTop = 0;
       const dlg = $("setupOverlay").querySelector(".setup-box");
       if (dlg) dlg.scrollTop = 0;
+      setSettingsTab(mandatory ? "accounts" : activeSettingsTab);
       $("closeSetup").hidden = mandatory;
       if ($("cancelSetupBtn")) $("cancelSetupBtn").hidden = mandatory;
       $("setupMsg").textContent = "";

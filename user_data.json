@@ -5,7 +5,7 @@
   "mute_mode": "warn",
   "preferences": {
     "theme": "system",
-    "lang": "pt",
+    "lang": "en",
     "nav_mode": "sidebar",
     "view_mode": "deck",
     "deck_columns": [
@@ -14,13 +14,17 @@
       "notifs",
       "explore"
     ],
-    "notif_sound": false,
+    "notif_sound": true,
     "notif_types": {
       "replies": true,
       "likes": true,
       "boosts": true,
       "follows": true
-    }
+    },
+    "crosstalk_dedup": true,
+    "warn_missing_alt": true,
+    "boost_cluster": true,
+    "handle_mappings": []
   },
-  "updated_at": 1794761918746
+  "updated_at": 1795031418261
 }
