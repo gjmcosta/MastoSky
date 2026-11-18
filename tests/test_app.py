@@ -4417,6 +4417,31 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         ]:
             self.assertIn(marker, html)
 
+    def test_security_hardening_ssrf_tls_and_masked_ai_keys(self):
+        # 1. DNS que resolve para IP privado/loopback deve ser bloqueado
+        fake_info = [(app.socket.AF_INET, app.socket.SOCK_STREAM, 6, "", ("127.0.0.1", 0))]
+        with mock.patch.object(app.socket, "getaddrinfo", return_value=fake_info):
+            with self.assertRaises(ValueError):
+                app._validate_remote_http_url("https://rebind.example.com/a")
+
+        # 2. _urlopen_remote não deve fazer fallback para contexto TLS sem verificação
+        with mock.patch.object(app.ssl, "_create_unverified_context") as unverified_mock:
+            fake_opener = mock.MagicMock()
+            fake_opener.open.side_effect = RuntimeError("tls error")
+            with mock.patch.object(app.urllib.request, "build_opener", return_value=fake_opener):
+                with self.assertRaises(RuntimeError):
+                    app._urlopen_remote(app.urllib.request.Request("https://example.com"))
+            unverified_mock.assert_not_called()
+
+        # 3. /api/status não deve expor gemini_key nem openai_key em texto limpo
+        with mock.patch.object(app, "CFG", {"ai": {"provider": "gemini", "gemini_key": "AIzaSecret", "openai_key": "sk-secret"}}):
+            code, status_data = self._req("GET", "/api/status")
+            self.assertEqual(code, 200)
+            self.assertEqual(status_data["ai"]["gemini_key"], "")
+            self.assertEqual(status_data["ai"]["openai_key"], "")
+            self.assertTrue(status_data["ai"]["has_gemini_key"])
+            self.assertTrue(status_data["ai"]["has_openai_key"])
+
 
 if __name__ == "__main__":
     unittest.main()

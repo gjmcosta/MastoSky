@@ -1075,8 +1075,17 @@ def safe_media_list(items):
 _LINK_PREVIEW_CACHE = {}
 
 
+def _check_ip_public(ip_obj):
+    """Rejeita endereços IP privados, loopback, link-local ou Tailscale."""
+    mapped = getattr(ip_obj, "ipv4_mapped", None)
+    if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj in _TAILSCALE_NET or (
+        mapped is not None and (mapped.is_private or mapped.is_loopback or mapped.is_link_local or mapped in _TAILSCALE_NET)
+    ):
+        raise ValueError("Acesso a endereços de rede privada não permitido.")
+
+
 def _validate_remote_http_url(url_str):
-    """Valida URL http(s) pública e bloqueia destinos locais/privados/Tailscale."""
+    """Valida URL http(s) pública e bloqueia destinos locais/privados/Tailscale (incluindo via DNS)."""
     u = safe_url(url_str)
     if not u:
         raise ValueError("URL inválida.")
@@ -1091,20 +1100,41 @@ def _validate_remote_http_url(url_str):
     except ValueError:
         ip = None
     if ip is not None:
-        mapped = getattr(ip, "ipv4_mapped", None)
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip in _TAILSCALE_NET or (
-            mapped is not None and (mapped.is_private or mapped.is_loopback or mapped.is_link_local or mapped in _TAILSCALE_NET)
-        ):
-            raise ValueError("Acesso a endereços de rede privada não permitido.")
+        _check_ip_public(ip)
+    else:
+        try:
+            infos = socket.getaddrinfo(host, None)
+        except socket.gaierror:
+            infos = []
+        for info in infos:
+            addr = info[4][0].split("%", 1)[0]
+            try:
+                resolved_ip = ipaddress.ip_address(addr)
+            except ValueError:
+                continue
+            _check_ip_public(resolved_ip)
     return u, p
 
 
+class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Revalida o destino de cada redirecionamento HTTP contra SSRF."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _validate_remote_http_url(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_ORIG_URLOPEN = urllib.request.urlopen
+
+
 def _urlopen_remote(req, timeout=10):
-    ssl_ctx = SSL_CTX
-    try:
-        return urllib.request.urlopen(req, timeout=timeout, context=ssl_ctx)
-    except Exception:
-        return urllib.request.urlopen(req, timeout=timeout, context=ssl._create_unverified_context())
+    """Abre um pedido remoto exigindo TLS válido e validando redirecionamentos."""
+    if urllib.request.urlopen is not _ORIG_URLOPEN:
+        return urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX)
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPSHandler(context=SSL_CTX),
+        _SafeRedirectHandler(),
+    )
+    return opener.open(req, timeout=timeout)
 
 
 class _LinkPreviewParser(HTMLParser):
@@ -4523,17 +4553,20 @@ class H(BaseHTTPRequestHandler):
                 return self.send(400, {"error": "Ficheiro demasiado grande (máx 15MB)."})
             return self.send(200, p.read_bytes(), valid_exts[ext])
         if path == "/api/status":
+            ai_cfg = CFG.get("ai", {})
             ai_data = {
-                "provider": CFG.get("ai", {}).get("provider", "none"),
-                "lang": CFG.get("ai", {}).get("lang", "pt-pt"),
-                "auto": CFG.get("ai", {}).get("auto", False),
-                "gemini_key": CFG.get("ai", {}).get("gemini_key", ""),
-                "gemini_model": CFG.get("ai", {}).get("gemini_model", "gemini-3.5-flash-lite"),
-                "ollama_url": CFG.get("ai", {}).get("ollama_url", "http://localhost:11434"),
-                "ollama_model": CFG.get("ai", {}).get("ollama_model", "llama3.2-vision"),
-                "openai_url": CFG.get("ai", {}).get("openai_url", "https://api.openai.com/v1"),
-                "openai_key": CFG.get("ai", {}).get("openai_key", ""),
-                "openai_model": CFG.get("ai", {}).get("openai_model", "gpt-4o-mini"),
+                "provider": ai_cfg.get("provider", "none"),
+                "lang": ai_cfg.get("lang", "pt-pt"),
+                "auto": ai_cfg.get("auto", False),
+                "gemini_key": "",
+                "has_gemini_key": bool((ai_cfg.get("gemini_key") or "").strip()),
+                "gemini_model": ai_cfg.get("gemini_model", "gemini-3.5-flash-lite"),
+                "ollama_url": ai_cfg.get("ollama_url", "http://localhost:11434"),
+                "ollama_model": ai_cfg.get("ollama_model", "llama3.2-vision"),
+                "openai_url": ai_cfg.get("openai_url", "https://api.openai.com/v1"),
+                "openai_key": "",
+                "has_openai_key": bool((ai_cfg.get("openai_key") or "").strip()),
+                "openai_model": ai_cfg.get("openai_model", "gpt-4o-mini"),
             }
             return self.send(200, {
                 "configured": bool(CLIENTS),
@@ -4919,16 +4952,19 @@ class H(BaseHTTPRequestHandler):
             if "ai" in d:
                 ai = d.get("ai")
                 if isinstance(ai, dict):
+                    prev_ai = new_cfg.get("ai", {}) if isinstance(new_cfg.get("ai"), dict) else {}
+                    g_key = str(ai.get("gemini_key") or "").strip() or str(prev_ai.get("gemini_key") or "").strip()
+                    o_key = str(ai.get("openai_key") or "").strip() or str(prev_ai.get("openai_key") or "").strip()
                     new_cfg["ai"] = {
                         "provider": str(ai.get("provider") or "none").strip(),
                         "lang": str(ai.get("lang") or "pt-pt").strip(),
                         "auto": bool(ai.get("auto", False)),
-                        "gemini_key": str(ai.get("gemini_key") or "").strip(),
+                        "gemini_key": g_key,
                         "gemini_model": str(ai.get("gemini_model") or "gemini-3.5-flash-lite").strip(),
                         "ollama_url": str(ai.get("ollama_url") or "http://localhost:11434").strip(),
                         "ollama_model": str(ai.get("ollama_model") or "llama3.2-vision").strip(),
                         "openai_url": str(ai.get("openai_url") or "https://api.openai.com/v1").strip(),
-                        "openai_key": str(ai.get("openai_key") or "").strip(),
+                        "openai_key": o_key,
                         "openai_model": str(ai.get("openai_model") or "gpt-4o-mini").strip(),
                     }
                 elif ai is None and "ai" in new_cfg:

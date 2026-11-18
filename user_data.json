@@ -13,7 +13,8 @@
       "timeline",
       "notifs",
       "explore",
-      "profile"
+      "profile",
+      "search"
     ],
     "notif_sound": true,
     "notif_types": {
@@ -27,5 +28,5 @@
     "boost_cluster": true,
     "handle_mappings": []
   },
-  "updated_at": 1795033916055
+  "updated_at": 1795036295360
 }

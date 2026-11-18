@@ -9508,7 +9508,7 @@
           <div class="reader-tools">
             <button type="button" class="ghost-sm" id="readerFontDecBtn" title="Diminuir letra">A-</button>
             <button type="button" class="ghost-sm" id="readerFontIncBtn" title="Aumentar letra">A+</button>
-            <a id="readerOpenOrigLink" class="send-sm" href="#" target="_blank" rel="opener"
+            <a id="readerOpenOrigLink" class="send-sm" href="#" target="_blank" rel="noopener noreferrer"
               style="text-decoration:none" data-i18n="reader.open_orig">Abrir original ↗</a>
           </div>
         </div>
@@ -9815,7 +9815,7 @@
         <div class="lightbox-caption" id="lightboxCaption">
           <span class="lightbox-counter" id="lightboxCount" hidden></span>
           <span class="lightbox-alt" id="lightboxAltText"></span>
-          <a id="lightboxOriginalLink" href="#" target="_blank" rel="opener" class="lightbox-link"
+          <a id="lightboxOriginalLink" href="#" target="_blank" rel="noopener noreferrer" class="lightbox-link"
             data-i18n="lightbox.open_original">Abrir original ↗</a>
         </div>
       </div>
@@ -21920,7 +21920,10 @@
           if ($("cfgAiProvider")) $("cfgAiProvider").value = s.ai.provider || "none";
           if ($("cfgAiLang")) $("cfgAiLang").value = s.ai.lang || "pt-pt";
           if ($("cfgAiAuto")) $("cfgAiAuto").checked = Boolean(s.ai.auto);
-          if ($("cfgAiGeminiKey")) $("cfgAiGeminiKey").value = s.ai.gemini_key || "";
+          if ($("cfgAiGeminiKey")) {
+            $("cfgAiGeminiKey").value = "";
+            $("cfgAiGeminiKey").placeholder = s.ai.has_gemini_key ? "•••••••• (guardada)" : "AIzaSy...";
+          }
           if ($("cfgAiGeminiModel")) {
             const m = s.ai.gemini_model || "gemini-3.5-flash";
             let opt = Array.from($("cfgAiGeminiModel").options).find(o => o.value === m);
@@ -21935,7 +21938,10 @@
           if ($("cfgAiOllamaUrl")) $("cfgAiOllamaUrl").value = s.ai.ollama_url || "http://localhost:11434";
           if ($("cfgAiOllamaModel")) $("cfgAiOllamaModel").value = s.ai.ollama_model || "llama3.2-vision";
           if ($("cfgAiOpenAiUrl")) $("cfgAiOpenAiUrl").value = s.ai.openai_url || "https://api.openai.com/v1";
-          if ($("cfgAiOpenAiKey")) $("cfgAiOpenAiKey").value = s.ai.openai_key || "";
+          if ($("cfgAiOpenAiKey")) {
+            $("cfgAiOpenAiKey").value = "";
+            $("cfgAiOpenAiKey").placeholder = s.ai.has_openai_key ? "•••••••• (guardada)" : "sk-...";
+          }
           if ($("cfgAiOpenAiModel")) $("cfgAiOpenAiModel").value = s.ai.openai_model || "gpt-4o-mini";
           updateAiProviderBoxes();
         }
