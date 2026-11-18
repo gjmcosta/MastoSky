@@ -4359,8 +4359,10 @@
       inset: 0;
       background: rgba(0, 0, 0, 0.65);
       backdrop-filter: blur(5px);
-      display: grid;
-      place-items: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
       z-index: 999;
       padding: 16px;
       box-sizing: border-box;
@@ -4383,6 +4385,7 @@
       max-width: 480px;
       width: 100%;
       min-width: 0;
+      margin: auto;
       overflow-x: hidden;
       padding: 22px;
       box-sizing: border-box;
@@ -4393,6 +4396,8 @@
     .setup-box.settings-dialog {
       max-width: 960px;
       width: 100%;
+      max-height: calc(100dvh - 32px);
+      overflow-y: auto;
       padding: 24px 28px;
       border-radius: 16px;
       box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45)
@@ -8525,9 +8530,8 @@
               data-i18n-title="header.refresh"><svg class="ico" style="width:14px;height:14px">
                 <use href="#i-refresh" />
               </svg></button>
-            <button type="button" class="deck-act-btn"
-              onclick="$('colListsBody').scrollTo({top:0,behavior:'smooth'})" title="Topo"
-              data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px">
+            <button type="button" class="deck-act-btn" onclick="$('colListsBody').scrollTo({top:0,behavior:'smooth'})"
+              title="Topo" data-i18n-title="nav.scroll_top"><svg class="ico" style="width:14px;height:14px">
                 <use href="#i-arrow-up" />
               </svg></button>
             <button type="button" class="deck-act-btn deck-close-btn" onclick="closeDeckColumn('lists')"
@@ -8715,8 +8719,10 @@
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex:none">
             <div class="setup-quick-lang" id="setupQuickLang" role="group" aria-label="Idioma / Language">
-              <button type="button" class="setup-lang-pill" data-setup-lang="pt" onclick="setLang('pt')">🇵🇹 PT</button>
-              <button type="button" class="setup-lang-pill" data-setup-lang="en" onclick="setLang('en')">🇬🇧 EN</button>
+              <button type="button" class="setup-lang-pill" data-setup-lang="pt" onclick="setLang('pt')">🇵🇹
+                PT</button>
+              <button type="button" class="setup-lang-pill" data-setup-lang="en" onclick="setLang('en')">🇬🇧
+                EN</button>
             </div>
             <button type="button" class="setup-close-btn" id="closeSetup" title="Fechar" aria-label="Fechar">✕</button>
           </div>
@@ -21481,6 +21487,9 @@
 
     async function openSetup(mandatory = false) {
       $("setupOverlay").hidden = false;
+      $("setupOverlay").scrollTop = 0;
+      const dlg = $("setupOverlay").querySelector(".setup-box");
+      if (dlg) dlg.scrollTop = 0;
       $("closeSetup").hidden = mandatory;
       if ($("cancelSetupBtn")) $("cancelSetupBtn").hidden = mandatory;
       $("setupMsg").textContent = "";
