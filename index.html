@@ -697,13 +697,46 @@
       border-radius: 50%;
       border: 0;
       background: transparent;
-      color: var(--muted);
+      color: color-mix(in srgb, var(--ink) 78%, var(--muted));
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       transition: all .15s ease;
       padding: 0
+    }
+
+    .header-deck-add-btn {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: var(--surface-1);
+      color: color-mix(in srgb, var(--ink) 88%, var(--muted));
+      font: 600 12px var(--sans);
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      transition: all .15s ease
+    }
+
+    body.view-deck .header-deck-add-btn {
+      display: inline-flex
+    }
+
+    .header-deck-add-btn:hover {
+      color: var(--ink);
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, var(--surface-1))
+    }
+
+    @media (max-width:767px) {
+      .header-deck-add-btn {
+        display: none !important
+      }
     }
 
     .header-nav-btn:hover {
@@ -1992,12 +2025,12 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
-      padding: 6px 2px;
+      padding: 6px 1px;
       border-radius: 8px;
       background: transparent;
       border: 1px solid transparent;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       cursor: pointer;
       transition: all .15s ease;
@@ -2009,7 +2042,8 @@
     .tl-filter-bar .tl-pill .filter-label,
     .tl-filter-bar .tl-catchup-btn .filter-label {
       display: block;
-      font-size: 11px;
+      font-size: 10px;
+      letter-spacing: -0.015em;
       line-height: 1.15;
       white-space: nowrap;
       overflow: hidden;
@@ -4064,12 +4098,13 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
       background: color-mix(in srgb, var(--accent) 15%, var(--card));
       border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
       border-radius: 8px;
-      padding: 8px 12px;
+      padding: 7px 10px;
       margin: 8px 0 12px;
-      font-size: 12.5px;
+      font-size: 12px;
       color: var(--ink);
       animation: popIn .18s ease-out
     }
@@ -4077,8 +4112,10 @@
     .notif-summary-left {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-weight: 600
+      gap: 7px;
+      font-weight: 600;
+      min-width: 0;
+      white-space: nowrap
     }
 
     .notif-summary-dot {
@@ -4095,11 +4132,13 @@
       border: 0;
       background: none;
       color: var(--accent);
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
       cursor: pointer;
-      padding: 3px 8px;
+      padding: 3px 6px;
       border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
       transition: background .15s
     }
 
@@ -4229,12 +4268,12 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
-      padding: 6px 2px;
+      padding: 6px 1px;
       border-radius: 8px;
       background: transparent;
       border: 1px solid transparent;
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
       cursor: pointer;
       transition: all .15s ease;
@@ -4244,7 +4283,8 @@
 
     .notif-filter-pills .filter-pill .filter-label {
       display: block;
-      font-size: 11px;
+      font-size: 10px;
+      letter-spacing: -0.015em;
       line-height: 1.15;
       white-space: nowrap;
       overflow: hidden;
@@ -4274,17 +4314,17 @@
     .filter-badge {
       position: absolute;
       top: 2px;
-      right: 4px;
+      right: 2px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 14px;
-      height: 14px;
-      padding: 0 3.5px;
+      min-width: 13px;
+      height: 13px;
+      padding: 0 3px;
       border-radius: 8px;
-      font-size: 9px;
+      font-size: 8.5px;
       font-weight: 700;
-      line-height: 14px;
+      line-height: 13px;
       background: var(--accent);
       color: #fff;
       margin-left: 0;
@@ -7759,6 +7799,9 @@
         </div>
         <div class="header-actions">
           <button type="button" class="update-pill" id="headerUpdatePill" hidden>✨ Nova versão</button>
+          <button type="button" class="header-deck-add-btn" id="headerAddColBtn" onclick="scrollToAddCol(event)"
+            data-i18n="deck.header_add_col" title="Adicionar coluna ao Deck"
+            data-i18n-title="deck.add_col_btn">+ Coluna</button>
           <div class="header-nav-group">
             <button type="button" class="header-nav-btn" id="mobileConnectBtn" title="Ligar Telemóvel / iPad"
               data-i18n-title="header.mobile_connect_title" aria-label="Ligar Telemóvel / iPad">
@@ -8518,7 +8561,7 @@
                 <span id="notifSummaryText"></span>
               </div>
               <button type="button" class="notif-summary-action" id="notifSummaryMarkAll"
-                onclick="markAllNotifsAsRead()" data-i18n="notifs.mark_all_read_btn">Marcar todas como lidas ✓✓</button>
+                onclick="markAllNotifsAsRead()" data-i18n="notifs.mark_all_read_btn">Marcar lidas ✓✓</button>
             </div>
             <div id="nerrors"></div>
             <div id="nfeed"></div>
@@ -10154,10 +10197,10 @@
           filter_boosts: "Partilhas",
           filter_follows: "Seguidores",
           mark_all_read: "Marcar como lidas",
-          mark_all_read_btn: "Marcar todas como lidas ✓✓",
+          mark_all_read_btn: "Marcar lidas ✓✓",
           unread_label: "Não lida",
-          unread_count_one: "1 notificação não lida",
-          unread_count_many: "{n} notificações não lidas",
+          unread_count_one: "1 não lida",
+          unread_count_many: "{n} não lidas",
           empty_replies: "Sem respostas ou menções por agora.",
           empty_likes: "Sem gostos recentes.",
           empty_boosts: "Sem partilhas recentes.",
@@ -10233,6 +10276,7 @@
           close_col: "Fechar coluna",
           add_col: "Adicionar Coluna",
           add_col_title: "Adicionar ao Deck",
+          header_add_col: "+ Coluna",
           all_cols_open: "Todas as colunas estão abertas",
           drag_tip: "Arrastar para reordenar",
           err_min_one_col: "O Deck precisa de pelo menos uma coluna visível."
@@ -10792,10 +10836,10 @@
           filter_boosts: "Reposts",
           filter_follows: "Follows",
           mark_all_read: "Mark all as read",
-          mark_all_read_btn: "Mark all as read ✓✓",
+          mark_all_read_btn: "Mark all read ✓✓",
           unread_label: "Unread",
-          unread_count_one: "1 unread notification",
-          unread_count_many: "{n} unread notifications",
+          unread_count_one: "1 unread",
+          unread_count_many: "{n} unread",
           empty_replies: "No replies or mentions yet.",
           empty_likes: "No recent likes.",
           empty_boosts: "No recent reposts.",
@@ -10871,6 +10915,7 @@
           close_col: "Close column",
           add_col: "Add Column",
           add_col_title: "Add to Deck",
+          header_add_col: "+ Column",
           all_cols_open: "All columns are open",
           drag_tip: "Drag to reorder",
           err_min_one_col: "The Deck needs at least one visible column."
@@ -11461,8 +11506,21 @@
       if (menu) menu.hidden = true;
     }
 
+    function scrollToAddCol(e) {
+      if (e) e.stopPropagation();
+      const card = $("deckAddColCard");
+      const menu = $("deckAddColMenu");
+      if (card) {
+        card.scrollIntoView({ behavior: "smooth", inline: "end", block: "nearest" });
+      }
+      if (menu) {
+        renderAddColMenu();
+        menu.hidden = false;
+      }
+    }
+
     document.addEventListener("click", (e) => {
-      if (!e.target.closest("#deckAddColCard")) {
+      if (!e.target.closest("#deckAddColCard") && !e.target.closest("#headerAddColBtn")) {
         closeAddColMenu();
       }
     });
