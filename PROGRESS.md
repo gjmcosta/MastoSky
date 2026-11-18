@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
-> **Data de atualização:** 17 de Novembro de 2026  
+> **Data de atualização:** 18 de Novembro de 2026  
 > **Versão:** v0.8.5  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 211 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 212 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -307,6 +307,11 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - **Feeds Personalizados (Bluesky) & Listas (Mastodon):** endpoints `GET /api/lists` e `GET /api/list_feed`, coluna dedicada `#colLists` no Deck e seletor rápido `#exploreSourceSelect` no Explorar.
   - **Sondagens (*Polls*) do Mastodon:** extração em `Masto.item()`, votação via `POST /api/poll/vote` e renderização interativa com barras percentuais em `renderPostPoll()`.
   - **Service Worker PWA (`GET /sw.js`):** cache *Cache-First* para assets estáticos e *Network-First* para a interface e feeds de leitura (sem cache de tokens/dados sensíveis).
+- **Reorganização das Definições, Polimento Deck & Endurecimento de Segurança (18 Nov 2026):**
+  - **Novo Menu de Definições por Categorias (`.settings-shell`):** modal `#setupOverlay` reorganizado em 5 separadores (*Contas & Redes*, *Aparência & Feed*, *IA & Acessibilidade*, *Notificações & Filtros*, *Sistema & Dados*) com barra lateral fixa no desktop, abas horizontais em mobile e cabeçalho/rodapé sempre fixos (`setSettingsTab()`).
+  - **Polimento do Modo Deck:** ajuste tipográfico em `#tlFilterBar` e `.notif-filter-pills` para eliminar truncamento (`...`) e sobreposição de `.filter-badge`, banner de notificações não lidas numa única linha (`.notif-summary-banner`), maior contraste em `.header-nav-btn` e atalho `+ Coluna` no cabeçalho (`#headerAddColBtn` / `scrollToAddCol()`).
+  - **Hub de Perfil Vivo (`#panelHubView`):** remoção de ações redundantes e adição do feed **Publicações recentes** (`loadProfileHubFeed()` / `#profileHubFilterPills`) diretamente abaixo dos cartões de conta.
+  - **Segurança Backend & Frontend:** remoção do fallback TLS sem verificação em `_urlopen_remote()`, validação SSRF de IPs resolvidos via `socket.getaddrinfo()` e redirecionamentos (`_SafeRedirectHandler`) em `_validate_remote_http_url()`, mascaramento de `gemini_key`/`openai_key` em `GET /api/status` (com preservação no `POST /api/setup`), e `rel="noopener noreferrer"` nos links externos do Reader View e Lightbox (cobertos por `test_security_hardening_ssrf_tls_and_masked_ai_keys`).
 
 ---
 
