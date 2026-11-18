@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
 > **Data de atualização:** 18 de Novembro de 2026  
-> **Versão:** v0.8.5  
+> **Versão:** v1.0.0  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 212 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 213 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -312,6 +312,8 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - **Polimento do Modo Deck:** ajuste tipográfico em `#tlFilterBar` e `.notif-filter-pills` para eliminar truncamento (`...`) e sobreposição de `.filter-badge`, banner de notificações não lidas numa única linha (`.notif-summary-banner`), maior contraste em `.header-nav-btn` e atalho `+ Coluna` no cabeçalho (`#headerAddColBtn` / `scrollToAddCol()`).
   - **Hub de Perfil Vivo (`#panelHubView`):** remoção de ações redundantes e adição do feed **Publicações recentes** (`loadProfileHubFeed()` / `#profileHubFilterPills`) diretamente abaixo dos cartões de conta.
   - **Segurança Backend & Frontend:** remoção do fallback TLS sem verificação em `_urlopen_remote()`, validação SSRF de IPs resolvidos via `socket.getaddrinfo()` e redirecionamentos (`_SafeRedirectHandler`) em `_validate_remote_http_url()`, mascaramento de `gemini_key`/`openai_key` em `GET /api/status` (com preservação no `POST /api/setup`), e `rel="noopener noreferrer"` nos links externos do Reader View e Lightbox (cobertos por `test_security_hardening_ssrf_tls_and_masked_ai_keys`).
+  - **Edição de Publicações:** edição nativa no Mastodon (`GET /api/post_source`, `POST /api/edit`, `Masto.edit_status()`, modal `#editPostOverlay`) e *"Apagar e editar no compositor"* no Bluesky (`reeditBlueskyPost()`).
+  - **Separação Modular do Frontend:** extração dos estilos e lógica de `index.html` para `app.css` e `app.js` (servidos por `app.py` com gzip e incluídos no `/sw.js` e `Dockerfile`).
 
 ---
 

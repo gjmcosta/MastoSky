@@ -521,7 +521,7 @@ PORT = CFG.get("port", 8000)
 LISTEN_HOST = "127.0.0.1"
 LAN_MODE = False
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "0.8.0"
+VERSION = "1.0.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
@@ -4437,6 +4437,11 @@ class H(BaseHTTPRequestHandler):
             qs = urllib.parse.parse_qs(parsed.query)
             force = qs.get("force", ["0"])[0] == "1"
             return self.send(200, check_github_update(force=force))
+        if path in ("/app.css", "/app.js"):
+            asset_path = DIR / path.lstrip("/")
+            if asset_path.is_file():
+                ctype = "text/css" if path.endswith(".css") else "application/javascript"
+                return self.send(200, asset_path.read_bytes(), ctype)
         if path in ("/manifest.json", "/manifest.webmanifest"):
             mpath = DIR / "manifest.json"
             if mpath.is_file():
@@ -4464,7 +4469,7 @@ class H(BaseHTTPRequestHandler):
                 '    })));\n'
                 '    return;\n'
                 '  }\n'
-                '  if (url.pathname === "/" || url.pathname === "/index.html" || NETWORK_FIRST_APIS.includes(url.pathname)) {\n'
+                '  if (url.pathname === "/" || url.pathname === "/index.html" || url.pathname === "/app.css" || url.pathname === "/app.js" || NETWORK_FIRST_APIS.includes(url.pathname)) {\n'
                 '    e.respondWith(fetch(e.request).then((res) => {\n'
                 '      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)); }\n'
                 '      return res;\n'

@@ -13,6 +13,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import app  # noqa: E402
 
 
+def _read_frontend():
+    root = Path(__file__).resolve().parent.parent
+    parts = [
+        (root / "index.html").read_text(encoding="utf-8"),
+        (root / "app.css").read_text(encoding="utf-8") if (root / "app.css").is_file() else "",
+        (root / "app.js").read_text(encoding="utf-8") if (root / "app.js").is_file() else "",
+    ]
+    return "\n".join(parts)
+
+
 class CleanTests(unittest.TestCase):
     def test_removes_invisible_spans(self):
         h = '<p>olá <span class="invisible">https://</span>exemplo</p>'
@@ -2051,24 +2061,21 @@ class ProxyImageTests(unittest.TestCase):
         self.assertEqual(h.wfile.getvalue(), fake_bytes)
 
     def test_index_contains_i18n_elements(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn('id="cfgLangSelect"', html)
         self.assertIn("const I18N =", html)
         self.assertIn("function applyI18n()", html)
         self.assertIn("function setLang(", html)
 
     def test_index_contains_follow_elements(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn(".btn-follow", html)
         self.assertIn(".btn-following", html)
         self.assertIn("async function toggleFollow", html)
         self.assertIn('api("/api/follow"', html)
 
     def test_index_contains_deck_view_elements(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn('id="viewToggleBtn"', html)
         self.assertIn('id="cfgViewModeSelect"', html)
         self.assertIn('id="deckContainer"', html)
@@ -2090,8 +2097,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("function initDeckDragAndDrop(", html)
 
     def test_index_contains_ai_alt_elements(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn('id="cfgAiProvider"', html)
         self.assertIn('id="cfgAiLang"', html)
         self.assertIn('id="cfgAiGeminiKey"', html)
@@ -2106,8 +2112,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("view_mode_deck", html)
 
     def test_index_contains_profile_hub_and_brand_action_icons(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn('id="i-refresh"', html)
         self.assertIn('id="i-arrow-up"', html)
         self.assertIn('id="panelHubView"', html)
@@ -2122,8 +2127,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("function refreshProfileView(", html)
 
     def test_index_contains_saved_posts_feature(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn('id="i-bookmark"', html)
         self.assertIn('id="i-bookmark-fill"', html)
         self.assertIn('data-tab="saved"', html)
@@ -2142,8 +2146,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("toast_saved", html)
 
     def test_index_contains_reply_box_elements(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn('id="replyBox"', html)
         self.assertIn('id="replyParentAvatar"', html)
         self.assertIn('id="replyParentName"', html)
@@ -2155,8 +2158,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn(".is-reply-target", html)
 
     def test_scroll_anchoring_and_notification_signaling_elements(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         # Scroll anchoring e pílulas de novos posts
         self.assertIn('id="timelineNewPostsPill"', html)
         self.assertIn('id="exploreNewPostsPill"', html)
@@ -2178,8 +2180,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn('id="notifBadgeLikes"', html)
 
     def test_deck_thread_side_column_and_distinct_icons(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         # Coluna lateral de conversa no modo Deck
         self.assertIn('id="colThread"', html)
         self.assertIn('class="deck-col deck-col-thread"', html)
@@ -2208,8 +2209,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn('thread: \'<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke-dasharray="2 2"/>', html)
 
     def test_crosspost_card_enhancements(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         # Funções de renderização aprimorada de crosspost
         self.assertIn("function getCanvasWrappedLines(", html)
         self.assertIn("function extractCleanCardText(", html)
@@ -2242,6 +2242,8 @@ class ProxyImageTests(unittest.TestCase):
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()
         scripts = re.findall(r"<script>([\s\S]*?)</script>", html)
+        if Path("app.js").is_file():
+            scripts.append(Path("app.js").read_text(encoding="utf-8"))
         self.assertTrue(scripts, "Blocos <script> não encontrados no index.html")
         # Passar cada bloco via stdin para validar inclusive o script principal completo
         for idx, js_code in enumerate(scripts):
@@ -2257,8 +2259,9 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("onNotifProfile", detected)
         self.assertIn("isReplyTarget", detected)
 
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
+        if Path("app.js").is_file() and '<script src="/app.js"></script>' in html:
+            html = html.replace('<script src="/app.js"></script>', f"<script>\n{Path('app.js').read_text(encoding='utf-8')}\n</script>")
         undeclared = check_html_undeclared_js(html)
         self.assertEqual(
             undeclared,
@@ -2267,8 +2270,7 @@ class ProxyImageTests(unittest.TestCase):
         )
 
     def test_unified_mute_words_behavior(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn("if (!it || it.is_own || !mutedWords.length) return null;", html)
         self.assertIn("if (it.target_post)", html)
         self.assertIn("function createMutedContentWrapper(container, mutedMatch)", html)
@@ -2327,8 +2329,7 @@ class ProxyImageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             masto.list_timeline("../bad")
 
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn('id="colLists"', html)
         self.assertIn('id="chkColLists"', html)
         self.assertIn('id="exploreSourceSelect"', html)
@@ -2370,8 +2371,7 @@ class ProxyImageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             masto.vote_poll("../bad", [0])
 
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn("function renderPostPoll(it)", html)
         self.assertIn('"/api/poll/vote"', html)
 
@@ -2396,8 +2396,7 @@ class ProxyImageTests(unittest.TestCase):
             srv.shutdown()
             srv.server_close()
 
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         self.assertIn('navigator.serviceWorker.register("/sw.js")', html)
         self.assertIn('id="setupQuickLang"', html)
         self.assertIn('data-setup-lang="pt"', html)
@@ -2408,8 +2407,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("if (!forceTest && nowMs - _lastNotifSoundAt < 400) return;", html)
 
     def test_keyboard_shortcuts_feature(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         # Botões e modais na interface
         self.assertIn('id="shortcutsBtn"', html)
         self.assertIn('id="sideShortcutsBtn"', html)
@@ -2438,8 +2436,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn('title: "Keyboard Shortcuts"', html)
 
     def test_backup_and_restore_feature(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         # Elementos de backup e restauro na interface
         self.assertIn('id="backupSection"', html)
         self.assertIn('id="exportBackupBtn"', html)
@@ -2461,8 +2458,7 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn('backup_import_btn: "Restore Backup"', html)
 
     def test_connectivity_and_rate_limit_indicator(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
         # Elementos visuais da pílula de estado
         self.assertIn('id="netStatusPill"', html)
         self.assertIn('id="netStatusIcon"', html)
@@ -2999,8 +2995,7 @@ class ProxyImageTests(unittest.TestCase):
             self.assertEqual(entry2[1]["translated"], "Olá mundo")
 
     def test_index_contains_translation_features(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
 
         # Funções e elementos visuais de tradução
         self.assertIn("function attachPostTranslator(", html)
@@ -3119,8 +3114,7 @@ class MobileAndLanAccessTests(unittest.TestCase):
         self.assertIn("viewBox=", svg_qr)
 
     def test_index_contains_mobile_and_pwa_features(self):
-        with open("index.html", "r", encoding="utf-8") as f:
-            html = f.read()
+        html = _read_frontend()
 
         # PWA Meta Tags
         self.assertIn('viewport-fit=cover', html)
@@ -3279,7 +3273,7 @@ class CasaOSTailscaleAndSyncTests(unittest.TestCase):
         dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
         compose = (root / "docker-compose.yml").read_text(encoding="utf-8")
         dockerignore = (root / ".dockerignore").read_text(encoding="utf-8")
-        html = (root / "index.html").read_text(encoding="utf-8")
+        html = _read_frontend()
 
         self.assertIn("python:3.12-alpine", dockerfile)
         self.assertIn("MASTOSKY_DATA_DIR=/data", dockerfile)
@@ -3382,7 +3376,7 @@ class CasaOSTailscaleAndSyncTests(unittest.TestCase):
         self.assertIn("/brand/icon-512.png", icon_srcs)
         self.assertIn("share_target", manifest)
 
-        html = (root / "index.html").read_text(encoding="utf-8")
+        html = _read_frontend()
         self.assertIn('href="/brand/apple-touch-icon.png"', html)
         self.assertIn("function isCompactMobileViewport(", html)
         self.assertIn("function initTouchPullToRefresh(", html)
@@ -3746,9 +3740,7 @@ class DirectMessagesEndpointsTests(unittest.TestCase):
 class DirectMessagesFrontendTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        index_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "index.html")
-        with open(index_path, "r", encoding="utf-8") as f:
-            cls.html = f.read()
+        cls.html = _read_frontend()
 
     def test_direct_messages_elements_present(self):
         self.assertIn('id="colMessages"', self.html)
@@ -3788,9 +3780,7 @@ class DirectMessagesFrontendTests(unittest.TestCase):
 class UiRefinementsAndCwTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        index_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "index.html")
-        with open(index_path, "r", encoding="utf-8") as f:
-            cls.html = f.read()
+        cls.html = _read_frontend()
 
     def test_masto_item_and_quote_cw_extraction(self):
         client = app.Masto({"instance": "https://x", "token": "t"})
@@ -4222,7 +4212,7 @@ class ScheduledPostsTests(unittest.TestCase):
 
     def test_scheduled_frontend_elements(self):
         from pathlib import Path
-        html = Path("index.html").read_text(encoding="utf-8")
+        html = _read_frontend()
         for marker in [
             'id="scheduledBtn"',
             'id="scheduledBadge"',
@@ -4242,7 +4232,7 @@ class ScheduledPostsTests(unittest.TestCase):
         import json, re, shutil, subprocess
         from pathlib import Path
 
-        html = Path("index.html").read_text(encoding="utf-8")
+        html = _read_frontend()
         for marker in [
             'id="mentionAcMenu"',
             'id="mentionMapNote"',
@@ -4297,7 +4287,7 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         from pathlib import Path
         from unittest import mock
 
-        html = Path("index.html").read_text(encoding="utf-8")
+        html = _read_frontend()
         for marker in [
             'id="tlFilterBar"',
             'data-tl-net="all"',
@@ -4391,7 +4381,7 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         self.assertEqual(code_bad, 400)
         self.assertFalse(res_bad["ok"])
 
-        html = Path("index.html").read_text(encoding="utf-8")
+        html = _read_frontend()
         for marker in [
             "ext-read-btn",
             'id="readerOverlay"',
@@ -4406,7 +4396,7 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
 
     def test_dual_progress_rings_feature(self):
         from pathlib import Path
-        html = Path("index.html").read_text(encoding="utf-8")
+        html = _read_frontend()
         for marker in [
             'id="countRings"',
             ".count-rings",
@@ -4491,7 +4481,7 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
                 self.assertTrue(res_ed["ok"])
                 self.assertEqual(res_ed["item"]["cw"], "CW2")
 
-        html = Path("index.html").read_text(encoding="utf-8")
+        html = _read_frontend()
         for marker in [
             'id="editPostOverlay"',
             "act-edit",

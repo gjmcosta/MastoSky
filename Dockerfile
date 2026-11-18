@@ -5,7 +5,7 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     MASTOSKY_DATA_DIR=/data
 
-COPY app.py index.html manifest.json ./
+COPY app.py index.html app.css app.js manifest.json ./
 COPY brand/ ./brand/
 COPY vendor/ ./vendor/
 
