@@ -5,14 +5,15 @@
   "mute_mode": "warn",
   "preferences": {
     "theme": "system",
-    "lang": "en",
+    "lang": "pt",
     "nav_mode": "sidebar",
     "view_mode": "deck",
     "deck_columns": [
       "compose",
       "timeline",
       "notifs",
-      "explore"
+      "explore",
+      "profile"
     ],
     "notif_sound": true,
     "notif_types": {
@@ -26,5 +27,5 @@
     "boost_cluster": true,
     "handle_mappings": []
   },
-  "updated_at": 1795031418261
+  "updated_at": 1795033916055
 }

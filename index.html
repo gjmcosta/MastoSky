@@ -8761,40 +8761,43 @@
                   <span data-i18n="panel.accounts">As tuas contas</span>
                 </div>
                 <div id="profileAccountsList"></div>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button type="button" class="panel-action-btn" style="flex:1;justify-content:center;padding:7px 10px;font-size:12px" onclick="openSetup(false)">
+                    <svg class="ico" style="width:14px;height:14px">
+                      <use href="#i-settings" />
+                    </svg>
+                    <span data-i18n="panel.settings_short">Definições</span>
+                  </button>
+                  <button type="button" class="panel-action-btn" style="flex:1;justify-content:center;padding:7px 10px;font-size:12px" onclick="setLang(currentLang === 'pt' ? 'en' : 'pt')">
+                    <svg class="ico" style="width:14px;height:14px">
+                      <use href="#i-language" />
+                    </svg>
+                    <span data-i18n="panel.switch_lang_short">PT / EN</span>
+                  </button>
+                </div>
               </div>
 
-              <div class="panel-section">
-                <div class="panel-sec-title">
-                  <svg class="ico" style="width:14px;height:14px">
-                    <use href="#i-settings" />
-                  </svg>
-                  <span data-i18n="panel.quick_settings">Definições & Ações</span>
+              <div class="panel-section" id="profileHubFeedSection">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+                  <div class="panel-sec-title" style="margin-bottom:0">
+                    <svg class="ico" style="width:14px;height:14px">
+                      <use href="#i-thread" />
+                    </svg>
+                    <span data-i18n="panel.recent_posts">Publicações recentes</span>
+                  </div>
+                  <div class="tl-filter-pills" id="profileHubFilterPills" style="gap:3px">
+                    <button type="button" class="tl-pill active" data-hub-net="all" onclick="setProfileHubFilter('all')" style="padding:3px 8px;font-size:11px">
+                      <span data-i18n="panel.filter_all">Ambas</span>
+                    </button>
+                    <button type="button" class="tl-pill" data-hub-net="bluesky" onclick="setProfileHubFilter('bluesky')" style="padding:3px 8px;font-size:11px">
+                      <svg class="ico net-ico-bsky" style="width:12px;height:12px"><use href="#i-brand-bsky" /></svg>
+                    </button>
+                    <button type="button" class="tl-pill" data-hub-net="mastodon" onclick="setProfileHubFilter('mastodon')" style="padding:3px 8px;font-size:11px">
+                      <svg class="ico net-ico-masto" style="width:12px;height:12px"><use href="#i-brand-masto" /></svg>
+                    </button>
+                  </div>
                 </div>
-                <button type="button" class="panel-action-btn" onclick="openSetup(false)">
-                  <svg class="ico">
-                    <use href="#i-settings" />
-                  </svg>
-                  <span data-i18n="header.settings_title">Definições / Contas</span>
-                </button>
-                <button type="button" class="panel-action-btn" onclick="setLang(currentLang === 'pt' ? 'en' : 'pt')">
-                  <svg class="ico">
-                    <use href="#i-language" />
-                  </svg>
-                  <span data-i18n="panel.switch_lang">Mudar idioma / Switch language</span>
-                </button>
-                <button type="button" class="panel-action-btn"
-                  onclick="applyViewMode(viewMode === 'deck' ? 'single' : 'deck')">
-                  <svg class="ico">
-                    <use href="#i-view-deck" />
-                  </svg>
-                  <span data-i18n="panel.toggle_view">Alternar modo de vista (Deck / Single)</span>
-                </button>
-                <button type="button" class="panel-action-btn" onclick="refreshAllFeeds()">
-                  <svg class="ico">
-                    <use href="#i-refresh" />
-                  </svg>
-                  <span data-i18n="panel.refresh_all">Atualizar todos os feeds</span>
-                </button>
+                <div id="profileHubFeed"></div>
               </div>
             </div>
 
@@ -10266,6 +10269,10 @@
           accounts: "As tuas contas",
           quick_settings: "Definições & Ações",
           switch_lang: "Mudar idioma / Switch language",
+          switch_lang_short: "PT / EN",
+          settings_short: "Definições",
+          recent_posts: "Publicações recentes",
+          filter_all: "Ambas",
           toggle_view: "Alternar modo de vista (Deck / Single)",
           refresh_all: "Atualizar todos os feeds",
           back_to_hub: "← Voltar ao menu"
@@ -10905,6 +10912,10 @@
           accounts: "Your accounts",
           quick_settings: "Settings & Actions",
           switch_lang: "Switch language / Mudar idioma",
+          switch_lang_short: "EN / PT",
+          settings_short: "Settings",
+          recent_posts: "Recent posts",
+          filter_all: "All",
           toggle_view: "Toggle view mode (Deck / Single)",
           refresh_all: "Refresh all feeds",
           back_to_hub: "← Back to menu"
@@ -14706,8 +14717,6 @@
       boost_repost: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m17 2 4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11v-1a4 4 0 0 1 4-4h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="m7 22-4-4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v1a4 4 0 0 1-4 4H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
       reply: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 17 4 12 9 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 18v-2a4 4 0 0 0-4-4H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
       mention: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-      follow: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8.5" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/><line x1="20" y1="8" x2="20" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="11" x2="17" y2="11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
-      follow_request: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8.5" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/><line x1="20" y1="8" x2="20" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="23" y1="11" x2="17" y2="11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
       quote: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
       poll: '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="20" x2="12" y2="4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="6" y1="20" x2="6" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
       update: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -15631,6 +15640,75 @@
     let userProfileCursor = null;
     let userProfileItems = [];
 
+    let profileHubFilter = "all";
+    let profileHubItems = [];
+    let profileHubCursors = {};
+
+    function setProfileHubFilter(net) {
+      profileHubFilter = net || "all";
+      const pills = document.querySelectorAll("#profileHubFilterPills .tl-pill");
+      pills.forEach(p => {
+        p.classList.toggle("active", p.getAttribute("data-hub-net") === profileHubFilter);
+      });
+      renderProfileHubFeed();
+    }
+
+    function renderProfileHubFeed() {
+      const feedWrap = $("profileHubFeed");
+      if (!feedWrap) return;
+      const filtered = profileHubFilter === "all"
+        ? profileHubItems
+        : profileHubItems.filter(it => it.network === profileHubFilter);
+      feedWrap.replaceChildren();
+      if (!filtered.length) {
+        feedWrap.append(el("div", "empty", t("feed.empty_profile")));
+      } else {
+        for (const it of filtered) feedWrap.append(postCard(it));
+      }
+      renderLoadMore(feedWrap, profileHubCursors, () => loadProfileHubFeed(true));
+    }
+
+    async function loadProfileHubFeed(isMore = false) {
+      const feedWrap = $("profileHubFeed");
+      const sec = $("profileHubFeedSection");
+      if (!feedWrap) return;
+      const nets = Object.keys(profileData || {});
+      if (sec) sec.hidden = !nets.length;
+      if (!nets.length) return;
+      if (!isMore) {
+        profileHubCursors = {};
+        if (!profileHubItems.length) {
+          feedWrap.replaceChildren(el("div", "empty", t("feed.loading_posts")));
+        }
+      }
+      const q = new URLSearchParams();
+      if (isMore) {
+        if (profileHubCursors.bluesky) q.set("cursor_bluesky", profileHubCursors.bluesky);
+        if (profileHubCursors.mastodon) q.set("cursor_mastodon", profileHubCursors.mastodon);
+      }
+      try {
+        const d = await api("/api/profile/feed" + (q.toString() ? "?" + q.toString() : ""));
+        profileHubCursors = d.cursors || {};
+        const incoming = d.items || [];
+        if (isMore) {
+          const seen = new Set(profileHubItems.map(x => `${x.network}:${x.ref || x.id || x.url}`));
+          for (const it of incoming) {
+            const k = `${it.network}:${it.ref || it.id || it.url}`;
+            if (!seen.has(k)) {
+              seen.add(k);
+              profileHubItems.push(it);
+            }
+          }
+        } else {
+          profileHubItems = incoming;
+        }
+        profileHubItems.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        renderProfileHubFeed();
+      } catch (e) {
+        if (!isMore) feedWrap.replaceChildren(el("div", "banner", "Erro ao carregar publicações: " + e.message));
+      }
+    }
+
     async function loadProfile(keep = false) {
       profileLoaded = true;
       $("perrors").replaceChildren();
@@ -15641,6 +15719,9 @@
         const d = await api("/api/profile");
         profileData = d.profiles || {};
         renderProfileAccountsList(profileData, d.errors || {});
+        if (activeProfileMode === "hub") {
+          loadProfileHubFeed(false);
+        }
       } catch (e) {
         $("perrors").replaceChildren(el("div", "banner", "Erro ao carregar perfil: " + e.message));
       }
