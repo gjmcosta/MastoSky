@@ -7187,6 +7187,39 @@
       opacity: .5;
       cursor: not-allowed;
     }
+
+    .setup-quick-lang {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
+    .setup-lang-pill {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all .15s ease;
+      line-height: 1.2;
+    }
+
+    .setup-lang-pill:hover {
+      color: var(--ink);
+    }
+
+    .setup-lang-pill.active {
+      background: var(--accent-solid, var(--accent));
+      color: #fff;
+    }
   </style>
 </head>
 
@@ -8680,7 +8713,13 @@
             <p class="setup-desc" data-i18n="setup.desc">Podes ligar ambas as redes ou apenas uma. As tuas credenciais
               são guardadas localmente e nunca saem do teu computador.</p>
           </div>
-          <button type="button" class="setup-close-btn" id="closeSetup" title="Fechar" aria-label="Fechar">✕</button>
+          <div style="display:flex;align-items:center;gap:8px;flex:none">
+            <div class="setup-quick-lang" id="setupQuickLang" role="group" aria-label="Idioma / Language">
+              <button type="button" class="setup-lang-pill" data-setup-lang="pt" onclick="setLang('pt')">🇵🇹 PT</button>
+              <button type="button" class="setup-lang-pill" data-setup-lang="en" onclick="setLang('en')">🇬🇧 EN</button>
+            </div>
+            <button type="button" class="setup-close-btn" id="closeSetup" title="Fechar" aria-label="Fechar">✕</button>
+          </div>
         </div>
 
         <div class="settings-grid">
@@ -10966,6 +11005,14 @@
       if (sideLangBtn) {
         sideLangBtn.title = t("header.lang_switch_title");
       }
+      if ($("cfgLangSelect") && $("cfgLangSelect").value !== currentLang) {
+        $("cfgLangSelect").value = currentLang;
+      }
+      document.querySelectorAll("#setupQuickLang .setup-lang-pill").forEach(btn => {
+        const isAct = btn.dataset.setupLang === currentLang;
+        btn.classList.toggle("active", isAct);
+        btn.setAttribute("aria-pressed", isAct ? "true" : "false");
+      });
 
       if ($("optThemeSys")) $("optThemeSys").textContent = t("setup.theme_system");
       if ($("optThemeLight")) $("optThemeLight").textContent = t("setup.theme_light");
@@ -21438,6 +21485,7 @@
       if ($("cancelSetupBtn")) $("cancelSetupBtn").hidden = mandatory;
       $("setupMsg").textContent = "";
       $("setupMsg").className = "msg";
+      if ($("cfgLangSelect")) $("cfgLangSelect").value = currentLang;
       if ($("cfgThemeSelect")) $("cfgThemeSelect").value = currentTheme;
       if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
       if ($("cfgViewModeSelect")) $("cfgViewModeSelect").value = viewMode;

@@ -2399,6 +2399,9 @@ class ProxyImageTests(unittest.TestCase):
         with open("index.html", "r", encoding="utf-8") as f:
             html = f.read()
         self.assertIn('navigator.serviceWorker.register("/sw.js")', html)
+        self.assertIn('id="setupQuickLang"', html)
+        self.assertIn('data-setup-lang="pt"', html)
+        self.assertIn('data-setup-lang="en"', html)
 
     def test_keyboard_shortcuts_feature(self):
         with open("index.html", "r", encoding="utf-8") as f:
