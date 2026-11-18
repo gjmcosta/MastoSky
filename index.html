@@ -8866,6 +8866,14 @@
                       <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_follow">Seguidor</span>
                     </button>
                   </div>
+                  <div style="display:flex;align-items:center;gap:10px;margin:10px 0 0 24px">
+                    <label for="cfgNotifVolume" style="font-size:12px;color:var(--muted);white-space:nowrap"
+                      data-i18n="notifs.volume_label">Volume:</label>
+                    <input type="range" id="cfgNotifVolume" min="10" max="100" step="5" value="75"
+                      style="flex:1;max-width:180px;accent-color:var(--accent);cursor:pointer">
+                    <span id="cfgNotifVolumeVal"
+                      style="font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px">75%</span>
+                  </div>
                 </div>
 
                 <div style="border-top:1px solid var(--line);padding-top:10px">
@@ -9998,7 +10006,8 @@
           poll: "– uma sondagem terminou",
           other: "enviou-te uma notificação",
           sound_title: "Sons espaciais de notificação",
-          sound_desc: "Efeitos sonoros cósmicos e discretos sintetizados via Web Audio.",
+          sound_desc: "Acordes analógicos polifónicos inspirados no sintetizador Orchid, via Web Audio.",
+          volume_label: "Volume:",
           desktop_title: "Notificações no ambiente de trabalho",
           desktop_desc: "Recebe avisos no ecrã quando chegam novas interações.",
           desktop_req_btn: "Pedir autorização ao navegador",
@@ -10629,7 +10638,8 @@
           poll: "– a poll ended",
           other: "sent you a notification",
           sound_title: "Spatial notification sounds",
-          sound_desc: "Subtle cosmic sound effects synthesized via Web Audio.",
+          sound_desc: "Warm polyphonic analog chords inspired by the Orchid synthesizer, via Web Audio.",
+          volume_label: "Volume:",
           desktop_title: "Desktop notifications",
           desktop_desc: "Receive alerts on your screen when new interactions arrive.",
           desktop_req_btn: "Request browser permission",
@@ -14510,100 +14520,131 @@
       }
     }, { passive: true });
 
-    function playSpatialSound(kind) {
+    let notifSoundVolume = (() => {
+      const saved = Number(localStorage.getItem("mastosky_notif_volume"));
+      return Number.isFinite(saved) && saved >= 0.1 && saved <= 1 ? saved : 0.75;
+    })();
+    let _lastNotifSoundAt = 0;
+
+    function playOrchidChord(ctx, notes, opts = {}) {
+      const now = ctx.currentTime;
+      const strumSec = (opts.strumMs || 32) / 1000;
+      const attack = opts.attack || 0.022;
+      const hold = opts.hold || 0.22;
+      const release = opts.release || 0.55;
+      const cutoffPeak = opts.cutoffPeak || 2200;
+      const cutoffEnd = opts.cutoffEnd || 520;
+      const voiceGainScale = (opts.gain || 0.11) / Math.max(1, Math.sqrt(notes.length));
+
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(Math.max(0.05, Math.min(1, notifSoundVolume)), now);
+
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.setValueAtTime(-16, now);
+      comp.ratio.setValueAtTime(4, now);
+      master.connect(comp);
+      comp.connect(ctx.destination);
+
+      // Ambiência Orchid: duplo delay suave com filtro passa-baixo no feedback
+      const wet = ctx.createGain();
+      wet.gain.setValueAtTime(opts.wet || 0.24, now);
+      const d1 = ctx.createDelay(1.0);
+      const d2 = ctx.createDelay(1.0);
+      d1.delayTime.setValueAtTime(0.115, now);
+      d2.delayTime.setValueAtTime(0.185, now);
+      const fbFilter = ctx.createBiquadFilter();
+      fbFilter.type = "lowpass";
+      fbFilter.frequency.setValueAtTime(1550, now);
+      const fbGain = ctx.createGain();
+      fbGain.gain.setValueAtTime(0.28, now);
+
+      wet.connect(d1);
+      d1.connect(d2);
+      d2.connect(fbFilter);
+      fbFilter.connect(fbGain);
+      fbGain.connect(d1);
+      d1.connect(master);
+      d2.connect(master);
+
+      notes.forEach((freq, idx) => {
+        const t0 = now + idx * strumSec;
+        const tEnd = t0 + attack + hold + release;
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.Q.setValueAtTime(1.4, t0);
+        filter.frequency.setValueAtTime(Math.max(260, cutoffEnd * 0.8), t0);
+        filter.frequency.exponentialRampToValueAtTime(cutoffPeak, t0 + attack + 0.03);
+        filter.frequency.exponentialRampToValueAtTime(cutoffEnd, tEnd);
+
+        const vGain = ctx.createGain();
+        vGain.gain.setValueAtTime(0.0001, t0);
+        vGain.gain.linearRampToValueAtTime(voiceGainScale, t0 + attack);
+        vGain.gain.setValueAtTime(voiceGainScale * 0.85, t0 + attack + hold);
+        vGain.gain.exponentialRampToValueAtTime(0.0001, tEnd);
+
+        // Camada dupla analógica (triangle quente + sawtooth suave detunada)
+        const oscTri = ctx.createOscillator();
+        const oscSaw = ctx.createOscillator();
+        const sawGain = ctx.createGain();
+        const detuneDir = idx % 2 === 0 ? 1 : -1;
+
+        oscTri.type = "triangle";
+        oscTri.frequency.setValueAtTime(freq, t0);
+        oscTri.detune.setValueAtTime(detuneDir * 3.5, t0);
+
+        oscSaw.type = "sawtooth";
+        oscSaw.frequency.setValueAtTime(freq, t0);
+        oscSaw.detune.setValueAtTime(-detuneDir * 7.5, t0);
+        sawGain.gain.setValueAtTime(0.30, t0);
+
+        oscTri.connect(filter);
+        oscSaw.connect(sawGain);
+        sawGain.connect(filter);
+        filter.connect(vGain);
+        vGain.connect(master);
+        vGain.connect(wet);
+
+        oscTri.start(t0);
+        oscSaw.start(t0);
+        oscTri.stop(tEnd + 0.05);
+        oscSaw.stop(tEnd + 0.05);
+      });
+    }
+
+    function playSpatialSound(kind, forceTest = false) {
       try {
+        const nowMs = Date.now();
+        if (!forceTest && nowMs - _lastNotifSoundAt < 400) return;
         const ctx = getAudioContext();
         if (!ctx) return;
-        const now = ctx.currentTime;
+        _lastNotifSoundAt = nowMs;
 
         if (kind === "reply" || kind === "mention") {
-          // Cosmic Starlight Ping: dual ascending sine glide with soft shimmer
-          const osc1 = ctx.createOscillator();
-          const osc2 = ctx.createOscillator();
-          const gain1 = ctx.createGain();
-          const gain2 = ctx.createGain();
-
-          osc1.type = "sine";
-          osc2.type = "sine";
-
-          osc1.frequency.setValueAtTime(587.33, now); // D5
-          osc1.frequency.exponentialRampToValueAtTime(880.00, now + 0.16); // A5
-          gain1.gain.setValueAtTime(0.0001, now);
-          gain1.gain.linearRampToValueAtTime(0.14, now + 0.02);
-          gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
-
-          osc2.frequency.setValueAtTime(880.00, now + 0.04); // A5
-          osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.22); // D6
-          gain2.gain.setValueAtTime(0.0001, now + 0.04);
-          gain2.gain.linearRampToValueAtTime(0.10, now + 0.06);
-          gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
-
-          osc1.connect(gain1); gain1.connect(ctx.destination);
-          osc2.connect(gain2); gain2.connect(ctx.destination);
-          osc1.start(now); osc1.stop(now + 0.29);
-          osc2.start(now + 0.04); osc2.stop(now + 0.33);
+          // Orchid Fmaj9 luminoso (strum ascendente)
+          playOrchidChord(ctx, [349.23, 440.00, 523.25, 659.25, 783.99], {
+            strumMs: 36, attack: 0.02, hold: 0.22, release: 0.62, cutoffPeak: 2400, cutoffEnd: 580, gain: 0.13, wet: 0.26
+          });
         } else if (kind === "like" || kind === "like_repost" || kind === "favourite") {
-          // Pulsar Water-drop: velvety resonant downward sine bubble
-          const osc = ctx.createOscillator();
-          const sub = ctx.createOscillator();
-          const gain = ctx.createGain();
-          const subGain = ctx.createGain();
-
-          osc.type = "sine";
-          sub.type = "sine";
-
-          osc.frequency.setValueAtTime(659.25, now); // E5
-          osc.frequency.exponentialRampToValueAtTime(392.00, now + 0.12); // G4
-          gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.15, now + 0.015);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
-
-          sub.frequency.setValueAtTime(329.63, now); // E4
-          sub.frequency.exponentialRampToValueAtTime(196.00, now + 0.12);
-          subGain.gain.setValueAtTime(0.0001, now);
-          subGain.gain.linearRampToValueAtTime(0.06, now + 0.015);
-          subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
-
-          osc.connect(gain); gain.connect(ctx.destination);
-          sub.connect(subGain); subGain.connect(ctx.destination);
-          osc.start(now); osc.stop(now + 0.17);
-          sub.start(now); sub.stop(now + 0.17);
+          // Orchid Dm7 curto e aveludado
+          playOrchidChord(ctx, [293.66, 349.23, 440.00, 523.25], {
+            strumMs: 22, attack: 0.018, hold: 0.12, release: 0.36, cutoffPeak: 1650, cutoffEnd: 420, gain: 0.11, wet: 0.18
+          });
         } else if (kind === "boost" || kind === "boost_repost" || kind === "reblog" || kind === "quote") {
-          // Orbital Harmonic Teleport: fifth chord with celestial expansion
-          const osc1 = ctx.createOscillator();
-          const osc2 = ctx.createOscillator();
-          const gain = ctx.createGain();
-
-          osc1.type = "sine";
-          osc2.type = "sine";
-
-          osc1.frequency.setValueAtTime(440.00, now); // A4
-          osc1.frequency.exponentialRampToValueAtTime(554.37, now + 0.22); // C#5
-          osc2.frequency.setValueAtTime(659.25, now); // E5
-          osc2.frequency.exponentialRampToValueAtTime(830.61, now + 0.22); // G#5
-
-          gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.12, now + 0.025);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.27);
-
-          osc1.connect(gain);
-          osc2.connect(gain);
-          gain.connect(ctx.destination);
-          osc1.start(now); osc1.stop(now + 0.28);
-          osc2.start(now); osc2.stop(now + 0.28);
+          // Orchid Cmaj7 expansivo
+          playOrchidChord(ctx, [261.63, 329.63, 392.00, 493.88, 659.25], {
+            strumMs: 30, attack: 0.025, hold: 0.24, release: 0.68, cutoffPeak: 2150, cutoffEnd: 500, gain: 0.12, wet: 0.30
+          });
         } else if (kind === "follow" || kind === "follow_request") {
-          // Ascension Warp Beam: gentle 3-step glissando
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = "sine";
-          osc.frequency.setValueAtTime(392.00, now); // G4
-          osc.frequency.exponentialRampToValueAtTime(523.25, now + 0.10); // C5
-          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.22); // G5
-          gain.gain.setValueAtTime(0.0001, now);
-          gain.gain.linearRampToValueAtTime(0.14, now + 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
-          osc.connect(gain); gain.connect(ctx.destination);
-          osc.start(now); osc.stop(now + 0.33);
+          // Orchid Am9 dedilhado acolhedor
+          playOrchidChord(ctx, [220.00, 329.63, 392.00, 493.88, 523.25], {
+            strumMs: 42, attack: 0.026, hold: 0.24, release: 0.65, cutoffPeak: 1950, cutoffEnd: 460, gain: 0.12, wet: 0.26
+          });
+        } else {
+          // Orchid Gmaj7 suave (DMs / outros)
+          playOrchidChord(ctx, [392.00, 493.88, 587.33, 739.99], {
+            strumMs: 26, attack: 0.018, hold: 0.18, release: 0.50, cutoffPeak: 2100, cutoffEnd: 480, gain: 0.12, wet: 0.22
+          });
         }
       } catch (err) {
         console.warn("Spatial audio error:", err);
@@ -14613,9 +14654,9 @@
     function testSpatialSound(kind) {
       const ctx = getAudioContext();
       if (ctx && ctx.state === "suspended") {
-        ctx.resume().then(() => playSpatialSound(kind)).catch(() => playSpatialSound(kind));
+        ctx.resume().then(() => playSpatialSound(kind, true)).catch(() => playSpatialSound(kind, true));
       } else {
-        playSpatialSound(kind);
+        playSpatialSound(kind, true);
       }
     }
 
@@ -14637,9 +14678,6 @@
           statusEl.textContent = t("notifs.desktop_allowed");
           statusEl.style.color = "#10b981";
         }
-        if (permBox) permBox.hidden = true;
-        if ($("cfgNotifDesktop")) $("cfgNotifDesktop").disabled = false;
-      } else if (perm === "denied") {
         if (statusEl) {
           statusEl.textContent = t("notifs.desktop_denied");
           statusEl.style.color = "#ef4444";
@@ -18877,6 +18915,11 @@
             notifSoundEnabled = p.notif_sound;
             localStorage.setItem("mastosky_notif_sound", notifSoundEnabled ? "true" : "false");
             if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+      if ($("cfgNotifVolume")) {
+        const pct = Math.round(notifSoundVolume * 100);
+        $("cfgNotifVolume").value = String(pct);
+        if ($("cfgNotifVolumeVal")) $("cfgNotifVolumeVal").textContent = pct + "%";
+      }
           }
           if (typeof p.crosstalk_dedup === "boolean" && p.crosstalk_dedup !== crosstalkDedupEnabled) {
             crosstalkDedupEnabled = p.crosstalk_dedup;
@@ -19408,6 +19451,11 @@
               notifSoundEnabled = p.notif_sound;
               localStorage.setItem("mastosky_notif_sound", String(notifSoundEnabled));
               if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+      if ($("cfgNotifVolume")) {
+        const pct = Math.round(notifSoundVolume * 100);
+        $("cfgNotifVolume").value = String(pct);
+        if ($("cfgNotifVolumeVal")) $("cfgNotifVolumeVal").textContent = pct + "%";
+      }
             }
             if (p.mute_mode === "warn" || p.mute_mode === "hide") {
               muteMode = p.mute_mode;
@@ -21509,6 +21557,11 @@
       if (typeof renderHandleMappingsUI === "function") renderHandleMappingsUI();
       renderMutedWordsChips();
       if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+      if ($("cfgNotifVolume")) {
+        const pct = Math.round(notifSoundVolume * 100);
+        $("cfgNotifVolume").value = String(pct);
+        if ($("cfgNotifVolumeVal")) $("cfgNotifVolumeVal").textContent = pct + "%";
+      }
       if ($("cfgNotifDesktop")) $("cfgNotifDesktop").checked = notifDesktopEnabled;
       if ($("cfgNotifTypeReplies")) $("cfgNotifTypeReplies").checked = notifTypesEnabled.replies !== false;
       if ($("cfgNotifTypeLikes")) $("cfgNotifTypeLikes").checked = notifTypesEnabled.likes !== false;
@@ -22168,6 +22221,20 @@
           testSpatialSound("reply");
         }
       };
+    }
+
+    if ($("cfgNotifVolume")) {
+      const updateVolUI = (save) => {
+        const pct = Math.max(10, Math.min(100, Number($("cfgNotifVolume").value) || 75));
+        notifSoundVolume = pct / 100;
+        if ($("cfgNotifVolumeVal")) $("cfgNotifVolumeVal").textContent = pct + "%";
+        if (save) {
+          localStorage.setItem("mastosky_notif_volume", String(notifSoundVolume));
+          testSpatialSound("reply");
+        }
+      };
+      $("cfgNotifVolume").oninput = () => updateVolUI(false);
+      $("cfgNotifVolume").onchange = () => updateVolUI(true);
     }
 
     if ($("cfgNotifDesktop")) {

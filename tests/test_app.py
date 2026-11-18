@@ -2403,6 +2403,9 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn('data-setup-lang="pt"', html)
         self.assertIn('data-setup-lang="en"', html)
         self.assertIn("max-height: calc(100dvh - 32px);", html)
+        self.assertIn("function playOrchidChord(ctx, notes, opts = {})", html)
+        self.assertIn('id="cfgNotifVolume"', html)
+        self.assertIn("if (!forceTest && nowMs - _lastNotifSoundAt < 400) return;", html)
 
     def test_keyboard_shortcuts_feature(self):
         with open("index.html", "r", encoding="utf-8") as f:
