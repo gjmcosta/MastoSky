@@ -6437,6 +6437,23 @@
       color: var(--accent)
     }
 
+    .panel-action-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      align-items: stretch;
+    }
+
+    .panel-action-row .panel-action-btn {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+      justify-content: center;
+      padding: 8px 10px;
+      font-size: 12px;
+      margin-bottom: 0;
+    }
+
     .deck-col-thread {
       border-left: 2px solid var(--accent);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);

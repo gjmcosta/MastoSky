@@ -1404,14 +1404,14 @@
                   <span data-i18n="panel.accounts">As tuas contas</span>
                 </div>
                 <div id="profileAccountsList"></div>
-                <div style="display:flex;gap:8px;margin-top:8px">
-                  <button type="button" class="panel-action-btn" style="flex:1;justify-content:center;padding:7px 10px;font-size:12px" onclick="openSetup(false)">
+                <div class="panel-action-row">
+                  <button type="button" class="panel-action-btn" onclick="openSetup(false)">
                     <svg class="ico" style="width:14px;height:14px">
                       <use href="#i-settings" />
                     </svg>
                     <span data-i18n="panel.settings_short">Definições</span>
                   </button>
-                  <button type="button" class="panel-action-btn" style="flex:1;justify-content:center;padding:7px 10px;font-size:12px" onclick="setLang(currentLang === 'pt' ? 'en' : 'pt')">
+                  <button type="button" class="panel-action-btn" onclick="setLang(currentLang === 'pt' ? 'en' : 'pt')">
                     <svg class="ico" style="width:14px;height:14px">
                       <use href="#i-language" />
                     </svg>
