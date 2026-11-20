@@ -14,6 +14,7 @@ CFG_PATH = DATA_DIR / "config.json"
 USER_DATA_PATH = DATA_DIR / "user_data.json"
 _USER_DATA_LOCK = threading.Lock()
 _INDEX_HTML_CACHE = {"mtime_ns": None, "token": None, "bytes": None, "gz": None}
+_STATIC_ASSET_CACHE = {}
 _INDEX_CACHE_LOCK = threading.Lock()
 _API_EXECUTOR = ThreadPoolExecutor(max_workers=8, thread_name_prefix="mastosky-api")
 SCHEDULED_POSTS_PATH = DATA_DIR / "scheduled_posts.json"
@@ -4387,7 +4388,7 @@ class H(BaseHTTPRequestHandler):
 
         return True
 
-    def send(self, code, body, ctype="application/json", precompressed_gz=None):
+    def send(self, code, body, ctype="application/json", precompressed_gz=None, extra_headers=None):
         b = body if isinstance(body, bytes) else json.dumps(body).encode()
         compressible = (
             ctype.startswith("text/")
@@ -4412,6 +4413,9 @@ class H(BaseHTTPRequestHandler):
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Content-Security-Policy", CSP)
+        if extra_headers:
+            for hk, hv in extra_headers.items():
+                self.send_header(hk, hv)
         if ctype.startswith("image/"):
             self.send_header("Cache-Control", "public, max-age=86400")
         elif "text/html" in ctype:
@@ -4467,7 +4471,29 @@ class H(BaseHTTPRequestHandler):
             asset_path = DIR / path.lstrip("/")
             if asset_path.is_file():
                 ctype = "text/css" if path.endswith(".css") else "application/javascript"
-                return self.send(200, asset_path.read_bytes(), ctype)
+                mtime_ns = asset_path.stat().st_mtime_ns
+                etag = f'"{mtime_ns:x}"'
+                if (self.headers.get("If-None-Match") or "").strip() == etag:
+                    self.send_response(304)
+                    self.send_header("ETag", etag)
+                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                with _INDEX_CACHE_LOCK:
+                    cached = _STATIC_ASSET_CACHE.get(path)
+                    if cached and cached["mtime_ns"] == mtime_ns and cached["bytes"] is not None:
+                        raw_b = cached["bytes"]
+                        gz_b = cached["gz"]
+                    else:
+                        raw_b = asset_path.read_bytes()
+                        comp = zlib.compressobj(level=6, wbits=16 + zlib.MAX_WBITS)
+                        gz_b = comp.compress(raw_b) + comp.flush()
+                        _STATIC_ASSET_CACHE[path] = {"mtime_ns": mtime_ns, "bytes": raw_b, "gz": gz_b}
+                return self.send(
+                    200, raw_b, ctype, precompressed_gz=gz_b,
+                    extra_headers={"ETag": etag, "Cache-Control": "no-cache"}
+                )
         if path in ("/manifest.json", "/manifest.webmanifest"):
             mpath = DIR / "manifest.json"
             if mpath.is_file():

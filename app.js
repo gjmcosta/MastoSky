@@ -4151,16 +4151,17 @@
     function render() {
       syncTimelineFilterUI();
       const feed = $("feed");
-      feed.replaceChildren();
+      const frag = document.createDocumentFragment();
       const filtered = getFilteredTimelineItems();
       const visible = timelineFilterNet === "all" ? groupCrossPosts(filtered) : filtered;
       if (!visible.length) {
         const emptyMsg = items.length ? t("feed.empty_filtered") : t("feed.empty_timeline");
-        feed.append(el("div", "empty", emptyMsg));
+        frag.append(el("div", "empty", emptyMsg));
       }
       for (const entry of groupBoostClusters(visible)) {
-        feed.append(entry.type === "cluster" ? renderBoostCluster(entry) : postCard(entry.item));
+        frag.append(entry.type === "cluster" ? renderBoostCluster(entry) : postCard(entry.item));
       }
+      feed.replaceChildren(frag);
       renderLoadMore(feed, timelineCursors, loadMoreTimeline);
       updateResumeReadingBanner();
     }
@@ -5443,7 +5444,6 @@
     function renderNotifs() {
       const box = $("nfeed");
       if (notifs === null) return;
-      box.replaceChildren();
 
       document.querySelectorAll("#notifFilterPills .filter-pill").forEach(p => {
         p.classList.toggle("active", p.dataset.notifFilter === currentNotifFilter);
@@ -5464,12 +5464,13 @@
         else if (currentNotifFilter === "likes") emptyMsg = t("notifs.empty_likes");
         else if (currentNotifFilter === "boosts") emptyMsg = t("notifs.empty_boosts");
         else if (currentNotifFilter === "follows") emptyMsg = t("notifs.empty_follows");
-        box.append(el("div", "empty", emptyMsg));
+        box.replaceChildren(el("div", "empty", emptyMsg));
         updateBadge();
         return;
       }
 
       initNotifObserver();
+      const frag = document.createDocumentFragment();
 
       for (const n of filtered) {
         const isFresh = !isNotifRead(n);
@@ -5809,8 +5810,9 @@
             }
           };
         }
-        box.append(p);
+        frag.append(p);
       }
+      box.replaceChildren(frag);
       renderLoadMore(box, notifsCursors, loadMoreNotifs);
     }
 
