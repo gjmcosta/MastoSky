@@ -1365,6 +1365,14 @@ def fetch_article_reader(url_str):
     req = urllib.request.Request(u, headers=headers)
     try:
         resp = _urlopen_remote(req, timeout=8)
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403, 451):
+            raise ValueError(f"Este site bloqueia a leitura direta (HTTP {e.code} — paywall ou acesso restrito). Usa «Abrir original ↗» para ler no navegador.")
+        if e.code in (404, 410):
+            raise ValueError(f"Artigo não encontrado (HTTP {e.code}).")
+        if e.code == 429:
+            raise ValueError("Demasiados pedidos ao site de origem (HTTP 429). Tenta novamente mais tarde.")
+        raise ValueError(f"Não foi possível carregar o artigo (HTTP {e.code}).")
     except Exception as e:
         raise ValueError(f"Não foi possível carregar o artigo: {e}")
 

@@ -2940,6 +2940,19 @@
             v.muted = true;
           }
           attachVideo(v, su(x.url));
+          if (x.type !== "gifv") {
+            const onVideoStop = () => {
+              if (_deferredTimelineRender && !isFeedVideoPlaying($("feed"))) {
+                _deferredTimelineRender = false;
+                const f = $("feed");
+                const a = captureScrollAnchor("timeline", f);
+                render();
+                restoreScrollAnchor("timeline", f, a);
+              }
+            };
+            v.addEventListener("pause", onVideoStop);
+            v.addEventListener("ended", onVideoStop);
+          }
           m.append(v);
         } else if (x.type === "external") {
           const a = el("a", "ext-card" + (x.thumb ? "" : " no-thumb"));
@@ -4399,11 +4412,17 @@
             $("readerStatus").className = "msg err";
             $("readerStatus").textContent = (res && res.error) || t("reader.empty");
           }
+          if (cardMeta && cardMeta.desc && $("readerContent")) {
+            $("readerContent").replaceChildren(el("p", null, cardMeta.desc));
+          }
         }
       } catch (err) {
         if ($("readerStatus")) {
           $("readerStatus").className = "msg err";
           $("readerStatus").textContent = err.message || t("reader.empty");
+        }
+        if (cardMeta && cardMeta.desc && $("readerContent")) {
+          $("readerContent").replaceChildren(el("p", null, cardMeta.desc));
         }
       }
     }
@@ -4437,6 +4456,13 @@
       render();
     }
 
+    let _deferredTimelineRender = false;
+
+    function isFeedVideoPlaying(feedEl) {
+      if (!feedEl) return false;
+      return Array.from(feedEl.querySelectorAll("video")).some(v => !v.paused && !v.ended && !v.loop);
+    }
+
     async function load() {
       try {
         const d = await api("/api/timeline");
@@ -4461,19 +4487,30 @@
         }
 
         const feedEl = $("feed");
-        const anchor = captureScrollAnchor("timeline", feedEl);
+        const videoPlaying = isFeedVideoPlaying(feedEl);
+        const anchor = videoPlaying ? null : captureScrollAnchor("timeline", feedEl);
 
         items = dedupSort(items, newItems);
-        render();
-
-        restoreScrollAnchor("timeline", feedEl, anchor);
+        if (videoPlaying) {
+          _deferredTimelineRender = true;
+        } else {
+          _deferredTimelineRender = false;
+          render();
+          restoreScrollAnchor("timeline", feedEl, anchor);
+        }
 
         const pill = $("timelineNewPostsPill");
         if (pill) {
-          if (newlyArrivedCount > 0 && anchor && !anchor.atTop) {
+          if (newlyArrivedCount > 0 && (videoPlaying || (anchor && !anchor.atTop))) {
             pill.hidden = false;
             pill.textContent = newlyArrivedCount === 1 ? t("feed.new_posts_pill_one") : t("feed.new_posts_pill_many", { n: newlyArrivedCount });
-            pill.onclick = () => scrollColToTop("timeline");
+            pill.onclick = () => {
+              if (_deferredTimelineRender) {
+                _deferredTimelineRender = false;
+                render();
+              }
+              scrollColToTop("timeline");
+            };
           } else if (anchor && anchor.atTop) {
             pill.hidden = true;
           }

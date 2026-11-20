@@ -27,11 +27,11 @@
     "boost_cluster": true,
     "handle_mappings": [],
     "timeline_anchor": {
-      "key": "https://bsky.app/profile/elpais.com/post/3n2r2sjsv7v2t",
-      "time": "2026-11-20T17:01:12.956Z",
-      "updated_at": 1795194078345,
+      "key": "https://bsky.app/profile/johnmaya.bsky.social/post/3n2rhpejaw226",
+      "time": "2026-11-20T21:03:42.364Z",
+      "updated_at": 1795208670376,
       "device_id": "dev_wte8yvkomwouw5zb"
     }
   },
-  "updated_at": 1795194078350
+  "updated_at": 1795208670632
 }

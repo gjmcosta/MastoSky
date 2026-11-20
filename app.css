@@ -3051,6 +3051,10 @@
       contain-intrinsic-size: auto 180px
     }
 
+    .post:has(video) {
+      content-visibility: visible;
+    }
+
     .post.bluesky {
       --c: var(--bsky)
     }
