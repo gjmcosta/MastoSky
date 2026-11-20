@@ -4311,6 +4311,14 @@
       flex: none
     }
 
+    .net.net-bluesky {
+      background: var(--bsky)
+    }
+
+    .net.net-mastodon {
+      background: var(--masto)
+    }
+
     .net svg {
       width: 14px;
       height: 14px
@@ -6797,7 +6805,25 @@
     }
 
     .deck-col-compose textarea {
-      min-height: 95px;
+      min-height: 150px;
+      background: var(--surface-1);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      box-sizing: border-box;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    .deck-col-compose textarea:focus {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+
+    .deck-col-compose .bar {
+      border-top: 0;
+      padding-top: 8px;
+      margin-top: 6px;
     }
 
     .user-profile-box {

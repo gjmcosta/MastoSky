@@ -347,7 +347,7 @@
           error_loading_profile: "Erro ao carregar perfil: {err}"
         },
         catchup: {
-          btn: "O que perdi?",
+          btn: "Resumo",
           title: "O que perdi? (Catch-Up)",
           desc: "Os destaques com mais interação da tua Timeline recente, num só olhar.",
           ai_btn: "✨ Resumir com IA",
@@ -1031,7 +1031,7 @@
           error_loading_profile: "Error loading profile: {err}"
         },
         catchup: {
-          btn: "Catch Me Up",
+          btn: "Catch-Up",
           title: "What Did I Miss? (Catch-Up)",
           desc: "Top highlights with the highest engagement from your recent timeline.",
           ai_btn: "✨ Summarize with AI",
@@ -2322,7 +2322,7 @@
       }
     }
     function netBadge(n) {
-      const s = el("span", "net");
+      const s = el("span", "net net-" + n);
       s.innerHTML = LOGO[n]; // SVG fixo, não vem das redes
       s.title = LABEL[n]; s.setAttribute("role", "img"); s.setAttribute("aria-label", LABEL[n]);
       return s;
@@ -3226,7 +3226,6 @@
         body.innerHTML = q.html;
         body.addEventListener("click", (e) => handlePostHtmlClicks(e, q.network));
         card.append(body);
-        if (q.text) attachPostTranslator(card, q.text);
       }
       if (q.media && q.media.length) {
         const qm = renderMedia(q.media);
@@ -4250,7 +4249,7 @@
         star.style.marginLeft = "5px";
         bItName.append(star);
       }
-      who.append(bItName, el("span", null, it.handle + " · " + LABEL[it.network]));
+      who.append(bItName, el("span", null, it.handle));
       if (it.network === "mastodon" && (it.visibility === "private" || it.visibility === "direct")) {
         const visBadge = el("span", "post-vis-lock");
         const visIcoId = it.visibility === "direct" ? "#i-vis-direct" : "#i-vis-private";
@@ -11138,7 +11137,9 @@
     function buildPostMoreButton(it, postEl, bodyEl, actsEl, opts = {}) {
       const shareUrl = su(it && it.url);
       const vidDlHref = getDownloadableVideoHref(it && it.media);
-      const trText = (typeof opts.translateText === "string" ? opts.translateText : ((it && it.text) || "")).trim();
+      const trText = (typeof opts.translateText === "string"
+        ? opts.translateText
+        : [it && it.text, it && it.quote && it.quote.text].filter(Boolean).join("\n\n—\n")).trim();
       const canOwn = Boolean(opts.allowOwnActions && it && it.is_own);
 
       if (!shareUrl && !vidDlHref && !trText && !canOwn) return null;
