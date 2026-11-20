@@ -301,6 +301,10 @@
         },
         feed: {
           new_posts_pill_one: "↑ 1 nova publicação",
+          resume_reading: "Retomar onde ficaste",
+          resume_reading_time: "Retomar onde ficaste ({ago})",
+          resume_loading: "A procurar publicação...",
+          resume_not_found: "Publicação anterior já não está no feed",
           new_posts_pill_many: "↑ {n} novas publicações",
           new_notifs_pill_one: "↑ 1 nova notificação",
           new_notifs_pill_many: "↑ {n} novas notificações",
@@ -953,6 +957,10 @@
         },
         feed: {
           new_posts_pill_one: "↑ 1 new post",
+          resume_reading: "Resume where you left off",
+          resume_reading_time: "Resume where you left off ({ago})",
+          resume_loading: "Finding post...",
+          resume_not_found: "Previous post is no longer in the feed",
           new_posts_pill_many: "↑ {n} new posts",
           new_notifs_pill_one: "↑ 1 new notification",
           new_notifs_pill_many: "↑ {n} new notifications",
@@ -3590,6 +3598,7 @@
       const isThreadTarget = Boolean(threadIt && getPostKey(threadIt) === postKey);
       const p = el("article", "post " + it.network + (o.focus ? " focus" : "") + (isReplyTarget ? " is-reply-target" : "") + (isThreadTarget ? " is-thread-active" : ""));
       if (postKey) p.dataset.postKey = postKey;
+      if (it.time) p.dataset.postTime = it.time;
       if (it.boosted_by) p.append(el("div", "boost", t("post.shared_by", { name: it.boosted_by })));
       const head = el("div", "head");
       const onProfile = (e) => {
@@ -4136,6 +4145,7 @@
         feed.append(entry.type === "cluster" ? renderBoostCluster(entry) : postCard(entry.item));
       }
       renderLoadMore(feed, timelineCursors, loadMoreTimeline);
+      updateResumeReadingBanner();
     }
 
     document.querySelectorAll("[data-tl-net]").forEach(btn => {
@@ -5346,7 +5356,13 @@
       renderNotifs();
     }
 
+    let lastNotifPollAt = 0;
+    let _notifsLoading = false;
+
     async function loadNotifs() {
+      if (_notifsLoading) return;
+      _notifsLoading = true;
+      lastNotifPollAt = Date.now();
       try {
         const d = await api("/api/notifications");
         if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
@@ -5401,6 +5417,8 @@
         console.error("loadNotifs() error:", e);
         const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
         $("nerrors").replaceChildren(el("div", "banner", msg));
+      } finally {
+        _notifsLoading = false;
       }
       updateBadge();
     }
@@ -6700,6 +6718,9 @@
       seenBefore = localStorage.getItem("notifSeen") || seenBefore;
       if (newTab === "explore" && !exploreItems.length) loadExplore();
       if (newTab === "profile" && !profileLoaded) loadProfile();
+      if (newTab === "notifs" && (!notifs || Date.now() - lastNotifPollAt >= 15000)) {
+        loadNotifs();
+      }
       if (newTab === "search") {
         setTimeout(() => {
           const inp = $("searchInput");
@@ -9315,6 +9336,10 @@
       if (!isCompactMobileViewport()) {
         prefs.view_mode = viewMode;
       }
+      const savedAnchor = getSavedTimelineAnchor();
+      if (savedAnchor && savedAnchor.key) {
+        prefs.timeline_anchor = savedAnchor;
+      }
       return prefs;
     }
 
@@ -9500,6 +9525,9 @@
             if ($("cfgNotifTypeBoosts")) $("cfgNotifTypeBoosts").checked = notifTypesEnabled.boosts !== false;
             if ($("cfgNotifTypeFollows")) $("cfgNotifTypeFollows").checked = notifTypesEnabled.follows !== false;
           }
+          if (p.timeline_anchor && typeof p.timeline_anchor === "object" && p.timeline_anchor.key) {
+            applyRemoteTimelineAnchor(p.timeline_anchor, isInitialMerge);
+          }
         }
       } finally {
         _suppressServerSync = false;
@@ -9568,12 +9596,285 @@
         }
       });
       window.addEventListener("focus", () => pullUserDataFromServer(false));
-      window.addEventListener("beforeunload", () => flushServerSync(true));
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") flushServerSync(true);
-        else if (document.visibilityState === "visible") pullUserDataFromServer(false);
+      window.addEventListener("beforeunload", () => {
+        captureCurrentTimelineAnchor(true);
+        flushServerSync(true);
       });
+      window.addEventListener("pagehide", () => {
+        captureCurrentTimelineAnchor(true);
+        flushServerSync(true);
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+          captureCurrentTimelineAnchor(true);
+          flushServerSync(true);
+        } else if (document.visibilityState === "visible") {
+          pullUserDataFromServer(false);
+        }
+      });
+      initTimelinePositionSync();
       pullUserDataFromServer(true);
+    }
+
+    let _tlAnchorTimer = null;
+    let pendingResumeAnchor = null;
+    let dismissedResumeAnchorTs = 0;
+
+    function getLocalDeviceId() {
+      try {
+        let id = localStorage.getItem("mastosky_device_id");
+        if (!id) {
+          id = "dev_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+          localStorage.setItem("mastosky_device_id", id);
+        }
+        return id;
+      } catch (_) {
+        return "dev_mem";
+      }
+    }
+
+    function getSavedTimelineAnchor() {
+      try {
+        const raw = localStorage.getItem("mastosky_timeline_anchor");
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        return (obj && typeof obj === "object" && obj.key) ? obj : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function saveLocalTimelineAnchor(anchor) {
+      try {
+        if (anchor && anchor.key) {
+          localStorage.setItem("mastosky_timeline_anchor", JSON.stringify(anchor));
+        }
+      } catch (_) { }
+    }
+
+    function getTimelineTopVisiblePost() {
+      const feedEl = $("feed");
+      if (!feedEl) return null;
+      if (viewMode !== "deck" && (tab !== "timeline" || threadIt)) return null;
+      const cards = feedEl.querySelectorAll(".post[data-post-key]");
+      if (!cards.length) return null;
+
+      let topLine = 0;
+      if (viewMode === "deck") {
+        const body = $("colTimelineBody");
+        if (!body) return null;
+        topLine = body.getBoundingClientRect().top + 8;
+      } else {
+        const hdr = document.querySelector(".top-nav-wrap");
+        topLine = (hdr ? hdr.getBoundingClientRect().bottom : 0) + 12;
+      }
+
+      for (const card of cards) {
+        const rect = card.getBoundingClientRect();
+        if (rect.bottom > topLine && rect.height > 0) {
+          return {
+            key: card.dataset.postKey || "",
+            time: card.dataset.postTime || "",
+            card,
+            rect,
+            topLine
+          };
+        }
+      }
+      return null;
+    }
+
+    function captureCurrentTimelineAnchor(immediate = false) {
+      const topPost = getTimelineTopVisiblePost();
+      if (!topPost || !topPost.key) return;
+      const prev = getSavedTimelineAnchor();
+      if (prev && prev.key === topPost.key) return;
+      const anchor = {
+        key: topPost.key,
+        time: topPost.time || "",
+        updated_at: Date.now(),
+        device_id: getLocalDeviceId()
+      };
+      saveLocalTimelineAnchor(anchor);
+      if (immediate && _serverSyncReady) {
+        Object.assign(_pendingServerSync, { preferences: getSyncPreferences() });
+      } else {
+        scheduleServerSync({ preferences: { timeline_anchor: anchor } });
+      }
+    }
+
+    function scheduleTimelineAnchorCapture() {
+      if (_tlAnchorTimer) clearTimeout(_tlAnchorTimer);
+      _tlAnchorTimer = setTimeout(() => {
+        captureCurrentTimelineAnchor(false);
+      }, 1000);
+    }
+
+    function applyRemoteTimelineAnchor(remote, isInitialMerge = false) {
+      if (!remote || !remote.key) return;
+      const local = getSavedTimelineAnchor();
+      const remoteTs = Number(remote.updated_at) || 0;
+      const localTs = Number(local && local.updated_at) || 0;
+      const isOtherDevice = remote.device_id && remote.device_id !== getLocalDeviceId();
+      if (!local || remoteTs > localTs) {
+        saveLocalTimelineAnchor(remote);
+        if (isOtherDevice || isInitialMerge) {
+          pendingResumeAnchor = remote;
+          updateResumeReadingBanner();
+        }
+      } else if (isInitialMerge && isOtherDevice && localTs === remoteTs) {
+        pendingResumeAnchor = remote;
+        updateResumeReadingBanner();
+      }
+    }
+
+    function updateResumeReadingBanner() {
+      const banner = $("resumeReadingBanner");
+      const label = $("resumeReadingLabel");
+      if (!banner) return;
+      if (!pendingResumeAnchor || !pendingResumeAnchor.key || !items.length) {
+        banner.hidden = true;
+        return;
+      }
+      if (dismissedResumeAnchorTs && pendingResumeAnchor.updated_at === dismissedResumeAnchorTs) {
+        banner.hidden = true;
+        return;
+      }
+      const feedEl = $("feed");
+      if (!feedEl) {
+        banner.hidden = true;
+        return;
+      }
+      let targetCard = null;
+      try {
+        targetCard = feedEl.querySelector(`.post[data-post-key="${CSS.escape(pendingResumeAnchor.key)}"]`);
+      } catch (_) { }
+      if (targetCard) {
+        const topPost = getTimelineTopVisiblePost();
+        if (topPost && topPost.key === pendingResumeAnchor.key) {
+          banner.hidden = true;
+          return;
+        }
+        const rect = targetCard.getBoundingClientRect();
+        const refTop = topPost ? topPost.topLine : 80;
+        if (rect.top >= refTop - 20 && rect.top <= refTop + 140) {
+          banner.hidden = true;
+          return;
+        }
+      }
+      if (label) {
+        const agoStr = pendingResumeAnchor.time ? ago(pendingResumeAnchor.time) : "";
+        label.textContent = agoStr
+          ? t("feed.resume_reading_time", { ago: agoStr })
+          : t("feed.resume_reading");
+      }
+      banner.hidden = false;
+    }
+
+    async function jumpToResumeAnchor() {
+      if (!pendingResumeAnchor || !pendingResumeAnchor.key) return;
+      const banner = $("resumeReadingBanner");
+      const label = $("resumeReadingLabel");
+      const btn = $("resumeReadingBtn");
+      const anchor = pendingResumeAnchor;
+      const feedEl = $("feed");
+      if (!feedEl) return;
+
+      const findCard = () => {
+        try {
+          return feedEl.querySelector(`.post[data-post-key="${CSS.escape(anchor.key)}"]`);
+        } catch (_) {
+          return null;
+        }
+      };
+
+      let targetCard = findCard();
+      if (!targetCard && typeof loadMoreTimeline === "function") {
+        if (btn) btn.disabled = true;
+        if (label) label.textContent = t("feed.resume_loading");
+        for (let attempt = 0; attempt < 3 && !targetCard; attempt++) {
+          const moreBtn = feedEl.querySelector(".load-more-btn");
+          if (!moreBtn || moreBtn.disabled) break;
+          await loadMoreTimeline();
+          targetCard = findCard();
+        }
+        if (btn) btn.disabled = false;
+      }
+
+      if (!targetCard && anchor.time) {
+        const anchorTs = Date.parse(anchor.time) || 0;
+        if (anchorTs) {
+          for (const card of feedEl.querySelectorAll(".post[data-post-time]")) {
+            const cardTs = Date.parse(card.dataset.postTime || "") || 0;
+            if (cardTs && cardTs <= anchorTs) {
+              targetCard = card;
+              break;
+            }
+          }
+        }
+      }
+
+      dismissedResumeAnchorTs = anchor.updated_at || Date.now();
+      pendingResumeAnchor = null;
+      if (banner) banner.hidden = true;
+
+      if (targetCard) {
+        if (viewMode === "deck") {
+          const body = $("colTimelineBody");
+          if (body) {
+            const bodyRect = body.getBoundingClientRect();
+            const cardRect = targetCard.getBoundingClientRect();
+            body.scrollTo({
+              top: body.scrollTop + (cardRect.top - bodyRect.top) - 12,
+              behavior: "smooth"
+            });
+          } else {
+            targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        } else {
+          const hdr = document.querySelector(".top-nav-wrap");
+          const hdrBottom = hdr ? hdr.getBoundingClientRect().bottom : 0;
+          const cardRect = targetCard.getBoundingClientRect();
+          window.scrollTo({
+            top: Math.max(0, window.scrollY + cardRect.top - hdrBottom - 12),
+            behavior: "smooth"
+          });
+        }
+        targetCard.classList.add("is-resume-highlight");
+        setTimeout(() => targetCard.classList.remove("is-resume-highlight"), 2600);
+      } else if ($("msg")) {
+        $("msg").className = "msg";
+        $("msg").textContent = t("feed.resume_not_found");
+        setTimeout(() => {
+          if ($("msg").textContent === t("feed.resume_not_found")) $("msg").textContent = "";
+        }, 3000);
+      }
+    }
+
+    function initTimelinePositionSync() {
+      if ($("resumeReadingBtn")) {
+        $("resumeReadingBtn").onclick = jumpToResumeAnchor;
+      }
+      if ($("resumeReadingDismiss")) {
+        $("resumeReadingDismiss").onclick = () => {
+          if (pendingResumeAnchor) {
+            dismissedResumeAnchorTs = pendingResumeAnchor.updated_at || Date.now();
+          }
+          pendingResumeAnchor = null;
+          if ($("resumeReadingBanner")) $("resumeReadingBanner").hidden = true;
+        };
+      }
+      window.addEventListener("scroll", () => {
+        if (viewMode !== "deck" && tab === "timeline" && !threadIt) {
+          scheduleTimelineAnchorCapture();
+        }
+      }, { passive: true });
+      const tlBody = $("colTimelineBody");
+      if (tlBody) {
+        tlBody.addEventListener("scroll", () => {
+          if (viewMode === "deck") scheduleTimelineAnchorCapture();
+        }, { passive: true });
+      }
     }
 
     function updateDraftsBadge() {
@@ -13332,12 +13633,24 @@
       }
       runPeriodicPoll();
     }, 120000);
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden && (needsBackgroundRefresh || Date.now() - lastPollAt >= 120000)) {
+    setInterval(() => {
+      if (!document.hidden && Date.now() - lastNotifPollAt >= 60000) {
+        loadNotifs();
+      }
+    }, 60000);
+    function handleForegroundResume() {
+      if (document.hidden) return;
+      if (needsBackgroundRefresh || Date.now() - lastPollAt >= 120000) {
         refreshScheduledBadge();
         runPeriodicPoll();
+      } else if (Date.now() - lastNotifPollAt >= 20000) {
+        refreshScheduledBadge();
+        loadNotifs();
+        loadConversations(true);
       }
-    });
+    }
+    document.addEventListener("visibilitychange", handleForegroundResume);
+    window.addEventListener("focus", handleForegroundResume);
     setInterval(() => {
       if (!document.hidden) checkAppUpdate(false);
     }, 1800000);

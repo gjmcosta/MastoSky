@@ -2044,6 +2044,70 @@
       font-weight: 700
     }
 
+    .resume-reading-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 10px;
+      padding: 7px 10px;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--accent) 12%, var(--card));
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+      animation: mobileComposeFadeIn 0.16s ease-out;
+    }
+
+    .resume-reading-banner[hidden] {
+      display: none !important;
+    }
+
+    .resume-reading-btn {
+      flex: 1;
+      min-width: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: none;
+      border: none;
+      padding: 2px 0;
+      color: var(--accent);
+      font: 600 12.5px var(--sans);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .resume-reading-btn span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .resume-reading-close {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .resume-reading-close:hover {
+      background: var(--surface-2);
+      color: var(--ink);
+    }
+
+    .post.is-resume-highlight {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+      transition: box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+
     .tl-filter-bar .tl-catchup-btn {
       color: var(--accent);
       background: color-mix(in srgb, var(--accent) 10%, transparent);

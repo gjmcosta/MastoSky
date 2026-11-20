@@ -13,8 +13,7 @@
       "timeline",
       "notifs",
       "explore",
-      "profile",
-      "search"
+      "profile"
     ],
     "notif_sound": true,
     "notif_types": {
@@ -26,7 +25,13 @@
     "crosstalk_dedup": true,
     "warn_missing_alt": true,
     "boost_cluster": true,
-    "handle_mappings": []
+    "handle_mappings": [],
+    "timeline_anchor": {
+      "key": "https://hachyderm.io/@jalefkowit/117646150530966771",
+      "time": "2026-11-20T10:48:12.000Z",
+      "updated_at": 1795171722311,
+      "device_id": "dev_wte8yvkomwouw5zb"
+    }
   },
-  "updated_at": 1795167584107
+  "updated_at": 1795171722410
 }
