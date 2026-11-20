@@ -2742,6 +2742,10 @@
           closeNewConvoModal();
           return;
         }
+        if (document.body.classList.contains("mobile-compose-open")) {
+          closeMobileCompose();
+          return;
+        }
         if (activeConvo) {
           closeConvoThread();
           return;
@@ -9074,6 +9078,11 @@
       const sendDisabled = !hasContent || !pollValid || !textValid || !targets.length || !threadValid;
       $("send").disabled = sendDisabled;
       if ($("scheduleOpenBtn")) $("scheduleOpenBtn").disabled = sendDisabled;
+      if ($("sideComposeBtn")) {
+        const hasDraftState = hasContent || threadPosts.length > 0 || Boolean(reply);
+        $("sideComposeBtn").classList.toggle("has-draft", hasDraftState);
+      }
+      updateMobileComposeTitle();
       scheduleAutoSave();
       scheduleComposerLinkPreview();
     }
@@ -9108,9 +9117,13 @@
         $("colComposeBody")?.scrollTo({ top: 0, behavior: "smooth" });
       }
       const ta = $("text");
-      ta.focus();
-      if (viewMode !== "deck") {
-        ta.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (isMobileSingleCol()) {
+        openMobileCompose(true);
+      } else {
+        ta.focus();
+        if (viewMode !== "deck") {
+          ta.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
       }
       update();
     }
@@ -9646,6 +9659,9 @@
 
       update();
       saveAutoDraft();
+      if (fromLibrary && isMobileSingleCol()) {
+        openMobileCompose(true);
+      }
     }
 
     function deleteDraftFromLibrary(id) {
@@ -11400,6 +11416,9 @@
 
       update();
       saveAutoDraft();
+      if (isMobileSingleCol()) {
+        openMobileCompose(true);
+      }
     }
 
     function cancelReply() {
@@ -11445,6 +11464,8 @@
       composerLinkCard = null; dismissedLinkUrl = ""; _linkPreviewReqUrl = ""; renderComposerLinkPreview();
       try { localStorage.removeItem("mastosky_autosave"); } catch (_) { }
       if ($("draftIndicator")) $("draftIndicator").hidden = true;
+      if ($("sideComposeBtn")) $("sideComposeBtn").classList.remove("has-draft");
+      closeMobileCompose();
       setTimeout(load, 1200);
       if (profileLoaded) setTimeout(() => loadProfile(true), 1200);
       if (threadIt) setTimeout(() => openThread(threadIt, true), 1500);
@@ -12141,8 +12162,12 @@
         if ($("text")) {
           $("text").value = plainTxt;
           $("text").dispatchEvent(new Event("input"));
-          $("text").scrollIntoView({ behavior: "smooth", block: "center" });
-          $("text").focus();
+          if (isMobileSingleCol()) {
+            openMobileCompose(true);
+          } else {
+            $("text").scrollIntoView({ behavior: "smooth", block: "center" });
+            $("text").focus();
+          }
         }
         if (it.cw && $("cwInput") && $("cwRow")) {
           $("cwRow").hidden = false;
@@ -12949,7 +12974,53 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
       };
     });
+    function isMobileSingleCol() {
+      return viewMode !== "deck" && window.innerWidth < 768;
+    }
+
+    function updateMobileComposeTitle() {
+      const titleEl = $("mobileComposeTitle");
+      if (!titleEl) return;
+      if (reply) titleEl.textContent = t("actions.reply") || "Responder";
+      else if (quote) titleEl.textContent = t("composer.quote_label") || "A citar publicação";
+      else titleEl.textContent = t("header.col_compose") || "Novo post";
+    }
+
+    function openMobileCompose(focusText = true) {
+      if (!isMobileSingleCol()) return;
+      updateMobileComposeTitle();
+      document.body.classList.add("mobile-compose-open");
+      if (focusText) {
+        setTimeout(() => $("text")?.focus(), 80);
+      }
+    }
+
+    function closeMobileCompose() {
+      if (!document.body.classList.contains("mobile-compose-open")) return;
+      document.body.classList.remove("mobile-compose-open");
+      if ($("text")) $("text").blur();
+    }
+
+    if ($("closeMobileComposeBtn")) {
+      $("closeMobileComposeBtn").onclick = closeMobileCompose;
+    }
+    if ($("singleComposeWrap")) {
+      $("singleComposeWrap").addEventListener("click", (e) => {
+        if (e.target === $("singleComposeWrap") && document.body.classList.contains("mobile-compose-open")) {
+          closeMobileCompose();
+        }
+      });
+    }
+
     if ($("sideComposeBtn")) $("sideComposeBtn").onclick = () => {
+      if (isMobileSingleCol()) {
+        if (document.body.classList.contains("mobile-compose-open")) {
+          closeMobileCompose();
+        } else {
+          openMobileCompose(true);
+        }
+        return;
+      }
       window.scrollTo({ top: 0, behavior: "smooth" });
       setTimeout(() => $("text")?.focus(), 250);
     };
@@ -13071,8 +13142,12 @@
           if (viewMode === "single" && tab !== "timeline") setTab("timeline");
           $("text").value = combined;
           if (typeof update === "function") update();
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          setTimeout(() => $("text")?.focus(), 150);
+          if (isMobileSingleCol()) {
+            openMobileCompose(true);
+          } else {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+            setTimeout(() => $("text")?.focus(), 150);
+          }
         }
         if (window.history && window.history.replaceState) {
           window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
