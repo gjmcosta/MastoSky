@@ -2181,7 +2181,6 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn('id="pSaved"', html)
         self.assertIn('id="savedFeed"', html)
         self.assertIn('id="threadSaved"', html)
-        self.assertIn('id="savedNetFilters"', html)
         self.assertIn('id="savedSearchInput"', html)
         self.assertIn('mastosky_saved_posts', html)
         self.assertIn("function getSavedPosts(", html)
@@ -2197,11 +2196,13 @@ class ProxyImageTests(unittest.TestCase):
             'mastosky_saved_collections',
             "function getSavedCollections(",
             "function persistSavedCollections(",
+            "function renderSaveButtonContent(",
             "function setPostCollection(",
             "function openSavedCollectionMenu(",
             "function renderSavedCollectionsBar(",
             "saved-col-chip",
             "saved-col-popover",
+            "saved-col-opt-ico",
         ]:
             self.assertIn(marker, html)
 

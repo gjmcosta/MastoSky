@@ -3241,7 +3241,6 @@
     }
 
     // --- SISTEMA DE POSTS GUARDADOS (BOOKMARKS) E COLEÇÕES ---
-    let savedFilterNet = "all";
     let savedFilterQuery = "";
     let savedFilterCollection = "all";
     let editingSavedColId = null;
@@ -3344,12 +3343,55 @@
       return Boolean(getSavedPostRecord(it));
     }
 
+    function renderSaveButtonContent(btn, key, saved, colsOpt, savedMapOpt) {
+      if (!btn) return;
+      if (!saved) {
+        btn.innerHTML = ICONS.bookmark;
+        return;
+      }
+      const cols = colsOpt || getSavedCollections();
+      const rec = savedMapOpt
+        ? (key ? savedMapOpt.get(key) : null)
+        : (key ? getSavedPosts().find(p => getPostKey(p) === key) : null);
+      const cid = (rec && rec.collection_id) ? String(rec.collection_id) : "";
+      const colObj = cid ? cols.find(c => c.id === cid) : null;
+      btn.innerHTML = ICONS.bookmarkFill;
+      if (colObj) {
+        btn.append(el("span", "saved-col-chip", colObj.name));
+      }
+    }
+
+    function refreshAllVisibleSaveButtons() {
+      const cols = getSavedCollections();
+      const savedList = getSavedPosts();
+      const savedMap = new Map();
+      savedList.forEach(p => {
+        const k = getPostKey(p);
+        if (k) savedMap.set(k, p);
+      });
+      document.querySelectorAll(".act-save[data-post-key]").forEach(b => {
+        const k = b.dataset.postKey || "";
+        const isSaved = k ? savedMap.has(k) : false;
+        b.classList.toggle("on", isSaved);
+        b.title = isSaved ? t("actions.saved_rm") : t("actions.save");
+        b.setAttribute("aria-label", b.title);
+        renderSaveButtonContent(b, k, isSaved, cols, savedMap);
+      });
+    }
+
     function syncSaveButtonsUI(key, saved, btnEl) {
+      const cols = getSavedCollections();
+      const savedList = getSavedPosts();
+      const savedMap = new Map();
+      savedList.forEach(p => {
+        const k = getPostKey(p);
+        if (k) savedMap.set(k, p);
+      });
       const applyBtnState = (b) => {
         b.classList.toggle("on", saved);
         b.title = saved ? t("actions.saved_rm") : t("actions.save");
         b.setAttribute("aria-label", b.title);
-        b.innerHTML = saved ? ICONS.bookmarkFill : ICONS.bookmark;
+        renderSaveButtonContent(b, key, saved, cols, savedMap);
       };
       if (key) {
         document.querySelectorAll(`.act-save[data-post-key="${CSS.escape(key)}"]`).forEach(applyBtnState);
@@ -3392,6 +3434,7 @@
       if (!col) return false;
       col.name = cleanName;
       persistSavedCollections(cols);
+      refreshAllVisibleSaveButtons();
       renderSavedFeed();
       return true;
     }
@@ -3419,6 +3462,7 @@
 
       if (savedFilterCollection === colId) savedFilterCollection = "all";
       closeSavedColForm();
+      refreshAllVisibleSaveButtons();
       renderSavedFeed();
     }
 
@@ -3487,16 +3531,13 @@
 
       const listWrap = el("div", "saved-col-opt-list");
 
-      const mkOption = (id, label, isFolder) => {
+      const mkOption = (id, label, iconHtml) => {
         const isSelected = (id === null && currentColId === null) || (id !== null && currentColId === id);
         const optBtn = el("button", "saved-col-opt-btn" + (isSelected ? " active" : ""));
         optBtn.type = "button";
-        if (isFolder) {
-          const icoWrap = document.createElement("span");
-          icoWrap.style.display = "inline-flex";
-          icoWrap.innerHTML = ICONS.folder;
-          optBtn.append(icoWrap);
-        }
+        const icoWrap = el("span", "saved-col-opt-ico");
+        icoWrap.innerHTML = iconHtml;
+        optBtn.append(icoWrap);
         const nameSpan = el("span", "saved-col-opt-name", label);
         optBtn.append(nameSpan);
         if (isSelected) {
@@ -3510,8 +3551,8 @@
         return optBtn;
       };
 
-      listWrap.append(mkOption(null, t("saved.col_none"), false));
-      cols.forEach(c => listWrap.append(mkOption(c.id, c.name, true)));
+      listWrap.append(mkOption(null, t("saved.col_none"), ICONS.bookmark));
+      cols.forEach(c => listWrap.append(mkOption(c.id, c.name, ICONS.folder)));
       menu.append(listWrap, el("div", "boost-divider"));
 
       const form = el("div", "saved-col-pop-form");
@@ -3746,7 +3787,6 @@
 
     function renderSavedFeed() {
       const feed = $("savedFeed");
-      const countText = $("savedCountText");
       if (!feed) return;
 
       const allSaved = getSavedPosts();
@@ -3763,10 +3803,6 @@
         filtered = filtered.filter(p => p && String(p.collection_id || "") === savedFilterCollection);
       }
 
-      if (savedFilterNet && savedFilterNet !== "all") {
-        filtered = filtered.filter(p => p.network === savedFilterNet);
-      }
-
       if (savedFilterQuery) {
         const q = savedFilterQuery.toLowerCase();
         filtered = filtered.filter(p => {
@@ -3778,12 +3814,6 @@
 
       if (muteMode === "hide") {
         filtered = filtered.filter(p => !getMutedMatch(p));
-      }
-
-      if (countText) {
-        countText.textContent = filtered.length === 1
-          ? t("saved.count_one")
-          : t("saved.count_many", { n: filtered.length });
       }
 
       feed.replaceChildren();
@@ -3801,33 +3831,11 @@
 
       filtered.forEach(it => {
         const p = postCard(it);
-        const colObj = (it && it.collection_id) ? colById.get(String(it.collection_id)) : null;
-        const chipRow = el("div", "saved-post-col-row");
-        const chip = el("button", "saved-col-chip" + (colObj ? " has-col" : ""));
-        chip.type = "button";
-        chip.title = t("saved.col_picker_title");
-        chip.innerHTML = ICONS.folder + " <span></span>";
-        chip.querySelector("span").textContent = colObj ? colObj.name : t("saved.col_assign_chip");
-        chip.onclick = (e) => {
-          e.stopPropagation();
-          openSavedCollectionMenu(it, chip);
-        };
-        chipRow.append(chip);
-        const actsEl = p.querySelector(".acts");
-        if (actsEl) p.insertBefore(chipRow, actsEl);
-        else p.append(chipRow);
         feed.append(p);
       });
     }
 
     function initSavedEvents() {
-      document.querySelectorAll("#savedNetFilters button").forEach(btn => {
-        btn.onclick = () => {
-          document.querySelectorAll("#savedNetFilters button").forEach(b => b.classList.toggle("active", b === btn));
-          savedFilterNet = btn.dataset.savedNet || "all";
-          renderSavedFeed();
-        };
-      });
       const sInp = $("savedSearchInput");
       if (sInp) {
         sInp.oninput = (e) => {
@@ -4382,7 +4390,7 @@
       bS.dataset.postKey = postKey;
       bS.title = isSaved ? t("actions.saved_rm") : t("actions.save");
       bS.setAttribute("aria-label", bS.title);
-      bS.innerHTML = isSaved ? ICONS.bookmarkFill : ICONS.bookmark;
+      renderSaveButtonContent(bS, postKey, isSaved);
       bS.onclick = (e) => {
         e.stopPropagation();
         toggleSavePost(it, bS);
@@ -6283,7 +6291,7 @@
           bS.dataset.postKey = postKey;
           bS.title = isSaved ? t("actions.saved_rm") : t("actions.save");
           bS.setAttribute("aria-label", bS.title);
-          bS.innerHTML = isSaved ? ICONS.bookmarkFill : ICONS.bookmark;
+          renderSaveButtonContent(bS, postKey, isSaved);
           bS.onclick = (e) => {
             e.stopPropagation();
             markSingleNotifRead(n, p);
@@ -9974,8 +9982,9 @@
           localStorage.setItem("mastosky_saved_posts", JSON.stringify(nextSaved));
           savedChanged = true;
         }
-        if (savedChanged && typeof renderSavedFeed === "function") {
-          renderSavedFeed();
+        if (savedChanged) {
+          if (typeof refreshAllVisibleSaveButtons === "function") refreshAllVisibleSaveButtons();
+          if (typeof renderSavedFeed === "function") renderSavedFeed();
         }
 
         if (Array.isArray(serverData.drafts)) {

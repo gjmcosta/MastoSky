@@ -3826,20 +3826,6 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12)
     }
 
-    .saved-filters-row {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px
-    }
-
-    .saved-count-text {
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 600
-    }
-
     .saved-search-wrap {
       display: flex;
       align-items: center;
@@ -3871,7 +3857,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 6px;
-      margin-top: 10px;
+      margin-top: 0;
       flex-wrap: wrap
     }
 
@@ -4018,54 +4004,24 @@
       background: var(--surface-2)
     }
 
-    .saved-post-col-row {
-      display: flex;
-      align-items: center;
-      margin-top: 8px
-    }
-
-    .saved-col-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: var(--surface-1);
-      border: 1px solid var(--line);
-      color: var(--muted);
-      border-radius: 999px;
-      padding: 3px 9px;
-      font: 600 11.5px/1.25 var(--sans);
-      cursor: pointer;
-      max-width: 100%;
-      transition: color .15s ease, border-color .15s ease, background-color .15s ease
-    }
-
-    .saved-col-chip svg {
-      width: 12px;
-      height: 12px;
-      flex: none
-    }
-
-    .saved-col-chip span {
+    .acts button.act-save .saved-col-chip {
+      font-size: 11px;
+      font-weight: 600;
+      max-width: 115px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 220px
-    }
-
-    .saved-col-chip.has-col {
-      background: color-mix(in srgb, var(--accent) 12%, var(--card));
-      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-      color: var(--accent)
-    }
-
-    .saved-col-chip:hover {
-      border-color: var(--accent);
-      color: var(--accent)
+      line-height: 1.2;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--star, #F0B400) 14%, var(--surface-1));
+      border: 1px solid color-mix(in srgb, var(--star, #F0B400) 42%, var(--line));
+      color: var(--ink)
     }
 
     .boost-popover.saved-col-popover {
-      min-width: 225px;
-      max-width: 270px;
+      min-width: 230px;
+      max-width: 275px;
       max-height: 330px;
       overflow-y: auto
     }
@@ -4078,13 +4034,24 @@
 
     .boost-popover button.saved-col-opt-btn {
       justify-content: flex-start;
-      padding: 7px 10px
+      padding: 7px 10px;
+      gap: 8px
     }
 
     .boost-popover button.saved-col-opt-btn.active {
       background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
       color: var(--accent);
       font-weight: 600
+    }
+
+    .saved-col-opt-ico {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      opacity: .88
     }
 
     .saved-col-opt-name {
@@ -4103,17 +4070,19 @@
     .saved-col-pop-form {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       padding: 4px 6px
     }
 
     .saved-col-pop-form input {
       flex: 1;
       min-width: 0;
+      height: 32px;
+      box-sizing: border-box;
       background: var(--surface-1);
       border: 1px solid var(--line);
-      border-radius: 7px;
-      padding: 5px 8px;
+      border-radius: 8px;
+      padding: 0 10px;
       color: var(--ink);
       font: 12.5px var(--sans);
       outline: none
@@ -4124,13 +4093,18 @@
     }
 
     .boost-popover button.saved-col-pop-add {
-      width: auto;
-      flex: none;
-      padding: 5px 9px;
-      border-radius: 7px;
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      flex: 0 0 32px;
+      padding: 0;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       background: var(--accent-solid, var(--accent));
       color: #fff;
-      font-weight: 700
+      font: 700 16px/1 var(--sans)
     }
 
     .boost-popover button.saved-col-pop-add:hover {
