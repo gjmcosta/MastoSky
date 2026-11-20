@@ -2319,8 +2319,18 @@
     .reader-title {
       margin: 0 0 8px;
       font-size: 22px;
+      font-weight: 700;
       line-height: 1.25;
+      letter-spacing: -0.02em;
       color: var(--ink)
+    }
+
+    .deck-col-title,
+    .setup-box h2,
+    .mobile-compose-title,
+    .user-profile-name,
+    .who b {
+      letter-spacing: -0.015em;
     }
 
     .reader-content {
@@ -3153,7 +3163,7 @@
     }
 
     .body {
-      font: 15px/1.5 var(--sans);
+      font: 15px/1.55 var(--sans);
       overflow-wrap: anywhere
     }
 
@@ -4415,7 +4425,9 @@
     }
 
     .post.focus .body {
-      font-size: 19px
+      font-size: 18px;
+      line-height: 1.5;
+      letter-spacing: -0.005em;
     }
 
     .kids {
