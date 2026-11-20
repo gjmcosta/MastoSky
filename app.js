@@ -254,6 +254,8 @@
         actions: {
           reply: "Responder",
           share: "Partilhar",
+          share_ext: "Partilhar ligação",
+          link_copied: "Ligação copiada!",
           like: "Gostar",
           liked: "Remover gosto",
           save: "Guardar post",
@@ -916,6 +918,8 @@
         actions: {
           reply: "Reply",
           share: "Share",
+          share_ext: "Share link",
+          link_copied: "Link copied!",
           like: "Like",
           liked: "Unlike",
           save: "Save post",
@@ -2184,8 +2188,55 @@
       thread: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="16.5" stroke-dasharray="2 2"/><circle cx="12" cy="19" r="2.5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
       translate: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2" width="12.5" height="11.5" rx="2.5"/><path d="M14 10.5h6a2.5 2.5 0 0 1 2.5 2.5v6.5a2.5 2.5 0 0 1-2.5 2.5h-7.5a2.5 2.5 0 0 1-2.5-2.5V13.5"/><path d="M7.75 4.2v1.6M4.5 5.8h6.5M9.6 5.8c-.5 2.4-2 4.2-4.6 5.3M5.6 7c1.2 1.8 2.8 3.2 4.8 4.1"/><path d="M14.2 19.5l2.6-5.8 2.6 5.8M15 17.8h3.6"/></svg>',
       edit: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
-      trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>'
+      trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
+      share: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>'
     };
+
+    async function sharePostExternal(it, btn) {
+      const url = su(it && it.url) || "";
+      const text = ((it && it.text) || "").trim();
+      const title = (it && (it.name || it.handle)) || "MastoSky";
+      if (!url && !text) return;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title, text: text.slice(0, 220), url: url || undefined });
+          return;
+        } catch (err) {
+          if (err && err.name === "AbortError") return;
+        }
+      }
+      const toCopy = url || text;
+      let copied = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(toCopy);
+          copied = true;
+        }
+      } catch (_) { }
+      if (!copied) {
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = toCopy;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          copied = document.execCommand("copy");
+          ta.remove();
+        } catch (_) { }
+      }
+      if (copied) {
+        if (btn) {
+          btn.classList.add("on");
+          setTimeout(() => btn.classList.remove("on"), 1500);
+        }
+        if ($("msg")) {
+          $("msg").className = "msg";
+          $("msg").textContent = t("actions.link_copied");
+          setTimeout(() => { if ($("msg").textContent === t("actions.link_copied")) $("msg").textContent = ""; }, 2500);
+        }
+      }
+    }
     function netBadge(n) {
       const s = el("span", "net");
       s.innerHTML = LOGO[n]; // SVG fixo, não vem das redes
@@ -3822,6 +3873,18 @@
       };
 
       acts.append(bR, bB, bL, bS);
+
+      if (su(it.url)) {
+        const bSh = el("button", "act-btn act-share");
+        bSh.title = t("actions.share_ext");
+        bSh.setAttribute("aria-label", bSh.title);
+        bSh.innerHTML = ICONS.share;
+        bSh.onclick = (e) => {
+          e.stopPropagation();
+          sharePostExternal(it, bSh);
+        };
+        acts.append(bSh);
+      }
 
       if (it.text && it.text.trim()) {
         const bTr = el("button", "act-btn act-translate");
@@ -5789,6 +5852,19 @@
           };
 
           acts.append(bR, bB, bL, bS);
+
+          if (su(postTarget.url)) {
+            const bSh = el("button", "act-btn act-share");
+            bSh.title = t("actions.share_ext");
+            bSh.setAttribute("aria-label", bSh.title);
+            bSh.innerHTML = ICONS.share;
+            bSh.onclick = (e) => {
+              e.stopPropagation();
+              markSingleNotifRead(n, p);
+              sharePostExternal(postTarget, bSh);
+            };
+            acts.append(bSh);
+          }
 
           const notifTrText = ((postTarget && postTarget.text) || n.text || "").trim();
           if (notifTrText) {
