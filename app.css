@@ -706,7 +706,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       padding: 0
     }
 
@@ -724,7 +724,7 @@
       cursor: pointer;
       white-space: nowrap;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-      transition: all .15s ease
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     body.view-deck .header-deck-add-btn {
@@ -860,10 +860,8 @@
       font-weight: 700;
       line-height: 1.2;
       cursor: pointer;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
       border: 1px solid transparent;
-      transition: all .15s;
+      transition: background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       user-select: none
     }
 
@@ -984,7 +982,7 @@
       font-weight: 700;
       cursor: pointer;
       line-height: 1.25;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .prev-tool-btn:hover:not(:disabled) {
@@ -1114,7 +1112,7 @@
       justify-content: center;
       font-size: 11px;
       color: var(--muted);
-      transition: all .15s;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       padding: 0;
       line-height: 1
     }
@@ -2006,7 +2004,7 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .tl-pill:hover {
@@ -2037,7 +2035,7 @@
       font-size: 10px;
       font-weight: 600;
       cursor: pointer;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       white-space: nowrap;
       box-sizing: border-box;
       margin-left: 0
@@ -2258,7 +2256,7 @@
       align-items: center;
       gap: 4px;
       flex: none;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .ext-read-btn:hover {
@@ -2522,7 +2520,7 @@
       font-size: 12px;
       border-radius: 50%;
       line-height: 1;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .search-clear-btn:hover {
@@ -2591,7 +2589,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .search-type-bar .filter-pill:hover {
@@ -2624,7 +2622,7 @@
       font-size: 11.5px;
       font-weight: 600;
       cursor: pointer;
-      transition: all .15s;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
@@ -2682,7 +2680,7 @@
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .filter-pill:hover {
@@ -2740,7 +2738,7 @@
       border-radius: 10px;
       padding: 10px;
       cursor: pointer;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .search-actor-card:hover {
@@ -2813,7 +2811,7 @@
       font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .search-tag-chip:hover {
@@ -3009,7 +3007,7 @@
       color: var(--muted);
       cursor: pointer;
       font-size: 14px;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       flex: none
     }
 
@@ -3046,8 +3044,15 @@
       border-radius: 4px 12px 12px 4px;
       padding: 12px 14px;
       margin-bottom: 10px;
+      contain: layout style;
       content-visibility: auto;
       contain-intrinsic-size: auto 180px
+    }
+
+    @media (pointer: coarse) {
+      .post {
+        content-visibility: visible;
+      }
     }
 
     .post:has(video) {
@@ -3082,7 +3087,7 @@
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      transition: all .15s;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       text-align: left;
       box-sizing: border-box
     }
@@ -3221,10 +3226,8 @@
       font: 700 10.5px/1.3 var(--sans);
       letter-spacing: 0.5px;
       cursor: pointer;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
       z-index: 2;
-      transition: background .15s, transform .15s
+      transition: background-color .15s ease, transform .15s ease
     }
 
     .media-alt-badge:hover {
@@ -3239,14 +3242,13 @@
       bottom: 34px;
       max-height: 150px;
       overflow-y: auto;
-      background: rgba(11, 16, 32, 0.94);
+      overscroll-behavior: contain;
+      background: rgba(11, 16, 32, 0.96);
       color: #fff;
       border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 8px;
       padding: 8px 10px;
       font: 12.5px/1.45 var(--sans);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
       z-index: 3;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
       word-break: break-word;
@@ -4379,7 +4381,7 @@
       font-size: 10px;
       font-weight: 600;
       cursor: pointer;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       white-space: nowrap;
       box-sizing: border-box
     }
@@ -4502,8 +4504,7 @@
     .setup-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(5px);
+      background: rgba(4, 7, 18, 0.76);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -4511,7 +4512,8 @@
       z-index: 999;
       padding: 16px;
       box-sizing: border-box;
-      overflow-y: auto
+      overflow-y: auto;
+      overscroll-behavior: contain
     }
 
     #crossPostOverlay {
@@ -4588,7 +4590,7 @@
       font-size: 14px;
       cursor: pointer;
       flex-shrink: 0;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .setup-close-btn:hover {
@@ -4629,7 +4631,7 @@
       font: 600 13px var(--sans);
       text-align: left;
       cursor: pointer;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .settings-nav-btn:hover {
@@ -4886,7 +4888,7 @@
       background: var(--surface-2);
       color: var(--ink);
       cursor: pointer;
-      transition: all .15s ease
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .notif-sound-btn:hover {
@@ -4921,7 +4923,7 @@
       background: color-mix(in srgb, var(--accent) 12%, transparent);
       color: var(--accent);
       cursor: pointer;
-      transition: all .15s ease
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .setup-secondary-btn:hover {
@@ -5114,7 +5116,7 @@
       font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .pill:hover {
@@ -5171,7 +5173,7 @@
       font-weight: 600;
       font-family: var(--sans);
       cursor: pointer;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -5224,7 +5226,7 @@
       font-weight: 600;
       font-family: var(--sans);
       cursor: pointer;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -5261,7 +5263,7 @@
       text-decoration: none;
       line-height: 1.2;
       cursor: pointer;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       box-sizing: border-box;
       white-space: nowrap
     }
@@ -5375,9 +5377,10 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: color-mix(in srgb, var(--bg) 88%, transparent);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: color-mix(in srgb, var(--bg) 92%, transparent);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transform: translateZ(0);
       margin: -20px -14px 14px -14px;
       padding: 14px 14px 4px 14px;
       border-bottom: 1px solid var(--line)
@@ -5393,15 +5396,16 @@
       z-index: 900;
       opacity: 0;
       pointer-events: none;
+      transform: translateZ(0);
       transition: opacity .22s ease-out, transform .25s cubic-bezier(0.16, 1, 0.3, 1)
     }
 
     .side-nav-inner {
       display: flex;
       align-items: center;
-      background: color-mix(in srgb, var(--card) 88%, transparent);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       border: 1px solid var(--line);
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22)
     }
@@ -5414,7 +5418,7 @@
       position: relative;
       display: grid;
       place-items: center;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .side-nav-btn:hover {
@@ -5554,15 +5558,14 @@
         position: fixed;
         inset: 0;
         z-index: 950;
-        background: rgba(5, 8, 22, 0.72);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
+        background: rgba(5, 8, 22, 0.84);
         align-items: flex-start;
         justify-content: center;
         padding: calc(12px + env(safe-area-inset-top, 0px)) 10px calc(16px + env(safe-area-inset-bottom, 0px));
         overflow-y: auto;
+        overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
-        animation: mobileComposeFadeIn 0.16s ease-out;
+        animation: mobileComposeFadeIn 0.18s var(--ease-spring, cubic-bezier(0.22, 1, 0.36, 1));
       }
 
       body.mobile-compose-open #singleComposeWrap .compose {
@@ -5635,9 +5638,10 @@
         position: sticky;
         top: 0;
         z-index: 100;
-        background: color-mix(in srgb, var(--bg) 94%, transparent);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: color-mix(in srgb, var(--bg) 95%, transparent);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transform: translateZ(0);
         margin: calc(-14px - env(safe-area-inset-top, 0px)) -14px 12px -14px;
         padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 4px 14px;
         border-bottom: 1px solid var(--line);
@@ -5783,7 +5787,7 @@
         gap: 3px;
         border-radius: 8px;
         border-bottom: 2.5px solid transparent;
-        transition: all .15s ease;
+        transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
         user-select: none;
         -webkit-user-select: none;
         -webkit-touch-callout: none;
@@ -5930,9 +5934,10 @@
         border-radius: 32px;
         padding: 6px 8px;
         box-sizing: border-box;
-        background: color-mix(in srgb, var(--card) 94%, transparent);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: color-mix(in srgb, var(--card) 95%, transparent);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transform: translateZ(0);
         border: 1px solid var(--line);
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
       }
@@ -6093,7 +6098,7 @@
       background: color-mix(in srgb, var(--accent) 12%, transparent);
       color: var(--accent);
       cursor: pointer;
-      transition: all .15s;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       flex-shrink: 0;
     }
 
@@ -6339,7 +6344,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all .15s;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
     }
 
     .deck-act-btn:hover:not(:disabled) {
@@ -6440,7 +6445,7 @@
       font-weight: 600;
       font-size: 13.5px;
       cursor: pointer;
-      transition: all .15s;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
     }
 
     .deck-add-col-btn:hover {
@@ -6506,6 +6511,8 @@
       flex: 1 1 auto;
       overflow-y: auto;
       overflow-x: hidden;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
       padding: 12px;
       scrollbar-width: thin;
     }
@@ -6577,7 +6584,7 @@
       cursor: pointer;
       margin-bottom: 8px;
       text-align: left;
-      transition: all .15s ease
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .panel-action-btn:last-child {
@@ -6703,10 +6710,8 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      background: rgba(6, 9, 20, 0.92);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      animation: popIn .15s ease-out;
+      background: rgba(6, 9, 20, 0.94);
+      animation: popIn .18s var(--ease-spring, cubic-bezier(0.22, 1, 0.36, 1));
     }
 
     .lightbox-backdrop {
@@ -6746,7 +6751,7 @@
       cursor: pointer;
       display: grid;
       place-items: center;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
     }
 
     .lightbox-close:hover {
@@ -6770,7 +6775,7 @@
       cursor: pointer;
       display: grid;
       place-items: center;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       user-select: none;
       z-index: 2;
     }
@@ -7060,7 +7065,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       box-sizing: border-box
     }
 
@@ -7105,7 +7110,7 @@
       white-space: nowrap;
       flex-shrink: 0;
       box-sizing: border-box;
-      transition: all .15s ease
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .msg-new-btn:hover {
@@ -7150,7 +7155,7 @@
       padding: 12px;
       margin-bottom: 8px;
       cursor: pointer;
-      transition: all .15s;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       position: relative
     }
 
@@ -7323,7 +7328,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .msg-thread-back-btn:hover {
@@ -7505,7 +7510,7 @@
       justify-content: center;
       cursor: pointer;
       flex-shrink: 0;
-      transition: all .15s
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
     }
 
     .msg-send-btn:hover {
@@ -7663,7 +7668,7 @@
       padding: 4px 10px;
       border-radius: 999px;
       cursor: pointer;
-      transition: all .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
       line-height: 1.2;
     }
 
@@ -7674,4 +7679,30 @@
     .setup-lang-pill.active {
       background: var(--accent-solid, var(--accent));
       color: #fff;
+    }
+
+    /* Fase 1: Fluidez, contenção de scroll e feedback tátil GPU */
+    .user-profile-modal-body {
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .acts button:active,
+    .acts a.act-btn:active,
+    .side-nav-btn:active,
+    .tabs button:active,
+    .header-nav-btn:active,
+    .filter-pill:active {
+      transform: scale(0.94);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
     }
