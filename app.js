@@ -1852,6 +1852,14 @@
         if (!profileLoaded) loadProfile();
         applyDeckColumnVisibility();
       } else {
+        ALL_DECK_COLS.forEach(c => {
+          const colEl = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
+          if (colEl) colEl.hidden = false;
+        });
+        if ($("deckAddColCard")) $("deckAddColCard").hidden = true;
+        if ($("colThread") && !$("colThread").hidden) {
+          closeDeckThread();
+        }
         setTab(tab);
       }
       updateActiveDeckColUI();
@@ -12774,6 +12782,8 @@
       });
       if ($("cfgMuteModeSelect")) $("cfgMuteModeSelect").value = muteMode;
       if ($("cfgCrosstalkDedup")) $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
+      if ($("cfgWarnMissingAlt")) $("cfgWarnMissingAlt").checked = warnMissingAlt;
+      if ($("cfgBoostCluster")) $("cfgBoostCluster").checked = boostClusterEnabled;
       if (typeof renderHandleMappingsUI === "function") renderHandleMappingsUI();
       renderMutedWordsChips();
       if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
@@ -12954,8 +12964,17 @@
       try {
         const res = await api("/api/setup", payload);
         if (res.ok) {
+          if ($("cfgLangSelect") && $("cfgLangSelect").value !== currentLang) {
+            setLang($("cfgLangSelect").value);
+          }
           if ($("cfgThemeSelect")) {
             applyTheme($("cfgThemeSelect").value, true);
+          }
+          if ($("cfgNavModeSelect") && $("cfgNavModeSelect").value !== navMode) {
+            setNavMode($("cfgNavModeSelect").value);
+          }
+          if ($("cfgViewModeSelect") && $("cfgViewModeSelect").value !== viewMode) {
+            applyViewMode($("cfgViewModeSelect").value);
           }
           if ($("cfgNotifSound")) {
             notifSoundEnabled = $("cfgNotifSound").checked;
@@ -12964,6 +12983,18 @@
           if ($("cfgCrosstalkDedup")) {
             crosstalkDedupEnabled = $("cfgCrosstalkDedup").checked;
             localStorage.setItem("mastosky_crosstalk_dedup", crosstalkDedupEnabled ? "true" : "false");
+          }
+          if ($("cfgWarnMissingAlt")) {
+            warnMissingAlt = $("cfgWarnMissingAlt").checked;
+            localStorage.setItem("mastosky_warn_missing_alt", warnMissingAlt ? "true" : "false");
+          }
+          if ($("cfgBoostCluster")) {
+            const nextBoostCluster = $("cfgBoostCluster").checked;
+            if (nextBoostCluster !== boostClusterEnabled) {
+              boostClusterEnabled = nextBoostCluster;
+              localStorage.setItem("mastosky_boost_cluster", boostClusterEnabled ? "true" : "false");
+              render();
+            }
           }
           if ($("cfgNotifDesktop")) {
             notifDesktopEnabled = $("cfgNotifDesktop").checked && ("Notification" in window) && Notification.permission === "granted";
@@ -12974,6 +13005,7 @@
             if (chk) notifTypesEnabled[kind.toLowerCase()] = chk.checked;
           });
           localStorage.setItem("mastosky_notif_types", JSON.stringify(notifTypesEnabled));
+          if (typeof syncPrefsToServer === "function") syncPrefsToServer();
           if (payload.ai) {
             aiConfig = Object.assign({}, aiConfig, payload.ai);
           }
@@ -12996,6 +13028,70 @@
         $("setupMsg").textContent = t("setup.err_server");
       }
     };
+
+    if ($("langToggleBtn")) $("langToggleBtn").onclick = () => setLang(currentLang === "pt" ? "en" : "pt");
+    if ($("cfgLangSelect")) {
+      $("cfgLangSelect").value = currentLang;
+      $("cfgLangSelect").onchange = (e) => setLang(e.target.value);
+    }
+    if ($("cfgNavModeSelect")) {
+      $("cfgNavModeSelect").value = navMode;
+      $("cfgNavModeSelect").onchange = (e) => setNavMode(e.target.value);
+    }
+    if ($("viewToggleBtn")) $("viewToggleBtn").onclick = () => applyViewMode(viewMode === "deck" ? "single" : "deck");
+    if ($("cfgViewModeSelect")) {
+      $("cfgViewModeSelect").value = viewMode;
+      $("cfgViewModeSelect").onchange = (e) => applyViewMode(e.target.value);
+    }
+    ALL_DECK_COLS.forEach(c => {
+      const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
+      if (chk) {
+        chk.checked = deckColumns.includes(c);
+        chk.onchange = () => {
+          if (chk.checked) {
+            if (!deckColumns.includes(c)) deckColumns.push(c);
+          } else {
+            if (deckColumns.length <= 1) {
+              chk.checked = true;
+              showAppAlert(t("deck.err_min_one_col"));
+              return;
+            }
+            deckColumns = deckColumns.filter(id => id !== c);
+          }
+          persistDeckColumns();
+        };
+      }
+    });
+
+    if ($("cfgCrosstalkDedup")) {
+      $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
+      $("cfgCrosstalkDedup").onchange = () => {
+        crosstalkDedupEnabled = $("cfgCrosstalkDedup").checked;
+        localStorage.setItem("mastosky_crosstalk_dedup", crosstalkDedupEnabled ? "true" : "false");
+        if (typeof syncPrefsToServer === "function") syncPrefsToServer();
+        render();
+        if (exploreItems && exploreItems.length) renderExplore();
+      };
+    }
+
+    if ($("cfgWarnMissingAlt")) {
+      $("cfgWarnMissingAlt").checked = warnMissingAlt;
+      $("cfgWarnMissingAlt").onchange = () => {
+        warnMissingAlt = $("cfgWarnMissingAlt").checked;
+        localStorage.setItem("mastosky_warn_missing_alt", warnMissingAlt ? "true" : "false");
+        if (typeof syncPrefsToServer === "function") syncPrefsToServer();
+      };
+    }
+
+    if ($("cfgBoostCluster")) {
+      $("cfgBoostCluster").checked = boostClusterEnabled;
+      $("cfgBoostCluster").onchange = () => {
+        boostClusterEnabled = $("cfgBoostCluster").checked;
+        localStorage.setItem("mastosky_boost_cluster", boostClusterEnabled ? "true" : "false");
+        if (typeof syncPrefsToServer === "function") syncPrefsToServer();
+        render();
+      };
+    }
 
     function renderHandleMappingsUI() {
       const listEl = $("handleMapList");

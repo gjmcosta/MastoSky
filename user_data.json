@@ -4,10 +4,10 @@
   "muted_words": [],
   "mute_mode": "warn",
   "preferences": {
-    "theme": "dark",
+    "theme": "light",
     "lang": "pt",
     "nav_mode": "sidebar",
-    "view_mode": "deck",
+    "view_mode": "single",
     "deck_columns": [
       "compose",
       "timeline",
@@ -27,11 +27,11 @@
     "boost_cluster": true,
     "handle_mappings": [],
     "timeline_anchor": {
-      "key": "https://bsky.app/profile/reuters.com/post/3n2rls2ur3g2a",
-      "time": "2026-11-20T22:05:10.955Z",
-      "updated_at": 1795212359853,
+      "key": "https://bsky.app/profile/portugalense.bsky.social/post/3n2rprhoshs2f",
+      "time": "2026-11-20T23:16:25.758Z",
+      "updated_at": 1795216592880,
       "device_id": "dev_wte8yvkomwouw5zb"
     }
   },
-  "updated_at": 1795212359862
+  "updated_at": 1795216592883
 }

@@ -4537,6 +4537,24 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         ]:
             self.assertIn(marker, html)
 
+    def test_view_mode_toggle_and_settings_listeners_present(self):
+        js = Path("app.js").read_text(encoding="utf-8")
+        for marker in [
+            '$("viewToggleBtn").onclick = () => applyViewMode(viewMode === "deck" ? "single" : "deck")',
+            '$("cfgViewModeSelect").onchange = (e) => applyViewMode(e.target.value)',
+            '$("cfgNavModeSelect").onchange = (e) => setNavMode(e.target.value)',
+            '$("cfgLangSelect").onchange = (e) => setLang(e.target.value)',
+            '$("cfgCrosstalkDedup").onchange =',
+            '$("cfgWarnMissingAlt").onchange =',
+            '$("cfgBoostCluster").onchange =',
+            "persistDeckColumns();",
+            'if (colEl) colEl.hidden = false;',
+            'if ($("deckAddColCard")) $("deckAddColCard").hidden = true;',
+            'if ($("colThread") && !$("colThread").hidden)',
+            "closeDeckThread();",
+        ]:
+            self.assertIn(marker, js)
+
 
 if __name__ == "__main__":
     unittest.main()
