@@ -27,11 +27,11 @@
     "boost_cluster": true,
     "handle_mappings": [],
     "timeline_anchor": {
-      "key": "https://bsky.app/profile/newrepublic.com/post/3n2rl5iydmf2s",
-      "time": "2026-11-20T21:53:40.958Z",
-      "updated_at": 1795211668019,
+      "key": "https://bsky.app/profile/lusa.pt/post/3n2rlgmldea27",
+      "time": "2026-11-20T21:58:47.863Z",
+      "updated_at": 1795211963765,
       "device_id": "dev_wte8yvkomwouw5zb"
     }
   },
-  "updated_at": 1795211668023
+  "updated_at": 1795211963770
 }

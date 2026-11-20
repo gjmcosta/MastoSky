@@ -377,7 +377,8 @@
       margin: 3px 0
     }
 
-    .boost-popover button {
+    .boost-popover button,
+    .boost-popover a {
       border: 0;
       background: none;
       color: var(--ink);
@@ -387,15 +388,31 @@
       align-items: center;
       gap: 8px;
       font-size: 13px;
+      text-decoration: none;
       cursor: pointer;
       text-align: left;
       width: 100%;
-      transition: background .15s
+      box-sizing: border-box;
+      transition: background-color .15s ease, color .15s ease
     }
 
-    .boost-popover button:hover {
+    .boost-popover button:hover,
+    .boost-popover a:hover {
       background: var(--surface-2);
       color: var(--accent)
+    }
+
+    .boost-popover button.act-del:hover {
+      color: var(--danger)
+    }
+
+    .boost-popover button.act-translate.on {
+      color: var(--accent);
+      font-weight: 600
+    }
+
+    .boost-popover button.act-translate.loading svg {
+      animation: spin-rotate 1s linear infinite
     }
 
     .boost-popover button.boost-btn-cross {
@@ -408,7 +425,8 @@
       color: var(--accent)
     }
 
-    .boost-popover button svg {
+    .boost-popover button svg,
+    .boost-popover a svg {
       width: 16px;
       height: 16px;
       flex: none
@@ -3696,9 +3714,14 @@
 
     .acts {
       display: flex;
-      gap: 12px;
+      flex-wrap: wrap;
+      gap: 10px;
       margin-top: 8px;
       align-items: center
+    }
+
+    .acts button.act-more {
+      margin-left: auto
     }
 
     .acts button,

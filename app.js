@@ -262,6 +262,7 @@
           saved_rm: "Remover dos guardados",
           delete: "Eliminar",
           view_thread: "Ver conversa",
+          more: "Mais ações",
           translate: "Traduzir com IA",
           translated_with_ai: "Traduzido com IA",
           confirm_delete: "Tens a certeza que queres eliminar esta publicação?",
@@ -931,6 +932,7 @@
           saved_rm: "Remove from saved",
           delete: "Delete",
           view_thread: "View thread",
+          more: "More actions",
           translate: "Translate with AI",
           translated_with_ai: "Translated with AI",
           confirm_delete: "Are you sure you want to delete this post?",
@@ -2200,7 +2202,8 @@
       edit: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
       trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
       share: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
-      download: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
+      download: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+      more: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="19" cy="12" r="1.75"/></svg>'
     };
 
     function getDownloadableVideoHref(mediaList) {
@@ -3894,101 +3897,6 @@
 
       acts.append(bR, bB, bL, bS);
 
-      if (su(it.url)) {
-        const bSh = el("button", "act-btn act-share");
-        bSh.title = t("actions.share_ext");
-        bSh.setAttribute("aria-label", bSh.title);
-        bSh.innerHTML = ICONS.share;
-        bSh.onclick = (e) => {
-          e.stopPropagation();
-          sharePostExternal(it, bSh);
-        };
-        acts.append(bSh);
-      }
-
-      const vidDlHref = getDownloadableVideoHref(it.media);
-      if (vidDlHref) {
-        const bDl = el("a", "act-btn act-download");
-        bDl.href = vidDlHref;
-        bDl.setAttribute("download", "mastosky-video.mp4");
-        bDl.title = t("post.download_video");
-        bDl.setAttribute("aria-label", bDl.title);
-        bDl.innerHTML = ICONS.download;
-        bDl.onclick = (e) => e.stopPropagation();
-        acts.append(bDl);
-      }
-
-      if (it.text && it.text.trim()) {
-        const bTr = el("button", "act-btn act-translate");
-        bTr.title = t("actions.translate");
-        bTr.setAttribute("aria-label", t("actions.translate"));
-        bTr.innerHTML = ICONS.translate;
-        let translatedBox = null;
-        let isTranslating = false;
-
-        bTr.onclick = async (e) => {
-          e.stopPropagation();
-          if (translatedBox) {
-            translatedBox.hidden = !translatedBox.hidden;
-            bTr.classList.toggle("on", !translatedBox.hidden);
-            bTr.title = translatedBox.hidden ? t("actions.translate") : t("actions.translated_with_ai");
-            return;
-          }
-          if (isTranslating) return;
-          isTranslating = true;
-          bTr.classList.add("loading");
-          bTr.disabled = true;
-
-          try {
-            const res = await api("/api/translate", {
-              text: it.text,
-              target_lang: currentLang
-            });
-            if (res && res.translated) {
-              translatedBox = el("div", "post-translated-box");
-              const badge = el("div", "post-translated-badge");
-              badge.innerHTML = ICONS.translate + ' <span>' + t("actions.translated_with_ai") + '</span>';
-              const content = el("div", "post-translated-text", res.translated);
-              translatedBox.append(badge, content);
-              body.insertAdjacentElement("afterend", translatedBox);
-              bTr.classList.add("on");
-              bTr.title = t("actions.translated_with_ai");
-            } else {
-              throw new Error(res?.error || "Falha na tradução");
-            }
-          } catch (err) {
-            bTr.title = "⚠️ " + (err.message || "Erro");
-            setTimeout(() => { bTr.title = t("actions.translate"); }, 4000);
-          } finally {
-            isTranslating = false;
-            bTr.classList.remove("loading");
-            bTr.disabled = false;
-          }
-        };
-        acts.append(bTr);
-      }
-
-      if (it.is_own) {
-        const bE = el("button", "act-btn act-edit");
-        const isBsky = it.network === "bluesky";
-        bE.title = t(isBsky ? "actions.edit_bsky" : "actions.edit");
-        bE.setAttribute("aria-label", bE.title);
-        bE.innerHTML = ICONS.edit;
-        bE.onclick = (e) => {
-          e.stopPropagation();
-          if (isBsky) reeditBlueskyPost(it, p);
-          else openEditPostModal(it, p);
-        };
-        acts.append(bE);
-
-        const bD = el("button", "act-btn act-del");
-        bD.title = t("actions.delete");
-        bD.setAttribute("aria-label", t("actions.delete"));
-        bD.innerHTML = ICONS.trash;
-        bD.onclick = () => deletePost(it, p);
-        acts.append(bD);
-      }
-
       const hasReplies = Number(it.replies || 0) > 0;
       const isReply = Boolean(it.is_reply || (it.reply_to && (it.reply_to.name || it.reply_to.text)));
       const isConversation = hasReplies || isReply;
@@ -4004,6 +3912,10 @@
         };
         acts.append(bT);
       }
+
+      const bMore = buildPostMoreButton(it, p, body, acts, { allowOwnActions: true });
+      if (bMore) acts.append(bMore);
+
       p.append(acts);
 
       if (!o.focus) {
@@ -5887,88 +5799,6 @@
 
           acts.append(bR, bB, bL, bS);
 
-          if (su(postTarget.url)) {
-            const bSh = el("button", "act-btn act-share");
-            bSh.title = t("actions.share_ext");
-            bSh.setAttribute("aria-label", bSh.title);
-            bSh.innerHTML = ICONS.share;
-            bSh.onclick = (e) => {
-              e.stopPropagation();
-              markSingleNotifRead(n, p);
-              sharePostExternal(postTarget, bSh);
-            };
-            acts.append(bSh);
-          }
-
-          const notifVidDlHref = getDownloadableVideoHref(postTarget.media);
-          if (notifVidDlHref) {
-            const bDl = el("a", "act-btn act-download");
-            bDl.href = notifVidDlHref;
-            bDl.setAttribute("download", "mastosky-video.mp4");
-            bDl.title = t("post.download_video");
-            bDl.setAttribute("aria-label", bDl.title);
-            bDl.innerHTML = ICONS.download;
-            bDl.onclick = (e) => {
-              e.stopPropagation();
-              markSingleNotifRead(n, p);
-            };
-            acts.append(bDl);
-          }
-
-          const notifTrText = ((postTarget && postTarget.text) || n.text || "").trim();
-          if (notifTrText) {
-            const bTr = el("button", "act-btn act-translate");
-            bTr.title = t("actions.translate");
-            bTr.setAttribute("aria-label", t("actions.translate"));
-            bTr.innerHTML = ICONS.translate;
-            let translatedBox = null;
-            let isTranslating = false;
-
-            bTr.onclick = async (e) => {
-              e.stopPropagation();
-              markSingleNotifRead(n, p);
-              if (translatedBox) {
-                translatedBox.hidden = !translatedBox.hidden;
-                bTr.classList.toggle("on", !translatedBox.hidden);
-                bTr.title = translatedBox.hidden ? t("actions.translate") : t("actions.translated_with_ai");
-                return;
-              }
-              if (isTranslating) return;
-              isTranslating = true;
-              bTr.classList.add("loading");
-              bTr.disabled = true;
-
-              try {
-                const res = await api("/api/translate", {
-                  text: notifTrText,
-                  target_lang: currentLang
-                });
-                if (res && res.translated) {
-                  translatedBox = el("div", "post-translated-box");
-                  const badge = el("div", "post-translated-badge");
-                  badge.innerHTML = ICONS.translate + ' <span>' + t("actions.translated_with_ai") + '</span>';
-                  const content = el("div", "post-translated-text", res.translated);
-                  translatedBox.append(badge, content);
-                  const bodyEl = p.querySelector(".body");
-                  if (bodyEl) bodyEl.insertAdjacentElement("afterend", translatedBox);
-                  else acts.insertAdjacentElement("beforebegin", translatedBox);
-                  bTr.classList.add("on");
-                  bTr.title = t("actions.translated_with_ai");
-                } else {
-                  throw new Error(res?.error || "Falha na tradução");
-                }
-              } catch (err) {
-                bTr.title = "⚠️ " + (err.message || "Erro");
-                setTimeout(() => { bTr.title = t("actions.translate"); }, 4000);
-              } finally {
-                isTranslating = false;
-                bTr.classList.remove("loading");
-                bTr.disabled = false;
-              }
-            };
-            acts.append(bTr);
-          }
-
           if (targetPost) {
             const c = el("button", "act-btn act-thread");
             c.title = t("actions.view_thread");
@@ -5981,6 +5811,14 @@
             };
             acts.append(c);
           }
+
+          const notifTrText = ((postTarget && postTarget.text) || n.text || "").trim();
+          const bMore = buildPostMoreButton(postTarget, p, p.querySelector(".body"), acts, {
+            translateText: notifTrText,
+            onAction: () => markSingleNotifRead(n, p)
+          });
+          if (bMore) acts.append(bMore);
+
           p.append(acts);
         }
 
@@ -10777,6 +10615,162 @@
       menu.style.left = Math.max(10, Math.min(window.innerWidth - 225, rect.left - 10)) + "px";
 
       activeBoostMenu = menu;
+    }
+
+    function openPostMoreMenu(btn, buildItems) {
+      if (activeBoostMenu) {
+        const isSame = activeBoostMenu._btn === btn;
+        closeBoostMenu();
+        if (isSame) return;
+      }
+
+      const menu = el("div", "boost-popover");
+      menu._btn = btn;
+      const itemsList = buildItems();
+      if (!itemsList.length) return;
+      itemsList.forEach(item => menu.append(item));
+      document.body.append(menu);
+
+      const rect = btn.getBoundingClientRect();
+      const mw = menu.offsetWidth || 200;
+      const mh = menu.offsetHeight || 160;
+      const left = Math.max(10, Math.min(window.innerWidth - mw - 10, rect.right - mw));
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow < mh + 16 && rect.top > mh + 16
+        ? (rect.top - mh - 4)
+        : (rect.bottom + 4);
+      menu.style.top = top + "px";
+      menu.style.left = left + "px";
+
+      activeBoostMenu = menu;
+    }
+
+    function buildPostMoreButton(it, postEl, bodyEl, actsEl, opts = {}) {
+      const shareUrl = su(it && it.url);
+      const vidDlHref = getDownloadableVideoHref(it && it.media);
+      const trText = (typeof opts.translateText === "string" ? opts.translateText : ((it && it.text) || "")).trim();
+      const canOwn = Boolean(opts.allowOwnActions && it && it.is_own);
+
+      if (!shareUrl && !vidDlHref && !trText && !canOwn) return null;
+
+      let translatedBox = null;
+      let isTranslating = false;
+
+      const bMore = el("button", "act-btn act-more");
+      bMore.title = t("actions.more");
+      bMore.setAttribute("aria-label", bMore.title);
+      bMore.innerHTML = ICONS.more;
+      bMore.onclick = (e) => {
+        e.stopPropagation();
+        openPostMoreMenu(bMore, () => {
+          const list = [];
+          const notifyAction = () => { if (typeof opts.onAction === "function") opts.onAction(); };
+
+          if (shareUrl) {
+            const bSh = el("button", "act-btn act-share");
+            bSh.innerHTML = ICONS.share + " <span></span>";
+            bSh.querySelector("span").textContent = t("actions.share_ext");
+            bSh.onclick = (ev) => {
+              ev.stopPropagation();
+              notifyAction();
+              closeBoostMenu();
+              sharePostExternal(it, bMore);
+            };
+            list.push(bSh);
+          }
+
+          if (vidDlHref) {
+            const bDl = el("a", "act-btn act-download");
+            bDl.href = vidDlHref;
+            bDl.setAttribute("download", "mastosky-video.mp4");
+            bDl.innerHTML = ICONS.download + " <span></span>";
+            bDl.querySelector("span").textContent = t("post.download_video");
+            bDl.onclick = (ev) => {
+              ev.stopPropagation();
+              notifyAction();
+              closeBoostMenu();
+            };
+            list.push(bDl);
+          }
+
+          if (trText) {
+            const bTr = el("button", "act-btn act-translate");
+            const isShown = Boolean(translatedBox && !translatedBox.hidden);
+            if (isShown) bTr.classList.add("on");
+            if (isTranslating) bTr.classList.add("loading");
+            bTr.innerHTML = ICONS.translate + " <span></span>";
+            bTr.querySelector("span").textContent = isShown ? t("actions.translated_with_ai") : t("actions.translate");
+            bTr.onclick = async (ev) => {
+              ev.stopPropagation();
+              notifyAction();
+              if (translatedBox) {
+                translatedBox.hidden = !translatedBox.hidden;
+                closeBoostMenu();
+                return;
+              }
+              if (isTranslating) return;
+              isTranslating = true;
+              bTr.classList.add("loading");
+              bTr.disabled = true;
+              try {
+                const res = await api("/api/translate", {
+                  text: trText,
+                  target_lang: currentLang
+                });
+                if (res && res.translated) {
+                  translatedBox = el("div", "post-translated-box");
+                  const badge = el("div", "post-translated-badge");
+                  badge.innerHTML = ICONS.translate + ' <span>' + t("actions.translated_with_ai") + '</span>';
+                  const content = el("div", "post-translated-text", res.translated);
+                  translatedBox.append(badge, content);
+                  if (bodyEl) bodyEl.insertAdjacentElement("afterend", translatedBox);
+                  else actsEl.insertAdjacentElement("beforebegin", translatedBox);
+                  closeBoostMenu();
+                } else {
+                  throw new Error(res?.error || "Falha na tradução");
+                }
+              } catch (err) {
+                closeBoostMenu();
+                showNetStatus("offline", err.message || "Erro", 3500);
+              } finally {
+                isTranslating = false;
+                bTr.classList.remove("loading");
+                bTr.disabled = false;
+              }
+            };
+            list.push(bTr);
+          }
+
+          if (canOwn) {
+            if (list.length) list.push(el("div", "boost-divider"));
+            const isBsky = it.network === "bluesky";
+            const bE = el("button", "act-btn act-edit");
+            bE.innerHTML = ICONS.edit + " <span></span>";
+            bE.querySelector("span").textContent = t(isBsky ? "actions.edit_bsky" : "actions.edit");
+            bE.onclick = (ev) => {
+              ev.stopPropagation();
+              closeBoostMenu();
+              if (isBsky) reeditBlueskyPost(it, postEl);
+              else openEditPostModal(it, postEl);
+            };
+            list.push(bE);
+
+            const bD = el("button", "act-btn act-del");
+            bD.innerHTML = ICONS.trash + " <span></span>";
+            bD.querySelector("span").textContent = t("actions.delete");
+            bD.onclick = (ev) => {
+              ev.stopPropagation();
+              closeBoostMenu();
+              deletePost(it, postEl);
+            };
+            list.push(bD);
+          }
+
+          return list;
+        });
+      };
+
+      return bMore;
     }
 
     let crossPostTarget = null;
