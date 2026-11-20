@@ -3037,11 +3037,12 @@
           if (x.type !== "gifv") {
             const onVideoStop = () => {
               if (_deferredTimelineRender && !isFeedVideoPlaying($("feed"))) {
-                _deferredTimelineRender = false;
                 const f = $("feed");
                 const a = captureScrollAnchor("timeline", f);
-                render();
-                restoreScrollAnchor("timeline", f, a);
+                if (a && a.atTop) {
+                  _deferredTimelineRender = false;
+                  render();
+                }
               }
             };
             v.addEventListener("pause", onVideoStop);
@@ -4282,6 +4283,7 @@
     }
 
     function render() {
+      _deferredTimelineRender = false;
       syncTimelineFilterUI();
       const feed = $("feed");
       const frag = document.createDocumentFragment();
@@ -4607,11 +4609,13 @@
         }
 
         const feedEl = $("feed");
+        const hadItems = items.length > 0 && feedEl && feedEl.querySelector(".post");
         const videoPlaying = isFeedVideoPlaying(feedEl);
-        const anchor = videoPlaying ? null : captureScrollAnchor("timeline", feedEl);
+        const anchor = captureScrollAnchor("timeline", feedEl);
 
         items = dedupSort(items, newItems);
-        if (videoPlaying) {
+        const shouldDefer = videoPlaying || (hadItems && anchor && !anchor.atTop);
+        if (shouldDefer) {
           _deferredTimelineRender = true;
         } else {
           _deferredTimelineRender = false;
@@ -13593,14 +13597,19 @@
       const pendingRaf = {};
       const checkDismiss = (colId) => {
         const pill = $(colId + "NewPostsPill");
-        if (!pill || pill.hidden || pendingRaf[colId]) return;
+        const hasPendingTl = colId === "timeline" && _deferredTimelineRender;
+        if ((!pill || pill.hidden) && !hasPendingTl) return;
+        if (pendingRaf[colId]) return;
         pendingRaf[colId] = requestAnimationFrame(() => {
           pendingRaf[colId] = 0;
-          if (pill.hidden) return;
           const sc = getColScrollContainer(colId);
           const top = sc === window ? window.scrollY : sc.scrollTop;
           if (top < 30) {
-            pill.hidden = true;
+            if (pill && !pill.hidden) pill.hidden = true;
+            if (colId === "timeline" && _deferredTimelineRender && !isFeedVideoPlaying($("feed"))) {
+              _deferredTimelineRender = false;
+              render();
+            }
           }
         });
       };
