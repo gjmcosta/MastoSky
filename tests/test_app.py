@@ -2239,6 +2239,9 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn('id="notifBadgeAll"', html)
         self.assertIn('id="notifBadgeReplies"', html)
         self.assertIn('id="notifBadgeLikes"', html)
+        self.assertIn("notif-author-line", html)
+        self.assertIn("notif-orig-head", html)
+        self.assertIn("head.append(who, netBadge(n.network), when)", html)
 
     def test_deck_thread_side_column_and_distinct_icons(self):
         html = _read_frontend()

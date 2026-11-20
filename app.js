@@ -6126,48 +6126,52 @@
           openUserProfile(n.network, n.author_id || n.author_handle || n.handle);
         };
 
-        if (isRepostNotif) {
-          const tp = n.target_post;
-          // 1. Banner superior estilo timeline com indicação da ação e do utilizador que a fez
-          const boostBar = el("div", "boost notif-boost-banner");
-          const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
-          g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
-          g.title = t("notifs." + (n.kind || "other"));
-          g.setAttribute("aria-hidden", "true");
-          boostBar.append(g);
+        const tp = isRepostNotif ? n.target_post : null;
+        const head = el("div", "head");
+        const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
+        g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
+        g.title = t("notifs." + (n.kind || "other"));
+        g.setAttribute("aria-hidden", "true");
+        head.append(g);
+        if (n.avatar) {
+          const i = el("img", "author-link");
+          i.src = su(n.avatar) || "";
+          i.alt = "";
+          i.loading = "lazy";
+          i.title = t("post.view_profile", { name: n.name || n.handle });
+          i.onclick = onNotifProfile;
+          head.append(i);
+        } else {
+          head.append(el("div", "ph"));
+        }
+        const who = el("div", "who");
+        const bNName = el("b", "notif-author-line");
+        const sNameWrap = el("span", "author-link notif-author");
+        sNameWrap.title = t("post.view_profile", { name: n.name || n.handle });
+        sNameWrap.onclick = onNotifProfile;
+        if (n.name_html) {
+          sNameWrap.innerHTML = n.name_html;
+        } else {
+          sNameWrap.textContent = n.name || n.handle || "";
+        }
+        bNName.append(sNameWrap);
+        const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
+        const sMeta = el("span", "notif-meta", n.handle || "");
+        who.append(bNName, sVerb, sMeta);
+        const when = el("a", "when", ago(n.time));
+        when.href = su(n.url || (tp && tp.url)) || "#"; when.target = "_blank"; when.rel = "opener";
+        when.title = fullDateStr(n.time);
+        when.onclick = () => markSingleNotifRead(n, p);
+        head.append(who, netBadge(n.network), when);
+        p.append(head);
 
-          if (n.avatar) {
-            const i = el("img", "boost-av author-link");
-            i.src = su(n.avatar) || "";
-            i.alt = "";
-            i.title = t("post.view_profile", { name: n.name || n.handle });
-            i.onclick = onNotifProfile;
-            boostBar.append(i);
-          }
-
-          const sNameWrap = el("span", "author-link notif-author");
-          sNameWrap.title = t("post.view_profile", { name: n.name || n.handle });
-          sNameWrap.onclick = onNotifProfile;
-          if (n.name_html) sNameWrap.innerHTML = n.name_html;
-          else sNameWrap.textContent = n.name;
-
-          const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
-          const sMeta = el("span", "notif-meta", n.handle);
-          boostBar.append(sNameWrap, sVerb, sMeta, netBadge(n.network));
-
-          const notifWhen = el("span", "when", ago(n.time));
-          notifWhen.title = fullDateStr(n.time);
-          notifWhen.style.marginLeft = "auto";
-          boostBar.append(notifWhen);
-          p.append(boostBar);
-
-          // 2. Cabeçalho do post original (idêntico à timeline)
-          const head = el("div", "head");
+        if (tp && !tp.is_own && (tp.author_name || tp.author_handle) && tp.author_handle !== n.handle) {
           const onOrigProfile = (e) => {
             e.stopPropagation();
             markSingleNotifRead(n, p);
             openUserProfile(n.network, tp.author_id || tp.author_handle);
           };
+          const origHead = el("div", "notif-orig-head");
           if (tp.author_avatar) {
             const origImg = el("img", "author-link");
             origImg.src = su(tp.author_avatar) || "";
@@ -6175,70 +6179,18 @@
             origImg.loading = "lazy";
             origImg.title = t("post.view_profile", { name: tp.author_name || tp.author_handle });
             origImg.onclick = onOrigProfile;
-            head.append(origImg);
-          } else {
-            head.append(el("div", "ph"));
+            origHead.append(origImg);
           }
-          const who = el("div", "who");
-          const bOrigName = el("b", "author-link");
-          if (tp.author_name_html) bOrigName.innerHTML = tp.author_name_html;
-          else bOrigName.textContent = tp.author_name || tp.author_handle;
-          bOrigName.title = t("post.view_profile", { name: tp.author_name || tp.author_handle });
-          bOrigName.onclick = onOrigProfile;
-          if (tp.is_own) {
-            const star = el("span", "star-badge");
-            star.title = t("profile.your_account");
-            star.style.marginLeft = "5px";
-            bOrigName.append(star);
+          const origName = el("b", "author-link notif-orig-name");
+          if (tp.author_name_html) origName.innerHTML = tp.author_name_html;
+          else origName.textContent = tp.author_name || tp.author_handle;
+          origName.title = t("post.view_profile", { name: tp.author_name || tp.author_handle });
+          origName.onclick = onOrigProfile;
+          origHead.append(origName);
+          if (tp.author_handle) {
+            origHead.append(el("span", "notif-orig-handle", tp.author_handle));
           }
-          who.append(bOrigName, el("span", null, tp.author_handle + " · " + LABEL[n.network]));
-
-          const origWhen = el("a", "when", ago(tp.time || n.time));
-          origWhen.href = su(tp.url || n.url) || "#";
-          origWhen.target = "_blank";
-          origWhen.rel = "opener";
-          origWhen.title = fullDateStr(tp.time || n.time);
-          origWhen.onclick = () => markSingleNotifRead(n, p);
-          head.append(who, origWhen);
-          p.append(head);
-        } else {
-          const head = el("div", "head");
-          const g = el("span", "glyph notif-glyph kind-" + (n.kind || "other"));
-          g.innerHTML = NOTIF_ICONS[n.kind] || NOTIF_ICONS.other;
-          g.title = t("notifs." + (n.kind || "other"));
-          g.setAttribute("aria-hidden", "true");
-          head.append(g);
-          if (n.avatar) {
-            const i = el("img", "author-link");
-            i.src = su(n.avatar) || "";
-            i.alt = "";
-            i.loading = "lazy";
-            i.title = t("post.view_profile", { name: n.name || n.handle });
-            i.onclick = onNotifProfile;
-            head.append(i);
-          } else {
-            head.append(el("div", "ph"));
-          }
-          const who = el("div", "who");
-          const bNName = el("b");
-          const sNameWrap = el("span", "author-link notif-author");
-          sNameWrap.title = t("post.view_profile", { name: n.name || n.handle });
-          sNameWrap.onclick = onNotifProfile;
-          if (n.name_html) {
-            sNameWrap.innerHTML = n.name_html;
-          } else {
-            sNameWrap.textContent = n.name;
-          }
-          const sVerb = el("span", "notif-action", t("notifs." + (n.kind || "other")));
-          bNName.append(sNameWrap, sVerb);
-          const sMeta = el("span", "notif-meta", n.handle + " · " + LABEL[n.network]);
-          who.append(bNName, sMeta);
-          const when = el("a", "when", ago(n.time));
-          when.href = su(n.url) || "#"; when.target = "_blank"; when.rel = "opener";
-          when.title = fullDateStr(n.time);
-          when.onclick = () => markSingleNotifRead(n, p);
-          head.append(who, netBadge(n.network), when);
-          p.append(head);
+          p.append(origHead);
         }
         const notifMutedMatch = muteMode !== "hide" ? getMutedMatch(n) : null;
         const notifBodyTarget = createMutedContentWrapper(p, notifMutedMatch);
