@@ -2075,6 +2075,37 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("max-age", cache)
         self.assertEqual(h.wfile.getvalue(), fake_bytes)
 
+    def test_download_video_endpoint_ssrf_and_bsky_blob(self):
+        from unittest import mock
+        h_bad = object.__new__(app.H)
+        h_bad.path = "/api/download_video?url=" + app.urllib.parse.quote("http://127.0.0.1:8080/secret.mp4")
+        h_bad.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+        h_bad.wfile = io.BytesIO()
+        h_bad.sent = []
+        h_bad.send_response = lambda code: h_bad.sent.append(("code", code))
+        h_bad.send_header = lambda k, v: h_bad.sent.append((k, v))
+        h_bad.end_headers = lambda: None
+        h_bad.do_GET()
+        bad_code = [v for k, v in h_bad.sent if k == "code"][0]
+        self.assertEqual(bad_code, 400)
+
+        fake_mp4 = b"\x00\x00\x00\x18ftypmp42"
+        h_ok = object.__new__(app.H)
+        h_ok.path = "/api/download_video?did=did:plc:abc123&cid=bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku"
+        h_ok.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+        h_ok.wfile = io.BytesIO()
+        h_ok.sent = []
+        h_ok.send_response = lambda code: h_ok.sent.append(("code", code))
+        h_ok.send_header = lambda k, v: h_ok.sent.append((k, v))
+        h_ok.end_headers = lambda: None
+        with mock.patch("app.fetch_video_for_download", return_value=(fake_mp4, "video/mp4", "mp4")):
+            h_ok.do_GET()
+        ok_code = [v for k, v in h_ok.sent if k == "code"][0]
+        disp = [v for k, v in h_ok.sent if k == "Content-Disposition"][0]
+        self.assertEqual(ok_code, 200)
+        self.assertIn("attachment", disp)
+        self.assertEqual(h_ok.wfile.getvalue(), fake_mp4)
+
     def test_index_contains_i18n_elements(self):
         html = _read_frontend()
         self.assertIn('id="cfgLangSelect"', html)

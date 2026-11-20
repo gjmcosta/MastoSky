@@ -343,6 +343,7 @@
           shared_by: "Partilhado por {name}",
           vis_private: "Apenas seguidores",
           vis_direct: "Mensagem direta",
+          download_video: "Descarregar vídeo",
           view_profile: "Ver perfil de {name}",
           attach_alt: "Anexo",
           cw_show: "Mostrar conteúdo",
@@ -1004,6 +1005,7 @@
           shared_by: "Shared by {name}",
           vis_private: "Followers only",
           vis_direct: "Direct message",
+          download_video: "Download video",
           view_profile: "View profile of {name}",
           attach_alt: "Attachment",
           cw_show: "Show content",
@@ -2953,7 +2955,31 @@
             v.addEventListener("pause", onVideoStop);
             v.addEventListener("ended", onVideoStop);
           }
-          m.append(v);
+          const wrap = el("div", "video-wrap");
+          wrap.append(v);
+          const safeVidUrl = su(x.url);
+          let dlHref = "";
+          if (x.did && x.cid) {
+            dlHref = "/api/download_video?did=" + encodeURIComponent(x.did) + "&cid=" + encodeURIComponent(x.cid);
+          } else if (safeVidUrl) {
+            const mHls = safeVidUrl.match(/\/(?:hls|watch)\/(did:[^/]+)\/([A-Za-z0-9]+)\//i);
+            if (mHls) {
+              dlHref = "/api/download_video?did=" + encodeURIComponent(mHls[1]) + "&cid=" + encodeURIComponent(mHls[2]);
+            } else if (!safeVidUrl.includes(".m3u8") && !safeVidUrl.includes("playlist")) {
+              dlHref = "/api/download_video?url=" + encodeURIComponent(safeVidUrl);
+            }
+          }
+          if (dlHref) {
+            const dlA = el("a", "video-dl-btn");
+            dlA.href = dlHref;
+            dlA.setAttribute("download", "mastosky-video.mp4");
+            dlA.title = t("post.download_video");
+            dlA.setAttribute("aria-label", t("post.download_video"));
+            dlA.innerHTML = '<svg class="ico"><use href="#i-download" /></svg>';
+            dlA.onclick = (e) => e.stopPropagation();
+            wrap.append(dlA);
+          }
+          m.append(wrap);
         } else if (x.type === "external") {
           const a = el("a", "ext-card" + (x.thumb ? "" : " no-thumb"));
           a.href = su(x.url) || "#"; a.target = "_blank"; a.rel = "opener";

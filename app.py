@@ -1443,6 +1443,66 @@ def fetch_article_reader(url_str):
     return out
 
 
+def resolve_bsky_pds_for_did(did):
+    """Resolve o endpoint PDS de um DID Bluesky para obter blobs originais."""
+    if not isinstance(did, str) or not re.match(r"^did:(?:plc|web):[A-Za-z0-9._:-]+$", did):
+        raise ValueError("DID inválido.")
+    try:
+        if did.startswith("did:plc:"):
+            doc_url = f"https://plc.directory/{urllib.parse.quote(did, safe=':')}"
+        else:
+            host = did.split(":", 2)[2].split(":")[0]
+            doc_url = f"https://{host}/.well-known/did.json"
+        _validate_remote_http_url(doc_url)
+        req = urllib.request.Request(doc_url, headers={"Accept": "application/json", "User-Agent": "MastoSky/1.0"})
+        with _urlopen_remote(req, timeout=6) as r:
+            doc = json.loads(r.read(256 * 1024).decode("utf-8", errors="replace"))
+        for svc in (doc.get("service") or []):
+            if isinstance(svc, dict) and (svc.get("id") == "#atproto_pds" or svc.get("type") == "AtprotoPersonalDataServer"):
+                ep = safe_url(svc.get("serviceEndpoint"))
+                if ep:
+                    return ep.rstrip("/")
+    except Exception:
+        pass
+    return "https://bsky.social"
+
+
+def fetch_video_for_download(url_str=None, did=None, cid=None):
+    """Obtém com segurança os bytes de um vídeo (Mastodon direto ou Bluesky via getBlob)."""
+    if did and cid:
+        if not re.match(r"^did:(?:plc|web):[A-Za-z0-9._:-]+$", did):
+            raise ValueError("DID inválido.")
+        if not re.match(r"^[A-Za-z0-9]{16,128}$", cid):
+            raise ValueError("CID inválido.")
+        pds = resolve_bsky_pds_for_did(did)
+        target_url = f"{pds}/xrpc/com.atproto.sync.getBlob?did={urllib.parse.quote(did, safe='')}&cid={urllib.parse.quote(cid, safe='')}"
+    elif url_str:
+        target_url = url_str
+    else:
+        raise ValueError("Parâmetros de vídeo em falta.")
+
+    u, _ = _validate_remote_http_url(target_url)
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "video/*,*/*;q=0.8",
+    }
+    req = urllib.request.Request(u, headers=headers)
+    max_bytes = 60 * 1024 * 1024
+    with _urlopen_remote(req, timeout=25) as r:
+        ctype = (r.headers.get_content_type() or "video/mp4").lower()
+        if ctype.startswith("text/html") or "mpegurl" in ctype:
+            raise ValueError("O URL não aponta para um ficheiro de vídeo transferível.")
+        data = r.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise ValueError("Vídeo demasiado grande para download direto (> 60 MB).")
+    if not data:
+        raise ValueError("Vídeo vazio.")
+    if not ctype.startswith("video/"):
+        ctype = "video/mp4"
+    ext = "webm" if "webm" in ctype else ("mov" if "quicktime" in ctype else "mp4")
+    return data, ctype, ext
+
+
 def proxy_fetch_image(url_str):
     """Descarrega com segurança uma imagem remota para o gerador de cartões da publicação cruzada."""
     u, p = _validate_remote_http_url(url_str)
@@ -1522,22 +1582,31 @@ def _extract_bsky_embed(embed, did=None):
     elif etype in ("app.bsky.embed.video#view", "app.bsky.embed.video"):
         url = embed.get("playlist") or (embed.get("url") if isinstance(embed.get("url"), str) else None)
         thumb = embed.get("thumbnail") or (embed.get("thumb") if isinstance(embed.get("thumb"), str) else None)
-        if not url:
+        cid = embed.get("cid") if isinstance(embed.get("cid"), str) else None
+        if not cid:
             v_obj = embed.get("video")
-            cid = None
             if isinstance(v_obj, dict):
                 ref = v_obj.get("ref")
                 cid = ref.get("$link") if isinstance(ref, dict) else (ref if isinstance(ref, str) else None)
-            if cid and did:
-                url = f"https://video.bsky.app/watch/{did}/{cid}/playlist.m3u8"
-                if not thumb:
-                    thumb = f"https://video.bsky.app/watch/{did}/{cid}/thumbnail.jpg"
-        media.append({
+        if not cid and url:
+            m_vid = re.search(r"/(?:hls|watch)/(did:[^/]+)/([A-Za-z0-9]+)/", url)
+            if m_vid:
+                did = did or m_vid.group(1)
+                cid = m_vid.group(2)
+        if not url and cid and did:
+            url = f"https://video.bsky.app/watch/{did}/{cid}/playlist.m3u8"
+            if not thumb:
+                thumb = f"https://video.bsky.app/watch/{did}/{cid}/thumbnail.jpg"
+        vid_item = {
             "type": "video",
             "url": url,
             "thumb": thumb,
             "alt": embed.get("alt", "")
-        })
+        }
+        if did and cid:
+            vid_item["did"] = did
+            vid_item["cid"] = cid
+        media.append(vid_item)
     elif etype in ("app.bsky.embed.external#view", "app.bsky.embed.external"):
         ext = embed.get("external") or {}
         thumb = ext.get("thumb")
@@ -4607,6 +4676,22 @@ class H(BaseHTTPRequestHandler):
             try:
                 data, ctype = proxy_fetch_image(target_url)
                 return self.send(200, data, ctype)
+            except Exception as e:
+                return self.send(400, {"error": str(e)})
+        if path == "/api/download_video":
+            qs = urllib.parse.parse_qs(parsed.query)
+            target_url = qs.get("url", [None])[0]
+            did = qs.get("did", [None])[0]
+            cid = qs.get("cid", [None])[0]
+            try:
+                data, ctype, ext = fetch_video_for_download(url_str=target_url, did=did, cid=cid)
+                return self.send(
+                    200, data, ctype,
+                    extra_headers={
+                        "Content-Disposition": f'attachment; filename="mastosky-video.{ext}"',
+                        "Cache-Control": "private, max-age=300",
+                    }
+                )
             except Exception as e:
                 return self.send(400, {"error": str(e)})
         if path == "/api/link_preview":
