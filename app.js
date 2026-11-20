@@ -3640,10 +3640,10 @@
       }
       who.append(bItName, el("span", null, it.handle + " · " + LABEL[it.network]));
       if (it.network === "mastodon" && (it.visibility === "private" || it.visibility === "direct")) {
-        const visBadge = el("span", "post-vis-lock", "🔒");
+        const visBadge = el("span", "post-vis-lock");
+        const visIcoId = it.visibility === "direct" ? "#i-vis-direct" : "#i-vis-private";
+        visBadge.innerHTML = `<svg class="ico"><use href="${visIcoId}" /></svg>`;
         visBadge.title = it.visibility === "direct" ? t("post.vis_direct") : t("post.vis_private");
-        visBadge.style.marginLeft = "4px";
-        visBadge.style.fontSize = "11px";
         who.lastChild.append(visBadge);
       }
       const when = el("a", "when", ago(it.time));
@@ -10543,16 +10543,14 @@
       if (networks.length > 1 && networks.includes(otherNet)) {
         const secOut = el("div", "boost-header", t("share_menu.out_net"));
         if (isRestrictedMasto) {
-          const blockedNote = el("div", "boost-private-note", t("share_menu.private_blocked"));
-          blockedNote.style.fontSize = "11.5px";
-          blockedNote.style.color = "var(--muted)";
-          blockedNote.style.padding = "6px 10px";
-          blockedNote.style.lineHeight = "1.35";
-          blockedNote.style.maxWidth = "220px";
+          const blockedNote = el("div", "boost-private-note");
+          const cleanBlockedText = t("share_menu.private_blocked").replace(/^🔒\s*/, "");
+          blockedNote.innerHTML = `<svg class="ico"><use href="#i-vis-private" /></svg><span></span>`;
+          blockedNote.querySelector("span").textContent = cleanBlockedText;
           menu.append(secOut, blockedNote, el("div", "boost-divider"));
         } else {
           const btnCross = el("button", "boost-btn-cross");
-          btnCross.innerHTML = '🔀 <span>' + t("share_menu.cross_post", { net: LABEL[otherNet] }) + '</span>';
+          btnCross.innerHTML = '<svg class="ico"><use href="#i-cross" /></svg> <span>' + t("share_menu.cross_post", { net: LABEL[otherNet] }) + '</span>';
           btnCross.onclick = (e) => {
             e.stopPropagation();
             closeBoostMenu();
@@ -10573,7 +10571,7 @@
       };
 
       const btnQuote = el("button", null);
-      btnQuote.innerHTML = '💬 <span>' + t("share_menu.quote") + '</span>';
+      btnQuote.innerHTML = '<svg class="ico"><use href="#i-message" /></svg> <span>' + t("share_menu.quote") + '</span>';
       btnQuote.onclick = (e) => {
         e.stopPropagation();
         closeBoostMenu();
