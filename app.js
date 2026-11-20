@@ -160,7 +160,7 @@
           btn_update: "Atualizar agora"
         },
         search: {
-          placeholder: "Pesquisar publicações, @utilizadores ou #hashtags...",
+          placeholder: "Pesquisar posts, @users ou #tags...",
           btn: "Pesquisar",
           type_all: "Tudo",
           type_posts: "Publicações",
@@ -812,7 +812,7 @@
           btn_update: "Update now"
         },
         search: {
-          placeholder: "Search posts, @users or #hashtags...",
+          placeholder: "Search posts, @users or #tags...",
           btn: "Search",
           type_all: "All",
           type_posts: "Posts",
