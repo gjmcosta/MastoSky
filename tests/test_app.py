@@ -207,6 +207,9 @@ class SafeUrlTests(unittest.TestCase):
         self.assertIsNone(it["avatar"])
         self.assertIsNone(it["url"])
         self.assertEqual(it["media"], [])
+        self.assertEqual(it["visibility"], "public")
+        st_priv = dict(st, visibility="private")
+        self.assertEqual(app.Masto({"instance": "https://x", "token": "t"}).item(st_priv)["visibility"], "private")
 
     def test_bsky_item_fields(self):
         evil = "javascript:alert(1)"

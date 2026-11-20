@@ -521,7 +521,7 @@ PORT = CFG.get("port", 8000)
 LISTEN_HOST = "127.0.0.1"
 LAN_MODE = False
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
@@ -2757,6 +2757,7 @@ class Masto:
             "url": safe_url(x.get("url")), "ref": {"id": x["id"]}, "reply_to": rt,
             "is_reply": bool(x.get("in_reply_to_id")),
             "cw": (x.get("spoiler_text") or "").strip(),
+            "visibility": x.get("visibility") or "public",
         }
         if name_html:
             out["name_html"] = name_html

@@ -97,6 +97,8 @@
           net_badge_both: "Ambas",
           vis_title: "Visibilidade no Mastodon",
           vis_label: "Visibilidade no Mastodon: {vis}",
+          vis_masto_only_note: "🔒 Publicações privadas/diretas são exclusivas do Mastodon — destino ajustado para Mastodon.",
+          vis_unlisted_bsky_note: "ℹ️ No Bluesky não existe modo não-listado — será publicado como público.",
           vis_public: "Público",
           vis_unlisted: "Não listado",
           vis_private: "Seguidores",
@@ -275,6 +277,7 @@
           back: "← Voltar"
         },
         share_menu: {
+          private_blocked: "🔒 Publicações privadas ou diretas do Mastodon não podem ser partilhadas no Bluesky.",
           out_net: "Partilhar noutra rede",
           cross_post: "Publicação cruzada ({net})",
           in_net: "Nesta rede ({net})",
@@ -338,6 +341,8 @@
         },
         post: {
           shared_by: "Partilhado por {name}",
+          vis_private: "Apenas seguidores",
+          vis_direct: "Mensagem direta",
           view_profile: "Ver perfil de {name}",
           attach_alt: "Anexo",
           cw_show: "Mostrar conteúdo",
@@ -753,6 +758,8 @@
           net_badge_both: "Both",
           vis_title: "Mastodon visibility",
           vis_label: "Mastodon visibility: {vis}",
+          vis_masto_only_note: "🔒 Private/direct posts are Mastodon-only — target switched to Mastodon.",
+          vis_unlisted_bsky_note: "ℹ️ Bluesky has no unlisted mode — it will be published publicly.",
           vis_public: "Public",
           vis_unlisted: "Unlisted",
           vis_private: "Followers",
@@ -931,6 +938,7 @@
           back: "← Back"
         },
         share_menu: {
+          private_blocked: "🔒 Private or direct Mastodon posts cannot be cross-posted to Bluesky.",
           out_net: "Share to other network",
           cross_post: "Cross-post ({net})",
           in_net: "On this network ({net})",
@@ -994,6 +1002,8 @@
         },
         post: {
           shared_by: "Shared by {name}",
+          vis_private: "Followers only",
+          vis_direct: "Direct message",
           view_profile: "View profile of {name}",
           attach_alt: "Attachment",
           cw_show: "Show content",
@@ -3629,6 +3639,13 @@
         bItName.append(star);
       }
       who.append(bItName, el("span", null, it.handle + " · " + LABEL[it.network]));
+      if (it.network === "mastodon" && (it.visibility === "private" || it.visibility === "direct")) {
+        const visBadge = el("span", "post-vis-lock", "🔒");
+        visBadge.title = it.visibility === "direct" ? t("post.vis_direct") : t("post.vis_private");
+        visBadge.style.marginLeft = "4px";
+        visBadge.style.fontSize = "11px";
+        who.lastChild.append(visBadge);
+      }
       const when = el("a", "when", ago(it.time));
       when.href = su(it.url) || "#"; when.target = "_blank"; when.rel = "opener";
       when.title = fullDateStr(it.time);
@@ -9092,9 +9109,21 @@
 
       const bskyActive = reply ? (reply.network === "bluesky") : targets.includes("bluesky");
       const mastoActive = reply ? (reply.network === "mastodon") : targets.includes("mastodon");
+      const curVis = $("mastoVisibility") ? ($("mastoVisibility").value || "public") : "public";
       const noteEl = $("bskyNote");
       if (noteEl) {
-        noteEl.hidden = !(bskyActive && (hasCW || hasPoll));
+        if (mastoActive && !reply && (curVis === "private" || curVis === "direct") && networks.includes("bluesky")) {
+          noteEl.textContent = t("composer.vis_masto_only_note");
+          noteEl.hidden = false;
+        } else if (bskyActive && mastoActive && !reply && curVis === "unlisted") {
+          noteEl.textContent = t("composer.vis_unlisted_bsky_note");
+          noteEl.hidden = false;
+        } else if (bskyActive && (hasCW || hasPoll)) {
+          noteEl.textContent = t("composer.bsky_note");
+          noteEl.hidden = false;
+        } else {
+          noteEl.hidden = true;
+        }
       }
       const mentionNoteEl = $("mentionMapNote");
       if (mentionNoteEl) {
@@ -9150,7 +9179,8 @@
         avatar: it.avatar || ""
       };
       renderQuoteBox();
-      if (onlyNative && $("targetSelect")) {
+      const isRestrictedMastoQuote = it && it.network === "mastodon" && (it.visibility === "private" || it.visibility === "direct");
+      if ((onlyNative || isRestrictedMastoQuote) && $("targetSelect")) {
         $("targetSelect").value = it.network;
       }
       if (viewMode === "deck") {
@@ -10509,16 +10539,27 @@
 
       // Secção: Partilhar noutra rede
       const otherNet = it.network === "bluesky" ? "mastodon" : "bluesky";
+      const isRestrictedMasto = it.network === "mastodon" && (it.visibility === "private" || it.visibility === "direct");
       if (networks.length > 1 && networks.includes(otherNet)) {
         const secOut = el("div", "boost-header", t("share_menu.out_net"));
-        const btnCross = el("button", "boost-btn-cross");
-        btnCross.innerHTML = '🔀 <span>' + t("share_menu.cross_post", { net: LABEL[otherNet] }) + '</span>';
-        btnCross.onclick = (e) => {
-          e.stopPropagation();
-          closeBoostMenu();
-          openCrossPostModal(it);
-        };
-        menu.append(secOut, btnCross, el("div", "boost-divider"));
+        if (isRestrictedMasto) {
+          const blockedNote = el("div", "boost-private-note", t("share_menu.private_blocked"));
+          blockedNote.style.fontSize = "11.5px";
+          blockedNote.style.color = "var(--muted)";
+          blockedNote.style.padding = "6px 10px";
+          blockedNote.style.lineHeight = "1.35";
+          blockedNote.style.maxWidth = "220px";
+          menu.append(secOut, blockedNote, el("div", "boost-divider"));
+        } else {
+          const btnCross = el("button", "boost-btn-cross");
+          btnCross.innerHTML = '🔀 <span>' + t("share_menu.cross_post", { net: LABEL[otherNet] }) + '</span>';
+          btnCross.onclick = (e) => {
+            e.stopPropagation();
+            closeBoostMenu();
+            openCrossPostModal(it);
+          };
+          menu.append(secOut, btnCross, el("div", "boost-divider"));
+        }
       }
 
       // Secção: Nesta rede
@@ -11391,6 +11432,10 @@
     }
 
     function openCrossPostModal(it) {
+      if (it && it.network === "mastodon" && (it.visibility === "private" || it.visibility === "direct")) {
+        showAppAlert(t("share_menu.private_blocked"));
+        return;
+      }
       crossPostTarget = it;
       crossPostTheme = "cosmic";
       const overlay = $("crossPostOverlay");
@@ -12769,73 +12814,6 @@
       }
     };
 
-    if ($("langToggleBtn")) $("langToggleBtn").onclick = () => setLang(currentLang === "pt" ? "en" : "pt");
-    if ($("cfgLangSelect")) {
-      $("cfgLangSelect").value = currentLang;
-      $("cfgLangSelect").onchange = (e) => setLang(e.target.value);
-    }
-    if ($("cfgNavModeSelect")) {
-      $("cfgNavModeSelect").value = navMode;
-      $("cfgNavModeSelect").onchange = (e) => setNavMode(e.target.value);
-    }
-    if ($("viewToggleBtn")) $("viewToggleBtn").onclick = () => applyViewMode(viewMode === "deck" ? "single" : "deck");
-    if ($("cfgViewModeSelect")) {
-      $("cfgViewModeSelect").value = viewMode;
-      $("cfgViewModeSelect").onchange = (e) => applyViewMode(e.target.value);
-    }
-    const deckColIds = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "lists", "profile"];
-    deckColIds.forEach(c => {
-      const chk = $("chkCol" + c.charAt(0).toUpperCase() + c.slice(1));
-      if (chk) {
-        chk.checked = deckColumns.includes(c);
-        chk.onchange = () => {
-          if (chk.checked) {
-            if (!deckColumns.includes(c)) deckColumns.push(c);
-          } else {
-            if (deckColumns.length <= 1) {
-              chk.checked = true;
-              showAppAlert(t("deck.err_min_one_col"));
-              return;
-            }
-            deckColumns = deckColumns.filter(id => id !== c);
-          }
-          localStorage.setItem("mastosky_deck_columns", JSON.stringify(deckColumns));
-          applyDeckColumnVisibility();
-        };
-      }
-    });
-
-    if ($("cfgCrosstalkDedup")) {
-      $("cfgCrosstalkDedup").checked = crosstalkDedupEnabled;
-      $("cfgCrosstalkDedup").onchange = () => {
-        crosstalkDedupEnabled = $("cfgCrosstalkDedup").checked;
-        localStorage.setItem("mastosky_crosstalk_dedup", crosstalkDedupEnabled ? "true" : "false");
-        if (typeof syncPrefsToServer === "function") syncPrefsToServer();
-        render();
-        if (exploreItems && exploreItems.length) renderExplore();
-      };
-    }
-
-    if ($("cfgWarnMissingAlt")) {
-      $("cfgWarnMissingAlt").checked = warnMissingAlt;
-      $("cfgWarnMissingAlt").onchange = () => {
-        warnMissingAlt = $("cfgWarnMissingAlt").checked;
-        localStorage.setItem("mastosky_warn_missing_alt", warnMissingAlt ? "true" : "false");
-        if (typeof syncPrefsToServer === "function") syncPrefsToServer();
-      };
-    }
-
-    if ($("cfgBoostCluster")) {
-      $("cfgBoostCluster").checked = boostClusterEnabled;
-      $("cfgBoostCluster").onchange = () => {
-        boostClusterEnabled = $("cfgBoostCluster").checked;
-        localStorage.setItem("mastosky_boost_cluster", boostClusterEnabled ? "true" : "false");
-        if (typeof syncPrefsToServer === "function") syncPrefsToServer();
-        render();
-      };
-    }
-
-    // --- MAPEAMENTO DE HANDLES E AUTOCOMPLETE DE @MENÇÕES ---
     function renderHandleMappingsUI() {
       const listEl = $("handleMapList");
       const sugWrap = $("handleMapSuggestionsWrap");
@@ -13272,6 +13250,11 @@
         const curIdx = order.indexOf(sel.value);
         const nextVal = order[(curIdx + 1) % order.length];
         sel.value = nextVal;
+        const visSel = $("mastoVisibility");
+        if (nextVal !== "mastodon" && visSel && (visSel.value === "private" || visSel.value === "direct")) {
+          visSel.value = "public";
+          updateVisToggleUI();
+        }
         updateNetToggleUI();
         update();
       };
@@ -13285,6 +13268,10 @@
         const curIdx = order.indexOf(sel.value || "public");
         const nextVal = order[(curIdx + 1) % order.length];
         sel.value = nextVal;
+        if ((nextVal === "private" || nextVal === "direct") && $("targetSelect") && networks.includes("mastodon")) {
+          $("targetSelect").value = "mastodon";
+          updateNetToggleUI();
+        }
         updateVisToggleUI();
         update();
       };

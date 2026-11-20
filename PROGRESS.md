@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
-> **Data de atualização:** 18 de Novembro de 2026  
-> **Versão:** v1.0.0  
+> **Data de atualização:** 20 de Novembro de 2026  
+> **Versão:** v1.1.0  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 213 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 214 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -314,6 +314,14 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - **Segurança Backend & Frontend:** remoção do fallback TLS sem verificação em `_urlopen_remote()`, validação SSRF de IPs resolvidos via `socket.getaddrinfo()` e redirecionamentos (`_SafeRedirectHandler`) em `_validate_remote_http_url()`, mascaramento de `gemini_key`/`openai_key` em `GET /api/status` (com preservação no `POST /api/setup`), e `rel="noopener noreferrer"` nos links externos do Reader View e Lightbox (cobertos por `test_security_hardening_ssrf_tls_and_masked_ai_keys`).
   - **Edição de Publicações:** edição nativa no Mastodon (`GET /api/post_source`, `POST /api/edit`, `Masto.edit_status()`, modal `#editPostOverlay`) e *"Apagar e editar no compositor"* no Bluesky (`reeditBlueskyPost()`).
   - **Separação Modular do Frontend:** extração dos estilos e lógica de `index.html` para `app.css` e `app.js` (servidos por `app.py` com gzip e incluídos no `/sw.js` e `Dockerfile`).
+
+- **Refinamentos Mobile (iPhone / Coluna Única), Sync de Leitura, Notificações & Privacidade (v1.1.0 — 20 Nov 2026):**
+  - **Compositor em Modal Mobile (`< 768px`):** Ocultação do compositor inline em coluna única e abertura em modal/gaveta (`body.mobile-compose-open`) via Dock Bar, Responder, Citar, Editar ou Partilha de URL, com indicador âmbar de rascunho em `.side-nav-compose.has-draft`.
+  - **Estabilidade iOS & Acabamento Visual:** Bloqueio de auto-zoom em inputs (`font-size: 16px`), meta `viewport` com `maximum-scale=1, user-scalable=no`, contenção horizontal em `.deck-col`/`.post`, gradiente de fundo sob a cápsula da Dock Bar, placeholder de pesquisa compacto, correção da altura uniforme em `.panel-action-row`, e remoção do contorno espúrio (`stroke="none"`) nos logótipos SVG `#i-brand-bsky` e `#i-brand-masto`.
+  - **Erros HTTP & Navegação em Modais:** Sanitização de respostas HTML em erros HTTP (`_clean_http_error_summary()` em `app.py`), botão *Tentar novamente* nas conversas (`renderThreadErrorBanner()`), e `closeModalsForNavigation()` para fechar *"O que perdi?"* (`#catchUpOverlay`) ao abrir posts, hashtags, respostas ou citações.
+  - **Sincronização da Posição de Leitura (*Timeline Position Sync*):** Registo debounced do post visível no topo da Timeline sincronizado via `preferences.timeline_anchor` em `user_data.json`, com barra **`🔖 Retomar onde ficaste`** (`#resumeReadingBanner`) e salto suave entre dispositivos.
+  - **Notificações Mais Ágeis:** Polling dedicado de 60s, atualização automática ao abrir a aba Notificações (`setTab("notifs")` com cooldown de 15s) e retoma imediata ao regressar do segundo plano no iOS (`handleForegroundResume()`).
+  - **Proteção de Privacidade Mastodon ↔ Bluesky:** Exposição de `visibility` em `Masto.item()`, bloqueio de cross-post e citação cruzada para o Bluesky em publicações `private`/`direct` (com indicador `🔒`), ajuste automático do compositor para apenas Mastodon ao escolher `private`/`direct` e aviso contextual para `unlisted`.
 
 ---
 
