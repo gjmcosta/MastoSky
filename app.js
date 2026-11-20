@@ -1554,20 +1554,20 @@
     }
 
     let lastScrollY = window.scrollY;
+    let _lastSideRailVisible = null;
     function handleScrollNav() {
-      const curY = window.scrollY;
       const sideRail = $("sideNavRail");
-      if (navMode === "sidebar") {
-        if (curY > 120) sideRail?.classList.add("visible");
-        else sideRail?.classList.remove("visible");
-      } else {
-        sideRail?.classList.remove("visible");
+      if (!sideRail) return;
+      const shouldShow = navMode === "sidebar" && window.scrollY > 120;
+      if (shouldShow !== _lastSideRailVisible) {
+        _lastSideRailVisible = shouldShow;
+        sideRail.classList.toggle("visible", shouldShow);
       }
-      lastScrollY = curY;
+      if (navMode === "sidebar") lastScrollY = window.scrollY;
     }
     let _scrollNavRaf = 0;
     window.addEventListener("scroll", () => {
-      if (_scrollNavRaf) return;
+      if (navMode !== "sidebar" || _scrollNavRaf) return;
       _scrollNavRaf = requestAnimationFrame(() => {
         _scrollNavRaf = 0;
         handleScrollNav();
@@ -5636,7 +5636,6 @@
 
         const targetPost = (n.target_post && (n.target_post.uri || n.target_post.id || n.target_post.url)) ? {
           network: n.network,
-          id: n.target_post.uri || (n.target_post.id ? String(n.target_post.id) : null) || n.target_post.url,
           id: n.target_post.uri || (n.target_post.id ? String(n.target_post.id) : null) || n.target_post.url,
           ref: n.ref || (n.target_post.uri ? { uri: n.target_post.uri, cid: n.target_post.cid } : (n.target_post.id ? { id: String(n.target_post.id) } : null)),
           url: n.target_post.url || n.url,
@@ -9921,8 +9920,9 @@
     }
 
     function scheduleTimelineAnchorCapture() {
-      if (_tlAnchorTimer) clearTimeout(_tlAnchorTimer);
+      if (_tlAnchorTimer) return;
       _tlAnchorTimer = setTimeout(() => {
+        _tlAnchorTimer = null;
         captureCurrentTimelineAnchor(false);
       }, 1000);
     }
@@ -13592,14 +13592,15 @@
     function initNewPostsPillDismissers() {
       const pendingRaf = {};
       const checkDismiss = (colId) => {
-        if (pendingRaf[colId]) return;
+        const pill = $(colId + "NewPostsPill");
+        if (!pill || pill.hidden || pendingRaf[colId]) return;
         pendingRaf[colId] = requestAnimationFrame(() => {
           pendingRaf[colId] = 0;
+          if (pill.hidden) return;
           const sc = getColScrollContainer(colId);
           const top = sc === window ? window.scrollY : sc.scrollTop;
           if (top < 30) {
-            const pill = $(colId + "NewPostsPill");
-            if (pill && !pill.hidden) pill.hidden = true;
+            pill.hidden = true;
           }
         });
       };
