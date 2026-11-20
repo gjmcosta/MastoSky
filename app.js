@@ -249,7 +249,21 @@
           search_ph: "Filtrar por texto ou autor...",
           toast_saved: "Publicação guardada!",
           toast_removed: "Publicação removida dos guardados.",
-          quota_err: "Limite de armazenamento atingido. Remove alguns posts guardados."
+          quota_err: "Limite de armazenamento atingido. Remove alguns posts guardados.",
+          col_all: "Todas",
+          col_none: "Sem coleção",
+          col_new_btn: "+ Coleção",
+          col_assign_chip: "+ Coleção",
+          col_picker_title: "Guardar na coleção",
+          col_create_ph: "Nome da nova coleção...",
+          col_rename_ph: "Novo nome da coleção...",
+          col_save_btn: "Guardar",
+          col_cancel_btn: "Cancelar",
+          col_rename_title: "Renomear coleção",
+          col_delete_title: "Eliminar coleção",
+          col_delete_confirm: "Eliminar a coleção \"{name}\"? As publicações guardadas não serão apagadas.",
+          toast_moved_col: "Guardado na coleção \"{name}\"",
+          toast_removed_col: "Removido da coleção"
         },
         actions: {
           reply: "Responder",
@@ -919,7 +933,21 @@
           search_ph: "Filter by text or author...",
           toast_saved: "Post saved!",
           toast_removed: "Post removed from saved.",
-          quota_err: "Storage limit reached. Remove some saved posts."
+          quota_err: "Storage limit reached. Remove some saved posts.",
+          col_all: "All",
+          col_none: "Uncategorized",
+          col_new_btn: "+ Collection",
+          col_assign_chip: "+ Collection",
+          col_picker_title: "Save to collection",
+          col_create_ph: "New collection name...",
+          col_rename_ph: "Rename collection...",
+          col_save_btn: "Save",
+          col_cancel_btn: "Cancel",
+          col_rename_title: "Rename collection",
+          col_delete_title: "Delete collection",
+          col_delete_confirm: "Delete collection \"{name}\"? Saved posts will not be deleted.",
+          toast_moved_col: "Saved to collection \"{name}\"",
+          toast_removed_col: "Removed from collection"
         },
         actions: {
           reply: "Reply",
@@ -1534,6 +1562,9 @@
       else if (tab === "profile") {
         if (profileData) renderProfileAccountsList(profileData);
         if (activeProfileMode === "account" && activeProfileNet) viewOwnAccount(activeProfileNet);
+      }
+      if ((tab === "saved" || viewMode === "deck") && typeof renderSavedFeed === "function") {
+        renderSavedFeed();
       }
     }
 
@@ -2211,6 +2242,7 @@
       trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
       share: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
       download: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+      folder: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
       more: '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.75"/><circle cx="12" cy="12" r="1.75"/><circle cx="19" cy="12" r="1.75"/></svg>'
     };
 
@@ -2865,6 +2897,10 @@
           closeNewConvoModal();
           return;
         }
+        if (activeBoostMenu) {
+          closeBoostMenu();
+          return;
+        }
         if (document.body.classList.contains("mobile-compose-open")) {
           closeMobileCompose();
           return;
@@ -3204,9 +3240,11 @@
       return card;
     }
 
-    // --- SISTEMA DE POSTS GUARDADOS (BOOKMARKS) ---
+    // --- SISTEMA DE POSTS GUARDADOS (BOOKMARKS) E COLEÇÕES ---
     let savedFilterNet = "all";
     let savedFilterQuery = "";
+    let savedFilterCollection = "all";
+    let editingSavedColId = null;
 
     function getPostKey(it) {
       if (!it) return "";
@@ -3217,6 +3255,51 @@
         if (it.ref.id) return "masto:" + it.ref.id;
       }
       return (it.network || "") + ":" + (it.time || "") + ":" + (it.handle || "");
+    }
+
+    function normalizeSavedCollections(rawCols) {
+      if (!Array.isArray(rawCols)) return [];
+      const out = [];
+      const seen = new Set();
+      for (const c of rawCols) {
+        if (!c || typeof c !== "object") continue;
+        const id = String(c.id || "").trim().slice(0, 64);
+        const name = String(c.name || "").trim().slice(0, 80);
+        if (!id || !name || seen.has(id)) continue;
+        seen.add(id);
+        const item = { id, name };
+        if (typeof c.created_at === "number" && Number.isFinite(c.created_at)) {
+          item.created_at = Math.trunc(c.created_at);
+        }
+        out.push(item);
+        if (out.length >= 100) break;
+      }
+      return out;
+    }
+
+    function getSavedCollections() {
+      try {
+        const raw = localStorage.getItem("mastosky_saved_collections");
+        return raw ? normalizeSavedCollections(JSON.parse(raw)) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function persistSavedCollections(cols) {
+      const clean = normalizeSavedCollections(cols);
+      try {
+        localStorage.setItem("mastosky_saved_collections", JSON.stringify(clean));
+        if (typeof scheduleServerSync === "function") {
+          scheduleServerSync({ saved_collections: clean });
+        }
+        return true;
+      } catch (err) {
+        if (err.name === "QuotaExceededError" || err.code === 22) {
+          showAppAlert(t("saved.quota_err") || "Limite de armazenamento atingido.");
+        }
+        return false;
+      }
     }
 
     function getSavedPosts() {
@@ -3243,58 +3326,421 @@
       }
     }
 
-    function isPostSaved(it) {
+    function getSavedPostRecord(it) {
       const key = getPostKey(it);
-      if (!key) return false;
-      const list = getSavedPosts();
-      return list.some(p => getPostKey(p) === key);
+      if (!key) return null;
+      return getSavedPosts().find(p => getPostKey(p) === key) || null;
     }
 
-    function toggleSavePost(it, btnEl) {
-      const key = getPostKey(it);
-      if (!key) return;
-      const list = getSavedPosts();
-      const idx = list.findIndex(p => getPostKey(p) === key);
-      let saved = false;
+    function getSavedPostCollectionId(it, colsOpt) {
+      const rec = getSavedPostRecord(it);
+      if (!rec || !rec.collection_id) return null;
+      const cols = colsOpt || getSavedCollections();
+      const cid = String(rec.collection_id);
+      return cols.some(c => c.id === cid) ? cid : null;
+    }
 
-      if (idx >= 0) {
-        list.splice(idx, 1);
-        saved = false;
-      } else {
-        const clone = { ...it, saved_at: Date.now() };
-        list.unshift(clone);
-        saved = true;
-      }
+    function isPostSaved(it) {
+      return Boolean(getSavedPostRecord(it));
+    }
 
-      persistSavedPosts(list);
-
-      document.querySelectorAll(`.act-save[data-post-key="${CSS.escape(key)}"]`).forEach(b => {
+    function syncSaveButtonsUI(key, saved, btnEl) {
+      const applyBtnState = (b) => {
         b.classList.toggle("on", saved);
         b.title = saved ? t("actions.saved_rm") : t("actions.save");
         b.setAttribute("aria-label", b.title);
         b.innerHTML = saved ? ICONS.bookmarkFill : ICONS.bookmark;
-      });
+      };
+      if (key) {
+        document.querySelectorAll(`.act-save[data-post-key="${CSS.escape(key)}"]`).forEach(applyBtnState);
+      }
+      if (btnEl) applyBtnState(btnEl);
+    }
 
-      if (btnEl) {
-        btnEl.classList.toggle("on", saved);
-        btnEl.title = saved ? t("actions.saved_rm") : t("actions.save");
-        btnEl.setAttribute("aria-label", btnEl.title);
-        btnEl.innerHTML = saved ? ICONS.bookmarkFill : ICONS.bookmark;
+    function showSavedToast(text) {
+      const msg = $("msg");
+      if (!msg || !text) return;
+      msg.className = "msg";
+      msg.textContent = text;
+      setTimeout(() => {
+        if (msg.textContent === text) msg.textContent = "";
+      }, 2500);
+    }
+
+    function createSavedCollection(name) {
+      const cleanName = String(name || "").trim().slice(0, 80);
+      if (!cleanName) return null;
+      const cols = getSavedCollections();
+      const existing = cols.find(c => c.name.toLowerCase() === cleanName.toLowerCase());
+      if (existing) return existing;
+      const newCol = {
+        id: "col_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6),
+        name: cleanName,
+        created_at: Date.now()
+      };
+      cols.push(newCol);
+      persistSavedCollections(cols);
+      renderSavedCollectionsBar(null, cols);
+      return newCol;
+    }
+
+    function renameSavedCollection(colId, newName) {
+      const cleanName = String(newName || "").trim().slice(0, 80);
+      if (!cleanName || !colId) return false;
+      const cols = getSavedCollections();
+      const col = cols.find(c => c.id === colId);
+      if (!col) return false;
+      col.name = cleanName;
+      persistSavedCollections(cols);
+      renderSavedFeed();
+      return true;
+    }
+
+    async function deleteSavedCollection(colId) {
+      const cols = getSavedCollections();
+      const col = cols.find(c => c.id === colId);
+      if (!col) return;
+      const confirmed = await askConfirm(t("saved.col_delete_confirm", { name: col.name }));
+      if (!confirmed) return;
+
+      const nextCols = cols.filter(c => c.id !== colId);
+      persistSavedCollections(nextCols);
+
+      const posts = getSavedPosts();
+      let changedPosts = false;
+      const nextPosts = posts.map(p => {
+        if (p && p.collection_id === colId) {
+          changedPosts = true;
+          return { ...p, collection_id: null };
+        }
+        return p;
+      });
+      if (changedPosts) persistSavedPosts(nextPosts);
+
+      if (savedFilterCollection === colId) savedFilterCollection = "all";
+      closeSavedColForm();
+      renderSavedFeed();
+    }
+
+    function removeSavedPost(it, btnEl) {
+      const key = getPostKey(it);
+      if (!key) return;
+      const list = getSavedPosts();
+      const idx = list.findIndex(p => getPostKey(p) === key);
+      if (idx < 0) return;
+      list.splice(idx, 1);
+      persistSavedPosts(list);
+      syncSaveButtonsUI(key, false, btnEl);
+      showSavedToast(t("saved.toast_removed"));
+      if (tab === "saved" || viewMode === "deck") {
+        renderSavedFeed();
+      }
+    }
+
+    function setPostCollection(it, colId) {
+      const key = getPostKey(it);
+      if (!key) return;
+      const cols = getSavedCollections();
+      const colObj = colId ? cols.find(c => c.id === String(colId)) : null;
+      const targetColId = colObj ? colObj.id : null;
+
+      const list = getSavedPosts();
+      const idx = list.findIndex(p => getPostKey(p) === key);
+      let wasNew = false;
+
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], collection_id: targetColId };
+      } else {
+        list.unshift({ ...it, saved_at: Date.now(), collection_id: targetColId });
+        wasNew = true;
       }
 
-      const msg = $("msg");
-      if (msg) {
-        msg.className = "msg";
-        msg.textContent = saved ? t("saved.toast_saved") : t("saved.toast_removed");
-        setTimeout(() => {
-          if (msg.textContent === t("saved.toast_saved") || msg.textContent === t("saved.toast_removed")) {
-            msg.textContent = "";
-          }
-        }, 2500);
+      persistSavedPosts(list);
+      syncSaveButtonsUI(key, true, null);
+
+      if (colObj) {
+        showSavedToast(t("saved.toast_moved_col", { name: colObj.name }));
+      } else {
+        showSavedToast(wasNew ? t("saved.toast_saved") : t("saved.toast_removed_col"));
       }
 
       if (tab === "saved" || viewMode === "deck") {
         renderSavedFeed();
+      }
+    }
+
+    function openSavedCollectionMenu(it, btnEl) {
+      if (!btnEl) return;
+      if (activeBoostMenu) {
+        const isSame = activeBoostMenu._btn === btnEl;
+        closeBoostMenu();
+        if (isSame) return;
+      }
+
+      const menu = el("div", "boost-popover saved-col-popover");
+      menu._btn = btnEl;
+
+      const cols = getSavedCollections();
+      const currentColId = getSavedPostCollectionId(it, cols);
+
+      menu.append(el("div", "boost-header", t("saved.col_picker_title")));
+
+      const listWrap = el("div", "saved-col-opt-list");
+
+      const mkOption = (id, label, isFolder) => {
+        const isSelected = (id === null && currentColId === null) || (id !== null && currentColId === id);
+        const optBtn = el("button", "saved-col-opt-btn" + (isSelected ? " active" : ""));
+        optBtn.type = "button";
+        if (isFolder) {
+          const icoWrap = document.createElement("span");
+          icoWrap.style.display = "inline-flex";
+          icoWrap.innerHTML = ICONS.folder;
+          optBtn.append(icoWrap);
+        }
+        const nameSpan = el("span", "saved-col-opt-name", label);
+        optBtn.append(nameSpan);
+        if (isSelected) {
+          optBtn.append(el("span", "saved-col-opt-check", "✓"));
+        }
+        optBtn.onclick = (e) => {
+          e.stopPropagation();
+          closeBoostMenu();
+          setPostCollection(it, id);
+        };
+        return optBtn;
+      };
+
+      listWrap.append(mkOption(null, t("saved.col_none"), false));
+      cols.forEach(c => listWrap.append(mkOption(c.id, c.name, true)));
+      menu.append(listWrap, el("div", "boost-divider"));
+
+      const form = el("div", "saved-col-pop-form");
+      const inp = document.createElement("input");
+      inp.type = "text";
+      inp.maxLength = 80;
+      inp.autocomplete = "off";
+      inp.placeholder = t("saved.col_create_ph");
+      const addBtn = el("button", "saved-col-pop-add", "+");
+      addBtn.type = "button";
+      addBtn.title = t("saved.col_save_btn");
+      addBtn.setAttribute("aria-label", t("saved.col_save_btn"));
+
+      const handleQuickCreate = (e) => {
+        if (e) e.stopPropagation();
+        const created = createSavedCollection(inp.value);
+        if (!created) {
+          inp.focus();
+          return;
+        }
+        closeBoostMenu();
+        setPostCollection(it, created.id);
+      };
+
+      inp.onclick = (e) => e.stopPropagation();
+      inp.onkeydown = (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.stopPropagation();
+          handleQuickCreate();
+        }
+      };
+      addBtn.onclick = handleQuickCreate;
+      form.append(inp, addBtn);
+      menu.append(form);
+
+      if (isPostSaved(it)) {
+        menu.append(el("div", "boost-divider"));
+        const rmBtn = el("button", "saved-col-remove-btn");
+        rmBtn.type = "button";
+        rmBtn.innerHTML = ICONS.trash + " <span></span>";
+        rmBtn.querySelector("span").textContent = t("actions.saved_rm");
+        rmBtn.onclick = (e) => {
+          e.stopPropagation();
+          closeBoostMenu();
+          removeSavedPost(it, btnEl && btnEl.classList.contains("act-save") ? btnEl : null);
+        };
+        menu.append(rmBtn);
+      }
+
+      document.body.append(menu);
+
+      const rect = btnEl.getBoundingClientRect();
+      const mw = menu.offsetWidth || 235;
+      const mh = menu.offsetHeight || 220;
+      const left = Math.max(10, Math.min(window.innerWidth - mw - 10, rect.left));
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const top = spaceBelow < mh + 16 && rect.top > mh + 16
+        ? Math.max(10, rect.top - mh - 4)
+        : (rect.bottom + 4);
+      menu.style.top = top + "px";
+      menu.style.left = left + "px";
+
+      activeBoostMenu = menu;
+    }
+
+    function toggleSavePost(it, btnEl) {
+      if (btnEl && activeBoostMenu && activeBoostMenu._btn === btnEl && activeBoostMenu.classList.contains("saved-col-popover")) {
+        closeBoostMenu();
+        removeSavedPost(it, btnEl);
+        return;
+      }
+
+      const key = getPostKey(it);
+      if (!key) return;
+      const list = getSavedPosts();
+      const idx = list.findIndex(p => getPostKey(p) === key);
+
+      if (idx < 0) {
+        const inSavedFiltered = Boolean(
+          savedFilterCollection &&
+          savedFilterCollection !== "all" &&
+          savedFilterCollection !== "none" &&
+          ((btnEl && btnEl.closest("#pSaved")) || (viewMode === "single" && tab === "saved"))
+        );
+        const validCols = inSavedFiltered ? getSavedCollections() : [];
+        const defaultColId = (inSavedFiltered && validCols.some(c => c.id === savedFilterCollection))
+          ? savedFilterCollection
+          : null;
+        const clone = { ...it, saved_at: Date.now(), collection_id: defaultColId };
+        list.unshift(clone);
+        persistSavedPosts(list);
+        syncSaveButtonsUI(key, true, btnEl);
+        showSavedToast(t("saved.toast_saved"));
+        if (tab === "saved" || viewMode === "deck") {
+          renderSavedFeed();
+        }
+        if (btnEl && btnEl.isConnected) {
+          openSavedCollectionMenu(it, btnEl);
+        }
+        return;
+      }
+
+      if (btnEl) {
+        openSavedCollectionMenu(it, btnEl);
+      } else {
+        removeSavedPost(it, null);
+      }
+    }
+
+    function openSavedColForm(colId = null) {
+      const row = $("savedColFormRow");
+      const inp = $("savedColNameInput");
+      if (!row || !inp) return;
+      editingSavedColId = colId || null;
+      if (editingSavedColId) {
+        const col = getSavedCollections().find(c => c.id === editingSavedColId);
+        inp.value = col ? col.name : "";
+        inp.placeholder = t("saved.col_rename_ph");
+      } else {
+        inp.value = "";
+        inp.placeholder = t("saved.col_create_ph");
+      }
+      row.hidden = false;
+      setTimeout(() => {
+        inp.focus();
+        inp.select();
+      }, 20);
+    }
+
+    function closeSavedColForm() {
+      const row = $("savedColFormRow");
+      const inp = $("savedColNameInput");
+      editingSavedColId = null;
+      if (inp) inp.value = "";
+      if (row) row.hidden = true;
+    }
+
+    function submitSavedColForm() {
+      const inp = $("savedColNameInput");
+      if (!inp) return;
+      const val = inp.value.trim();
+      if (!val) {
+        inp.focus();
+        return;
+      }
+      if (editingSavedColId) {
+        renameSavedCollection(editingSavedColId, val);
+        closeSavedColForm();
+      } else {
+        const created = createSavedCollection(val);
+        closeSavedColForm();
+        if (created) {
+          savedFilterCollection = created.id;
+          renderSavedFeed();
+        }
+      }
+    }
+
+    function renderSavedCollectionsBar(allSavedOpt, colsOpt) {
+      const bar = $("savedCollectionsBar");
+      if (!bar) return;
+
+      const allSaved = allSavedOpt || getSavedPosts();
+      const cols = colsOpt || getSavedCollections();
+      const validColIds = new Set(cols.map(c => c.id));
+
+      if (savedFilterCollection !== "all" && savedFilterCollection !== "none" && !validColIds.has(savedFilterCollection)) {
+        savedFilterCollection = "all";
+      }
+
+      const counts = new Map();
+      let uncategorizedCount = 0;
+      allSaved.forEach(p => {
+        const cid = (p && p.collection_id && validColIds.has(String(p.collection_id))) ? String(p.collection_id) : null;
+        if (cid) counts.set(cid, (counts.get(cid) || 0) + 1);
+        else uncategorizedCount++;
+      });
+
+      bar.replaceChildren();
+      const pillsWrap = el("div", "saved-col-pills");
+
+      const makePill = (filterKey, label, count) => {
+        const btn = el("button", "saved-col-pill" + (savedFilterCollection === filterKey ? " active" : ""));
+        btn.type = "button";
+        btn.dataset.savedCol = filterKey;
+        const lbl = el("span", "saved-col-pill-label", label);
+        const cnt = el("span", "saved-col-count", String(count));
+        btn.append(lbl, cnt);
+        btn.onclick = () => {
+          savedFilterCollection = filterKey;
+          renderSavedFeed();
+        };
+        return btn;
+      };
+
+      pillsWrap.append(makePill("all", t("saved.col_all"), allSaved.length));
+      if (cols.length > 0) {
+        pillsWrap.append(makePill("none", t("saved.col_none"), uncategorizedCount));
+      }
+      cols.forEach(c => {
+        pillsWrap.append(makePill(c.id, c.name, counts.get(c.id) || 0));
+      });
+
+      const addBtn = el("button", "saved-col-pill saved-col-add-btn", t("saved.col_new_btn"));
+      addBtn.type = "button";
+      addBtn.onclick = () => openSavedColForm(null);
+      pillsWrap.append(addBtn);
+
+      bar.append(pillsWrap);
+
+      if (savedFilterCollection !== "all" && savedFilterCollection !== "none") {
+        const manageActs = el("div", "saved-col-manage-acts");
+        const renameBtn = el("button", "saved-col-icon-btn");
+        renameBtn.type = "button";
+        renameBtn.title = t("saved.col_rename_title");
+        renameBtn.setAttribute("aria-label", renameBtn.title);
+        renameBtn.innerHTML = ICONS.edit;
+        renameBtn.onclick = () => openSavedColForm(savedFilterCollection);
+
+        const delBtn = el("button", "saved-col-icon-btn danger");
+        delBtn.type = "button";
+        delBtn.title = t("saved.col_delete_title");
+        delBtn.setAttribute("aria-label", delBtn.title);
+        delBtn.innerHTML = ICONS.trash;
+        delBtn.onclick = () => deleteSavedCollection(savedFilterCollection);
+
+        manageActs.append(renameBtn, delBtn);
+        bar.append(manageActs);
       }
     }
 
@@ -3304,7 +3750,18 @@
       if (!feed) return;
 
       const allSaved = getSavedPosts();
+      const cols = getSavedCollections();
+      const colById = new Map(cols.map(c => [c.id, c]));
+
+      renderSavedCollectionsBar(allSaved, cols);
+
       let filtered = allSaved;
+
+      if (savedFilterCollection === "none") {
+        filtered = filtered.filter(p => !(p && p.collection_id && colById.has(String(p.collection_id))));
+      } else if (savedFilterCollection && savedFilterCollection !== "all") {
+        filtered = filtered.filter(p => p && String(p.collection_id || "") === savedFilterCollection);
+      }
 
       if (savedFilterNet && savedFilterNet !== "all") {
         filtered = filtered.filter(p => p.network === savedFilterNet);
@@ -3344,6 +3801,21 @@
 
       filtered.forEach(it => {
         const p = postCard(it);
+        const colObj = (it && it.collection_id) ? colById.get(String(it.collection_id)) : null;
+        const chipRow = el("div", "saved-post-col-row");
+        const chip = el("button", "saved-col-chip" + (colObj ? " has-col" : ""));
+        chip.type = "button";
+        chip.title = t("saved.col_picker_title");
+        chip.innerHTML = ICONS.folder + " <span></span>";
+        chip.querySelector("span").textContent = colObj ? colObj.name : t("saved.col_assign_chip");
+        chip.onclick = (e) => {
+          e.stopPropagation();
+          openSavedCollectionMenu(it, chip);
+        };
+        chipRow.append(chip);
+        const actsEl = p.querySelector(".acts");
+        if (actsEl) p.insertBefore(chipRow, actsEl);
+        else p.append(chipRow);
         feed.append(p);
       });
     }
@@ -3361,6 +3833,19 @@
         sInp.oninput = (e) => {
           savedFilterQuery = (e.target.value || "").trim();
           renderSavedFeed();
+        };
+      }
+      if ($("savedColSaveBtn")) $("savedColSaveBtn").onclick = submitSavedColForm;
+      if ($("savedColCancelBtn")) $("savedColCancelBtn").onclick = closeSavedColForm;
+      if ($("savedColNameInput")) {
+        $("savedColNameInput").onkeydown = (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submitSavedColForm();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            closeSavedColForm();
+          }
         };
       }
     }
@@ -9464,6 +9949,19 @@
       let mergedBack = false;
       _suppressServerSync = true;
       try {
+        let savedChanged = false;
+        if (Array.isArray(serverData.saved_collections)) {
+          let nextCols = normalizeSavedCollections(serverData.saved_collections);
+          if (isInitialMerge) {
+            const localCols = getSavedCollections();
+            if (localCols.length) {
+              nextCols = _mergeSyncedLists(nextCols, localCols, c => c && c.id);
+              if (nextCols.length > serverData.saved_collections.length) mergedBack = true;
+            }
+          }
+          localStorage.setItem("mastosky_saved_collections", JSON.stringify(nextCols));
+          savedChanged = true;
+        }
         if (Array.isArray(serverData.saved_posts)) {
           let nextSaved = serverData.saved_posts;
           if (isInitialMerge) {
@@ -9474,7 +9972,10 @@
             }
           }
           localStorage.setItem("mastosky_saved_posts", JSON.stringify(nextSaved));
-          if (typeof renderSavedFeed === "function") renderSavedFeed();
+          savedChanged = true;
+        }
+        if (savedChanged && typeof renderSavedFeed === "function") {
+          renderSavedFeed();
         }
 
         if (Array.isArray(serverData.drafts)) {
@@ -9616,13 +10117,15 @@
         if (serverUpdatedAt === 0) {
           _serverSyncReady = true;
           const localSaved = getSavedPosts();
+          const localCols = getSavedCollections();
           const localDrafts = getSavedDrafts();
-          const hasCustomLocal = localSaved.length || localDrafts.length || mutedWords.length ||
+          const hasCustomLocal = localSaved.length || localCols.length || localDrafts.length || mutedWords.length ||
             Boolean(localStorage.getItem("mastosky_theme") || localStorage.getItem("mastosky_deck_columns") ||
               localStorage.getItem("mastosky_view_mode") || localStorage.getItem("mastosky_lang"));
           if (hasCustomLocal) {
             scheduleServerSync({
               saved_posts: localSaved,
+              saved_collections: localCols,
               drafts: localDrafts,
               muted_words: mutedWords,
               mute_mode: muteMode,
@@ -9640,6 +10143,7 @@
           if (needsPushBack) {
             scheduleServerSync({
               saved_posts: getSavedPosts(),
+              saved_collections: getSavedCollections(),
               drafts: getSavedDrafts(),
               muted_words: mutedWords,
               mute_mode: muteMode,
@@ -10242,6 +10746,7 @@
         exported_at: new Date().toISOString(),
         drafts: getSavedDrafts(),
         saved_posts: getSavedPosts(),
+        saved_collections: getSavedCollections(),
         muted_words: (typeof mutedWords !== "undefined") ? mutedWords : [],
         deck_columns: (typeof deckColumns !== "undefined") ? deckColumns : [],
         preferences: {
@@ -10315,7 +10820,16 @@
             }
           }
 
-          // 2. Restaurar Guardados (mesclar sem duplicados)
+          // 2. Restaurar Coleções e Guardados (mesclar sem duplicados)
+          if (Array.isArray(parsed.saved_collections)) {
+            const existingCols = getSavedCollections();
+            const existingColIds = new Set(existingCols.map(c => c.id));
+            const colsToAdd = normalizeSavedCollections(parsed.saved_collections).filter(c => !existingColIds.has(c.id));
+            if (colsToAdd.length) {
+              persistSavedCollections(existingCols.concat(colsToAdd));
+            }
+          }
+
           if (Array.isArray(parsed.saved_posts)) {
             const existingSaved = getSavedPosts();
             const existingKeys = new Set(existingSaved.map(s => getPostKey(s)).filter(Boolean));
@@ -10328,7 +10842,11 @@
               persistSavedPosts(merged);
               restoredSaved = toAdd.length;
               renderSavedFeed();
+            } else if (Array.isArray(parsed.saved_collections)) {
+              renderSavedFeed();
             }
+          } else if (Array.isArray(parsed.saved_collections)) {
+            renderSavedFeed();
           }
 
           // 3. Restaurar Colunas do Deck se fornecidas
@@ -10562,7 +11080,10 @@
         closeBoostMenu();
       }
     });
-    window.addEventListener("scroll", closeBoostMenu, { passive: true });
+    window.addEventListener("scroll", (e) => {
+      if (activeBoostMenu && e && e.target && e.target.nodeType === 1 && activeBoostMenu.contains(e.target)) return;
+      closeBoostMenu();
+    }, { passive: true, capture: true });
 
     function openBoostMenu(it, btn) {
       if (activeBoostMenu) {

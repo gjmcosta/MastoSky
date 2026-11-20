@@ -1114,6 +1114,15 @@
                 </div>
                 <span id="savedCountText" class="saved-count-text">0 guardados</span>
               </div>
+              <div id="savedCollectionsBar" class="saved-collections-bar"></div>
+              <div id="savedColFormRow" class="saved-col-form-row" hidden>
+                <input type="text" id="savedColNameInput" maxlength="80" autocomplete="off"
+                  placeholder="Nome da nova coleção..." data-i18n-ph="saved.col_create_ph">
+                <button type="button" class="saved-col-form-save" id="savedColSaveBtn"
+                  data-i18n="saved.col_save_btn">Guardar</button>
+                <button type="button" class="saved-col-form-cancel" id="savedColCancelBtn"
+                  data-i18n="saved.col_cancel_btn">Cancelar</button>
+              </div>
               <div class="saved-search-wrap" style="margin-top:10px">
                 <svg class="ico search-ico">
                   <use href="#i-search" />

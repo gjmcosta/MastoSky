@@ -2190,6 +2190,20 @@ class ProxyImageTests(unittest.TestCase):
         self.assertIn("act-save", html)
         self.assertIn("saved_rm", html)
         self.assertIn("toast_saved", html)
+        for marker in [
+            'id="savedCollectionsBar"',
+            'id="savedColFormRow"',
+            'id="savedColNameInput"',
+            'mastosky_saved_collections',
+            "function getSavedCollections(",
+            "function persistSavedCollections(",
+            "function setPostCollection(",
+            "function openSavedCollectionMenu(",
+            "function renderSavedCollectionsBar(",
+            "saved-col-chip",
+            "saved-col-popover",
+        ]:
+            self.assertIn(marker, html)
 
     def test_index_contains_reply_box_elements(self):
         html = _read_frontend()
@@ -3273,11 +3287,17 @@ class CasaOSTailscaleAndSyncTests(unittest.TestCase):
                 app.USER_DATA_PATH = ud_path
                 initial = app.load_user_data()
                 self.assertEqual(initial["saved_posts"], [])
+                self.assertEqual(initial["saved_collections"], [])
                 self.assertEqual(initial["updated_at"], 0)
 
                 # POST /api/user_data guarda e faz merge parcial de preferências
                 h_post1 = self._api_handler("/api/user_data", body={
-                    "saved_posts": [{"network": "bluesky", "id": "at://1", "text": "ola"}],
+                    "saved_posts": [{"network": "bluesky", "id": "at://1", "text": "ola", "collection_id": "col_tech"}],
+                    "saved_collections": [
+                        {"id": "col_tech", "name": "Tech", "created_at": 1700000000},
+                        {"id": "col_tech", "name": "Duplicada"},
+                        {"id": "", "name": "Sem ID"},
+                    ],
                     "muted_words": [" Spoiler ", "spoiler", "Crypto"],
                     "mute_mode": "hide",
                     "preferences": {"theme": "dark", "view_mode": "deck"}
@@ -3285,6 +3305,9 @@ class CasaOSTailscaleAndSyncTests(unittest.TestCase):
                 h_post1.do_POST()
                 res1 = json.loads(h_post1.wfile.getvalue().decode("utf-8"))
                 self.assertTrue(res1["ok"])
+                self.assertEqual(len(res1["data"]["saved_collections"]), 1)
+                self.assertEqual(res1["data"]["saved_collections"][0]["id"], "col_tech")
+                self.assertEqual(res1["data"]["saved_collections"][0]["name"], "Tech")
                 self.assertEqual(res1["data"]["muted_words"], ["spoiler", "crypto"])
                 self.assertEqual(res1["data"]["mute_mode"], "hide")
                 self.assertEqual(res1["data"]["preferences"]["theme"], "dark")
@@ -3303,6 +3326,8 @@ class CasaOSTailscaleAndSyncTests(unittest.TestCase):
                 got = json.loads(h_get.wfile.getvalue().decode("utf-8"))
                 self.assertTrue(got["ok"])
                 self.assertEqual(len(got["data"]["saved_posts"]), 1)
+                self.assertEqual(got["data"]["saved_posts"][0]["collection_id"], "col_tech")
+                self.assertEqual(len(got["data"]["saved_collections"]), 1)
                 self.assertEqual(len(got["data"]["drafts"]), 1)
                 self.assertEqual(got["data"]["preferences"]["theme"], "dark")
                 self.assertEqual(got["data"]["preferences"]["lang"], "pt")
@@ -3311,6 +3336,10 @@ class CasaOSTailscaleAndSyncTests(unittest.TestCase):
                 h_bad = self._api_handler("/api/user_data", body={"mute_mode": "invalid"})
                 h_bad.do_POST()
                 self.assertIn(("code", 400), h_bad.sent)
+
+                h_bad_cols = self._api_handler("/api/user_data", body={"saved_collections": "invalido"})
+                h_bad_cols.do_POST()
+                self.assertIn(("code", 400), h_bad_cols.sent)
             finally:
                 app.USER_DATA_PATH = old_path
 

@@ -3866,6 +3866,283 @@
       padding: 5px 0
     }
 
+    .saved-collections-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-top: 10px;
+      flex-wrap: wrap
+    }
+
+    .saved-col-pills {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+      flex: 1;
+      min-width: 0
+    }
+
+    .saved-col-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      border-radius: 14px;
+      padding: 4px 9px;
+      font: 600 11.5px/1.25 var(--sans);
+      cursor: pointer;
+      max-width: 100%;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease
+    }
+
+    .saved-col-pill:hover {
+      color: var(--ink);
+      border-color: var(--accent)
+    }
+
+    .saved-col-pill.active {
+      background: color-mix(in srgb, var(--accent) 15%, var(--card));
+      color: var(--accent);
+      border-color: var(--accent)
+    }
+
+    .saved-col-pill-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 150px
+    }
+
+    .saved-col-count {
+      font-size: 10.5px;
+      opacity: .78;
+      font-variant-numeric: tabular-nums
+    }
+
+    .saved-col-add-btn {
+      border-style: dashed
+    }
+
+    .saved-col-manage-acts {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0
+    }
+
+    .saved-col-icon-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: var(--surface-1);
+      color: var(--muted);
+      display: inline-grid;
+      place-items: center;
+      cursor: pointer;
+      padding: 0;
+      transition: color .15s ease, border-color .15s ease, background-color .15s ease
+    }
+
+    .saved-col-icon-btn svg {
+      width: 13px;
+      height: 13px
+    }
+
+    .saved-col-icon-btn:hover {
+      color: var(--ink);
+      border-color: var(--accent);
+      background: var(--surface-2)
+    }
+
+    .saved-col-icon-btn.danger:hover {
+      color: var(--danger);
+      border-color: var(--danger)
+    }
+
+    .saved-col-form-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap
+    }
+
+    .saved-col-form-row input {
+      flex: 1 1 160px;
+      min-width: 0;
+      background: var(--surface-1);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: var(--ink);
+      font: 13px var(--sans);
+      outline: none
+    }
+
+    .saved-col-form-row input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent)
+    }
+
+    .saved-col-form-save,
+    .saved-col-form-cancel {
+      border-radius: 8px;
+      padding: 6px 11px;
+      font: 600 12px var(--sans);
+      cursor: pointer;
+      border: 1px solid var(--line)
+    }
+
+    .saved-col-form-save {
+      background: var(--accent-solid, var(--accent));
+      border-color: transparent;
+      color: #fff
+    }
+
+    .saved-col-form-save:hover {
+      opacity: .92
+    }
+
+    .saved-col-form-cancel {
+      background: var(--surface-1);
+      color: var(--muted)
+    }
+
+    .saved-col-form-cancel:hover {
+      color: var(--ink);
+      background: var(--surface-2)
+    }
+
+    .saved-post-col-row {
+      display: flex;
+      align-items: center;
+      margin-top: 8px
+    }
+
+    .saved-col-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface-1);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 3px 9px;
+      font: 600 11.5px/1.25 var(--sans);
+      cursor: pointer;
+      max-width: 100%;
+      transition: color .15s ease, border-color .15s ease, background-color .15s ease
+    }
+
+    .saved-col-chip svg {
+      width: 12px;
+      height: 12px;
+      flex: none
+    }
+
+    .saved-col-chip span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 220px
+    }
+
+    .saved-col-chip.has-col {
+      background: color-mix(in srgb, var(--accent) 12%, var(--card));
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      color: var(--accent)
+    }
+
+    .saved-col-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent)
+    }
+
+    .boost-popover.saved-col-popover {
+      min-width: 225px;
+      max-width: 270px;
+      max-height: 330px;
+      overflow-y: auto
+    }
+
+    .saved-col-opt-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
+
+    .boost-popover button.saved-col-opt-btn {
+      justify-content: flex-start;
+      padding: 7px 10px
+    }
+
+    .boost-popover button.saved-col-opt-btn.active {
+      background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+      color: var(--accent);
+      font-weight: 600
+    }
+
+    .saved-col-opt-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .saved-col-opt-check {
+      font-size: 12px;
+      font-weight: 700;
+      flex: none
+    }
+
+    .saved-col-pop-form {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 6px
+    }
+
+    .saved-col-pop-form input {
+      flex: 1;
+      min-width: 0;
+      background: var(--surface-1);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 5px 8px;
+      color: var(--ink);
+      font: 12.5px var(--sans);
+      outline: none
+    }
+
+    .saved-col-pop-form input:focus {
+      border-color: var(--accent)
+    }
+
+    .boost-popover button.saved-col-pop-add {
+      width: auto;
+      flex: none;
+      padding: 5px 9px;
+      border-radius: 7px;
+      background: var(--accent-solid, var(--accent));
+      color: #fff;
+      font-weight: 700
+    }
+
+    .boost-popover button.saved-col-pop-add:hover {
+      background: var(--accent-solid, var(--accent));
+      color: #fff;
+      opacity: .9
+    }
+
+    .boost-popover button.saved-col-remove-btn:hover {
+      color: var(--danger)
+    }
+
     .banner {
       background: var(--card);
       border: 1px solid var(--danger);

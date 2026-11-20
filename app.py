@@ -47,12 +47,35 @@ def write_config(cfg, path=None):
 def _default_user_data():
     return {
         "saved_posts": [],
+        "saved_collections": [],
         "drafts": [],
         "muted_words": [],
         "mute_mode": "warn",
         "preferences": {},
         "updated_at": 0,
     }
+
+
+def _normalize_saved_collections(raw_cols):
+    if not isinstance(raw_cols, list):
+        return []
+    out = []
+    seen_ids = set()
+    for c in raw_cols:
+        if not isinstance(c, dict):
+            continue
+        cid = str(c.get("id") or "").strip()[:64]
+        name = str(c.get("name") or "").strip()[:80]
+        if not cid or not name or cid in seen_ids:
+            continue
+        seen_ids.add(cid)
+        item = {"id": cid, "name": name}
+        if isinstance(c.get("created_at"), (int, float)):
+            item["created_at"] = int(c["created_at"])
+        out.append(item)
+        if len(out) >= 100:
+            break
+    return out
 
 
 def _read_user_data_unlocked(path):
@@ -67,6 +90,8 @@ def _read_user_data_unlocked(path):
         return base
     if isinstance(raw.get("saved_posts"), list):
         base["saved_posts"] = raw["saved_posts"]
+    if isinstance(raw.get("saved_collections"), list):
+        base["saved_collections"] = _normalize_saved_collections(raw["saved_collections"])
     if isinstance(raw.get("drafts"), list):
         base["drafts"] = raw["drafts"]
     if isinstance(raw.get("muted_words"), list):
@@ -98,6 +123,10 @@ def save_user_data(updates, path=None):
             if not isinstance(updates["saved_posts"], list):
                 raise ValueError("saved_posts inválido")
             current["saved_posts"] = updates["saved_posts"][:1000]
+        if "saved_collections" in updates:
+            if not isinstance(updates["saved_collections"], list):
+                raise ValueError("saved_collections inválido")
+            current["saved_collections"] = _normalize_saved_collections(updates["saved_collections"])
         if "drafts" in updates:
             if not isinstance(updates["drafts"], list):
                 raise ValueError("drafts inválido")
@@ -522,7 +551,7 @@ PORT = CFG.get("port", 8000)
 LISTEN_HOST = "127.0.0.1"
 LAN_MODE = False
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
