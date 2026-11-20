@@ -3055,40 +3055,6 @@
       content-visibility: visible;
     }
 
-    .video-wrap {
-      position: relative;
-      width: 100%;
-    }
-
-    .video-dl-btn {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 4;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: rgba(11, 16, 32, 0.72);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      color: #fff;
-      text-decoration: none;
-      transition: transform 0.14s ease, background 0.14s ease;
-    }
-
-    .video-dl-btn:hover {
-      background: var(--accent-solid);
-      transform: scale(1.06);
-    }
-
-    .video-dl-btn .ico {
-      width: 15px;
-      height: 15px;
-    }
-
     .post.bluesky {
       --c: var(--bsky)
     }
@@ -3314,14 +3280,26 @@
       font-size: 12.5px
     }
 
-    .cw-label,
+    .cw-banner .cw-label,
+    .muted-post-banner .muted-post-label,
     .muted-post-label {
+      flex: 1;
       font-weight: 600;
       min-width: 0;
+      white-space: normal;
+      overflow-wrap: anywhere;
       word-break: break-word;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 6px
+    }
+
+    .cw-banner .cw-label .ico {
+      width: 15px;
+      height: 15px;
+      margin-top: 1px;
+      flex-shrink: 0;
+      color: var(--star);
     }
 
     .cw-toggle-btn,
@@ -3722,7 +3700,8 @@
       align-items: center
     }
 
-    .acts button {
+    .acts button,
+    .acts .act-download {
       border: 0;
       background: none;
       color: var(--muted);
@@ -3733,15 +3712,18 @@
       gap: 5px;
       font-size: 12.5px;
       font-variant-numeric: tabular-nums;
+      text-decoration: none;
       cursor: pointer
     }
 
-    .acts button svg {
+    .acts button svg,
+    .acts .act-download svg {
       display: block;
       flex: none
     }
 
-    .acts button:hover {
+    .acts button:hover,
+    .acts .act-download:hover {
       background: var(--bg);
       color: var(--ink)
     }

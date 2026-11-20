@@ -2189,8 +2189,29 @@
       translate: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2" width="12.5" height="11.5" rx="2.5"/><path d="M14 10.5h6a2.5 2.5 0 0 1 2.5 2.5v6.5a2.5 2.5 0 0 1-2.5 2.5h-7.5a2.5 2.5 0 0 1-2.5-2.5V13.5"/><path d="M7.75 4.2v1.6M4.5 5.8h6.5M9.6 5.8c-.5 2.4-2 4.2-4.6 5.3M5.6 7c1.2 1.8 2.8 3.2 4.8 4.1"/><path d="M14.2 19.5l2.6-5.8 2.6 5.8M15 17.8h3.6"/></svg>',
       edit: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
       trash: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>',
-      share: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>'
+      share: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
+      download: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>'
     };
+
+    function getDownloadableVideoHref(mediaList) {
+      if (!Array.isArray(mediaList)) return "";
+      for (const x of mediaList) {
+        if (!x || (x.type !== "video" && x.type !== "gifv")) continue;
+        if (x.did && x.cid) {
+          return "/api/download_video?did=" + encodeURIComponent(x.did) + "&cid=" + encodeURIComponent(x.cid);
+        }
+        const safeVidUrl = su(x.url);
+        if (!safeVidUrl) continue;
+        const mHls = safeVidUrl.match(/\/(?:hls|watch)\/(did:[^/]+)\/([A-Za-z0-9]+)\//i);
+        if (mHls) {
+          return "/api/download_video?did=" + encodeURIComponent(mHls[1]) + "&cid=" + encodeURIComponent(mHls[2]);
+        }
+        if (!safeVidUrl.includes(".m3u8") && !safeVidUrl.includes("playlist")) {
+          return "/api/download_video?url=" + encodeURIComponent(safeVidUrl);
+        }
+      }
+      return "";
+    }
 
     async function sharePostExternal(it, btn) {
       const url = su(it && it.url) || "";
@@ -3006,31 +3027,7 @@
             v.addEventListener("pause", onVideoStop);
             v.addEventListener("ended", onVideoStop);
           }
-          const wrap = el("div", "video-wrap");
-          wrap.append(v);
-          const safeVidUrl = su(x.url);
-          let dlHref = "";
-          if (x.did && x.cid) {
-            dlHref = "/api/download_video?did=" + encodeURIComponent(x.did) + "&cid=" + encodeURIComponent(x.cid);
-          } else if (safeVidUrl) {
-            const mHls = safeVidUrl.match(/\/(?:hls|watch)\/(did:[^/]+)\/([A-Za-z0-9]+)\//i);
-            if (mHls) {
-              dlHref = "/api/download_video?did=" + encodeURIComponent(mHls[1]) + "&cid=" + encodeURIComponent(mHls[2]);
-            } else if (!safeVidUrl.includes(".m3u8") && !safeVidUrl.includes("playlist")) {
-              dlHref = "/api/download_video?url=" + encodeURIComponent(safeVidUrl);
-            }
-          }
-          if (dlHref) {
-            const dlA = el("a", "video-dl-btn");
-            dlA.href = dlHref;
-            dlA.setAttribute("download", "mastosky-video.mp4");
-            dlA.title = t("post.download_video");
-            dlA.setAttribute("aria-label", t("post.download_video"));
-            dlA.innerHTML = '<svg class="ico"><use href="#i-download" /></svg>';
-            dlA.onclick = (e) => e.stopPropagation();
-            wrap.append(dlA);
-          }
-          m.append(wrap);
+          m.append(v);
         } else if (x.type === "external") {
           const a = el("a", "ext-card" + (x.thumb ? "" : " no-thumb"));
           a.href = su(x.url) || "#"; a.target = "_blank"; a.rel = "opener";
@@ -3813,7 +3810,9 @@
 
       if (cwText) {
         const cwBanner = el("div", "cw-banner");
-        const cwLbl = el("span", "cw-label", "⚠️ " + cwText);
+        const cwLbl = el("span", "cw-label");
+        cwLbl.innerHTML = '<svg class="ico"><use href="#i-cw" /></svg>';
+        cwLbl.append(el("span", null, cwText));
         const cwBtn = el("button", "cw-toggle-btn", t("post.cw_show"));
         cwBtn.type = "button";
         cwBtn.setAttribute("aria-expanded", "false");
@@ -3884,6 +3883,18 @@
           sharePostExternal(it, bSh);
         };
         acts.append(bSh);
+      }
+
+      const vidDlHref = getDownloadableVideoHref(it.media);
+      if (vidDlHref) {
+        const bDl = el("a", "act-btn act-download");
+        bDl.href = vidDlHref;
+        bDl.setAttribute("download", "mastosky-video.mp4");
+        bDl.title = t("post.download_video");
+        bDl.setAttribute("aria-label", bDl.title);
+        bDl.innerHTML = ICONS.download;
+        bDl.onclick = (e) => e.stopPropagation();
+        acts.append(bDl);
       }
 
       if (it.text && it.text.trim()) {
@@ -5864,6 +5875,21 @@
               sharePostExternal(postTarget, bSh);
             };
             acts.append(bSh);
+          }
+
+          const notifVidDlHref = getDownloadableVideoHref(postTarget.media);
+          if (notifVidDlHref) {
+            const bDl = el("a", "act-btn act-download");
+            bDl.href = notifVidDlHref;
+            bDl.setAttribute("download", "mastosky-video.mp4");
+            bDl.title = t("post.download_video");
+            bDl.setAttribute("aria-label", bDl.title);
+            bDl.innerHTML = ICONS.download;
+            bDl.onclick = (e) => {
+              e.stopPropagation();
+              markSingleNotifRead(n, p);
+            };
+            acts.append(bDl);
           }
 
           const notifTrText = ((postTarget && postTarget.text) || n.text || "").trim();
