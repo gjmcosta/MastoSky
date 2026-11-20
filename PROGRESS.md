@@ -3,7 +3,7 @@
 > **Data de atualização:** 20 de Novembro de 2026  
 > **Versão:** v1.1.0  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 214 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 215 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -322,6 +322,11 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - **Sincronização da Posição de Leitura (*Timeline Position Sync*):** Registo debounced do post visível no topo da Timeline sincronizado via `preferences.timeline_anchor` em `user_data.json`, com barra **`🔖 Retomar onde ficaste`** (`#resumeReadingBanner`) e salto suave entre dispositivos.
   - **Notificações Mais Ágeis:** Polling dedicado de 60s, atualização automática ao abrir a aba Notificações (`setTab("notifs")` com cooldown de 15s) e retoma imediata ao regressar do segundo plano no iOS (`handleForegroundResume()`).
   - **Proteção de Privacidade Mastodon ↔ Bluesky:** Exposição de `visibility` em `Masto.item()`, bloqueio de cross-post e citação cruzada para o Bluesky em publicações `private`/`direct` (com indicador `🔒`), ajuste automático do compositor para apenas Mastodon ao escolher `private`/`direct` e aviso contextual para `unlisted`.
+- **Polimento Visual, Performance, Vídeo, Partilha & Definições Mobile (20 Nov 2026 — pós-v1.1.0):**
+  - **Linguagem Visual, Contraste & Tipografia:** Substituição de emojis residuais (posts privados, menu de partilha e banners CW) por SVGs uniformes (`#i-vis-private`, `#i-vis-direct`, `#i-cross`, `#i-message`, `#i-cw`), ajuste de contraste WCAG (`--bsky` `#0768BD`, `--line` `#C8CEF0` no claro e `--accent-solid` `#584AE8` no escuro), *easing gradient* de 7 pontos sob a Dock Bar, curva `--ease-spring` em modais/popovers e afinação de `letter-spacing`/`line-height`.
+  - **Performance Backend & Frontend:** `_STATIC_ASSET_CACHE` pré-comprimido em `gzip` com suporte a `ETag`/`304 Not Modified` para `/app.css` e `/app.js` em `app.py`, e inserção DOM em lote via `DocumentFragment` em `render()` e `renderNotifs()`.
+  - **Leitura Limpa, Vídeo & Partilha Externa:** Mensagens HTTP claras em `fetch_article_reader()` (`403`/`404`/`429`) com fallback da descrição do cartão no `#readerContent`; preservação de vídeos em reprodução durante o polling (`isFeedVideoPlaying()` + `_deferredTimelineRender` + `.post:has(video) { content-visibility: visible }`); download direto de vídeos para Mastodon e Bluesky (`GET /api/download_video` + `getBlob` via PDS em `.acts .act-download`); e botão de partilha externa (`.act-share`, Web Share API no iOS + fallback clipboard no desktop).
+  - **Content Warning & Definições Mobile:** Correção da quebra de linha em `.cw-banner .cw-label` (`white-space: normal; flex: 1`), barra de categorias das Definições em grelha fixa de 5 colunas em ecrãs móveis (`#settingsNav` sem scroll lateral, com ícones SVG e etiquetas curtas PT/EN) e correção do empilhamento dos modais acima da Dock Bar (`main` sem `z-index: 1` e ocultação da Dock Bar enquanto `.setup-overlay` está aberto).
 
 ---
 

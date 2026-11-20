@@ -158,7 +158,6 @@
       margin: 0 auto;
       padding: 20px 14px 60px;
       position: relative;
-      z-index: 1
     }
 
     .cosmos-bg {
@@ -4641,9 +4640,20 @@
     }
 
     .settings-nav-btn .settings-nav-ico {
-      font-size: 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       line-height: 1;
       flex-shrink: 0
+    }
+
+    .settings-nav-btn .settings-nav-ico .ico {
+      width: 16px;
+      height: 16px;
+    }
+
+    .settings-nav-short {
+      display: none;
     }
 
     .settings-panels {
@@ -4711,27 +4721,39 @@
 
       .settings-nav {
         width: 100%;
-        flex-direction: row;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         border-right: none;
         border-bottom: 1px solid var(--line);
-        padding: 8px 12px;
-        gap: 6px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none
-      }
-
-      .settings-nav::-webkit-scrollbar {
-        display: none
+        padding: 8px 8px;
+        gap: 4px;
+        overflow: visible;
       }
 
       .settings-nav-btn {
-        width: auto;
+        width: 100%;
+        min-width: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        padding: 6px 2px;
+        font-size: 10.5px;
+        text-align: center;
+        border-radius: 9px;
+      }
+
+      .settings-nav-full {
+        display: none;
+      }
+
+      .settings-nav-short {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
         white-space: nowrap;
-        flex-shrink: 0;
-        padding: 7px 12px;
-        font-size: 12.5px
+        line-height: 1.15;
       }
 
       .settings-panels {
@@ -5838,6 +5860,11 @@
           overflow: visible;
           max-width: none;
         }
+      }
+
+      body:has(.setup-overlay:not([hidden])) .side-nav-rail {
+        opacity: 0 !important;
+        pointer-events: none !important;
       }
 
       /* Barra flutuante de navegação rápida em mobile (Dock Bar sempre visível) */
