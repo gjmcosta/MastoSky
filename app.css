@@ -5703,6 +5703,24 @@
         box-sizing: border-box;
       }
 
+      .side-nav-rail::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: calc(-12px - env(safe-area-inset-bottom, 0px));
+        width: 100vw;
+        height: calc(52px + env(safe-area-inset-bottom, 0px));
+        background: linear-gradient(
+          to top,
+          var(--bg) 45%,
+          color-mix(in srgb, var(--bg) 85%, transparent) 75%,
+          transparent 100%
+        );
+        pointer-events: none;
+        z-index: -1;
+      }
+
       .side-nav-btn .side-nav-badge {
         top: -2px;
         right: -2px;
@@ -5714,6 +5732,8 @@
       }
 
       .side-nav-inner {
+        position: relative;
+        z-index: 1;
         display: flex;
         flex-direction: row;
         justify-content: space-between;
