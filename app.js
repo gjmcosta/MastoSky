@@ -3243,6 +3243,7 @@
       if (tagRaw) {
         e.preventDefault();
         e.stopPropagation();
+        closeModalsForNavigation();
         const tagName = decodeURIComponent(tagRaw).replace(/^#/, "");
         if (typeof setSearchType === "function") setSearchType("posts");
         setTab("search");
@@ -6732,6 +6733,12 @@
       return tab || "timeline";
     }
 
+    function closeModalsForNavigation() {
+      if ($("catchUpOverlay") && !$("catchUpOverlay").hidden) closeCatchUpModal();
+      if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) closeUserProfileModal();
+      if ($("readerOverlay") && !$("readerOverlay").hidden) closeReaderModal();
+    }
+
     function renderThreadErrorBanner(it, errText, originEl) {
       let cleanErr = String(errText || "").trim();
       if (/<[a-z][\s\S]*>/i.test(cleanErr)) {
@@ -6752,9 +6759,7 @@
     }
 
     async function openThread(it, keep, originEl) {
-      if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
-        closeUserProfileModal();
-      }
+      closeModalsForNavigation();
 
       const postKey = getPostKey(it);
 
@@ -9107,9 +9112,7 @@
     }
 
     function startQuote(it, onlyNative = false) {
-      if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
-        closeUserProfileModal();
-      }
+      closeModalsForNavigation();
       let txt = (it.text || "").trim();
       if (!txt && it.html) {
         const tmp = document.createElement("div");
@@ -11394,9 +11397,7 @@
     }
 
     function startReply(it) {
-      if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
-        closeUserProfileModal();
-      }
+      closeModalsForNavigation();
       // Se clicar no mesmo post que já está a ser respondido, cancela a resposta (toggle)
       const incomingKey = getPostKey(it);
       if (reply && getPostKey(reply) === incomingKey) {
@@ -12167,6 +12168,7 @@
 
     async function reeditBlueskyPost(it, postEl) {
       if (!(await askConfirm(t("actions.confirm_reedit_bsky")))) return;
+      closeModalsForNavigation();
       try {
         const r = await api("/api/action", { network: it.network, action: "delete", ref: it.ref });
         if (!r || !r.ok) {
