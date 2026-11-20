@@ -6732,6 +6732,25 @@
       return tab || "timeline";
     }
 
+    function renderThreadErrorBanner(it, errText, originEl) {
+      let cleanErr = String(errText || "").trim();
+      if (/<[a-z][\s\S]*>/i.test(cleanErr)) {
+        cleanErr = cleanErr.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+      }
+      const box = el("div", "banner");
+      box.style.display = "flex";
+      box.style.flexDirection = "column";
+      box.style.gap = "10px";
+      box.style.alignItems = "flex-start";
+      const netLabel = (it && it.network && LABEL[it.network]) ? LABEL[it.network] + ": " : "";
+      box.append(el("span", "", netLabel + (cleanErr || t("feed.error_server"))));
+      const retryBtn = el("button", "ghost-sm", t("cross.retry"));
+      retryBtn.type = "button";
+      retryBtn.onclick = () => openThread(it, false, originEl);
+      box.append(retryBtn);
+      return box;
+    }
+
     async function openThread(it, keep, originEl) {
       if ($("userProfileOverlay") && !$("userProfileOverlay").hidden) {
         closeUserProfileModal();
@@ -6807,7 +6826,7 @@
 
         threadContent.replaceChildren();
         if (d.error) {
-          threadContent.append(el("div", "banner", LABEL[it.network] + ": " + d.error));
+          threadContent.append(renderThreadErrorBanner(it, d.error, originEl));
           return;
         }
         if (d.ancestors && d.ancestors.length) {
@@ -6886,7 +6905,7 @@
 
       threadEl.replaceChildren(back);
       if (d.error) {
-        threadEl.append(el("div", "banner", LABEL[it.network] + ": " + d.error));
+        threadEl.append(renderThreadErrorBanner(it, d.error, originEl));
         return;
       }
       if (d.ancestors && d.ancestors.length) {

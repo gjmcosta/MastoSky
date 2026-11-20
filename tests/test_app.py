@@ -615,6 +615,18 @@ class HttpErrorTests(unittest.TestCase):
         self.assertNotIn("SEGREDO", str(cm.exception))
         self.assertIsInstance(cm.exception, RuntimeError)
 
+    def test_http_error_sanitizes_html_502(self):
+        from unittest import mock
+        html_body = b"<html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body><center><h1>502 Bad Gateway</h1></center></body></html>"
+        with mock.patch("app.urllib.request.urlopen", side_effect=self._http_error(502, body=html_body)):
+            with self.assertRaises(app.ApiError) as cm:
+                app.http("GET", "https://x.pt/a")
+        msg = str(cm.exception)
+        self.assertIn("502 Bad Gateway", msg)
+        self.assertNotIn("<html", msg.lower())
+        self.assertNotIn("<title", msg.lower())
+        self.assertEqual(cm.exception.status, 502)
+
     def test_429_short_retry_after_retries_get(self):
         from unittest import mock
         ok = mock.MagicMock()

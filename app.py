@@ -712,6 +712,28 @@ def _retry_after(headers):
 RETRY_MAX_WAIT = 5  # segundos: só repete um GET num 429 se o servidor pedir menos do que isto
 
 
+def _clean_http_error_summary(code, raw_err, content_type=""):
+    """Formata um resumo legível para erros HTTP sem expor HTML bruto na UI."""
+    text = (raw_err or "").strip()
+    ct_lower = (content_type or "").lower()
+    head_lower = text[:120].lstrip().lower()
+    is_html = (
+        "text/html" in ct_lower
+        or head_lower.startswith(("<!doctype", "<html", "<head", "<body", "<?xml", "<"))
+    )
+    if is_html:
+        m = re.search(r"<title[^>]*>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
+        title = re.sub(r"\s+", " ", html.unescape(m.group(1))).strip() if m else ""
+        if title:
+            if title.startswith(str(code)):
+                return title[:160]
+            return f"{code}: {title[:150]}"
+        if code in (500, 502, 503, 504, 520, 521, 522, 523, 524):
+            return f"{code}: Servidor temporariamente indisponível"
+        return f"{code}: Resposta HTML inesperada do servidor"
+    return f"{code}: {text[:200]}"
+
+
 def http(method, url, data=None, token=None, headers=None, timeout=30):
     """Executa um pedido HTTP. Faz 1 retry se receber 429 com Retry-After razoável."""
     def _make_req():
@@ -762,7 +784,10 @@ def http(method, url, data=None, token=None, headers=None, timeout=30):
                 time.sleep(ra)
                 continue
             raw_err = e.read()[:8192].decode(errors='replace')
-            msg = f"{e.code}: {raw_err[:200]}"
+            err_ct = ""
+            if e.headers and hasattr(e.headers, "get"):
+                err_ct = str(e.headers.get("Content-Type", ""))
+            msg = _clean_http_error_summary(e.code, raw_err, err_ct)
             if e.code == 429:
                 msg += f" (limite de pedidos; tenta de novo{f' dentro de {ra} s' if ra is not None else ' mais tarde'})"
             raise ApiError(msg, status=e.code, retry_after=ra, body=raw_err)
