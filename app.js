@@ -2228,9 +2228,10 @@
       const text = ((it && it.text) || "").trim();
       const title = (it && (it.name || it.handle)) || "MastoSky";
       if (!url && !text) return;
-      if (navigator.share) {
+      if (typeof navigator.share === "function") {
         try {
-          await navigator.share({ title, text: text.slice(0, 220), url: url || undefined });
+          const shareData = url ? { title, text: text.slice(0, 220), url } : { title, text: text.slice(0, 220) };
+          await navigator.share(shareData);
           return;
         } catch (err) {
           if (err && err.name === "AbortError") return;
@@ -2248,10 +2249,16 @@
         try {
           const ta = document.createElement("textarea");
           ta.value = toCopy;
+          ta.setAttribute("readonly", "");
           ta.style.position = "fixed";
+          ta.style.top = "0";
+          ta.style.left = "0";
           ta.style.opacity = "0";
+          ta.style.fontSize = "16px";
           document.body.appendChild(ta);
+          ta.focus({ preventScroll: true });
           ta.select();
+          ta.setSelectionRange(0, toCopy.length);
           copied = document.execCommand("copy");
           ta.remove();
         } catch (_) { }
@@ -2266,6 +2273,9 @@
           $("msg").textContent = t("actions.link_copied");
           setTimeout(() => { if ($("msg").textContent === t("actions.link_copied")) $("msg").textContent = ""; }, 2500);
         }
+        showNetStatus("online-restored", t("actions.link_copied"), 2400);
+      } else {
+        showAppAlert(toCopy, t("actions.share_ext"));
       }
     }
     function netBadge(n) {

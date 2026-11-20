@@ -3775,6 +3775,11 @@
       font-weight: 600
     }
 
+    .acts button.act-share:hover,
+    .acts button.act-share.on {
+      color: var(--accent)
+    }
+
     .acts button.act-translate.loading svg {
       animation: spin-rotate 1s linear infinite
     }
@@ -7004,6 +7009,16 @@
 
     .net-status-close:hover {
       opacity: 1;
+    }
+
+    @media (max-width: 767px) {
+      .net-status-pill {
+        bottom: calc(max(12px, env(safe-area-inset-bottom)) + 68px);
+        left: 16px;
+        right: 16px;
+        max-width: none;
+        justify-content: center;
+      }
     }
 
     /* Direct Messages / Conversas */
