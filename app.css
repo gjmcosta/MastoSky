@@ -5439,7 +5439,30 @@
 
       body:not(.view-deck) {
         overflow-x: clip;
+        touch-action: pan-y;
         padding-bottom: calc(75px + env(safe-area-inset-bottom, 0px));
+      }
+
+      body:not(.view-deck) .deck-container,
+      body:not(.view-deck) .deck-col,
+      body:not(.view-deck) .deck-col-body,
+      body:not(.view-deck) .post {
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: clip;
+      }
+
+      input[type="text"],
+      input[type="search"],
+      input[type="url"],
+      input[type="email"],
+      input[type="password"],
+      input[type="number"],
+      input[type="datetime-local"],
+      input:not([type]),
+      textarea,
+      select {
+        font-size: 16px !important;
       }
 
       main {
