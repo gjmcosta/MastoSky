@@ -2303,6 +2303,11 @@ class ProxyImageTests(unittest.TestCase):
 
     def test_index_javascript_syntax_valid(self):
         import shutil, subprocess, re
+        if Path("app.js").is_file():
+            app_js_src = Path("app.js").read_text(encoding="utf-8")
+            self.assertNotIn("[truncated for diff preview]", app_js_src)
+            self.assertIn("setTab(initTab, true);", app_js_src)
+            self.assertIn("checkAppUpdate(false);", app_js_src)
         node_bin = shutil.which("node")
         if not node_bin:
             return
@@ -2310,7 +2315,7 @@ class ProxyImageTests(unittest.TestCase):
             html = f.read()
         scripts = re.findall(r"<script>([\s\S]*?)</script>", html)
         if Path("app.js").is_file():
-            scripts.append(Path("app.js").read_text(encoding="utf-8"))
+            scripts.append(app_js_src)
         self.assertTrue(scripts, "Blocos <script> não encontrados no index.html")
         # Passar cada bloco via stdin para validar inclusive o script principal completo
         for idx, js_code in enumerate(scripts):
