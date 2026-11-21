@@ -187,11 +187,7 @@
     }
 
     .cosmos-bg {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden
+      display: none !important;
     }
 
     .cosmos-glow {
@@ -296,7 +292,7 @@
 
     .quote-box {
       border: 1px solid var(--line);
-      border-radius: 10px;
+      border-radius: 7px;
       padding: 10px;
       margin-bottom: 10px;
       background: var(--bg);
@@ -564,7 +560,7 @@
     .compose {
       background: var(--card);
       border: 1px solid var(--line);
-      border-radius: 12px;
+      border-radius: 8px;
       padding: 12px;
       margin-bottom: 16px;
       max-width: 100%;
@@ -704,24 +700,23 @@
     }
 
     .update-pill {
-      background: color-mix(in srgb, var(--accent) 15%, var(--card));
+      background: color-mix(in srgb, var(--accent) 12%, var(--card));
       color: var(--accent);
       border: 1px solid var(--accent);
-      border-radius: 20px;
+      border-radius: 6px;
       padding: 3px 10px;
       font-size: 12px;
       font-weight: 600;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       cursor: pointer;
-      transition: transform .1s, background-color .15s
+      transition: background-color .15s, color .15s
     }
 
     .update-pill:hover {
       background: var(--accent-solid);
-      color: #fff;
-      transform: translateY(-1px)
+      color: #fff
     }
 
     .header-actions {
@@ -733,18 +728,18 @@
     .header-nav-group {
       display: inline-flex;
       align-items: center;
-      gap: 3px;
-      background: var(--surface-1);
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      padding: 3px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12)
+      gap: 4px;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none
     }
 
     .header-nav-btn {
       width: 34px;
       height: 34px;
-      border-radius: 50%;
+      border-radius: 6px;
       border: 0;
       background: transparent;
       color: color-mix(in srgb, var(--ink) 78%, var(--muted));
@@ -752,7 +747,7 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease;
       padding: 0
     }
 
@@ -762,15 +757,15 @@
       gap: 5px;
       height: 34px;
       padding: 0 12px;
-      border-radius: 20px;
+      border-radius: 6px;
       border: 1px solid var(--line);
       background: var(--surface-1);
       color: color-mix(in srgb, var(--ink) 88%, var(--muted));
       font: 600 12px var(--sans);
       cursor: pointer;
       white-space: nowrap;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
+      box-shadow: none;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease
     }
 
     body.view-deck .header-deck-add-btn {
@@ -791,8 +786,7 @@
 
     .header-nav-btn:hover {
       color: var(--ink);
-      background: var(--surface-2);
-      transform: scale(1.06)
+      background: var(--surface-2)
     }
 
     .header-nav-btn:disabled {
@@ -3085,8 +3079,8 @@
     }
 
     .post.is-reply-target {
-      box-shadow: 0 0 0 2px var(--c), 0 4px 16px rgba(0, 0, 0, 0.18);
-      border-left-width: 6px
+      border-color: var(--c);
+      box-shadow: 0 0 0 1px var(--c)
     }
 
     .acts button.act-reply.active {
@@ -3108,8 +3102,7 @@
     .post {
       background: var(--card);
       border: 1px solid var(--line);
-      border-left: 4px solid var(--c);
-      border-radius: 4px 12px 12px 4px;
+      border-radius: 8px;
       padding: 12px 14px;
       margin-bottom: 10px;
       contain: layout style;
@@ -5797,11 +5790,10 @@
     .side-nav-inner {
       display: flex;
       align-items: center;
-      background: color-mix(in srgb, var(--card) 92%, transparent);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: var(--card);
       border: 1px solid var(--line);
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22)
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14)
     }
 
     .side-nav-btn {
@@ -5812,19 +5804,18 @@
       position: relative;
       display: grid;
       place-items: center;
-      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease, transform .15s ease
+      border-radius: 6px;
+      transition: color .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease
     }
 
     .side-nav-btn:hover {
       color: var(--ink);
-      background: var(--surface-2);
-      transform: scale(1.08)
+      background: var(--surface-2)
     }
 
     .side-nav-btn.active {
       background: var(--accent-solid);
-      color: #fff;
-      box-shadow: 0 4px 12px rgba(91, 75, 219, 0.35)
+      color: #fff
     }
 
     .side-nav-divider {
@@ -5833,27 +5824,27 @@
 
     .side-nav-badge {
       position: absolute;
-      top: 2px;
-      right: 2px;
-      top: 0;
-      right: 0;
-      display: flex;
+      top: -2px;
+      right: -2px;
+      display: inline-flex;
       align-items: center;
       gap: 2px;
-      padding: 0 4px;
       justify-content: center;
       min-width: 16px;
       padding: 1px 5px;
-      border-radius: 10px;
-      background: var(--star);
-      color: #0B1020;
+      border-radius: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      color: var(--ink);
       font-size: 10px;
-      font-weight: 700 font-weight: 700;
+      font-weight: 700;
       line-height: 1.2
     }
 
     .side-nav-badge .star-badge {
-      display: none
+      display: inline-block;
+      width: 0.85em;
+      height: 0.85em
     }
 
     .side-nav-btn.side-nav-compose {
@@ -5889,14 +5880,14 @@
       .side-nav-inner {
         flex-direction: column;
         gap: 6px;
-        border-radius: 28px;
+        border-radius: 10px;
         padding: 8px 6px
       }
 
       .side-nav-btn {
         width: 40px;
         height: 40px;
-        border-radius: 50%
+        border-radius: 6px
       }
 
       .side-nav-divider {
@@ -6327,7 +6318,6 @@
         font-size: 9px;
         padding: 1px 4px;
         line-height: 1.15;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
       }
 
       .side-nav-inner {
@@ -6339,15 +6329,12 @@
         align-items: center;
         width: 100%;
         gap: 0;
-        border-radius: 32px;
+        border-radius: 10px;
         padding: 6px 8px;
         box-sizing: border-box;
-        background: color-mix(in srgb, var(--card) 95%, transparent);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        transform: translateZ(0);
+        background: var(--card);
         border: 1px solid var(--line);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
       }
 
       .side-nav-btn {
@@ -6355,7 +6342,7 @@
         height: 36px;
         flex: 0 0 36px;
         max-width: 36px;
-        border-radius: 50%;
+        border-radius: 6px;
         display: grid;
         place-items: center;
         padding: 0;
@@ -6384,8 +6371,6 @@
         order: 4;
         background: var(--accent-solid) !important;
         color: #fff !important;
-        box-shadow: 0 4px 12px rgba(91, 75, 219, 0.4);
-        transform: scale(1.05);
       }
 
       .side-nav-btn[data-tab="saved"] {

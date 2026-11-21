@@ -168,7 +168,7 @@
           section_title: "🔄 Versão e Atualizações",
           checking: "A verificar atualizações...",
           available_title: "Nova versão disponível: v{ver}. Clica para atualizar.",
-          available_badge: "✨ Nova versão",
+          available_badge: "Nova versão",
           latest: "Estás a usar a versão mais recente.",
           check_failed: "Não foi possível verificar atualizações.",
           updating: "A atualizar o MastoSky...",
@@ -868,7 +868,7 @@
           section_title: "🔄 Version & Updates",
           checking: "Checking for updates...",
           available_title: "New version available: v{ver}. Click to update.",
-          available_badge: "✨ New version",
+          available_badge: "New version",
           latest: "You are running the latest version.",
           check_failed: "Could not check for updates.",
           updating: "Updating MastoSky...",
@@ -12646,7 +12646,7 @@
       const metricsY = cardY + actualCardH - 30;
       ctx.fillStyle = "#7D85B2";
       ctx.font = "18px " + FONT_SANS;
-      const metricsStr = `💬 ${Number(it.replies || 0)}   🔄 ${Number(it.boosts || 0)}   ❤️ ${Number(it.likes || 0)}`;
+      const metricsStr = `↩ ${Number(it.replies || 0)}   ↻ ${Number(it.boosts || 0)}   ♡ ${Number(it.likes || 0)}`;
       ctx.fillText(metricsStr, cardX + pad, metricsY);
 
       // 12. Rodapé com destaque à marca MastoSky
@@ -14724,12 +14724,19 @@
         if (res.has_update) {
           if (headerPill) {
             headerPill.hidden = false;
-            headerPill.textContent = "✨ v" + res.latest;
+            const badgeStar = el("span", "star-badge");
+            badgeStar.setAttribute("aria-hidden", "true");
+            headerPill.replaceChildren(badgeStar, el("span", null, "v" + res.latest));
             headerPill.title = t("update.available_title", { ver: res.latest });
             headerPill.onclick = () => openSetup(false);
           }
           if (statusEl) {
-            statusEl.innerHTML = `<span style="color:var(--accent);font-weight:600">✨ ${t("update.available_title", { ver: res.latest })}</span>`;
+            const wrap = el("span");
+            wrap.style.cssText = "color:var(--accent);font-weight:600;display:inline-flex;align-items:center;gap:6px";
+            const stStar = el("span", "star-badge");
+            stStar.setAttribute("aria-hidden", "true");
+            wrap.append(stStar, el("span", null, t("update.available_title", { ver: res.latest })));
+            statusEl.replaceChildren(wrap);
           }
           if (updateBtn) updateBtn.style.display = "inline-flex";
         } else {
