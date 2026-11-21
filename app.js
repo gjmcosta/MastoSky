@@ -3397,6 +3397,8 @@
       btn.innerHTML = ICONS.bookmarkFill;
       if (colObj) {
         btn.append(el("span", "saved-col-chip", colObj.name));
+      } else {
+        btn.append(el("span", "saved-col-chip is-empty", t("saved.col_assign_chip")));
       }
     }
 
@@ -3569,44 +3571,115 @@
       menu.append(el("div", "boost-header", t("saved.col_picker_title")));
 
       const listWrap = el("div", "saved-col-opt-list");
+      let popEditingColId = null;
+      let inp = null;
+      let addBtn = null;
 
-      const mkOption = (id, label, iconHtml) => {
-        const isSelected = (id === null && currentColId === null) || (id !== null && currentColId === id);
-        const optBtn = el("button", "saved-col-opt-btn" + (isSelected ? " active" : ""));
-        optBtn.type = "button";
-        const icoWrap = el("span", "saved-col-opt-ico");
-        icoWrap.innerHTML = iconHtml;
-        optBtn.append(icoWrap);
-        const nameSpan = el("span", "saved-col-opt-name", label);
-        optBtn.append(nameSpan);
-        if (isSelected) {
-          optBtn.append(el("span", "saved-col-opt-check", "✓"));
+      const setPopoverCreateMode = () => {
+        popEditingColId = null;
+        if (inp) {
+          inp.value = "";
+          inp.placeholder = t("saved.col_create_ph");
         }
-        optBtn.onclick = (e) => {
-          e.stopPropagation();
-          closeBoostMenu();
-          setPostCollection(it, id);
-        };
-        return optBtn;
+        if (addBtn) {
+          addBtn.textContent = "+";
+          addBtn.title = t("saved.col_save_btn");
+          addBtn.setAttribute("aria-label", t("saved.col_save_btn"));
+        }
       };
 
-      listWrap.append(mkOption(null, t("saved.col_none"), ICONS.bookmark));
-      cols.forEach(c => listWrap.append(mkOption(c.id, c.name, ICONS.folder)));
+      const renderOptList = () => {
+        listWrap.replaceChildren();
+        const curCols = getSavedCollections();
+        const activeColId = getSavedPostCollectionId(it, curCols);
+
+        const mkOptionBtn = (id, label, iconHtml) => {
+          const isSelected = (id === null && activeColId === null) || (id !== null && activeColId === id);
+          const optBtn = el("button", "saved-col-opt-btn" + (isSelected ? " active" : ""));
+          optBtn.type = "button";
+          const icoWrap = el("span", "saved-col-opt-ico");
+          icoWrap.innerHTML = iconHtml;
+          optBtn.append(icoWrap);
+          const nameSpan = el("span", "saved-col-opt-name", label);
+          optBtn.append(nameSpan);
+          if (isSelected) {
+            optBtn.append(el("span", "saved-col-opt-check", "✓"));
+          }
+          optBtn.onclick = (e) => {
+            e.stopPropagation();
+            closeBoostMenu();
+            setPostCollection(it, id);
+          };
+          return optBtn;
+        };
+
+        listWrap.append(mkOptionBtn(null, t("saved.col_none"), ICONS.bookmark));
+
+        curCols.forEach(c => {
+          const row = el("div", "saved-col-opt-row");
+          const optBtn = mkOptionBtn(c.id, c.name, ICONS.folder);
+          const editBtn = el("button", "saved-col-opt-act");
+          editBtn.type = "button";
+          editBtn.title = t("saved.col_rename_title");
+          editBtn.setAttribute("aria-label", editBtn.title);
+          editBtn.innerHTML = ICONS.edit;
+          editBtn.onclick = (e) => {
+            e.stopPropagation();
+            popEditingColId = c.id;
+            if (inp) {
+              inp.value = c.name;
+              inp.placeholder = t("saved.col_rename_ph");
+              inp.focus();
+              inp.select();
+            }
+            if (addBtn) {
+              addBtn.textContent = "✓";
+              addBtn.title = t("saved.col_save_btn");
+              addBtn.setAttribute("aria-label", t("saved.col_save_btn"));
+            }
+          };
+
+          const delBtn = el("button", "saved-col-opt-act danger");
+          delBtn.type = "button";
+          delBtn.title = t("saved.col_delete_title");
+          delBtn.setAttribute("aria-label", delBtn.title);
+          delBtn.innerHTML = ICONS.trash;
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            closeBoostMenu();
+            deleteSavedCollection(c.id);
+          };
+
+          row.append(optBtn, editBtn, delBtn);
+          listWrap.append(row);
+        });
+      };
+
+      renderOptList();
       menu.append(listWrap, el("div", "boost-divider"));
 
       const form = el("div", "saved-col-pop-form");
-      const inp = document.createElement("input");
+      inp = document.createElement("input");
       inp.type = "text";
       inp.maxLength = 80;
       inp.autocomplete = "off";
       inp.placeholder = t("saved.col_create_ph");
-      const addBtn = el("button", "saved-col-pop-add", "+");
+      addBtn = el("button", "saved-col-pop-add", "+");
       addBtn.type = "button";
       addBtn.title = t("saved.col_save_btn");
       addBtn.setAttribute("aria-label", t("saved.col_save_btn"));
 
-      const handleQuickCreate = (e) => {
+      const handleQuickSubmit = (e) => {
         if (e) e.stopPropagation();
+        if (popEditingColId) {
+          if (!renameSavedCollection(popEditingColId, inp.value)) {
+            inp.focus();
+            return;
+          }
+          setPopoverCreateMode();
+          renderOptList();
+          return;
+        }
         const created = createSavedCollection(inp.value);
         if (!created) {
           inp.focus();
@@ -3621,10 +3694,14 @@
         if (e.key === "Enter") {
           e.preventDefault();
           e.stopPropagation();
-          handleQuickCreate();
+          handleQuickSubmit();
+        } else if (e.key === "Escape" && popEditingColId) {
+          e.preventDefault();
+          e.stopPropagation();
+          setPopoverCreateMode();
         }
       };
-      addBtn.onclick = handleQuickCreate;
+      addBtn.onclick = handleQuickSubmit;
       form.append(inp, addBtn);
       menu.append(form);
 
@@ -3774,8 +3851,9 @@
       bar.replaceChildren();
       const pillsWrap = el("div", "saved-col-pills");
 
-      const makePill = (filterKey, label, count) => {
-        const btn = el("button", "saved-col-pill" + (savedFilterCollection === filterKey ? " active" : ""));
+      const makePill = (filterKey, label, count, isCustomCol = false) => {
+        const isActive = savedFilterCollection === filterKey;
+        const btn = el("button", "saved-col-pill" + (isActive ? " active" : ""));
         btn.type = "button";
         btn.dataset.savedCol = filterKey;
         const lbl = el("span", "saved-col-pill-label", label);
@@ -3785,15 +3863,46 @@
           savedFilterCollection = filterKey;
           renderSavedFeed();
         };
+
+        if (isCustomCol && isActive) {
+          const acts = el("span", "saved-col-pill-acts");
+
+          const mkAct = (cls, titleStr, iconHtml, actionFn) => {
+            const actEl = el("span", cls);
+            actEl.setAttribute("role", "button");
+            actEl.setAttribute("tabindex", "0");
+            actEl.title = titleStr;
+            actEl.setAttribute("aria-label", titleStr);
+            actEl.innerHTML = iconHtml;
+            actEl.onclick = (e) => {
+              e.stopPropagation();
+              actionFn();
+            };
+            actEl.onkeydown = (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                actionFn();
+              }
+            };
+            return actEl;
+          };
+
+          acts.append(
+            mkAct("saved-col-pill-act", t("saved.col_rename_title"), ICONS.edit, () => openSavedColForm(filterKey)),
+            mkAct("saved-col-pill-act danger", t("saved.col_delete_title"), ICONS.trash, () => deleteSavedCollection(filterKey))
+          );
+          btn.append(acts);
+        }
         return btn;
       };
 
-      pillsWrap.append(makePill("all", t("saved.col_all"), allSaved.length));
+      pillsWrap.append(makePill("all", t("saved.col_all"), allSaved.length, false));
       if (cols.length > 0) {
-        pillsWrap.append(makePill("none", t("saved.col_none"), uncategorizedCount));
+        pillsWrap.append(makePill("none", t("saved.col_none"), uncategorizedCount, false));
       }
       cols.forEach(c => {
-        pillsWrap.append(makePill(c.id, c.name, counts.get(c.id) || 0));
+        pillsWrap.append(makePill(c.id, c.name, counts.get(c.id) || 0, true));
       });
 
       const addBtn = el("button", "saved-col-pill saved-col-add-btn", t("saved.col_new_btn"));
@@ -3802,26 +3911,6 @@
       pillsWrap.append(addBtn);
 
       bar.append(pillsWrap);
-
-      if (savedFilterCollection !== "all" && savedFilterCollection !== "none") {
-        const manageActs = el("div", "saved-col-manage-acts");
-        const renameBtn = el("button", "saved-col-icon-btn");
-        renameBtn.type = "button";
-        renameBtn.title = t("saved.col_rename_title");
-        renameBtn.setAttribute("aria-label", renameBtn.title);
-        renameBtn.innerHTML = ICONS.edit;
-        renameBtn.onclick = () => openSavedColForm(savedFilterCollection);
-
-        const delBtn = el("button", "saved-col-icon-btn danger");
-        delBtn.type = "button";
-        delBtn.title = t("saved.col_delete_title");
-        delBtn.setAttribute("aria-label", delBtn.title);
-        delBtn.innerHTML = ICONS.trash;
-        delBtn.onclick = () => deleteSavedCollection(savedFilterCollection);
-
-        manageActs.append(renameBtn, delBtn);
-        bar.append(manageActs);
-      }
     }
 
     function renderSavedFeed() {

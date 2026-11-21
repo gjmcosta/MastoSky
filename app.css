@@ -3947,41 +3947,39 @@
       border-style: dashed
     }
 
-    .saved-col-manage-acts {
+    .saved-col-pill-acts {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      flex-shrink: 0
+      gap: 2px;
+      margin-left: 3px;
+      padding-left: 5px;
+      border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent)
     }
 
-    .saved-col-icon-btn {
-      width: 26px;
-      height: 26px;
-      border-radius: 7px;
-      border: 1px solid var(--line);
-      background: var(--surface-1);
-      color: var(--muted);
+    .saved-col-pill-act {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
       display: inline-grid;
       place-items: center;
+      color: var(--muted);
       cursor: pointer;
-      padding: 0;
-      transition: color .15s ease, border-color .15s ease, background-color .15s ease
+      transition: color .15s ease, background-color .15s ease
     }
 
-    .saved-col-icon-btn svg {
-      width: 13px;
-      height: 13px
+    .saved-col-pill-act svg {
+      width: 11px;
+      height: 11px
     }
 
-    .saved-col-icon-btn:hover {
-      color: var(--ink);
-      border-color: var(--accent);
-      background: var(--surface-2)
+    .saved-col-pill-act:hover {
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 16%, transparent)
     }
 
-    .saved-col-icon-btn.danger:hover {
+    .saved-col-pill-act.danger:hover {
       color: var(--danger);
-      border-color: var(--danger)
+      background: color-mix(in srgb, var(--danger) 16%, transparent)
     }
 
     .saved-col-form-row {
@@ -4053,10 +4051,18 @@
       color: var(--ink)
     }
 
+    .acts button.act-save .saved-col-chip.is-empty {
+      background: var(--surface-2);
+      border-color: var(--line);
+      border-style: dashed;
+      color: var(--muted);
+      font-weight: 500
+    }
+
     .boost-popover.saved-col-popover {
-      min-width: 230px;
-      max-width: 275px;
-      max-height: 330px;
+      min-width: 245px;
+      max-width: 290px;
+      max-height: 340px;
       overflow-y: auto
     }
 
@@ -4066,10 +4072,39 @@
       gap: 2px
     }
 
+    .saved-col-opt-row {
+      display: flex;
+      align-items: center;
+      gap: 3px
+    }
+
     .boost-popover button.saved-col-opt-btn {
+      flex: 1;
+      width: auto;
+      min-width: 0;
       justify-content: flex-start;
       padding: 7px 10px;
       gap: 8px
+    }
+
+    .boost-popover button.saved-col-opt-act {
+      width: 26px;
+      height: 26px;
+      min-width: 26px;
+      flex: 0 0 26px;
+      padding: 0;
+      justify-content: center;
+      border-radius: 6px;
+      color: var(--muted)
+    }
+
+    .boost-popover button.saved-col-opt-act svg {
+      width: 13px;
+      height: 13px
+    }
+
+    .boost-popover button.saved-col-opt-act.danger:hover {
+      color: var(--danger)
     }
 
     .boost-popover button.saved-col-opt-btn.active {

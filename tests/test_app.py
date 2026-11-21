@@ -2201,6 +2201,9 @@ class ProxyImageTests(unittest.TestCase):
             "function openSavedCollectionMenu(",
             "function renderSavedCollectionsBar(",
             "saved-col-chip",
+            "saved-col-chip is-empty",
+            "saved-col-pill-acts",
+            "saved-col-opt-row",
             "saved-col-popover",
             "saved-col-opt-ico",
         ]:
