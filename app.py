@@ -570,7 +570,7 @@ PORT = CFG.get("port", 8000)
 LISTEN_HOST = "127.0.0.1"
 LAN_MODE = False
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
@@ -608,13 +608,7 @@ def parse_semver(s):
     return [int(x) if x.isdigit() else 0 for x in re.findall(r"\d+", s or "0")]
 
 
-def check_github_update(force=False):
-    """Consulta a API do GitHub com cache de 1 hora para evitar rate limiting."""
-    now = time.time()
-    if not force and UPDATE_CACHE["data"] and (now - UPDATE_CACHE["checked_at"] < 3600):
-        return UPDATE_CACHE["data"]
-
-    url = "https://api.github.com/repos/gjmcosta/MastoSky/releases/latest"
+def _github_api_get(url):
     req = urllib.request.Request(
         url,
         headers={
@@ -622,28 +616,64 @@ def check_github_update(force=False):
             "Accept": "application/vnd.github.v3+json"
         }
     )
-    try:
-        with urllib.request.urlopen(req, timeout=5, context=SSL_CTX) as resp:
-            if resp.status == 200:
-                d = json.loads(resp.read().decode("utf-8"))
-                tag = (d.get("tag_name") or "").lstrip("v")
-                has_update = False
-                if tag:
-                    has_update = parse_semver(tag) > parse_semver(VERSION)
+    with urllib.request.urlopen(req, timeout=5, context=SSL_CTX) as resp:
+        if resp.status == 200:
+            return json.loads(resp.read().decode("utf-8"))
+    return None
 
+
+def check_github_update(force=False):
+    """Consulta a API do GitHub com cache de 1 hora para evitar rate limiting."""
+    now = time.time()
+    if not force and UPDATE_CACHE["data"] and (now - UPDATE_CACHE["checked_at"] < 3600):
+        return UPDATE_CACHE["data"]
+
+    release_res = None
+    try:
+        d = _github_api_get("https://api.github.com/repos/gjmcosta/MastoSky/releases/latest")
+        if isinstance(d, dict):
+            tag = (d.get("tag_name") or "").lstrip("v")
+            has_update = bool(tag and parse_semver(tag) > parse_semver(VERSION))
+            release_res = {
+                "current": VERSION,
+                "latest": tag or VERSION,
+                "has_update": has_update,
+                "url": d.get("html_url") or "https://github.com/gjmcosta/MastoSky/releases",
+                "name": d.get("name") or f"MastoSky v{tag}",
+                "notes": (d.get("body") or "")[:400]
+            }
+            if has_update:
+                UPDATE_CACHE["checked_at"] = now
+                UPDATE_CACHE["data"] = release_res
+                return release_res
+    except Exception:
+        pass
+
+    # Fallback para tags git simples caso /releases/latest não exista ou ainda não esteja atualizado
+    try:
+        tags = _github_api_get("https://api.github.com/repos/gjmcosta/MastoSky/tags?per_page=1")
+        if isinstance(tags, list) and tags:
+            raw_tag = str(tags[0].get("name") or "")
+            tag = raw_tag.lstrip("v")
+            if tag and parse_semver(tag) > parse_semver(VERSION):
                 res = {
                     "current": VERSION,
-                    "latest": tag or VERSION,
-                    "has_update": has_update,
-                    "url": d.get("html_url") or "https://github.com/gjmcosta/MastoSky/releases",
-                    "name": d.get("name") or f"MastoSky v{tag}",
-                    "notes": (d.get("body") or "")[:400]
+                    "latest": tag,
+                    "has_update": True,
+                    "url": f"https://github.com/gjmcosta/MastoSky/releases/tag/{raw_tag}",
+                    "name": f"MastoSky v{tag}",
+                    "notes": ""
                 }
                 UPDATE_CACHE["checked_at"] = now
                 UPDATE_CACHE["data"] = res
                 return res
     except Exception:
         pass
+
+    if release_res is not None:
+        UPDATE_CACHE["checked_at"] = now
+        UPDATE_CACHE["data"] = release_res
+        return release_res
 
     fallback = {
         "current": VERSION,

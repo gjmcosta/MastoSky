@@ -1,9 +1,9 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
-> **Data de atualização:** 20 de Novembro de 2026  
-> **Versão:** v1.2.0  
+> **Data de atualização:** 21 de Novembro de 2026  
+> **Versão:** v1.3.0  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
-> **Testes Automatizados:** 216 testes aprovados (`python3 -m unittest discover -s tests -v`)
+> **Testes Automatizados:** 221 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
 ---
 
@@ -329,6 +329,10 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - **Content Warning & Definições Mobile:** Correção da quebra de linha em `.cw-banner .cw-label` (`white-space: normal; flex: 1`), barra de categorias das Definições em grelha fixa de 5 colunas em ecrãs móveis (`#settingsNav` sem scroll lateral, com ícones SVG e etiquetas curtas PT/EN) e correção do empilhamento dos modais acima da Dock Bar (`main` sem `z-index: 1` e ocultação da Dock Bar enquanto `.setup-overlay` está aberto).
   - **Coleções nos Guardados (*Saved Collections*):** Organização de publicações guardadas em coleções (uma coleção por publicação ou *Sem coleção*), popover rápido `.saved-col-popover` ao guardar (`openSavedCollectionMenu`), barra `#savedCollectionsBar` com contadores e criação/renomeação/eliminação inline em `#pSaved`, etiqueta `.saved-col-chip` nos cartões guardados, sincronização em `user_data.json` (`saved_collections` em `/api/user_data`) e suporte no Backup JSON.
   - **Menu Compacto "Mais ações" (`...`) & Alternância Coluna Única / Deck:** Agrupamento das ações secundárias (Partilhar ligação, Descarregar vídeo, Traduzir com IA, Editar e Eliminar) no botão `.act-more` (`buildPostMoreButton`), e correção da alternância entre Deck View e Vista de Coluna Única no PC (`#viewToggleBtn`, `#cfgViewModeSelect` e reposição de visibilidade das colunas).
+- **Logo Motion Design, Anti-UI Slop & Releases Automáticas (v1.3.0 — 21 Nov 2026):**
+  - **Logo Motion Design (`brand/`):** Sistema de movimento editorial em SVG + CSS nativos com coreografia de 3 actos e suporte a `prefers-reduced-motion` (`logo-mark-*-animated.svg`, `logo-lockup-*-animated.svg`, `star-badge-animated.svg`, `social-card-*-animated.svg`, `preview-landscape-1080p.svg`, `preview-portrait-1080p.svg`, `motion.css` e `MOTION.md`), integrado no cabeçalho da app, nos badges de não lidas e na landing page (`docs/index.html`).
+  - **Refinamento Anti-UI Slop (`BRAND.md`):** Remoção do fundo decorativo `.cosmos-bg`, simplificação dos contentores `.post`/`.compose`/`.quote-box`, limpeza de cápsulas/sombras/glassmorphism nas barras de navegação, devolução de `.star-badge` à barra lateral e substituição de emojis residuais na interface e na landing page por ícones vectoriais monolinha.
+  - **Atualizações & GitHub Releases:** Criação do workflow `.github/workflows/release.yml` para publicação automática de GitHub Releases em tags `v*` e adição de fallback para `/tags?per_page=1` em `check_github_update()`.
 
 ---
 
