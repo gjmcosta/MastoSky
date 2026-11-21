@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MastoSky — one sky for Mastodon and Bluesky</title>
-<meta name="description" content="A minimalist, local-first client that puts Bluesky and Mastodon in one browser tab. Python standard library + vanilla JS, no dependencies, no telemetry. MIT.">
+<meta name="description" content="A local-first web client for Bluesky and Mastodon. Unified timeline, cross-posting, GIFs, saved collections, Reader View and DMs in one browser tab. Python stdlib + vanilla JS.">
 <meta name="theme-color" content="#0B1020">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="canonical" href="https://gjmcosta.github.io/MastoSky/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="MastoSky — one sky for Mastodon and Bluesky">
-<meta property="og:description" content="A minimalist, local-first client that puts Bluesky and Mastodon in one browser tab. Python standard library + vanilla JS, no dependencies, no telemetry. MIT.">
+<meta property="og:description" content="A local-first web client for Bluesky and Mastodon. Unified timeline, cross-posting, GIFs, saved collections, Reader View and DMs in one browser tab.">
 <meta property="og:url" content="https://gjmcosta.github.io/MastoSky/">
 <meta property="og:image" content="https://gjmcosta.github.io/MastoSky/og-card.png">
 <meta property="og:image:width" content="1200">
@@ -18,14 +18,14 @@
 <meta name="twitter:card" content="summary_large_image">
 <style>
 :root{
-  --bg:#0B1020; --ink:#EEF0FF; --muted:#A9B0D6; --line:#2A3366; --code:#121936;
-  --constel:#8F96FF; --star:#FFFFFF; --eye:#FFD66B; --sky:#4DB2FF;
+  --bg:#0B1020; --ink:#EEF0FF; --muted:#A9B0D6; --line:#2A3366; --code:#121936; --panel:#0F1630;
+  --constel:#8F96FF; --star:#FFFFFF; --eye:#FFD66B; --sky:#4DB2FF; --masto:#8F96FF;
   --btn-bg:#8F96FF; --btn-fg:#0B1020; color-scheme:dark;
 }
 @media (prefers-color-scheme: light){
   :root{
-    --bg:#EEF0FF; --ink:#0B1020; --muted:#555C85; --line:#C5CBEC; --code:#E2E6FA;
-    --constel:#5B4BDB; --star:#5B4BDB; --eye:#F0B400; --sky:#0A78D6;
+    --bg:#EEF0FF; --ink:#0B1020; --muted:#555C85; --line:#C5CBEC; --code:#E2E6FA; --panel:#F6F7FF;
+    --constel:#5B4BDB; --star:#5B4BDB; --eye:#F0B400; --sky:#0A78D6; --masto:#5B4BDB;
     --btn-bg:#5B4BDB; --btn-fg:#FFFFFF; color-scheme:light;
   }
 }
@@ -58,10 +58,10 @@ nav a:hover{color:var(--ink)}
 .lang button{background:none;border:0;color:var(--muted);font:inherit;cursor:pointer;padding:2px 5px}
 .lang button[aria-pressed="true"]{color:var(--ink);text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:1.5px}
 
-.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:64px;align-items:center;padding:72px 0 88px}
-.hero h1{margin:0 0 30px;font-size:0}
+.hero{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);gap:64px;align-items:center;padding:64px 0 76px}
+.hero h1{margin:0 0 28px;font-size:0}
 .hero h1 svg{width:100%;max-width:540px;height:auto;display:block}
-.lead{font-size:21px;line-height:1.55;color:var(--muted);max-width:30em;margin:0 0 34px}
+.lead{font-size:21px;line-height:1.55;color:var(--muted);max-width:30em;margin:0 0 32px}
 .actions{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center}
 .btn{display:inline-block;background:var(--btn-bg);color:var(--btn-fg);text-decoration:none;font-weight:600;
   font-size:16px;padding:12px 22px;border-radius:6px}
@@ -69,8 +69,78 @@ nav a:hover{color:var(--ink)}
 .link{font-size:16px;color:var(--ink);text-underline-offset:5px;text-decoration-thickness:1.5px}
 .hero-art svg{width:100%;height:auto;display:block}
 
-section{border-top:1px solid var(--line);padding:64px 0}
-h2{margin:0 0 36px;font-size:30px;line-height:1.2;font-weight:300;letter-spacing:-.01em}
+section{border-top:1px solid var(--line);padding:60px 0}
+h2{margin:0 0 32px;font-size:30px;line-height:1.2;font-weight:300;letter-spacing:-.01em}
+
+/* visual interactive interface preview */
+.preview-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}
+.preview-head h2{margin:0}
+.mode-switch{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--code)}
+.mode-switch button{background:none;border:0;color:var(--muted);font:inherit;font-size:14px;padding:7px 14px;cursor:pointer}
+.mode-switch button[aria-pressed="true"]{background:var(--btn-bg);color:var(--btn-fg);font-weight:600}
+.preview-caption{margin:14px 0 0;font-size:14.5px;color:var(--muted)}
+
+.app-frame{border:1px solid var(--line);border-radius:10px;background:var(--code);overflow:hidden}
+.app-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--panel);font-size:13px}
+.app-bar-brand{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--ink)}
+.app-bar-brand svg{width:24px;height:15px;display:block}
+.app-bar-meta{display:flex;align-items:center;gap:12px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+.dot-online{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--eye);margin-right:6px}
+
+.deck-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding:16px}
+.deck-grid[hidden],.mobile-stage[hidden]{display:none}
+.col{border:1px solid var(--line);border-radius:8px;background:var(--panel);display:flex;flex-direction:column;min-width:0}
+.col-h{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600}
+.col-h-sub{font-weight:400;color:var(--muted);font-size:12px}
+.col-b{padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.45}
+
+.compose-box{border:1px solid var(--line);border-radius:7px;padding:10px;background:var(--bg)}
+.compose-txt{margin:0 0 10px;color:var(--ink);font-size:13px}
+.compose-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;border-top:1px solid var(--line)}
+.tool-icons{display:flex;align-items:center;gap:9px;color:var(--muted)}
+.tool-icons svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tool-gif{font-size:10px;font-weight:700;letter-spacing:.04em;border:1px solid var(--line);border-radius:4px;padding:1px 4px;color:var(--ink)}
+.rings{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ring-item{display:inline-flex;align-items:center;gap:4px}
+.ring-item svg{width:18px;height:18px;display:block}
+.net-pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+.pill.is-on{border-color:var(--constel);color:var(--ink)}
+.pill-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.dot-masto{background:var(--masto)}
+.dot-sky{background:var(--sky)}
+
+.resume-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border:1px dashed var(--line);border-radius:6px;font-size:12px;color:var(--muted)}
+.post-card{border:1px solid var(--line);border-radius:7px;padding:10px;background:var(--bg)}
+.post-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;font-size:12px}
+.post-author{font-weight:600;color:var(--ink)}
+.post-handle{color:var(--muted);font-size:11.5px;margin-left:4px}
+.post-nets{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:1px 6px;white-space:nowrap}
+.post-body{margin:0 0 8px;color:var(--ink);font-size:12.8px}
+.post-tag{color:var(--sky)}
+.link-card{border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);font-size:12px}
+.link-card strong{display:block;font-weight:600;color:var(--ink);font-size:12px}
+.link-card span{color:var(--muted);font-size:11.5px}
+.btn-mini{border:1px solid var(--line);border-radius:5px;padding:3px 8px;font-size:11.5px;color:var(--ink);white-space:nowrap}
+.post-acts{display:flex;gap:14px;margin-top:8px;color:var(--muted);font-size:11.5px}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--muted)}
+.chip.is-on{border-color:var(--constel);color:var(--ink)}
+.notif-row{display:flex;align-items:flex-start;gap:8px;padding:9px 10px;border:1px solid var(--line);border-left:3px solid var(--eye);border-radius:7px;background:var(--bg);font-size:12.5px}
+.star-dot{flex:0 0 auto;width:12px;height:12px;margin-top:3px}
+
+/* single / mobile frame inside stage */
+.mobile-stage{padding:24px 16px;display:flex;justify-content:center}
+.phone-frame{width:100%;max-width:348px;border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}
+.phone-top{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;font-weight:600}
+.phone-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--line);font-size:11.5px;text-align:center;color:var(--muted)}
+.phone-tabs span{padding:7px 4px}
+.phone-tabs span.is-on{color:var(--ink);border-bottom:2px solid var(--constel);font-weight:600}
+.phone-body{padding:12px;display:flex;flex-direction:column;gap:10px}
+.phone-dock{display:flex;align-items:center;justify-content:space-around;padding:9px 12px;border-top:1px solid var(--line);background:var(--bg);font-size:12px;color:var(--muted)}
+.dock-compose{width:28px;height:28px;border-radius:50%;background:var(--btn-bg);color:var(--btn-fg);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;line-height:1}
+
 dl{margin:0}
 .row{display:grid;grid-template-columns:240px minmax(0,1fr);gap:8px 40px;padding:18px 0;border-bottom:1px solid var(--line)}
 .row:first-child{padding-top:0}
@@ -78,26 +148,26 @@ dl{margin:0}
 dt{font-weight:600}
 dd{margin:0;color:var(--muted)}
 
-figure{margin:48px 0 0}
-figure img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:8px}
-
 .local{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px}
-.local p{margin:0 0 18px;color:var(--muted);max-width:32em}
+.local p{margin:0 0 18px;color:var(--muted);max-width:34em}
 .facts{list-style:none;margin:28px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px 28px;font-size:16px}
 .facts li{position:relative;padding-left:18px}
 .facts li::before{content:"";position:absolute;left:0;top:.62em;width:7px;height:7px;border-radius:50%;background:var(--eye)}
 
 ol{list-style:none;margin:0;padding:0;counter-reset:s}
-ol li{counter-increment:s;display:grid;grid-template-columns:44px minmax(0,1fr);gap:0 8px;margin-bottom:34px}
+ol li{counter-increment:s;display:grid;grid-template-columns:44px minmax(0,1fr);gap:0 8px;margin-bottom:32px}
+ol li:last-child{margin-bottom:0}
 ol li::before{content:counter(s);color:var(--constel);font-size:26px;font-weight:300;line-height:1.25}
 ol p{margin:0 0 12px;color:var(--muted)}
-.code{position:relative;background:var(--code);border:1px solid var(--line);border-radius:6px;margin:0}
-.code pre{margin:0;padding:18px 110px 18px 20px;overflow-x:auto;
-  font:15.5px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;color:var(--ink)}
+.code{position:relative;background:var(--code);border:1px solid var(--line);border-radius:6px;margin:0 0 10px}
+.code:last-child{margin-bottom:0}
+.code pre{margin:0;padding:16px 110px 16px 20px;overflow-x:auto;
+  font:15px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;color:var(--ink)}
 .copy{position:absolute;top:10px;right:10px;background:none;border:1px solid var(--line);color:var(--muted);
   font:inherit;font-size:14px;padding:4px 12px;border-radius:5px;cursor:pointer}
 .copy:hover{color:var(--ink);border-color:var(--muted)}
 .url{font:15.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
+.note-sm{font-size:15px;color:var(--muted);margin:10px 0 0}
 
 .status{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:baseline}
 .status h2{margin:0}
@@ -106,16 +176,19 @@ footer{border-top:1px solid var(--line);padding:30px 0 52px;font-size:15px;color
 footer .wrap{display:flex;flex-wrap:wrap;gap:8px 28px;justify-content:space-between}
 footer a{text-underline-offset:4px}
 
+@media (max-width:900px){
+  .deck-grid{grid-template-columns:1fr}
+}
 @media (max-width:820px){
   .wrap{padding:0 22px}
-  .hero{grid-template-columns:1fr;gap:44px;padding:44px 0 60px}
-  .hero-art{max-width:420px}
+  .hero{grid-template-columns:1fr;gap:40px;padding:40px 0 54px}
+  .hero-art{max-width:400px}
   .lead{font-size:19px}
   .row{grid-template-columns:1fr}
-  .code pre{padding:16px 20px 10px}
-  .copy{position:static;display:block;margin:0 0 14px 20px}
+  .code pre{padding:14px 18px 10px}
+  .copy{position:static;display:block;margin:0 0 12px 18px}
   .local{grid-template-columns:1fr;gap:8px}
-  section{padding:48px 0}
+  section{padding:46px 0}
   nav{gap:16px}
   nav .hide-sm{display:none}
 }
@@ -123,8 +196,10 @@ footer a{text-underline-offset:4px}
 </head>
 <body>
 <header><div class="wrap">
-  <a class="brand" href="./" aria-label="MastoSky"><svg viewBox="-2 -2 222 54" role="img" aria-label="MastoSky"><g><g  fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-masto"><g transform="translate(0 0)"><path d="M0 40 V8 L14 28 L28 8 V40"/></g><g transform="translate(37 0)"><circle cx="10" cy="30" r="10"/><path d="M20 20 V40"/></g><g transform="translate(66 0)"><path d="M14 22.5 C11 19 1 19 1 25 C1 30 13 29 13 35 C13 41 3 41 0 37.5"/></g><g transform="translate(89 0)"><path d="M6 10 V34 Q6 40 12 40 M0 20 H13"/></g><g transform="translate(111 0)"><circle cx="10" cy="30" r="10"/></g></g><g  fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-sky"><g transform="translate(143 0)"><path d="M21 14 C18 8 1 8 1 16 C1 24 21 22 21 32 C21 41 3 41 0 34"/></g><g transform="translate(173 0)"><path d="M0 8 V40 M16 20 L0 32 M6 28 L17 40"/></g><g transform="translate(199 0)"><path d="M0 20 L9 39 M18 20 L5 48"/></g></g></g></svg></a>
+  <a class="brand" href="./" aria-label="MastoSky"><svg viewBox="-2 -2 222 54" role="img" aria-label="MastoSky"><g><g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-masto"><g transform="translate(0 0)"><path d="M0 40 V8 L14 28 L28 8 V40"/></g><g transform="translate(37 0)"><circle cx="10" cy="30" r="10"/><path d="M20 20 V40"/></g><g transform="translate(66 0)"><path d="M14 22.5 C11 19 1 19 1 25 C1 30 13 29 13 35 C13 41 3 41 0 37.5"/></g><g transform="translate(89 0)"><path d="M6 10 V34 Q6 40 12 40 M0 20 H13"/></g><g transform="translate(111 0)"><circle cx="10" cy="30" r="10"/></g></g><g fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-sky"><g transform="translate(143 0)"><path d="M21 14 C18 8 1 8 1 16 C1 24 21 22 21 32 C21 41 3 41 0 34"/></g><g transform="translate(173 0)"><path d="M0 8 V40 M16 20 L0 32 M6 28 L17 40"/></g><g transform="translate(199 0)"><path d="M0 20 L9 39 M18 20 L5 48"/></g></g></g></svg></a>
   <nav>
+    <a class="hide-sm" href="#preview" data-i18n="nav_preview">Preview</a>
+    <a class="hide-sm" href="#run" data-i18n="nav_install">Install</a>
     <a class="hide-sm" href="https://github.com/gjmcosta/MastoSky/issues" data-i18n="issues">Issues</a>
     <a href="https://github.com/gjmcosta/MastoSky" data-i18n="gh">GitHub</a>
     <div class="lang" role="group" aria-label="Language">
@@ -139,36 +214,203 @@ footer a{text-underline-offset:4px}
   <div class="hero">
     <div>
       <h1><svg viewBox="-2 -3 520 118" role="img" aria-label="One sky for Mastodon and Bluesky"><g class="tag" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><g><g transform="translate(0 0)"><circle cx="16" cy="24" r="16"/></g><g transform="translate(41 0)"><path d="M0 20 V40 M0 28 C0 22 5 20 10 20 C16 20 20 23 20 29 V40"/></g><g transform="translate(70 0)"><path d="M0 30 H20 C20 24 16 20 10 20 C4 20 0 24 0 30 C0 36 4 40 10 40 C14 40 17 38 19 35.5"/></g><g transform="translate(113 0)"><path d="M14 22.5 C11 19 1 19 1 25 C1 30 13 29 13 35 C13 41 3 41 0 37.5"/></g><g transform="translate(136 0)"><path d="M0 8 V40 M16 20 L0 32 M6 28 L17 40"/></g><g transform="translate(162 0)"><path d="M0 20 L9 39 M18 20 L5 48"/></g><g transform="translate(203 0)"><path d="M7 40 V15 C7 10 9 8 14 8 M0 20 H14"/></g><g transform="translate(226 0)"><circle cx="10" cy="30" r="10"/></g><g transform="translate(255 0)"><path d="M0 20 V40 M0 29 C0 23 5 20 11 20"/></g></g><g transform="translate(0 64)"><g transform="translate(0 0)"><path d="M0 40 V8 L14 28 L28 8 V40"/></g><g transform="translate(37 0)"><circle cx="10" cy="30" r="10"/><path d="M20 20 V40"/></g><g transform="translate(66 0)"><path d="M14 22.5 C11 19 1 19 1 25 C1 30 13 29 13 35 C13 41 3 41 0 37.5"/></g><g transform="translate(89 0)"><path d="M6 10 V34 Q6 40 12 40 M0 20 H13"/></g><g transform="translate(111 0)"><circle cx="10" cy="30" r="10"/></g><g transform="translate(140 0)"><circle cx="10" cy="30" r="10"/><path d="M20 8 V40"/></g><g transform="translate(169 0)"><circle cx="10" cy="30" r="10"/></g><g transform="translate(198 0)"><path d="M0 20 V40 M0 28 C0 22 5 20 10 20 C16 20 20 23 20 29 V40"/></g><g transform="translate(241 0)"><circle cx="10" cy="30" r="10"/><path d="M20 20 V40"/></g><g transform="translate(270 0)"><path d="M0 20 V40 M0 28 C0 22 5 20 10 20 C16 20 20 23 20 29 V40"/></g><g transform="translate(299 0)"><circle cx="10" cy="30" r="10"/><path d="M20 8 V40"/></g><g transform="translate(342 0)"><path d="M0 8 V40 M0 8 H11 C18 8 20 11 20 15 C20 20 17 24 11 24 H0 M11 24 C18 24 22 27 22 32 C22 37 18 40 11 40 H0"/></g><g transform="translate(373 0)"><path d="M0 8 V40"/></g><g transform="translate(382 0)"><path d="M0 20 V31 C0 37 4 40 10 40 C16 40 20 37 20 31 M20 20 V40"/></g><g transform="translate(411 0)"><path d="M0 30 H20 C20 24 16 20 10 20 C4 20 0 24 0 30 C0 36 4 40 10 40 C14 40 17 38 19 35.5"/></g><g transform="translate(440 0)"><path d="M14 22.5 C11 19 1 19 1 25 C1 30 13 29 13 35 C13 41 3 41 0 37.5"/></g><g transform="translate(463 0)"><path d="M0 8 V40 M16 20 L0 32 M6 28 L17 40"/></g><g transform="translate(489 0)"><path d="M0 20 L9 39 M18 20 L5 48"/></g></g></g></svg></h1>
-      <p class="lead" data-i18n="lead">A minimalist, local-first client that puts Bluesky and Mastodon in one browser tab. Read, reply, boost and cross-post without switching apps.</p>
+      <p class="lead" data-i18n="lead">A local-first web client that joins Bluesky and Mastodon in one tab. Read, reply, organize bookmarks, search GIFs and cross-post straight from your computer or home server.</p>
       <div class="actions">
         <a class="btn" href="https://github.com/gjmcosta/MastoSky" data-i18n="cta">View on GitHub</a>
         <a class="link" href="#run" data-i18n="cta2">How to run it</a>
       </div>
     </div>
     <div class="hero-art"><svg viewBox="-24 -2 204 120" role="img" aria-label="MastoSky logo: a constellation in the shape of a mastodon with a golden star for an eye">
-<g class="c-bg"><circle cx="-12" cy="22" r="1.4"/><circle cx="166" cy="12" r="1.4"/><circle cx="172" cy="112" r="1.4"/><circle cx="-6" cy="114" r="1.4"/><circle cx="92" cy="2" r="1.1"/><circle cx="-20" cy="70" r="1"/></g><g><path class="c-line" d="M40 40 L62 24 M62 24 L104 20 M104 20 L138 34 M138 34 L148 62 M148 62 L146 106 M148 62 L124 76 M124 76 L124 106 M124 76 L98 76 M98 76 L98 106 M98 76 L78 76 M78 76 L78 106 M78 76 L58 68 M58 68 L42 56 M42 56 L40 40 M42 56 L34 80 M34 80 L40 104 M42 56 L20 72 M20 72 L8 56 M8 56 L10 38 M84 36 L98 56 M98 56 L80 58 M80 58 L84 36" fill="none"  stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><g class="c-star"><circle cx="62" cy="24" r="5"/><circle cx="104" cy="20" r="5"/><circle cx="138" cy="34" r="3.6"/><circle cx="148" cy="62" r="3.6"/><circle cx="146" cy="106" r="3.6"/><circle cx="124" cy="76" r="3.6"/><circle cx="124" cy="106" r="3.6"/><circle cx="98" cy="76" r="3.6"/><circle cx="98" cy="106" r="3.6"/><circle cx="78" cy="76" r="3.6"/><circle cx="78" cy="106" r="3.6"/><circle cx="58" cy="68" r="3.6"/><circle cx="42" cy="56" r="3.6"/><circle cx="40" cy="40" r="3.6"/><circle cx="34" cy="80" r="3.6"/><circle cx="40" cy="104" r="3.6"/><circle cx="20" cy="72" r="3.6"/><circle cx="8" cy="56" r="3.6"/><circle cx="10" cy="38" r="5"/><circle cx="84" cy="36" r="3.6"/><circle cx="98" cy="56" r="3.6"/><circle cx="80" cy="58" r="3.6"/></g><path class="c-eye" d="M56 37 L58.43 43.57 L65 46 L58.43 48.43 L56 55 L53.57 48.43 L47 46 L53.57 43.57 Z" /></g></svg></div>
+<g class="c-bg"><circle cx="-12" cy="22" r="1.4"/><circle cx="166" cy="12" r="1.4"/><circle cx="172" cy="112" r="1.4"/><circle cx="-6" cy="114" r="1.4"/><circle cx="92" cy="2" r="1.1"/><circle cx="-20" cy="70" r="1"/></g><g><path class="c-line" d="M40 40 L62 24 M62 24 L104 20 M104 20 L138 34 M138 34 L148 62 M148 62 L146 106 M148 62 L124 76 M124 76 L124 106 M124 76 L98 76 M98 76 L98 106 M98 76 L78 76 M78 76 L78 106 M78 76 L58 68 M58 68 L42 56 M42 56 L40 40 M42 56 L34 80 M34 80 L40 104 M42 56 L20 72 M20 72 L8 56 M8 56 L10 38 M84 36 L98 56 M98 56 L80 58 M80 58 L84 36" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><g class="c-star"><circle cx="62" cy="24" r="5"/><circle cx="104" cy="20" r="5"/><circle cx="138" cy="34" r="3.6"/><circle cx="148" cy="62" r="3.6"/><circle cx="146" cy="106" r="3.6"/><circle cx="124" cy="76" r="3.6"/><circle cx="124" cy="106" r="3.6"/><circle cx="98" cy="76" r="3.6"/><circle cx="98" cy="106" r="3.6"/><circle cx="78" cy="76" r="3.6"/><circle cx="78" cy="106" r="3.6"/><circle cx="58" cy="68" r="3.6"/><circle cx="42" cy="56" r="3.6"/><circle cx="40" cy="40" r="3.6"/><circle cx="34" cy="80" r="3.6"/><circle cx="40" cy="104" r="3.6"/><circle cx="20" cy="72" r="3.6"/><circle cx="8" cy="56" r="3.6"/><circle cx="10" cy="38" r="5"/><circle cx="84" cy="36" r="3.6"/><circle cx="98" cy="56" r="3.6"/><circle cx="80" cy="58" r="3.6"/></g><path class="c-eye" d="M56 37 L58.43 43.57 L65 46 L58.43 48.43 L56 55 L53.57 48.43 L47 46 L53.57 43.57 Z" /></g></svg></div>
   </div>
+
+  <section id="preview">
+    <div class="preview-head">
+      <h2 data-i18n="prev_h">How the workspace looks</h2>
+      <div class="mode-switch" role="group" aria-label="Layout preview">
+        <button type="button" data-preview="deck" aria-pressed="true" data-i18n="prev_deck">Deck columns</button>
+        <button type="button" data-preview="single" aria-pressed="false" data-i18n="prev_single">Single column / Mobile</button>
+      </div>
+    </div>
+
+    <div class="app-frame">
+      <div class="app-bar">
+        <span class="app-bar-brand">
+          <svg viewBox="0 0 156 112" aria-hidden="true"><path class="c-line" d="M40 40 L62 24 L104 20 L138 34 L148 62 L146 106 M148 62 L124 76 L98 76 L78 76 L58 68 L42 56 L40 40 M42 56 L20 72 L8 56 L10 38" stroke-width="5"/><circle class="c-eye" cx="56" cy="46" r="6"/></svg>
+          <span>MastoSky</span>
+        </span>
+        <span class="app-bar-meta"><span class="dot-online"></span>127.0.0.1:8000</span>
+      </div>
+
+      <div class="deck-grid" id="previewDeck">
+        <!-- Column 1: Composer -->
+        <div class="col">
+          <div class="col-h">
+            <span data-i18n="mock_compose_h">New post</span>
+            <span class="col-h-sub" data-i18n="mock_draft_saved">Draft saved</span>
+          </div>
+          <div class="col-b">
+            <div class="net-pills">
+              <span class="pill is-on"><span class="pill-dot dot-masto"></span><span class="pill-dot dot-sky"></span><span data-i18n="mock_both">Both</span></span>
+              <span class="pill" data-i18n="mock_public">Public</span>
+            </div>
+            <div class="compose-box">
+              <p class="compose-txt" data-i18n="mock_compose_txt">Late afternoon light over the river. Publishing once to Bluesky and Mastodon at the same time.</p>
+              <div class="compose-foot">
+                <div class="tool-icons" aria-hidden="true">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg>
+                  <span class="tool-gif">GIF</span>
+                  <svg viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                </div>
+                <div class="rings">
+                  <span class="ring-item" title="Bluesky 300">
+                    <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="var(--line)" stroke-width="2.2"/><circle cx="10" cy="10" r="7" fill="none" stroke="var(--sky)" stroke-width="2.2" stroke-dasharray="22 44" transform="rotate(-90 10 10)"/></svg>
+                    300
+                  </span>
+                  <span class="ring-item" title="Mastodon 500">
+                    <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="none" stroke="var(--line)" stroke-width="2.2"/><circle cx="10" cy="10" r="7" fill="none" stroke="var(--masto)" stroke-width="2.2" stroke-dasharray="14 44" transform="rotate(-90 10 10)"/></svg>
+                    500
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 2: Timeline -->
+        <div class="col">
+          <div class="col-h">
+            <span data-i18n="mock_tl_h">Timeline</span>
+            <span class="col-h-sub" data-i18n="mock_tl_sub">Unified</span>
+          </div>
+          <div class="col-b">
+            <div class="net-pills">
+              <span class="pill is-on" data-i18n="mock_both">Both</span>
+              <span class="pill"><span class="pill-dot dot-sky"></span>Bluesky</span>
+              <span class="pill"><span class="pill-dot dot-masto"></span>Mastodon</span>
+              <span class="pill" data-i18n="mock_noboosts">No boosts</span>
+            </div>
+            <div class="resume-bar">
+              <span data-i18n="mock_resume">Resume where you left off</span>
+              <span>↓</span>
+            </div>
+            <div class="post-card">
+              <div class="post-top">
+                <span><span class="post-author">Joana M.</span><span class="post-handle">@joana.bsky.social</span></span>
+                <span class="post-nets"><span class="pill-dot dot-masto"></span>+<span class="pill-dot dot-sky"></span></span>
+              </div>
+              <p class="post-body"><span data-i18n="mock_post_a">Crosstalk merges duplicate cross-posts automatically. Links and </span><span class="post-tag" data-i18n="mock_post_tag">#photography</span><span data-i18n="mock_post_b"> hashtags open right inside the app.</span></p>
+              <div class="link-card">
+                <div>
+                  <strong data-i18n="mock_card_t">Field notes on local software</strong>
+                  <span>example.org · 4 min</span>
+                </div>
+                <span class="btn-mini" data-i18n="mock_read">Read</span>
+              </div>
+              <div class="post-acts" aria-hidden="true">
+                <span>↩ 3</span><span>🔁 5</span><span>♡ 14</span><span>🔖</span><span>•••</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 3: Collections & Notifications -->
+        <div class="col">
+          <div class="col-h">
+            <span data-i18n="mock_saved_h">Saved &amp; Alerts</span>
+            <span class="col-h-sub" data-i18n="mock_synced">Synced</span>
+          </div>
+          <div class="col-b">
+            <div class="chips">
+              <span class="chip" data-i18n="mock_all_6">All 6</span>
+              <span class="chip is-on" data-i18n="mock_col_read">To Read 4</span>
+              <span class="chip" data-i18n="mock_col_recipes">Food 2</span>
+              <span class="chip" data-i18n="mock_col_new">+ Collection</span>
+            </div>
+            <div class="post-card">
+              <div class="post-top">
+                <span><span class="post-author">Marco S.</span><span class="post-handle">@marco@mastodon.social</span></span>
+                <span class="chip is-on" data-i18n="mock_col_read_lbl">To Read</span>
+              </div>
+              <p class="post-body" data-i18n="mock_saved_body">Saved bookmarks stay organized by folder across desktop, iPad and phone.</p>
+            </div>
+            <div class="notif-row">
+              <svg class="star-dot" viewBox="0 0 16 16" aria-hidden="true"><path class="c-eye" d="M8 1 L9.9 6.1 L15 8 L9.9 9.9 L8 15 L6.1 9.9 L1 8 L6.1 6.1 Z"/></svg>
+              <div>
+                <strong data-i18n="mock_notif_who">Clara replied on Mastodon</strong><br>
+                <span style="color:var(--muted)" data-i18n="mock_notif_txt">The single-post Bluesky thread split worked cleanly.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single column / Mobile preview -->
+      <div class="mobile-stage" id="previewSingle" hidden>
+        <div class="phone-frame">
+          <div class="phone-top">
+            <span>MastoSky</span>
+            <span style="color:var(--muted);font-weight:400;font-size:12px">PWA · LAN</span>
+          </div>
+          <div class="phone-tabs">
+            <span class="is-on" data-i18n="mock_tl_h">Timeline</span>
+            <span data-i18n="mock_explore">Explore</span>
+            <span data-i18n="mock_saved_tab">Saved</span>
+            <span data-i18n="mock_notifs_tab">Alerts</span>
+          </div>
+          <div class="phone-body">
+            <div class="net-pills">
+              <span class="pill is-on" data-i18n="mock_both">Both</span>
+              <span class="pill"><span class="pill-dot dot-sky"></span>Bluesky</span>
+              <span class="pill"><span class="pill-dot dot-masto"></span>Mastodon</span>
+            </div>
+            <div class="post-card">
+              <div class="post-top">
+                <span><span class="post-author">Joana M.</span><span class="post-handle">@joana.bsky.social</span></span>
+                <span class="post-nets"><span class="pill-dot dot-masto"></span>+<span class="pill-dot dot-sky"></span></span>
+              </div>
+              <p class="post-body" data-i18n="mock_mobile_body">Compact single column with pull-to-refresh, modal composer and bottom dock bar on iPhone.</p>
+              <div class="link-card">
+                <div>
+                  <strong data-i18n="mock_card_t">Field notes on local software</strong>
+                  <span>example.org</span>
+                </div>
+                <span class="btn-mini" data-i18n="mock_read">Read</span>
+              </div>
+            </div>
+          </div>
+          <div class="phone-dock" aria-hidden="true">
+            <span>⌂</span>
+            <span>⌕</span>
+            <span class="dock-compose">+</span>
+            <span>🔖</span>
+            <span>🔔</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="preview-caption" data-i18n="prev_cap">Interactive layout diagram: switch between desktop multi-column Deck view and mobile single-column PWA mode.</p>
+  </section>
 
   <section id="what">
     <h2 data-i18n="what_h">What it does</h2>
     <dl>
-      <div class="row"><dt data-i18n="f1t">One timeline</dt><dd data-i18n="f1d">Posts from Bluesky and Mastodon interleaved in chronological order, in a single column or in a multi-column deck.</dd></div>
-      <div class="row"><dt data-i18n="f2t">Explore</dt><dd data-i18n="f2d">The trending feeds of both networks side by side.</dd></div>
-      <div class="row"><dt data-i18n="f3t">Notifications</dt><dd data-i18n="f3d">Mentions, replies, likes, boosts and quotes in one place.</dd></div>
-      <div class="row"><dt data-i18n="f4t">Write once</dt><dd data-i18n="f4d">Publish to Bluesky, to Mastodon or to both, with a live character count for each network.</dd></div>
-      <div class="row"><dt data-i18n="f5t">Rich posts</dt><dd data-i18n="f5d">Quote posts, media galleries, link previews, a video player (HLS and MP4), polls, content warnings and threads shown inline.</dd></div>
-      <div class="row"><dt data-i18n="f6t">Theme and language</dt><dd data-i18n="f6d">Dark and light follow your system. The interface comes in English and Portuguese.</dd></div>
+      <div class="row"><dt data-i18n="f1t">One timeline, no duplicates</dt><dd data-i18n="f1d">Posts from Bluesky and Mastodon interleaved chronologically. Simultaneous cross-posts merge automatically (Crosstalk), consecutive boosts can be grouped, keywords can be muted, and your reading position syncs across devices.</dd></div>
+      <div class="row"><dt data-i18n="f2t">Write once (300 / 500)</dt><dd data-i18n="f2d">Dual progress rings track Bluesky (300) and Mastodon (500). Posts between 301 and 500 characters automatically split into a numbered thread on Bluesky while staying a single post on Mastodon. Includes local drafts, post scheduling and @handle mapping.</dd></div>
+      <div class="row"><dt data-i18n="f3t">Media, GIFs &amp; visual cards</dt><dd data-i18n="f3d">Paste or drag up to 4 images with quick crop presets (1:1, 16:9, 4:5), upload video up to 50 MB, search and post animated GIFs natively on both networks, or generate shareable cross-post cards with quoted posts preserved.</dd></div>
+      <div class="row"><dt data-i18n="f4t">Deck or single column</dt><dd data-i18n="f4d">Switch between a focused single feed and a reorderable multi-column Deck with a side thread column. Bluesky and Mastodon post links, @mentions and #hashtags open inside MastoSky, alongside full keyboard shortcuts (press ?).</dd></div>
+      <div class="row"><dt data-i18n="f5t">Collections, Reader &amp; DMs</dt><dd data-i18n="f5d">File saved posts into custom collections, read linked articles in a clean Reader View, follow Bluesky custom feeds and Mastodon lists, and answer unified direct messages.</dd></div>
+      <div class="row"><dt data-i18n="f6t">Optional AI &amp; languages</dt><dd data-i18n="f6d">Generate WCAG-oriented image alt-text and translate posts or notifications inline with a local Ollama instance, Google Gemini (free tier), or an OpenAI-compatible API. Interface in English and Portuguese.</dd></div>
     </dl>
-    <!-- Add a real screenshot as docs/screenshot.png and it shows up here. Without the file, this block removes itself. -->
-    <figure id="shot"><img src="screenshot.png" alt="MastoSky showing a Bluesky and Mastodon timeline in one window" data-i18n-alt="shot_alt" loading="lazy" onerror="this.closest('figure').remove()"></figure>
   </section>
 
   <section id="local" class="local">
     <h2 data-i18n="local_h">Your computer, your keys.</h2>
     <div>
-      <p data-i18n="local_p1">MastoSky is a Python script and a single HTML file. The server listens on 127.0.0.1 only, so your Bluesky App Password and Mastodon token never leave your machine.</p>
-      <p data-i18n="local_p2">Requests go straight from your computer to Bluesky and to your own Mastodon instance. No middleman, no analytics, no telemetry.</p>
-      <ul class="facts"><li data-i18n-fact="0">Python 3 standard library</li><li data-i18n-fact="1">No pip, no npm</li><li data-i18n-fact="2">MIT licence</li></ul>
+      <p data-i18n="local_p1">MastoSky is a self-contained Python server (app.py) and static vanilla HTML/CSS/JS frontend. By default it binds strictly to 127.0.0.1, keeping your Bluesky App Password and Mastodon token on your machine.</p>
+      <p data-i18n="local_p2">Optional --lan and Docker modes restrict access to private RFC 1918 / Tailscale networks with per-session CSRF tokens, host/origin validation, SSRF checks on link fetches, and 0600 credential files.</p>
+      <ul class="facts"><li data-i18n-fact="0">Python 3 standard library</li><li data-i18n-fact="1">No pip, no npm</li><li data-i18n-fact="2">220+ unit tests · MIT licence</li></ul>
     </div>
   </section>
 
@@ -176,22 +418,26 @@ footer a{text-underline-offset:4px}
     <h2 data-i18n="run_h">Run it</h2>
     <ol>
       <li><div>
-        <p data-i18n="s1">Clone the repository and start the server.</p>
-        <div class="code"><pre id="cmd">git clone https://github.com/gjmcosta/MastoSky.git
+        <p data-i18n="s1">Install in one line (or clone and start directly with Python 3):</p>
+        <div class="code"><pre>curl -fsSL https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.sh | bash</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
+        <div class="code"><pre>git clone https://github.com/gjmcosta/MastoSky.git
 cd MastoSky
-python3 app.py</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
+python3 app.py --open</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
       </div></li>
       <li><div>
-        <p data-i18n="s2">Open it in your browser.</p>
-        <span class="url">http://127.0.0.1:8000</span>
+        <p data-i18n="s2">Use on iPhone, iPad or Android over local Wi-Fi (prints a QR code and supports PWA installation):</p>
+        <div class="code"><pre>python3 app.py --lan</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
+        <p class="note-sm" data-i18n="s2_note">Or deploy always-on with Docker / CasaOS (docker compose up -d) for automatic sync via user_data.json and Tailscale access.</p>
       </div></li>
-      <li><div><p data-i18n="s3">In the setup window, enter a Bluesky App Password and a Mastodon access token. Use an App Password, never your main one.</p></div></li>
+      <li><div>
+        <p><span data-i18n="s3_a">Open </span><span class="url">http://127.0.0.1:8000</span><span data-i18n="s3_b"> and enter a Bluesky App Password (never your main password) and a Mastodon access token.</span></p>
+      </div></li>
     </ol>
   </section>
 
   <section class="status">
-    <h2 data-i18n="status_h">Early days.</h2>
-    <p><span data-i18n="status_p">It works, but it is young. Bug reports, ideas and pull requests are very welcome.</span> <a href="https://github.com/gjmcosta/MastoSky/issues" data-i18n="status_a">Open an issue</a></p>
+    <h2 data-i18n="status_h">Open source.</h2>
+    <p><span data-i18n="status_p">Updated regularly with an automated unit test suite and 1-click self-update for Docker setups.</span> <a href="https://github.com/gjmcosta/MastoSky/issues" data-i18n="status_a">Open an issue</a> · <a href="https://github.com/gjmcosta/MastoSky/blob/main/docs/README.md" data-i18n="status_bg">Background startup guide</a></p>
   </section>
 </div>
 </main>
@@ -203,7 +449,155 @@ python3 app.py</pre><button class="copy" type="button" data-i18n="copy">Copy</bu
 
 <script>
 (function () {
-  var T = {"en": {"title": "MastoSky — one sky for Mastodon and Bluesky", "desc": "A minimalist, local-first client that puts Bluesky and Mastodon in one browser tab. Python standard library + vanilla JS, no dependencies, no telemetry. MIT.", "gh": "GitHub", "issues": "Issues", "lead": "A minimalist, local-first client that puts Bluesky and Mastodon in one browser tab. Read, reply, boost and cross-post without switching apps.", "cta": "View on GitHub", "cta2": "How to run it", "copy": "Copy", "copied": "Copied", "what_h": "What it does", "f1t": "One timeline", "f1d": "Posts from Bluesky and Mastodon interleaved in chronological order, in a single column or in a multi-column deck.", "f2t": "Explore", "f2d": "The trending feeds of both networks side by side.", "f3t": "Notifications", "f3d": "Mentions, replies, likes, boosts and quotes in one place.", "f4t": "Write once", "f4d": "Publish to Bluesky, to Mastodon or to both, with a live character count for each network.", "f5t": "Rich posts", "f5d": "Quote posts, media galleries, link previews, a video player (HLS and MP4), polls, content warnings and threads shown inline.", "f6t": "Theme and language", "f6d": "Dark and light follow your system. The interface comes in English and Portuguese.", "shot_alt": "MastoSky showing a Bluesky and Mastodon timeline in one window", "local_h": "Your computer, your keys.", "local_p1": "MastoSky is a Python script and a single HTML file. The server listens on 127.0.0.1 only, so your Bluesky App Password and Mastodon token never leave your machine.", "local_p2": "Requests go straight from your computer to Bluesky and to your own Mastodon instance. No middleman, no analytics, no telemetry.", "facts": ["Python 3 standard library", "No pip, no npm", "MIT licence"], "run_h": "Run it", "s1": "Clone the repository and start the server.", "s2": "Open it in your browser.", "s3": "In the setup window, enter a Bluesky App Password and a Mastodon access token. Use an App Password, never your main one.", "status_h": "Early days.", "status_p": "It works, but it is young. Bug reports, ideas and pull requests are very welcome.", "status_a": "Open an issue", "foot": "Free software under the MIT licence."}, "pt": {"title": "MastoSky — um só céu para o Mastodon e o Bluesky", "desc": "Um cliente minimalista e local que junta o Bluesky e o Mastodon num só separador do browser. Python (stdlib) + JS puro, sem dependências, sem telemetria. MIT.", "gh": "GitHub", "issues": "Issues", "lead": "Um cliente minimalista e local que junta o Bluesky e o Mastodon num só separador do browser. Ler, responder, partilhar e publicar sem trocar de app.", "cta": "Ver no GitHub", "cta2": "Como correr", "copy": "Copiar", "copied": "Copiado", "what_h": "O que faz", "f1t": "Uma só timeline", "f1d": "Posts do Bluesky e do Mastodon intercalados por ordem cronológica, numa coluna ou em várias (deck).", "f2t": "Explorar", "f2d": "Os feeds de tendências das duas redes lado a lado.", "f3t": "Notificações", "f3d": "Menções, respostas, gostos, boosts e citações num só sítio.", "f4t": "Escrever uma vez", "f4d": "Publica no Bluesky, no Mastodon ou nos dois, com contagem de caracteres em tempo real para cada rede.", "f5t": "Posts completos", "f5d": "Citações, galerias de media, pré-visualização de links, leitor de vídeo (HLS e MP4), sondagens, avisos de conteúdo e conversas mostradas inline.", "f6t": "Tema e idioma", "f6d": "Tema claro ou escuro conforme o sistema. Interface em português e em inglês.", "shot_alt": "O MastoSky a mostrar uma timeline do Bluesky e do Mastodon numa só janela", "local_h": "O teu computador, as tuas chaves.", "local_p1": "O MastoSky é um script Python e um único ficheiro HTML. O servidor só escuta em 127.0.0.1, por isso a tua App Password do Bluesky e o token do Mastodon nunca saem da tua máquina.", "local_p2": "Os pedidos vão directamente do teu computador para o Bluesky e para a tua instância Mastodon. Sem intermediários, sem analytics, sem telemetria.", "facts": ["Biblioteca standard do Python 3", "Sem pip, sem npm", "Licença MIT"], "run_h": "Correr", "s1": "Clona o repositório e arranca o servidor.", "s2": "Abre-o no browser.", "s3": "Na janela de configuração, indica uma App Password do Bluesky e um token de acesso do Mastodon. Usa uma App Password, nunca a password principal.", "status_h": "Ainda é cedo.", "status_p": "Funciona, mas é recente. Relatos de bugs, ideias e pull requests são muito bem-vindos.", "status_a": "Abrir uma issue", "foot": "Software livre sob a licença MIT."}};
+  var T = {
+    en: {
+      title: "MastoSky — one sky for Mastodon and Bluesky",
+      desc: "A local-first web client for Bluesky and Mastodon. Unified timeline, cross-posting, GIFs, saved collections, Reader View and DMs in one browser tab. Python stdlib + vanilla JS.",
+      nav_preview: "Preview",
+      nav_install: "Install",
+      gh: "GitHub",
+      issues: "Issues",
+      lead: "A local-first web client that joins Bluesky and Mastodon in one tab. Read, reply, organize bookmarks, search GIFs and cross-post straight from your computer or home server.",
+      cta: "View on GitHub",
+      cta2: "How to run it",
+      copy: "Copy",
+      copied: "Copied",
+      prev_h: "How the workspace looks",
+      prev_deck: "Deck columns",
+      prev_single: "Single column / Mobile",
+      prev_cap: "Interactive layout diagram: switch between desktop multi-column Deck view and mobile single-column PWA mode.",
+      mock_compose_h: "New post",
+      mock_draft_saved: "Draft saved",
+      mock_both: "Both",
+      mock_public: "Public",
+      mock_compose_txt: "Late afternoon light over the river. Publishing once to Bluesky and Mastodon at the same time.",
+      mock_tl_h: "Timeline",
+      mock_tl_sub: "Unified",
+      mock_noboosts: "No boosts",
+      mock_resume: "Resume where you left off",
+      mock_post_a: "Crosstalk merges duplicate cross-posts automatically. Links and ",
+      mock_post_tag: "#photography",
+      mock_post_b: " hashtags open right inside the app.",
+      mock_card_t: "Field notes on local software",
+      mock_read: "Read",
+      mock_saved_h: "Saved & Alerts",
+      mock_synced: "Synced",
+      mock_all_6: "All 6",
+      mock_col_read: "To Read 4",
+      mock_col_recipes: "Food 2",
+      mock_col_new: "+ Collection",
+      mock_col_read_lbl: "To Read",
+      mock_saved_body: "Saved bookmarks stay organized by folder across desktop, iPad and phone.",
+      mock_notif_who: "Clara replied on Mastodon",
+      mock_notif_txt: "The single-post Bluesky thread split worked cleanly.",
+      mock_explore: "Explore",
+      mock_saved_tab: "Saved",
+      mock_notifs_tab: "Alerts",
+      mock_mobile_body: "Compact single column with pull-to-refresh, modal composer and bottom dock bar on iPhone.",
+      what_h: "What it does",
+      f1t: "One timeline, no duplicates",
+      f1d: "Posts from Bluesky and Mastodon interleaved chronologically. Simultaneous cross-posts merge automatically (Crosstalk), consecutive boosts can be grouped, keywords can be muted, and your reading position syncs across devices.",
+      f2t: "Write once (300 / 500)",
+      f2d: "Dual progress rings track Bluesky (300) and Mastodon (500). Posts between 301 and 500 characters automatically split into a numbered thread on Bluesky while staying a single post on Mastodon. Includes local drafts, post scheduling and @handle mapping.",
+      f3t: "Media, GIFs & visual cards",
+      f3d: "Paste or drag up to 4 images with quick crop presets (1:1, 16:9, 4:5), upload video up to 50 MB, search and post animated GIFs natively on both networks, or generate shareable cross-post cards with quoted posts preserved.",
+      f4t: "Deck or single column",
+      f4d: "Switch between a focused single feed and a reorderable multi-column Deck with a side thread column. Bluesky and Mastodon post links, @mentions and #hashtags open inside MastoSky, alongside full keyboard shortcuts (press ?).",
+      f5t: "Collections, Reader & DMs",
+      f5d: "File saved posts into custom collections, read linked articles in a clean Reader View, follow Bluesky custom feeds and Mastodon lists, and answer unified direct messages.",
+      f6t: "Optional AI & languages",
+      f6d: "Generate WCAG-oriented image alt-text and translate posts or notifications inline with a local Ollama instance, Google Gemini (free tier), or an OpenAI-compatible API. Interface in English and Portuguese.",
+      local_h: "Your computer, your keys.",
+      local_p1: "MastoSky is a self-contained Python server (app.py) and static vanilla HTML/CSS/JS frontend. By default it binds strictly to 127.0.0.1, keeping your Bluesky App Password and Mastodon token on your machine.",
+      local_p2: "Optional --lan and Docker modes restrict access to private RFC 1918 / Tailscale networks with per-session CSRF tokens, host/origin validation, SSRF checks on link fetches, and 0600 credential files.",
+      facts: ["Python 3 standard library", "No pip, no npm", "220+ unit tests · MIT licence"],
+      run_h: "Run it",
+      s1: "Install in one line (or clone and start directly with Python 3):",
+      s2: "Use on iPhone, iPad or Android over local Wi-Fi (prints a QR code and supports PWA installation):",
+      s2_note: "Or deploy always-on with Docker / CasaOS (docker compose up -d) for automatic sync via user_data.json and Tailscale access.",
+      s3_a: "Open ",
+      s3_b: " and enter a Bluesky App Password (never your main password) and a Mastodon access token.",
+      status_h: "Open source.",
+      status_p: "Updated regularly with an automated unit test suite and 1-click self-update for Docker setups.",
+      status_a: "Open an issue",
+      status_bg: "Background startup guide",
+      foot: "Free software under the MIT licence."
+    },
+    pt: {
+      title: "MastoSky — um só céu para o Mastodon e o Bluesky",
+      desc: "Cliente web local-first para Bluesky e Mastodon. Timeline unificada, publicação cruzada, GIFs, coleções nos guardados, modo de leitura e mensagens num só separador.",
+      nav_preview: "Antevisão",
+      nav_install: "Instalar",
+      gh: "GitHub",
+      issues: "Issues",
+      lead: "Cliente web local-first que junta o Bluesky e o Mastodon num só separador. Lê, responde, organiza guardados, pesquisa GIFs e publica em ambas as redes a partir do teu computador ou servidor doméstico.",
+      cta: "Ver no GitHub",
+      cta2: "Como correr",
+      copy: "Copiar",
+      copied: "Copiado",
+      prev_h: "Como funciona a interface",
+      prev_deck: "Vista em colunas (Deck)",
+      prev_single: "Coluna única / Telemóvel",
+      prev_cap: "Esquema interativo: alterna entre a vista multicoluna para desktop/iPad e a coluna única PWA para telemóvel.",
+      mock_compose_h: "Novo post",
+      mock_draft_saved: "Rascunho guardado",
+      mock_both: "Ambas",
+      mock_public: "Público",
+      mock_compose_txt: "Luz de fim de tarde sobre o rio. A publicar uma vez no Bluesky e no Mastodon ao mesmo tempo.",
+      mock_tl_h: "Timeline",
+      mock_tl_sub: "Unificada",
+      mock_noboosts: "Sem boosts",
+      mock_resume: "Retomar onde ficaste",
+      mock_post_a: "O Crosstalk funde publicações cruzadas repetidas. Links e hashtags ",
+      mock_post_tag: "#fotografia",
+      mock_post_b: " abrem diretamente dentro da app.",
+      mock_card_t: "Notas sobre software local",
+      mock_read: "Ler",
+      mock_saved_h: "Guardados e Alertas",
+      mock_synced: "Sincronizado",
+      mock_all_6: "Todas 6",
+      mock_col_read: "Para Ver/Ler 4",
+      mock_col_recipes: "Comida 2",
+      mock_col_new: "+ Coleção",
+      mock_col_read_lbl: "Para Ver/Ler",
+      mock_saved_body: "Os posts guardados mantêm-se organizados em pastas entre computador, iPad e telemóvel.",
+      mock_notif_who: "Clara respondeu no Mastodon",
+      mock_notif_txt: "A divisão automática em fio para o Bluesky funcionou sem cortes.",
+      mock_explore: "Em Alta",
+      mock_saved_tab: "Guardados",
+      mock_notifs_tab: "Alertas",
+      mock_mobile_body: "Coluna única compacta com gesto de puxar para atualizar, compositor em modal e barra inferior fixa no iPhone.",
+      what_h: "O que faz",
+      f1t: "Uma só timeline, sem duplicados",
+      f1d: "Posts do Bluesky e do Mastodon por ordem cronológica. Publicações simultâneas do mesmo autor são fundidas num só cartão (Crosstalk), boosts seguidos podem ser agrupados, palavras silenciadas e posição de leitura sincronizada.",
+      f2t: "Escrever uma vez (300 / 500)",
+      f2d: "Dois anéis de progresso acompanham o limite do Bluesky (300) e do Mastodon (500). Entre 301 e 500 caracteres, envia 1 post único para o Mastodon e um fio numerado automático para o Bluesky, com rascunhos, agendamento e mapeamento de @handles.",
+      f3t: "Media, GIFs e cartões visuais",
+      f3d: "Cola ou arrasta até 4 imagens com recorte rápido (1:1, 16:9, 4:5), envia vídeos até 50 MB, pesquisa e publica GIFs animados nativos nas duas redes ou cria cartões visuais com citações preservadas.",
+      f4t: "Modo deck ou coluna única",
+      f4d: "Alterna entre coluna única e colunas lado a lado reordenáveis com painel lateral para conversas. Ligações a posts do Bluesky e Mastodon, @menções e #hashtags abrem dentro do MastoSky, com atalhos de teclado (? para ajuda).",
+      f5t: "Coleções, leitura e mensagens",
+      f5d: "Organiza publicações guardadas em coleções, lê artigos em modo limpo (Reader View), acompanha feeds personalizados do Bluesky e listas do Mastodon, e responde a mensagens diretas unificadas.",
+      f6t: "IA opcional e idiomas",
+      f6d: "Gera descrições ALT acessíveis (WCAG) e traduz posts ou notificações inline via Ollama local, Google Gemini (camada gratuita) ou API compatível com OpenAI. Interface em Português e Inglês.",
+      local_h: "O teu computador, as tuas chaves.",
+      local_p1: "O MastoSky é um servidor Python autónomo (app.py) com frontend estático em HTML, CSS e JS puros. Por omissão escuta apenas em 127.0.0.1, mantendo a App Password do Bluesky e o token do Mastodon na tua máquina.",
+      local_p2: "Os modos opcionais --lan e Docker restringem o acesso a redes privadas RFC 1918 / Tailscale com tokens CSRF por sessão, validação de Host/Origin, proteção SSRF e ficheiros de credenciais 0600.",
+      facts: ["Biblioteca standard do Python 3", "Sem pip, sem npm", "220+ testes unitários · Licença MIT"],
+      run_h: "Como correr",
+      s1: "Instala numa linha (ou clona e arranca diretamente com Python 3):",
+      s2: "Usa no iPhone, iPad ou Android na rede Wi-Fi local (mostra um QR Code e instala como PWA):",
+      s2_note: "Ou corre em permanência com Docker / CasaOS (docker compose up -d) para sincronizar definições e guardados via user_data.json com suporte a Tailscale.",
+      s3_a: "Abre ",
+      s3_b: " no browser e introduz uma App Password do Bluesky (nunca a password principal) e um token de acesso do Mastodon.",
+      status_h: "Código aberto.",
+      status_p: "Atualizado regularmente com suite de testes automatizados e atualização em 1 clique nas Definições para instalações Docker.",
+      status_a: "Abrir uma issue",
+      status_bg: "Guia de arranque em segundo plano",
+      foot: "Software livre sob a licença MIT."
+    }
+  };
+
   var lang = "en";
   try {
     var saved = localStorage.getItem("mastosky-lang");
@@ -223,9 +617,6 @@ python3 app.py</pre><button class="copy" type="button" data-i18n="copy">Copy</bu
       var k = el.getAttribute("data-i18n");
       if (d[k] !== undefined) el.textContent = d[k];
     });
-    document.querySelectorAll("[data-i18n-alt]").forEach(function (el) {
-      el.setAttribute("alt", d[el.getAttribute("data-i18n-alt")]);
-    });
     document.querySelectorAll("[data-i18n-fact]").forEach(function (el) {
       el.textContent = d.facts[+el.getAttribute("data-i18n-fact")];
     });
@@ -243,21 +634,37 @@ python3 app.py</pre><button class="copy" type="button" data-i18n="copy">Copy</bu
     });
   });
 
-  var copyBtn = document.querySelector(".copy");
-  copyBtn.addEventListener("click", function () {
-    var text = document.getElementById("cmd").textContent;
-    function done() {
-      copyBtn.textContent = T[lang].copied;
-      setTimeout(function () { copyBtn.textContent = T[lang].copy; }, 1600);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, function () {});
-    } else {
-      var ta = document.createElement("textarea");
-      ta.value = text; document.body.appendChild(ta); ta.select();
-      try { document.execCommand("copy"); done(); } catch (e) {}
-      document.body.removeChild(ta);
-    }
+  var deckEl = document.getElementById("previewDeck");
+  var singleEl = document.getElementById("previewSingle");
+  document.querySelectorAll(".mode-switch button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var mode = b.getAttribute("data-preview");
+      var isDeck = mode === "deck";
+      deckEl.hidden = !isDeck;
+      singleEl.hidden = isDeck;
+      document.querySelectorAll(".mode-switch button").forEach(function (x) {
+        x.setAttribute("aria-pressed", String(x === b));
+      });
+    });
+  });
+
+  document.querySelectorAll(".copy").forEach(function (copyBtn) {
+    copyBtn.addEventListener("click", function () {
+      var pre = copyBtn.parentElement.querySelector("pre");
+      var text = pre ? pre.textContent : "";
+      function done() {
+        copyBtn.textContent = T[lang].copied;
+        setTimeout(function () { copyBtn.textContent = T[lang].copy; }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () {});
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
   });
 
   if (lang !== "en") apply(lang);
