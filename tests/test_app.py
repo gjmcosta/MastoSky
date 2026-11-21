@@ -4588,6 +4588,160 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         ]:
             self.assertIn(marker, js)
 
+    def test_gif_search_and_endpoint(self):
+        v2_payload = {
+            "results": [
+                {
+                    "id": "k1",
+                    "content_description": "Funny cat nodding",
+                    "media_formats": {
+                        "gif": {"url": "https://static.klipy.com/ii/abc/cat.gif", "dims": [480, 360], "size": 1200000},
+                        "tinygif": {"url": "https://static.klipy.com/ii/abc/cat_tiny.gif", "dims": [220, 165], "size": 150000},
+                    },
+                }
+            ],
+            "next": "pos_2",
+        }
+        v1_payload = {
+            "results": [
+                {
+                    "id": "t1",
+                    "title": "Applause",
+                    "media": [
+                        {
+                            "gif": {"url": "https://media.tenor.com/xyz/clap.gif", "dims": [498, 280], "size": 800000},
+                            "tinygif": {"url": "https://media.tenor.com/xyz/clap_tiny.gif", "dims": [220, 124]},
+                        }
+                    ],
+                }
+            ],
+            "next": "2",
+        }
+
+        with mock.patch("app.http", return_value=v2_payload) as mock_http:
+            res = app.search_gifs(query="cats", limit=12, locale="pt")
+            self.assertTrue(res["ok"])
+            self.assertEqual(res["next"], "pos_2")
+            self.assertEqual(len(res["results"]), 1)
+            item = res["results"][0]
+            self.assertEqual(item["gif_url"], "https://static.klipy.com/ii/abc/cat.gif?hh=360&ww=480")
+            self.assertEqual(item["preview_url"], "https://static.klipy.com/ii/abc/cat_tiny.gif")
+            self.assertEqual(item["alt"], "Funny cat nodding")
+            self.assertEqual(item["width"], 480)
+            self.assertEqual(item["height"], 360)
+            called_url = mock_http.call_args[0][1]
+            self.assertIn("https://gifs.bsky.app/klipy/v2/search", called_url)
+            self.assertIn("q=cats", called_url)
+
+        with mock.patch("app.http", return_value=v1_payload) as mock_http:
+            code, ep_data = self._req("GET", "/api/gifs?lang=en&limit=10")
+            self.assertEqual(code, 200)
+            self.assertTrue(ep_data["ok"])
+            self.assertEqual(ep_data["results"][0]["gif_url"], "https://media.tenor.com/xyz/clap.gif?hh=280&ww=498")
+            self.assertIn("https://gifs.bsky.app/klipy/v2/featured", mock_http.call_args[0][1])
+
+    def test_extract_bsky_embed_recognizes_animated_gifs(self):
+        for uri in (
+            "https://static.klipy.com/ii/123/happy.gif?hh=300&ww=400",
+            "https://media.tenor.com/abc/dance.gif?hh=280&ww=498",
+        ):
+            m, q = app.extract_bsky_embed({
+                "$type": "app.bsky.embed.external#view",
+                "external": {
+                    "uri": uri,
+                    "thumb": "https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:x/cid@jpeg",
+                    "title": "Happy Dance GIF",
+                    "description": "ALT: Someone dancing joyfully",
+                },
+            })
+            self.assertIsNone(q)
+            self.assertEqual(len(m), 1)
+            self.assertEqual(m[0]["type"], "image")
+            self.assertTrue(m[0]["is_gif"])
+            self.assertEqual(m[0]["url"], uri)
+            self.assertEqual(m[0]["alt"], "Someone dancing joyfully")
+
+    def test_post_gif_bluesky_external_and_mastodon_media(self):
+        b = app.Bsky({"handle": "u.bsky.social", "app_password": "p"})
+        b.jwt = "jwt"
+        b.did = "did:plc:me"
+        b.pds = "https://bsky.social"
+        fake_blob = {"$type": "blob", "ref": {"$link": "bafkgifthumb"}, "mimeType": "image/jpeg", "size": 64}
+        bsky_calls = []
+
+        def fake_bsky_call(method, xrpc, payload=None, params=None):
+            bsky_calls.append((method, xrpc, payload))
+            return {"uri": "at://did:plc:me/app.bsky.feed.post/gif1", "cid": "cidgif1"}
+
+        b.call = fake_bsky_call
+        b.upload_blob = mock.MagicMock(return_value=fake_blob)
+
+        m = app.Masto({"instance": "https://mastodon.social", "token": "tok"})
+        m.upload_media = mock.MagicMock(return_value="masto_gif_1")
+        masto_calls = []
+
+        def fake_masto_call(method, path, data=None, params=None, timeout=30):
+            masto_calls.append((method, path, data))
+            return {"id": "999"}
+
+        m.call = fake_masto_call
+
+        gif_b64 = base64.b64encode(b"GIF89a\x01\x00\x01\x00\x00\xff\x00;").decode("ascii")
+        thumb_b64 = base64.b64encode(b"\xff\xd8\xffthumb").decode("ascii")
+        payload = {
+            "text": "Olha este GIF!",
+            "targets": ["bluesky", "mastodon"],
+            "lang": "pt",
+            "images": [
+                {
+                    "data": "data:image/gif;base64," + gif_b64,
+                    "thumb_data": "data:image/jpeg;base64," + thumb_b64,
+                    "alt": "Gato a dançar",
+                    "is_gif": True,
+                    "gif_url": "https://static.klipy.com/ii/1/dance.gif?hh=240&ww=320",
+                    "aspectRatio": {"width": 320, "height": 240},
+                }
+            ],
+        }
+        with mock.patch.dict(app.CLIENTS, {"bluesky": b, "mastodon": m}, clear=True):
+            code, res = app.execute_post_payload(payload)
+
+        self.assertEqual(code, 200)
+        self.assertEqual(res, {"bluesky": "ok", "mastodon": "ok"})
+
+        rec = bsky_calls[0][2]["record"]
+        self.assertEqual(rec["embed"]["$type"], "app.bsky.embed.external")
+        ext = rec["embed"]["external"]
+        self.assertEqual(ext["uri"], "https://static.klipy.com/ii/1/dance.gif?hh=240&ww=320")
+        self.assertEqual(ext["title"], "Gato a dançar")
+        self.assertEqual(ext["description"], "ALT: Gato a dançar")
+        self.assertEqual(ext["thumb"], fake_blob)
+        b.upload_blob.assert_called_once_with(b"\xff\xd8\xffthumb", "image/jpeg")
+
+        m.upload_media.assert_called_once()
+        up_args = m.upload_media.call_args[0]
+        self.assertTrue(up_args[0].startswith(b"GIF89a"))
+        self.assertEqual(up_args[1], "image/gif")
+        self.assertEqual(up_args[2], "Gato a dançar")
+        self.assertEqual(masto_calls[0][2]["media_ids"], ["masto_gif_1"])
+
+    def test_gif_picker_frontend_markers(self):
+        html = _read_frontend()
+        for marker in [
+            'id="gifBtn"',
+            'id="gifPickerOverlay"',
+            'id="gifSearchInput"',
+            'id="gifCategoriesBar"',
+            'id="gifGrid"',
+            "function openGifPicker(",
+            "function closeGifPicker(",
+            "function selectGifItem(",
+            "function loadGifsForPicker(",
+            "media-gif-badge",
+            "prev-gif-badge",
+        ]:
+            self.assertIn(marker, html)
+
 
 if __name__ == "__main__":
     unittest.main()

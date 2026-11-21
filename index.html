@@ -334,6 +334,15 @@
       <line x1="12" y1="15" x2="12" y2="3" fill="none" stroke="currentColor" stroke-width="1.75"
         stroke-linecap="round" stroke-linejoin="round" />
     </symbol>
+    <symbol id="i-gif" viewBox="0 0 24 24">
+      <rect x="2.5" y="4.5" width="19" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="1.75"
+        stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M9.2 10H6.8a1.5 1.5 0 0 0-1.5 1.5v1A1.5 1.5 0 0 0 6.8 14h2.4v-2H7.7" fill="none" stroke="currentColor"
+        stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" />
+      <path d="M12.2 10v4" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" />
+      <path d="M15 14v-4h3.2M15 12h2.2" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round"
+        stroke-linejoin="round" />
+    </symbol>
   </svg>
   <div class="cosmos-bg" aria-hidden="true">
     <div class="cosmos-glow"></div>
@@ -678,6 +687,12 @@
                 data-i18n-title="composer.paste_img_title" aria-label="Colar imagem">
                 <svg class="ico">
                   <use href="#i-clipboard" />
+                </svg>
+              </button>
+              <button type="button" class="tool" id="gifBtn" title="Inserir GIF animado"
+                data-i18n-title="composer.gif_btn_title" aria-label="Inserir GIF animado">
+                <svg class="ico" aria-hidden="true">
+                  <use href="#i-gif" />
                 </svg>
               </button>
               <button type="button" class="tool" id="pollBtn" title="Criar sondagem"
@@ -2485,6 +2500,32 @@
         <div class="confirm-modal-actions">
           <button type="button" class="ghost" id="confirmModalCancelBtn" data-i18n="common.cancel">Cancelar</button>
           <button type="button" class="send" id="confirmModalOkBtn">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="gifPickerOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true"
+      aria-labelledby="gifModalTitle">
+      <div class="setup-box gif-modal-box">
+        <div class="setup-header">
+          <h2 id="gifModalTitle" data-i18n="composer.gif_modal_title">🎬 Pesquisar GIFs</h2>
+          <button type="button" class="setup-close-btn" id="closeGifPicker" title="Fechar (Esc)"
+            data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
+        </div>
+        <div class="gif-search-row">
+          <div class="gif-search-input-wrap">
+            <svg class="ico gif-search-ico" aria-hidden="true">
+              <use href="#i-search" />
+            </svg>
+            <input type="search" id="gifSearchInput" placeholder="Pesquisar GIFs (ex: engraçado, aplausos, gatos)..."
+              data-i18n-ph="composer.gif_search_ph" autocomplete="off">
+          </div>
+        </div>
+        <div id="gifCategoriesBar" class="gif-cat-bar"></div>
+        <div id="gifStatusMsg" class="gif-status-msg" hidden></div>
+        <div id="gifGrid" class="gif-grid"></div>
+        <div class="gif-modal-footer">
+          <span class="gif-attr" data-i18n="composer.gif_via">GIFs via KLIPY</span>
         </div>
       </div>
     </div>

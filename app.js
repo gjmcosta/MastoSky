@@ -146,7 +146,23 @@
           partial_finish: "Concluir (Manter onde teve sucesso)",
           partial_edit: "Editar publicação antes de tentar",
           partial_editing_note: "Podes rever a tua publicação e reenviar apenas para a rede em falta.",
-          partial_retrying: "A reenviar..."
+          partial_retrying: "A reenviar...",
+          gif_btn_title: "Inserir GIF animado",
+          gif_modal_title: "🎬 Pesquisar GIFs",
+          gif_search_ph: "Pesquisar GIFs (ex: engraçado, aplausos, gatos)...",
+          gif_loading: "A carregar GIFs...",
+          gif_empty: "Nenhum GIF encontrado.",
+          gif_fetching: "A anexar GIF...",
+          gif_err: "Não foi possível carregar os GIFs.",
+          gif_via: "GIFs via KLIPY",
+          gif_cat_trending: "🔥 Populares",
+          gif_cat_funny: "😂 Engraçados",
+          gif_cat_applause: "👏 Aplausos",
+          gif_cat_party: "🎉 Festa",
+          gif_cat_cats: "🐱 Gatos",
+          gif_cat_thinking: "🤔 A pensar",
+          gif_cat_love: "❤️ Amor",
+          gif_cat_popcorn: "🍿 Pipocas"
         },
         update: {
           section_title: "🔄 Versão e Atualizações",
@@ -830,7 +846,23 @@
           partial_finish: "Finish (Keep where it succeeded)",
           partial_edit: "Edit post before retrying",
           partial_editing_note: "You can review your post and resend only to the missing network.",
-          partial_retrying: "Retrying..."
+          partial_retrying: "Retrying...",
+          gif_btn_title: "Insert animated GIF",
+          gif_modal_title: "🎬 Search GIFs",
+          gif_search_ph: "Search GIFs (e.g. funny, applause, cats)...",
+          gif_loading: "Loading GIFs...",
+          gif_empty: "No GIFs found.",
+          gif_fetching: "Attaching GIF...",
+          gif_err: "Could not load GIFs.",
+          gif_via: "GIFs via KLIPY",
+          gif_cat_trending: "🔥 Trending",
+          gif_cat_funny: "😂 Funny",
+          gif_cat_applause: "👏 Applause",
+          gif_cat_party: "🎉 Party",
+          gif_cat_cats: "🐱 Cats",
+          gif_cat_thinking: "🤔 Thinking",
+          gif_cat_love: "❤️ Love",
+          gif_cat_popcorn: "🍿 Popcorn"
         },
         update: {
           section_title: "🔄 Version & Updates",
@@ -2741,7 +2773,8 @@
         "crossPostOverlay",
         "shortcutsOverlay",
         "imageLightbox",
-        "newConvoModalOverlay"
+        "newConvoModalOverlay",
+        "gifPickerOverlay"
       ];
       return modalIds.some(id => {
         const el = $(id);
@@ -2895,6 +2928,10 @@
         }
         if ($("newConvoModalOverlay") && !$("newConvoModalOverlay").hidden) {
           closeNewConvoModal();
+          return;
+        }
+        if ($("gifPickerOverlay") && !$("gifPickerOverlay").hidden) {
+          closeGifPicker();
           return;
         }
         if (activeBoostMenu) {
@@ -3145,6 +3182,9 @@
             openImageLightbox(imgList, idx >= 0 ? idx : 0);
           };
           wrap.append(img);
+          if (x.is_gif || /\.gif(\?|$)/i.test(x.url || "")) {
+            wrap.append(el("span", "media-gif-badge", "GIF"));
+          }
           const altText = (x.alt || "").trim();
           if (altText) {
             const altBtn = el("button", "media-alt-badge", "ALT");
@@ -8053,15 +8093,22 @@
         moveGrp.append(leftBtn, rightBtn);
       }
 
-      const cropBtn = el("button", "prev-tool-btn", "✂️");
-      cropBtn.type = "button";
-      cropBtn.title = t("composer.crop_btn_title");
-      cropBtn.onclick = () => openCropModal(imgList[idx], () => {
-        rerenderFn();
-        update();
-      });
+      bar.append(moveGrp);
+      const curImg = imgList[idx];
+      const isGif = Boolean(curImg?.is_gif || String(curImg?.data || "").startsWith("data:image/gif"));
+      if (isGif) {
+        card.append(el("span", "prev-gif-badge", "GIF"));
+      } else {
+        const cropBtn = el("button", "prev-tool-btn", "✂️");
+        cropBtn.type = "button";
+        cropBtn.title = t("composer.crop_btn_title");
+        cropBtn.onclick = () => openCropModal(imgList[idx], () => {
+          rerenderFn();
+          update();
+        });
+        bar.append(cropBtn);
+      }
 
-      bar.append(moveGrp, cropBtn);
       return bar;
     }
 
@@ -8202,6 +8249,7 @@
         box.hidden = false;
         if (btn) btn.setAttribute("disabled", "true");
         if ($("pasteImgBtn")) $("pasteImgBtn").setAttribute("disabled", "true");
+        if ($("gifBtn")) $("gifBtn").setAttribute("disabled", "true");
         if ($("pollBtn")) $("pollBtn").setAttribute("disabled", "true");
 
         const card = el("div", "prev-card prev-card-video");
@@ -8283,6 +8331,7 @@
       if (!images.length) {
         box.hidden = true;
         if (btn) btn.removeAttribute("disabled");
+        if ($("gifBtn") && !hasPoll) $("gifBtn").removeAttribute("disabled");
         return;
       }
       box.hidden = false;
@@ -8673,6 +8722,279 @@
       };
     }
 
+    let gifPickerThreadPost = null;
+    let gifSearchDebounce = null;
+    let gifFetchSeq = 0;
+    let gifSelecting = false;
+    let gifActiveCategory = "";
+
+    const GIF_CATEGORIES = [
+      { id: "", query: "", labelKey: "composer.gif_cat_trending" },
+      { id: "funny", query: "funny", labelKey: "composer.gif_cat_funny" },
+      { id: "applause", query: "applause", labelKey: "composer.gif_cat_applause" },
+      { id: "party", query: "celebration", labelKey: "composer.gif_cat_party" },
+      { id: "cats", query: "cats", labelKey: "composer.gif_cat_cats" },
+      { id: "thinking", query: "thinking", labelKey: "composer.gif_cat_thinking" },
+      { id: "love", query: "love", labelKey: "composer.gif_cat_love" },
+      { id: "popcorn", query: "popcorn", labelKey: "composer.gif_cat_popcorn" }
+    ];
+
+    function renderGifCategories() {
+      const bar = $("gifCategoriesBar");
+      if (!bar) return;
+      bar.replaceChildren();
+      GIF_CATEGORIES.forEach(cat => {
+        const btn = el("button", "gif-cat-chip" + (gifActiveCategory === cat.id ? " active" : ""), t(cat.labelKey));
+        btn.type = "button";
+        btn.onclick = () => {
+          gifActiveCategory = cat.id;
+          if ($("gifSearchInput")) $("gifSearchInput").value = cat.query;
+          renderGifCategories();
+          loadGifsForPicker(cat.query);
+        };
+        bar.append(btn);
+      });
+    }
+
+    function blobToDataUri(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Falha ao ler dados da imagem."));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function buildGifThumbDataUri(dataUri) {
+      return new Promise((resolve) => {
+        if (!dataUri) return resolve(null);
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const w0 = img.naturalWidth || img.width || 480;
+            const h0 = img.naturalHeight || img.height || 270;
+            const scale = Math.min(1, 640 / Math.max(w0, h0));
+            const w = Math.max(1, Math.round(w0 * scale));
+            const h = Math.max(1, Math.round(h0 * scale));
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return resolve(null);
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL("image/jpeg", 0.82));
+          } catch (_) {
+            resolve(null);
+          }
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataUri;
+      });
+    }
+
+    async function selectGifItem(item, btnEl) {
+      if (gifSelecting || !item) return;
+      const targetPost = gifPickerThreadPost;
+      const targetList = targetPost ? (targetPost.images = targetPost.images || []) : images;
+      if (targetPost ? targetPost.video : attachedVideo) {
+        $("msg").className = "msg err";
+        $("msg").textContent = t("composer.video_disabled_images");
+        return;
+      }
+      if (!targetPost && hasPoll) {
+        $("msg").className = "msg err";
+        $("msg").textContent = t("composer.attach_disabled_poll");
+        return;
+      }
+      if (targetList.length >= 4) {
+        $("msg").className = "msg err";
+        $("msg").textContent = t("composer.attach_disabled_max");
+        return;
+      }
+
+      gifSelecting = true;
+      if (btnEl) btnEl.classList.add("is-loading");
+      const statusEl = $("gifStatusMsg");
+      if (statusEl) {
+        statusEl.hidden = false;
+        statusEl.className = "gif-status-msg";
+        statusEl.textContent = t("composer.gif_fetching");
+      }
+
+      try {
+        const candidates = [item.download_url, item.gif_url, item.preview_url].filter((u, i, a) => u && a.indexOf(u) === i);
+        let blob = null;
+        for (const remoteUrl of candidates) {
+          try {
+            const res = await fetch("/api/proxy_image?url=" + encodeURIComponent(remoteUrl));
+            if (res.ok) {
+              const b = await res.blob();
+              if (b && b.size > 0) {
+                blob = b;
+                break;
+              }
+            }
+          } catch (_) { }
+        }
+        if (!blob) throw new Error(t("composer.gif_err"));
+
+        const dataUri = await blobToDataUri(blob);
+        const thumbDataUri = await buildGifThumbDataUri(dataUri);
+        targetList.push({
+          data: dataUri,
+          thumb_data: thumbDataUri || undefined,
+          alt: item.alt || item.title || "GIF",
+          is_gif: true,
+          gif_url: item.gif_url,
+          aspectRatio: {
+            width: item.width || 498,
+            height: item.height || 280
+          }
+        });
+
+        closeGifPicker();
+        if (targetPost) {
+          const wrap = $("threadPreviews_" + targetPost.id);
+          if (wrap) renderThreadItemPreviews(targetPost, wrap);
+        } else {
+          renderPreviews();
+        }
+        update();
+      } catch (err) {
+        if (statusEl) {
+          statusEl.hidden = false;
+          statusEl.className = "gif-status-msg err";
+          statusEl.textContent = err?.message || t("composer.gif_err");
+        }
+      } finally {
+        gifSelecting = false;
+        if (btnEl) btnEl.classList.remove("is-loading");
+      }
+    }
+
+    async function loadGifsForPicker(query = "") {
+      const seq = ++gifFetchSeq;
+      const grid = $("gifGrid");
+      const statusEl = $("gifStatusMsg");
+      if (grid) grid.replaceChildren();
+      if (statusEl) {
+        statusEl.hidden = false;
+        statusEl.className = "gif-status-msg";
+        statusEl.textContent = t("composer.gif_loading");
+      }
+
+      try {
+        const qs = new URLSearchParams({
+          q: String(query || "").trim(),
+          lang: currentLang || "pt",
+          limit: "24"
+        });
+        const res = await api("/api/gifs?" + qs.toString());
+        if (seq !== gifFetchSeq) return;
+        if (!res || res.ok === false) {
+          throw new Error(res?.error || t("composer.gif_err"));
+        }
+        const results = Array.isArray(res.results) ? res.results : [];
+        if (!results.length) {
+          if (statusEl) {
+            statusEl.hidden = false;
+            statusEl.className = "gif-status-msg";
+            statusEl.textContent = t("composer.gif_empty");
+          }
+          return;
+        }
+        if (statusEl) statusEl.hidden = true;
+        if (grid) {
+          results.forEach(item => {
+            const tile = el("button", "gif-item");
+            tile.type = "button";
+            tile.title = item.title || item.alt || "GIF";
+            const img = el("img");
+            img.src = item.preview_url || item.gif_url;
+            img.alt = item.alt || item.title || "GIF";
+            img.loading = "lazy";
+            tile.append(img);
+            tile.onclick = () => selectGifItem(item, tile);
+            grid.append(tile);
+          });
+        }
+      } catch (err) {
+        if (seq !== gifFetchSeq) return;
+        if (statusEl) {
+          statusEl.hidden = false;
+          statusEl.className = "gif-status-msg err";
+          statusEl.textContent = err?.message || t("composer.gif_err");
+        }
+      }
+    }
+
+    function openGifPicker(targetThreadPost = null) {
+      const overlay = $("gifPickerOverlay");
+      if (!overlay) return;
+      gifPickerThreadPost = targetThreadPost || null;
+      const targetImages = gifPickerThreadPost ? (gifPickerThreadPost.images || []) : images;
+      const hasVid = gifPickerThreadPost ? Boolean(gifPickerThreadPost.video) : Boolean(attachedVideo);
+      if (hasVid) {
+        $("msg").className = "msg err";
+        $("msg").textContent = t("composer.video_disabled_images");
+        return;
+      }
+      if (!gifPickerThreadPost && hasPoll) {
+        $("msg").className = "msg err";
+        $("msg").textContent = t("composer.attach_disabled_poll");
+        return;
+      }
+      if (targetImages.length >= 4) {
+        $("msg").className = "msg err";
+        $("msg").textContent = t("composer.attach_disabled_max");
+        return;
+      }
+
+      gifActiveCategory = "";
+      if ($("gifSearchInput")) $("gifSearchInput").value = "";
+      renderGifCategories();
+      overlay.hidden = false;
+      loadGifsForPicker("");
+      setTimeout(() => {
+        if ($("gifSearchInput")) $("gifSearchInput").focus();
+      }, 40);
+    }
+
+    function closeGifPicker() {
+      const overlay = $("gifPickerOverlay");
+      if (overlay) overlay.hidden = true;
+      gifPickerThreadPost = null;
+      gifSelecting = false;
+      if (gifSearchDebounce) {
+        clearTimeout(gifSearchDebounce);
+        gifSearchDebounce = null;
+      }
+    }
+
+    if ($("gifBtn")) {
+      $("gifBtn").onclick = () => openGifPicker(null);
+    }
+    if ($("closeGifPicker")) {
+      $("closeGifPicker").onclick = closeGifPicker;
+    }
+    if ($("gifPickerOverlay")) {
+      $("gifPickerOverlay").addEventListener("click", (e) => {
+        if (e.target === $("gifPickerOverlay")) closeGifPicker();
+      });
+    }
+    if ($("gifSearchInput")) {
+      $("gifSearchInput").addEventListener("input", () => {
+        const val = $("gifSearchInput").value.trim();
+        const match = GIF_CATEGORIES.find(c => c.query && c.query.toLowerCase() === val.toLowerCase());
+        gifActiveCategory = !val ? "" : (match ? match.id : "__custom__");
+        renderGifCategories();
+        if (gifSearchDebounce) clearTimeout(gifSearchDebounce);
+        gifSearchDebounce = setTimeout(() => {
+          loadGifsForPicker(val);
+        }, 300);
+      });
+    }
+
     if ($("attachBtn")) {
       $("attachBtn").onclick = () => $("mediaInput").click();
     }
@@ -8907,7 +9229,14 @@
           await handleThreadImages(post, fs);
         };
         attachBtn.append(fileInp);
-        foot.append(attachBtn);
+        const threadGifBtn = el("button", "tool");
+        threadGifBtn.type = "button";
+        threadGifBtn.title = t("composer.gif_btn_title");
+        threadGifBtn.setAttribute("aria-label", t("composer.gif_btn_title"));
+        threadGifBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-gif"/></svg>';
+        threadGifBtn.disabled = Boolean(post.video || (post.images && post.images.length >= 4));
+        threadGifBtn.onclick = () => openGifPicker(post);
+        foot.append(attachBtn, threadGifBtn);
 
         item.append(head, ta, prevWrap, foot);
         container.append(item);
@@ -9546,6 +9875,15 @@
         }
       }
 
+      const gifEl = $("gifBtn");
+      if (gifEl) {
+        if (hasPoll || images.length >= 4 || attachedVideo) {
+          gifEl.setAttribute("disabled", "true");
+        } else {
+          gifEl.removeAttribute("disabled");
+        }
+      }
+
       const pollValid = !hasPoll || filledOpts.length >= 2;
       const hasContent = lenText > 0 || images.length > 0 || Boolean(attachedVideo) || (hasPoll && filledOpts.length >= 2) || Boolean(quote);
 
@@ -9739,10 +10077,10 @@
         hasPoll: Boolean(hasPoll),
         pollOptions: [...pollOptions],
         pollDuration: $("pollDuration") ? $("pollDuration").value : "86400",
-        images: images.map(img => ({ data: img.data, mime: img.mime, alt: img.alt || "", aspectRatio: img.aspectRatio })),
+        images: images.map(img => ({ data: img.data, mime: img.mime, alt: img.alt || "", aspectRatio: img.aspectRatio, is_gif: img.is_gif || undefined, gif_url: img.gif_url || undefined, thumb_data: img.thumb_data || undefined })),
         threadPosts: threadPosts.map(p => ({
           text: p.text || "",
-          images: (p.images || []).map(img => ({ data: img.data, mime: img.mime, alt: img.alt || "", aspectRatio: img.aspectRatio }))
+          images: (p.images || []).map(img => ({ data: img.data, mime: img.mime, alt: img.alt || "", aspectRatio: img.aspectRatio, is_gif: img.is_gif || undefined, gif_url: img.gif_url || undefined, thumb_data: img.thumb_data || undefined }))
         })),
         reply: reply ? { ...reply } : null,
         quote: quote ? { ...quote } : null,

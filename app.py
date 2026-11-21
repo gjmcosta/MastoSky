@@ -267,11 +267,30 @@ def execute_post_payload(d, validate_only=False, target_override=None):
                 img_bytes = base64.b64decode(b64, validate=True)
             except (binascii.Error, ValueError):
                 raise ValueError("Imagem com codificação inválida.")
+            thumb_bytes = None
+            thumb_mime = "image/jpeg"
+            raw_thumb = img.get("thumb_data")
+            if isinstance(raw_thumb, str) and raw_thumb.strip():
+                if "," in raw_thumb:
+                    t_hdr, t_b64 = raw_thumb.split(",", 1)
+                    thumb_mime = t_hdr.split(";")[0].replace("data:", "") or "image/jpeg"
+                else:
+                    t_b64 = raw_thumb
+                try:
+                    thumb_bytes = base64.b64decode(t_b64, validate=True)
+                except (binascii.Error, ValueError):
+                    thumb_bytes = None
+            gif_url = safe_url(img.get("gif_url"))
+            is_gif = bool(img.get("is_gif") or gif_url or mime == "image/gif")
             parsed.append({
                 "bytes": img_bytes,
                 "mime": mime,
                 "alt": img.get("alt", ""),
-                "aspectRatio": img.get("aspectRatio")
+                "aspectRatio": img.get("aspectRatio"),
+                "gif_url": gif_url,
+                "is_gif": is_gif,
+                "thumb_bytes": thumb_bytes,
+                "thumb_mime": thumb_mime,
             })
         return parsed
 
@@ -1569,6 +1588,122 @@ def proxy_fetch_image(url_str):
         return data, ctype if (ctype and ctype.startswith("image/")) else "image/jpeg"
 
 
+GIF_SERVICE_BASE = "https://gifs.bsky.app/klipy/v2"
+
+
+def _extract_gif_item(r):
+    """Normaliza um resultado da API de GIFs (KLIPY/Tenor v2/v1) para o seletor do compositor."""
+    if not isinstance(r, dict):
+        return None
+    mf = r.get("media_formats")
+    if not isinstance(mf, dict):
+        media_list = r.get("media")
+        if isinstance(media_list, list) and media_list and isinstance(media_list[0], dict):
+            mf = media_list[0]
+        else:
+            mf = None
+
+    if isinstance(mf, dict) and mf:
+        gif_obj = mf.get("gif") or mf.get("mediumgif") or mf.get("tinygif") or {}
+        prev_obj = mf.get("tinygif") or mf.get("nanogif") or mf.get("mediumgif") or gif_obj
+        if isinstance(gif_obj.get("size"), (int, float)) and gif_obj["size"] > 8_500_000:
+            dl_obj = mf.get("mediumgif") or mf.get("tinygif") or gif_obj
+        else:
+            dl_obj = gif_obj
+    elif isinstance(r.get("file"), dict):
+        f_obj = r["file"]
+        gif_obj = (f_obj.get("hd") or {}).get("gif") or (f_obj.get("md") or {}).get("gif") or {}
+        prev_obj = (f_obj.get("sm") or {}).get("gif") or (f_obj.get("md") or {}).get("gif") or gif_obj
+        dl_obj = gif_obj
+    else:
+        return None
+
+    raw_gif_url = safe_url(gif_obj.get("url"))
+    if not raw_gif_url:
+        return None
+    preview_url = safe_url(prev_obj.get("url")) or raw_gif_url
+    download_url = safe_url(dl_obj.get("url")) or preview_url or raw_gif_url
+
+    dims = gif_obj.get("dims") or prev_obj.get("dims")
+    if isinstance(dims, list) and len(dims) >= 2 and dims[0] and dims[1]:
+        w, h = int(dims[0]), int(dims[1])
+    else:
+        w = int(gif_obj.get("width") or prev_obj.get("width") or 498)
+        h = int(gif_obj.get("height") or prev_obj.get("height") or 280)
+
+    if "hh=" not in raw_gif_url:
+        sep = "&" if "?" in raw_gif_url else "?"
+        gif_url = f"{raw_gif_url}{sep}hh={h}&ww={w}"
+    else:
+        gif_url = raw_gif_url
+
+    title = str(r.get("content_description") or r.get("title") or "GIF").strip() or "GIF"
+    return {
+        "id": str(r.get("id") or ""),
+        "title": title,
+        "alt": title,
+        "gif_url": gif_url,
+        "preview_url": preview_url,
+        "download_url": download_url,
+        "width": w,
+        "height": h,
+    }
+
+
+def search_gifs(query="", limit=24, pos="", locale="pt_PT"):
+    """Pesquisa GIFs animados (ou em tendência) através do serviço KLIPY utilizado pelo Bluesky."""
+    q_clean = (query or "").strip()
+    try:
+        lim = max(1, min(50, int(limit or 24)))
+    except (TypeError, ValueError):
+        lim = 24
+    loc = "en_US" if str(locale or "").lower().startswith("en") else "pt_PT"
+    endpoint = f"{GIF_SERVICE_BASE}/search" if q_clean else f"{GIF_SERVICE_BASE}/featured"
+    params = {"limit": str(lim), "locale": loc}
+    if q_clean:
+        params["q"] = q_clean
+    if (pos or "").strip():
+        params["pos"] = str(pos).strip()
+    url = f"{endpoint}?{urllib.parse.urlencode(params)}"
+    res = http(
+        "GET",
+        url,
+        headers={"Referer": "https://bsky.app/", "Origin": "https://bsky.app"},
+        timeout=10,
+    )
+    raw_results = []
+    if isinstance(res, dict):
+        if isinstance(res.get("results"), list):
+            raw_results = res["results"]
+        elif isinstance(res.get("data"), dict) and isinstance(res["data"].get("data"), list):
+            raw_results = res["data"]["data"]
+        elif isinstance(res.get("data"), list):
+            raw_results = res["data"]
+    out = [item for item in (_extract_gif_item(r) for r in raw_results) if item]
+    next_tok = str((res.get("next") if isinstance(res, dict) else "") or "")
+    return {"ok": True, "results": out, "next": next_tok}
+
+
+search_tenor_gifs = search_gifs
+
+
+def _is_gif_external_uri(uri):
+    """Deteta se um embed externo do Bluesky representa um GIF animado (KLIPY, Tenor, Giphy ou .gif)."""
+    u = safe_url(uri)
+    if not u:
+        return False
+    p = urllib.parse.urlparse(u)
+    host = (p.hostname or "").lower()
+    path_l = (p.path or "").lower()
+    if path_l.endswith(".gif"):
+        return True
+    gif_hosts = ("tenor.com", "klipy.com", "giphy.com")
+    if any(host == d or host.endswith("." + d) for d in gif_hosts):
+        if ".gif" in path_l or "hh=" in (p.query or "").lower():
+            return True
+    return False
+
+
 def extract_bsky_embed(embed, did=None):
     media, quote = _extract_bsky_embed(embed, did=did)
     return safe_media_list(media), quote
@@ -1645,10 +1780,21 @@ def _extract_bsky_embed(embed, did=None):
             cid = ref.get("$link") if isinstance(ref, dict) else (ref if isinstance(ref, str) else None)
             if cid and did:
                 thumb_url = f"https://cdn.bsky.app/img/feed_thumbnail/plain/{did}/{cid}@jpeg"
-        if thumb_url or ext.get("uri"):
+        ext_uri = ext.get("uri")
+        if _is_gif_external_uri(ext_uri):
+            raw_desc = (ext.get("description") or ext.get("title") or "").strip()
+            alt_text = re.sub(r"^ALT:\s*", "", raw_desc, flags=re.I).strip()
+            media.append({
+                "type": "image",
+                "url": ext_uri,
+                "thumb": thumb_url or ext_uri,
+                "alt": alt_text,
+                "is_gif": True
+            })
+        elif thumb_url or ext_uri:
             media.append({
                 "type": "external",
-                "url": ext.get("uri"),
+                "url": ext_uri,
                 "thumb": thumb_url,
                 "title": ext.get("title", ""),
                 "description": ext.get("description", "")
@@ -2293,15 +2439,39 @@ class Bsky:
             if video.get("aspectRatio"):
                 embed_media["aspectRatio"] = video["aspectRatio"]
         elif images:
-            embed_imgs = []
-            for img in images:
-                blob = self.upload_blob(img["bytes"], img.get("mime", "image/jpeg"))
-                item = {"alt": img.get("alt", "") or "", "image": blob}
-                if img.get("aspectRatio"):
-                    item["aspectRatio"] = img["aspectRatio"]
-                embed_imgs.append(item)
-            if embed_imgs:
-                embed_media = {"$type": "app.bsky.embed.images", "images": embed_imgs}
+            gif_img = next((im for im in images if isinstance(im, dict) and im.get("gif_url")), None)
+            if gif_img:
+                gif_uri = gif_img["gif_url"]
+                if "hh=" not in gif_uri and isinstance(gif_img.get("aspectRatio"), dict):
+                    ar = gif_img["aspectRatio"]
+                    w = int(ar.get("width") or 498)
+                    h = int(ar.get("height") or 280)
+                    sep = "&" if "?" in gif_uri else "?"
+                    gif_uri = f"{gif_uri}{sep}hh={h}&ww={w}"
+                alt_txt = (gif_img.get("alt") or "GIF").strip()
+                ext_obj = {
+                    "uri": gif_uri,
+                    "title": alt_txt or "GIF",
+                    "description": f"ALT: {alt_txt}" if alt_txt else "ALT: GIF"
+                }
+                t_bytes = gif_img.get("thumb_bytes") or gif_img.get("bytes")
+                t_mime = (gif_img.get("thumb_mime") or "image/jpeg") if gif_img.get("thumb_bytes") else gif_img.get("mime", "image/gif")
+                if t_bytes and len(t_bytes) <= 950_000:
+                    try:
+                        ext_obj["thumb"] = self.upload_blob(t_bytes, t_mime)
+                    except Exception:
+                        pass
+                embed_media = {"$type": "app.bsky.embed.external", "external": ext_obj}
+            else:
+                embed_imgs = []
+                for img in images:
+                    blob = self.upload_blob(img["bytes"], img.get("mime", "image/jpeg"))
+                    item = {"alt": img.get("alt", "") or "", "image": blob}
+                    if img.get("aspectRatio"):
+                        item["aspectRatio"] = img["aspectRatio"]
+                    embed_imgs.append(item)
+                if embed_imgs:
+                    embed_media = {"$type": "app.bsky.embed.images", "images": embed_imgs}
 
         if quote and quote.get("network") == "bluesky" and quote.get("ref", {}).get("uri"):
             q_record = {
@@ -4723,6 +4893,19 @@ class H(BaseHTTPRequestHandler):
                 )
             except Exception as e:
                 return self.send(400, {"error": str(e)})
+        if path == "/api/gifs":
+            qs = urllib.parse.parse_qs(parsed.query)
+            q = qs.get("q", [""])[0]
+            pos = qs.get("pos", [""])[0]
+            lang = qs.get("lang", ["pt"])[0]
+            try:
+                limit = int(qs.get("limit", ["24"])[0] or 24)
+            except (TypeError, ValueError):
+                limit = 24
+            try:
+                return self.send(200, search_gifs(query=q, limit=limit, pos=pos, locale=lang))
+            except Exception as e:
+                return self.send(200, {"ok": False, "error": str(e), "results": []})
         if path == "/api/link_preview":
             qs = urllib.parse.parse_qs(parsed.query)
             target_url = qs.get("url", [None])[0]
