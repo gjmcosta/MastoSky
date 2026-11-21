@@ -1650,6 +1650,21 @@ def _extract_gif_item(r):
     }
 
 
+def _gif_dedup_key(item):
+    """Extrai uma chave canónica de media para evitar GIFs duplicados com IDs diferentes."""
+    for u in (item.get("preview_url"), item.get("gif_url")):
+        if not u:
+            continue
+        p = urllib.parse.urlparse(u)
+        m = re.search(r"/ii/([^/]+)/", p.path or "")
+        if m:
+            return "klipy:" + m.group(1)
+        clean_path = (p.path or "").strip("/")
+        if clean_path:
+            return clean_path
+    return item.get("id") or ""
+
+
 def search_gifs(query="", limit=24, pos="", locale="pt_PT"):
     """Pesquisa GIFs animados (ou em tendência) através do serviço KLIPY utilizado pelo Bluesky."""
     q_clean = (query or "").strip()
@@ -1679,7 +1694,18 @@ def search_gifs(query="", limit=24, pos="", locale="pt_PT"):
             raw_results = res["data"]["data"]
         elif isinstance(res.get("data"), list):
             raw_results = res["data"]
-    out = [item for item in (_extract_gif_item(r) for r in raw_results) if item]
+    out = []
+    seen = set()
+    for r in raw_results:
+        item = _extract_gif_item(r)
+        if not item:
+            continue
+        key = _gif_dedup_key(item)
+        if key and key in seen:
+            continue
+        if key:
+            seen.add(key)
+        out.append(item)
     next_tok = str((res.get("next") if isinstance(res, dict) else "") or "")
     return {"ok": True, "results": out, "next": next_tok}
 

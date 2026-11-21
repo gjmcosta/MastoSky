@@ -4598,7 +4598,15 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
                         "gif": {"url": "https://static.klipy.com/ii/abc/cat.gif", "dims": [480, 360], "size": 1200000},
                         "tinygif": {"url": "https://static.klipy.com/ii/abc/cat_tiny.gif", "dims": [220, 165], "size": 150000},
                     },
-                }
+                },
+                {
+                    "id": "k1_dup",
+                    "content_description": "Funny cat nodding duplicate",
+                    "media_formats": {
+                        "gif": {"url": "https://static.klipy.com/ii/abc/other_variant.gif", "dims": [480, 360], "size": 1200000},
+                        "tinygif": {"url": "https://static.klipy.com/ii/abc/cat_tiny_2.gif", "dims": [220, 165], "size": 150000},
+                    },
+                },
             ],
             "next": "pos_2",
         }

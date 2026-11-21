@@ -8039,21 +8039,29 @@
     }
 
     /* GIF Picker Modal */
-    .gif-modal-box {
-      max-width: 560px;
-      width: min(94vw, 560px);
-      max-height: 84vh;
+    .setup-box.gif-modal-box {
+      max-width: 640px;
+      width: min(95vw, 640px);
+      height: min(86dvh, 720px);
+      max-height: 86dvh;
       display: flex;
       flex-direction: column;
       padding: 16px;
       gap: 10px;
+      overflow: hidden;
       box-sizing: border-box;
+    }
+
+    .setup-box.gif-modal-box .setup-header {
+      margin-bottom: 0;
+      flex-shrink: 0;
     }
 
     .gif-search-row {
       display: flex;
       gap: 8px;
       align-items: center;
+      flex-shrink: 0;
     }
 
     .gif-search-input-wrap {
@@ -8065,7 +8073,7 @@
 
     .gif-search-ico {
       position: absolute;
-      left: 11px;
+      left: 12px;
       width: 16px;
       height: 16px;
       color: var(--muted);
@@ -8074,7 +8082,7 @@
 
     #gifSearchInput {
       width: 100%;
-      padding: 9px 12px 9px 34px;
+      padding: 10px 12px 10px 36px;
       border-radius: 10px;
       border: 1px solid var(--line);
       background: var(--surface-2);
@@ -8093,26 +8101,21 @@
 
     .gif-cat-bar {
       display: flex;
+      flex-wrap: wrap;
       gap: 6px;
-      overflow-x: auto;
       padding-bottom: 2px;
-      scrollbar-width: none;
       flex-shrink: 0;
-    }
-
-    .gif-cat-bar::-webkit-scrollbar {
-      display: none;
     }
 
     .gif-cat-chip {
       flex: 0 0 auto;
-      padding: 5px 10px;
+      padding: 4px 10px;
       border-radius: 999px;
       border: 1px solid var(--line);
       background: var(--surface-2);
       color: var(--ink);
       font: inherit;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
@@ -8130,10 +8133,11 @@
     }
 
     .gif-status-msg {
-      padding: 20px 10px;
+      padding: 16px 10px;
       text-align: center;
       font-size: 13px;
       color: var(--muted);
+      flex-shrink: 0;
     }
 
     .gif-status-msg.err {
@@ -8142,14 +8146,15 @@
 
     .gif-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-auto-rows: 132px;
+      align-content: start;
+      gap: 10px;
       overflow-y: auto;
       overscroll-behavior: contain;
       padding: 2px;
       flex: 1 1 auto;
-      min-height: 220px;
-      max-height: 52vh;
+      min-height: 0;
       scrollbar-width: thin;
     }
 
@@ -8157,19 +8162,20 @@
       position: relative;
       display: block;
       width: 100%;
-      aspect-ratio: 4 / 3;
+      height: 132px;
+      min-height: 132px;
       padding: 0;
       border: 1px solid var(--line);
       border-radius: 10px;
       overflow: hidden;
       background: var(--surface-2);
       cursor: pointer;
-      transition: transform .15s ease, border-color .15s ease, opacity .15s ease;
+      transition: border-color .15s ease, box-shadow .15s ease;
     }
 
     .gif-item:hover:not(:disabled) {
       border-color: var(--accent);
-      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
     }
 
     .gif-item img {
@@ -8177,20 +8183,103 @@
       height: 100%;
       object-fit: cover;
       display: block;
+      transition: transform .18s ease;
+    }
+
+    .gif-item:hover:not(:disabled) img {
+      transform: scale(1.03);
+    }
+
+    .gif-item-caption {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 20px 8px 6px;
+      background: linear-gradient(transparent, rgba(7, 11, 22, 0.86));
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: left;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .15s ease, transform .15s ease;
+      pointer-events: none;
+    }
+
+    .gif-item:hover .gif-item-caption,
+    .gif-item:focus-visible .gif-item-caption {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .gif-item-spinner {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      background: rgba(7, 11, 22, 0.54);
+      backdrop-filter: blur(2px);
+      pointer-events: none;
     }
 
     .gif-item.is-loading {
-      opacity: 0.55;
       pointer-events: none;
+    }
+
+    .gif-item.is-loading .gif-item-spinner {
+      display: flex;
+    }
+
+    .gif-item-spinner::after {
+      content: "";
+      width: 24px;
+      height: 24px;
+      border: 2.5px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: gifSpin .7s linear infinite;
+    }
+
+    @keyframes gifSpin {
+      to { transform: rotate(360deg); }
     }
 
     .gif-modal-footer {
       display: flex;
       justify-content: flex-end;
       align-items: center;
-      padding-top: 4px;
+      padding-top: 6px;
       border-top: 1px solid var(--line);
       font-size: 11px;
       color: var(--muted);
+      opacity: 0.78;
       font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 520px) {
+      .setup-box.gif-modal-box {
+        max-width: 100%;
+        width: 100%;
+        height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        padding: 14px;
+      }
+
+      .gif-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: 120px;
+        gap: 8px;
+      }
+
+      .gif-item {
+        height: 120px;
+        min-height: 120px;
+      }
     }

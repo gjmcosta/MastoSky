@@ -8727,6 +8727,18 @@
     let gifFetchSeq = 0;
     let gifSelecting = false;
     let gifActiveCategory = "";
+    let gifNextPos = "";
+    let gifLoadingMore = false;
+    let gifCurrentQuery = "";
+    const gifSeenKeys = new Set();
+
+    function getGifClientKey(item) {
+      if (!item) return "";
+      const u = item.preview_url || item.gif_url || "";
+      const m = u.match(/\/ii\/([^/]+)\//);
+      if (m) return "klipy:" + m[1];
+      return u.split("?")[0] || item.id || "";
+    }
 
     const GIF_CATEGORIES = [
       { id: "", query: "", labelKey: "composer.gif_cat_trending" },
@@ -8872,30 +8884,54 @@
       }
     }
 
-    async function loadGifsForPicker(query = "") {
-      const seq = ++gifFetchSeq;
+    async function loadGifsForPicker(query = "", append = false) {
+      const qNorm = String(query || "").trim();
       const grid = $("gifGrid");
       const statusEl = $("gifStatusMsg");
-      if (grid) grid.replaceChildren();
-      if (statusEl) {
-        statusEl.hidden = false;
-        statusEl.className = "gif-status-msg";
-        statusEl.textContent = t("composer.gif_loading");
+
+      if (append) {
+        if (gifLoadingMore || !gifNextPos) return;
+        gifLoadingMore = true;
+      } else {
+        gifCurrentQuery = qNorm;
+        gifNextPos = "";
+        gifLoadingMore = false;
+        gifSeenKeys.clear();
+        if (grid) {
+          grid.replaceChildren();
+          grid.scrollTop = 0;
+        }
+        if (statusEl) {
+          statusEl.hidden = false;
+          statusEl.className = "gif-status-msg";
+          statusEl.textContent = t("composer.gif_loading");
+        }
       }
+
+      const seq = append ? gifFetchSeq : ++gifFetchSeq;
 
       try {
         const qs = new URLSearchParams({
-          q: String(query || "").trim(),
+          q: qNorm,
           lang: currentLang || "pt",
           limit: "24"
         });
+        if (append && gifNextPos) qs.set("pos", gifNextPos);
         const res = await api("/api/gifs?" + qs.toString());
         if (seq !== gifFetchSeq) return;
         if (!res || res.ok === false) {
           throw new Error(res?.error || t("composer.gif_err"));
         }
-        const results = Array.isArray(res.results) ? res.results : [];
-        if (!results.length) {
+        gifNextPos = String(res.next || "");
+        const rawResults = Array.isArray(res.results) ? res.results : [];
+        const uniqueResults = [];
+        for (const item of rawResults) {
+          const k = getGifClientKey(item);
+          if (k && gifSeenKeys.has(k)) continue;
+          if (k) gifSeenKeys.add(k);
+          uniqueResults.push(item);
+        }
+        if (!append && !uniqueResults.length) {
           if (statusEl) {
             statusEl.hidden = false;
             statusEl.className = "gif-status-msg";
@@ -8905,26 +8941,33 @@
         }
         if (statusEl) statusEl.hidden = true;
         if (grid) {
-          results.forEach(item => {
+          uniqueResults.forEach(item => {
             const tile = el("button", "gif-item");
             tile.type = "button";
-            tile.title = item.title || item.alt || "GIF";
+            const label = item.title || item.alt || "GIF";
+            tile.title = label;
+            tile.setAttribute("aria-label", label);
             const img = el("img");
             img.src = item.preview_url || item.gif_url;
             img.alt = item.alt || item.title || "GIF";
             img.loading = "lazy";
-            tile.append(img);
+            const cap = el("span", "gif-item-caption", label);
+            const spin = el("span", "gif-item-spinner");
+            spin.setAttribute("aria-hidden", "true");
+            tile.append(img, cap, spin);
             tile.onclick = () => selectGifItem(item, tile);
             grid.append(tile);
           });
         }
       } catch (err) {
         if (seq !== gifFetchSeq) return;
-        if (statusEl) {
+        if (!append && statusEl) {
           statusEl.hidden = false;
           statusEl.className = "gif-status-msg err";
           statusEl.textContent = err?.message || t("composer.gif_err");
         }
+      } finally {
+        if (append) gifLoadingMore = false;
       }
     }
 
@@ -8965,6 +9008,9 @@
       if (overlay) overlay.hidden = true;
       gifPickerThreadPost = null;
       gifSelecting = false;
+      gifNextPos = "";
+      gifLoadingMore = false;
+      gifSeenKeys.clear();
       if (gifSearchDebounce) {
         clearTimeout(gifSearchDebounce);
         gifSearchDebounce = null;
@@ -8980,6 +9026,15 @@
     if ($("gifPickerOverlay")) {
       $("gifPickerOverlay").addEventListener("click", (e) => {
         if (e.target === $("gifPickerOverlay")) closeGifPicker();
+      });
+    }
+    if ($("gifGrid")) {
+      $("gifGrid").addEventListener("scroll", () => {
+        const g = $("gifGrid");
+        if (!g || gifLoadingMore || !gifNextPos) return;
+        if (g.scrollTop + g.clientHeight >= g.scrollHeight - 140) {
+          loadGifsForPicker(gifCurrentQuery, true);
+        }
       });
     }
     if ($("gifSearchInput")) {

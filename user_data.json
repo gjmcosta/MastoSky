@@ -29,11 +29,11 @@
     "boost_cluster": true,
     "handle_mappings": [],
     "timeline_anchor": {
-      "key": "https://m.dfaria.eu/@df/117651535207836479",
-      "time": "2026-11-21T00:12:38.000Z",
-      "updated_at": 1795219991707,
+      "key": "https://mastodon.world/@mspounds/117651559500461852",
+      "time": "2026-11-21T00:18:49.000Z",
+      "updated_at": 1795220350872,
       "device_id": "dev_wte8yvkomwouw5zb"
     }
   },
-  "updated_at": 1795219991711
+  "updated_at": 1795220350879
 }
