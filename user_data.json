@@ -29,11 +29,11 @@
     "boost_cluster": true,
     "handle_mappings": [],
     "timeline_anchor": {
-      "key": "https://bsky.app/profile/fediboard-culture.bsky.social/post/3n2tbmhlvz22e",
-      "time": "2026-11-21T14:08:25.357Z",
-      "updated_at": 1795270151219,
+      "key": "https://masto.pt/@gjmcosta/117655282764409531",
+      "time": "2026-11-21T16:05:41.793Z",
+      "updated_at": 1795277159949,
       "device_id": "dev_wte8yvkomwouw5zb"
     }
   },
-  "updated_at": 1795270151232
+  "updated_at": 1795277159957
 }

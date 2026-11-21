@@ -2818,11 +2818,18 @@ class ProxyImageTests(unittest.TestCase):
         bsky = app.Bsky({"handle": "user.bsky.social", "app_password": "app-pass"})
         bsky.jwt = "fake_jwt"
         bsky.did = "did:plc:fake123"
+        bsky.pds = "https://enoki.us-east.host.bsky.network"
+
+        auth_calls = []
 
         def fake_http(method, url, **kwargs):
             if "getServiceAuth" in url:
+                parsed = app.urllib.parse.urlparse(url)
+                qs = app.urllib.parse.parse_qs(parsed.query)
+                auth_calls.append((url, qs))
                 return {"token": "service_token_abc"}
             if "uploadVideo" in url:
+                self.assertEqual(kwargs.get("token"), "service_token_abc")
                 return {"jobId": "job_123"}
             if "getJobStatus" in url:
                 return {
@@ -2834,9 +2841,85 @@ class ProxyImageTests(unittest.TestCase):
                 }
             return {}
 
-        with mock.patch("app.http", side_effect=fake_http):
+        with mock.patch("app.http", side_effect=fake_http), mock.patch("app.time.sleep"):
             blob = bsky.upload_video(b"fake_video_bytes", mime="video/mp4", name="test.mp4")
             self.assertEqual(blob["ref"]["$link"], "bafkreiblob123")
+            self.assertEqual(len(auth_calls), 1)
+            auth_url, qs = auth_calls[0]
+            self.assertTrue(auth_url.startswith("https://enoki.us-east.host.bsky.network/xrpc/com.atproto.server.getServiceAuth"))
+            self.assertEqual(qs.get("aud"), ["did:web:enoki.us-east.host.bsky.network"])
+            self.assertEqual(qs.get("lxm"), ["com.atproto.repo.uploadBlob"])
+            self.assertTrue(qs.get("exp") and int(qs["exp"][0]) > 0)
+
+    def test_bsky_upload_video_pds_audience_fallback_and_409(self):
+        # 1. Fallback automático quando uploadVideo devolve 401 indicando o PDS DID esperado
+        bsky = app.Bsky({"handle": "user.bsky.social", "app_password": "app-pass"})
+        bsky.jwt = "fake_jwt"
+        bsky.did = "did:plc:fake123"
+        auth_calls = []
+        upload_tokens = []
+
+        def fake_http_fallback(method, url, **kwargs):
+            if "getServiceAuth" in url:
+                qs = app.urllib.parse.parse_qs(app.urllib.parse.urlparse(url).query)
+                aud = qs["aud"][0]
+                auth_calls.append((url, aud))
+                return {"token": f"tok_for_{aud}"}
+            if "uploadVideo" in url:
+                tok = kwargs.get("token")
+                upload_tokens.append(tok)
+                if tok == "tok_for_did:web:bsky.social":
+                    err_body = (
+                        '{"did":"","error":"invalid token: invalid token audience '
+                        '\\"did:web:bsky.social\\", should be the user\'s PDS DID '
+                        '\\"did:web:enoki.us-east.host.bsky.network\\"","jobId":"","state":""}'
+                    )
+                    raise app.ApiError(f"401: {err_body}", status=401, body=err_body)
+                return {"jobId": "job_retry_1"}
+            if "getJobStatus" in url:
+                return {
+                    "jobId": "job_retry_1",
+                    "state": "JOB_STATE_COMPLETED",
+                    "blob": {"$type": "blob", "ref": {"$link": "bafkreiretry1"}}
+                }
+            return {}
+
+        with mock.patch("app.http", side_effect=fake_http_fallback), mock.patch("app.time.sleep"):
+            blob = bsky.upload_video(b"fake_video_bytes", mime="video/mp4", name="retry.mp4")
+
+        self.assertEqual(blob["ref"]["$link"], "bafkreiretry1")
+        self.assertEqual(bsky.pds, "https://enoki.us-east.host.bsky.network")
+        self.assertEqual([aud for _, aud in auth_calls], [
+            "did:web:bsky.social",
+            "did:web:enoki.us-east.host.bsky.network",
+        ])
+        self.assertTrue(auth_calls[1][0].startswith("https://enoki.us-east.host.bsky.network/xrpc/com.atproto.server.getServiceAuth"))
+        self.assertEqual(upload_tokens, [
+            "tok_for_did:web:bsky.social",
+            "tok_for_did:web:enoki.us-east.host.bsky.network",
+        ])
+
+        # 2. Tratamento de HTTP 409 Conflict (already_exists) devolvendo o blob existente sem polling
+        def fake_http_409(method, url, **kwargs):
+            if "getServiceAuth" in url:
+                return {"token": "tok_409"}
+            if "uploadVideo" in url:
+                body_409 = json.dumps({
+                    "jobStatus": {
+                        "jobId": "job_existing",
+                        "state": "JOB_STATE_COMPLETED",
+                        "error": "already_exists",
+                        "blob": {"$type": "blob", "ref": {"$link": "bafkreiexisting409"}}
+                    }
+                })
+                raise app.ApiError(f"409: {body_409}", status=409, body=body_409)
+            raise AssertionError(f"Chamada inesperada: {url}")
+
+        with mock.patch("app.http", side_effect=fake_http_409), mock.patch("app.time.sleep") as mock_sleep:
+            blob_409 = bsky.upload_video(b"fake_video_bytes", mime="video/mp4", name="dup.mp4")
+
+        self.assertEqual(blob_409["ref"]["$link"], "bafkreiexisting409")
+        mock_sleep.assert_not_called()
 
     def test_bsky_post_video(self):
         bsky = app.Bsky({"handle": "user.bsky.social", "app_password": "app-pass"})

@@ -2409,19 +2409,53 @@ class Bsky:
         r = self._authed(lambda jwt: http("POST", url, data=raw_bytes, token=jwt, headers={"Content-Type": mime}))
         return r["blob"]
 
+    @staticmethod
+    def _parse_video_conflict(err):
+        """Extrai o payload JSON de respostas 409 Conflict (already_exists) do video.bsky.app."""
+        is_409 = getattr(err, "status", None) == 409 or str(err).startswith("409")
+        if is_409:
+            raw_body = getattr(err, "body", None)
+            if not raw_body and ": " in str(err):
+                raw_body = str(err).split(": ", 1)[1]
+            if raw_body:
+                try:
+                    data = json.loads(raw_body)
+                    if isinstance(data, dict) and (
+                        data.get("blob")
+                        or data.get("jobId")
+                        or isinstance(data.get("jobStatus"), dict)
+                    ):
+                        return data
+                except (ValueError, TypeError):
+                    pass
+        raise err
+
     def upload_video(self, raw_bytes, mime="video/mp4", name="video.mp4", max_wait=120):
         """Faz upload de vídeo para o microsserviço do Bluesky (video.bsky.app) e aguarda conclusão."""
         self._ensure()
-        # 1. Obter serviceAuth token com escopo para did:web:video.bsky.app
-        auth_url = f"{self.host}/xrpc/com.atproto.server.getServiceAuth"
-        auth_res = self._authed(lambda jwt: http(
-            "GET",
-            auth_url + "?aud=did:web:video.bsky.app&lxm=com.atproto.repo.uploadBlob",
-            token=jwt
-        ))
-        service_token = auth_res.get("token")
-        if not service_token:
-            raise ApiError("Não foi possível obter autorização para o serviço de vídeo do Bluesky.")
+        pds_base = (self.pds or self.host or "https://bsky.social").rstrip("/")
+        pds_host = (
+            urllib.parse.urlparse(pds_base).hostname
+            or urllib.parse.urlparse(self.host or "").hostname
+            or "bsky.social"
+        )
+        pds_aud = f"did:web:{pds_host}"
+
+        def _get_service_token(base_url, aud_did):
+            params = urllib.parse.urlencode({
+                "aud": aud_did,
+                "lxm": "com.atproto.repo.uploadBlob",
+                "exp": str(int(time.time()) + 30 * 60),
+            })
+            auth_url = f"{base_url.rstrip('/')}/xrpc/com.atproto.server.getServiceAuth?{params}"
+            auth_res = self._authed(lambda jwt: http("GET", auth_url, token=jwt))
+            tok = auth_res.get("token") if isinstance(auth_res, dict) else None
+            if not tok:
+                raise ApiError("Não foi possível obter autorização para o serviço de vídeo do Bluesky.")
+            return tok
+
+        # 1. Obter serviceAuth token com audiência no PDS do utilizador (did:web:<pds-host>)
+        service_token = _get_service_token(pds_base, pds_aud)
 
         # 2. Upload do vídeo binário para video.bsky.app
         did_param = urllib.parse.quote(self.did)
@@ -2431,11 +2465,41 @@ class Bsky:
             "Content-Type": mime or "video/mp4",
             "Content-Length": str(len(raw_bytes))
         }
-        res = http("POST", upload_url, data=raw_bytes, token=service_token, headers=upload_headers, timeout=120)
-        job_id = res.get("jobId") or (res.get("jobStatus") or {}).get("jobId")
+
+        def _do_upload(tok):
+            return http("POST", upload_url, data=raw_bytes, token=tok, headers=upload_headers, timeout=120)
+
+        try:
+            res = _do_upload(service_token)
+        except ApiError as e:
+            err_text = f"{getattr(e, 'body', None) or ''}\n{e}"
+            is_401 = getattr(e, "status", None) == 401 or str(e).startswith("401")
+            m_aud = re.search(
+                r'should be the user\'?s PDS DID\s*\\?"(did:web:[^"\\]+)\\?"',
+                err_text,
+                re.I,
+            ) if is_401 else None
+            if m_aud:
+                expected_aud = m_aud.group(1)
+                expected_host = urllib.parse.unquote(expected_aud[len("did:web:"):].split(":", 1)[0]).split("/", 1)[0]
+                if expected_host:
+                    self.pds = f"https://{expected_host}"
+                    pds_base = self.pds
+                service_token = _get_service_token(pds_base, expected_aud)
+                try:
+                    res = _do_upload(service_token)
+                except ApiError as e2:
+                    res = self._parse_video_conflict(e2)
+            else:
+                res = self._parse_video_conflict(e)
+
+        job_st_init = res.get("jobStatus") if isinstance(res.get("jobStatus"), dict) else res
+        direct_blob = (job_st_init.get("blob") if isinstance(job_st_init, dict) else None) or res.get("blob")
+        if direct_blob:
+            return direct_blob
+
+        job_id = res.get("jobId") or (job_st_init.get("jobId") if isinstance(job_st_init, dict) else None)
         if not job_id:
-            if "jobStatus" in res and res["jobStatus"].get("blob"):
-                return res["jobStatus"]["blob"]
             raise ApiError("O serviço de vídeo do Bluesky não devolveu identificador de processamento (jobId).")
 
         # 3. Consultar getJobStatus até terminar o processamento
@@ -2445,7 +2509,9 @@ class Bsky:
             time.sleep(2)
             try:
                 st = http("GET", status_url, timeout=15)
-                job_st = st.get("jobStatus") or {}
+                job_st = st.get("jobStatus") if isinstance(st.get("jobStatus"), dict) else st
+                if not isinstance(job_st, dict):
+                    job_st = {}
                 state = (job_st.get("state") or "").upper()
                 if "COMPLETE" in state or state == "JOB_STATE_COMPLETED":
                     blob = job_st.get("blob")
@@ -2456,7 +2522,7 @@ class Bsky:
                     err = job_st.get("error") or job_st.get("message") or "Falha na codificação do vídeo."
                     raise ApiError(f"Erro no processamento do vídeo no Bluesky: {err}")
             except ApiError as e:
-                if "Erro no processamento" in str(e):
+                if "Erro no processamento" in str(e) or "blob não foi devolvido" in str(e):
                     raise
             except Exception:
                 pass

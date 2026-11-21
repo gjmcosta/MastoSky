@@ -40,7 +40,7 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
 - Sondagens nativas no Mastodon e renderizadas no Bluesky.
 - Upload de imagens (até 4) com pré-visualização, legendas (*alt text*) e colar da área de transferência (`Cmd+V` / arrastar e largar).
 - **Upload de Vídeo Nativo:** Suporte completo para vídeos (MP4, WebM, MOV até 50MB e 10 minutos) com publicação no Bluesky e Mastodon:
-  - *Bluesky:* Obtenção automática de token JWT com escopo restrito (`com.atproto.server.getServiceAuth` com audiência `did:web:video.bsky.app`), upload binário para o serviço dedicado `video.bsky.app` e acompanhamento assíncrono do job de encoding até conclusão (`JOB_STATE_COMPLETED`). Suporte a proporção de aspeto natural (`aspectRatio`) e legenda acessível (`alt`).
+  - *Bluesky:* Obtenção automática de token JWT com escopo restrito (`com.atproto.server.getServiceAuth` com audiência `did:web:<pds-host>` e `lxm=com.atproto.repo.uploadBlob`), upload binário para o serviço dedicado `video.bsky.app` (com fallback automático de PDS e tratamento de `409 already_exists`) e acompanhamento assíncrono do job de encoding até conclusão (`JOB_STATE_COMPLETED`). Suporte a proporção de aspeto natural (`aspectRatio`) e legenda acessível (`alt`).
   - *Mastodon:* Upload via `/api/v2/media` com polling assíncrono em `/api/v1/media/{id}` até o vídeo estar processado e com URL público antes de submeter o status.
   - *Frontend e Interface:* Pré-visualização com leitor `<video controls>`, indicação de duração formatada, botão de remoção rápida e campo de descrição acessível. Exclusão mútua automática com imagens e sondagens. Suporte a publicação direta ou em fios (*Threads*).
 - **Geração de Legendas Acessíveis (Alt-Text) com IA Aprimorada:**
