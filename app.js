@@ -13062,7 +13062,9 @@
       if ($("scheduleOpenBtn")) $("scheduleOpenBtn").disabled = true;
       const { body, threadPayload, threadByNetworkPayload } = buildCurrentPostPayload();
 
-      if (attachedVideo || (threadPayload && threadPayload.some(p => p.video))) {
+      const hasGifAttach = images.some(im => im?.is_gif || String(im?.data || "").startsWith("data:image/gif"))
+        || threadPosts.some(p => (p.images || []).some(im => im?.is_gif || String(im?.data || "").startsWith("data:image/gif")));
+      if (attachedVideo || hasGifAttach || (threadPayload && threadPayload.some(p => p.video))) {
         $("msg").className = "msg";
         $("msg").textContent = t("composer.video_processing_msg");
       }

@@ -3334,7 +3334,7 @@ class Masto:
         return r["id"]
 
     def wait_for_media_processing(self, media_id, max_wait=60):
-        """No Mastodon, vídeos necessitam de processamento assíncrono antes da publicação do post."""
+        """No Mastodon, vídeos e GIFs necessitam de processamento assíncrono antes da publicação do post."""
         start = time.time()
         while time.time() - start < max_wait:
             try:
@@ -3343,7 +3343,7 @@ class Masto:
                     return media_id
             except Exception:
                 pass
-            time.sleep(2)
+            time.sleep(1)
         return media_id
 
     def post(self, text, ref=None, images=None, spoiler=None, poll=None, lang=None, visibility=None, quote=None, video=None):
@@ -3355,6 +3355,8 @@ class Masto:
         elif images:
             for img in images:
                 mid = self.upload_media(img["bytes"], img.get("mime", "image/jpeg"), img.get("alt", ""))
+                if img.get("mime") == "image/gif" or img.get("is_gif"):
+                    self.wait_for_media_processing(mid)
                 media_ids.append(mid)
         status_text = (text or "").strip()
         if quote and quote.get("url") and quote["url"] not in status_text:
@@ -3378,7 +3380,22 @@ class Masto:
             data["media_ids"] = media_ids
         if ref:
             data["in_reply_to_id"] = ref["id"]
-        return self.call("POST", "/api/v1/statuses", data)
+        for attempt in range(4):
+            try:
+                return self.call("POST", "/api/v1/statuses", data)
+            except ApiError as e:
+                err_l = str(e).lower()
+                is_422_processing = (
+                    bool(media_ids)
+                    and attempt < 3
+                    and (getattr(e, "status", None) == 422 or "422" in err_l)
+                    and "process" in err_l
+                )
+                if not is_422_processing:
+                    raise
+                time.sleep(1.5)
+                for mid in media_ids:
+                    self.wait_for_media_processing(mid, max_wait=15)
 
     def act(self, action, ref):
         if action == "delete":

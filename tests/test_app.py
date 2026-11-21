@@ -4686,10 +4686,13 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
 
         m = app.Masto({"instance": "https://mastodon.social", "token": "tok"})
         m.upload_media = mock.MagicMock(return_value="masto_gif_1")
+        m.wait_for_media_processing = mock.MagicMock(return_value="masto_gif_1")
         masto_calls = []
 
         def fake_masto_call(method, path, data=None, params=None, timeout=30):
             masto_calls.append((method, path, data))
+            if len(masto_calls) == 1:
+                raise app.ApiError('422: {"error":"Não é possível anexar ficheiros que ainda não acabaram de ser processados."}', status=422)
             return {"id": "999"}
 
         m.call = fake_masto_call
@@ -4711,8 +4714,9 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
                 }
             ],
         }
-        with mock.patch.dict(app.CLIENTS, {"bluesky": b, "mastodon": m}, clear=True):
-            code, res = app.execute_post_payload(payload)
+        with mock.patch("app.time.sleep"):
+            with mock.patch.dict(app.CLIENTS, {"bluesky": b, "mastodon": m}, clear=True):
+                code, res = app.execute_post_payload(payload)
 
         self.assertEqual(code, 200)
         self.assertEqual(res, {"bluesky": "ok", "mastodon": "ok"})
@@ -4731,7 +4735,9 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         self.assertTrue(up_args[0].startswith(b"GIF89a"))
         self.assertEqual(up_args[1], "image/gif")
         self.assertEqual(up_args[2], "Gato a dançar")
-        self.assertEqual(masto_calls[0][2]["media_ids"], ["masto_gif_1"])
+        m.wait_for_media_processing.assert_any_call("masto_gif_1")
+        self.assertEqual(len(masto_calls), 2)
+        self.assertEqual(masto_calls[1][2]["media_ids"], ["masto_gif_1"])
 
     def test_gif_picker_frontend_markers(self):
         html = _read_frontend()

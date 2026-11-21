@@ -29,11 +29,11 @@
     "boost_cluster": true,
     "handle_mappings": [],
     "timeline_anchor": {
-      "key": "https://mastodon.world/@mspounds/117651559500461852",
-      "time": "2026-11-21T00:18:49.000Z",
-      "updated_at": 1795220350872,
+      "key": "https://bsky.app/profile/jocandi.bsky.social/post/3n2sqqn7lwk27",
+      "time": "2026-11-21T09:06:31.055Z",
+      "updated_at": 1795252001194,
       "device_id": "dev_wte8yvkomwouw5zb"
     }
   },
-  "updated_at": 1795220350879
+  "updated_at": 1795252001201
 }
