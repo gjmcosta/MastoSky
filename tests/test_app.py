@@ -3930,6 +3930,12 @@ class UiRefinementsAndCwTests(unittest.TestCase):
             ".notif-header-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:5px;background:var(--surface-1,var(--card));border:1px solid var(--line);border-radius:12px;margin-bottom:12px;box-sizing:border-box}",
             '"notif:" + it.network + ":" + getNotifKey(it)',
             "p.dataset.notifKey || p.dataset.postKey",
+            "@keyframes deckMenuPopIn",
+            ".cw-content:not([hidden]),.muted-post-content:not([hidden]){animation:mobileComposeFadeIn",
+            ".post-translated-box{",
+            "animation: deckMenuPopIn .15s var(--ease-spring)",
+            "transform: translateY(100%)",
+            ".tool:active,",
         ]
         import re
         compact_html = re.sub(r"\s+", "", self.html)

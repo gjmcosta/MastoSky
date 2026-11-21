@@ -274,7 +274,9 @@
       padding: 10px;
       margin-bottom: 10px;
       background: var(--bg);
-      position: relative
+      position: relative;
+      transform-origin: top center;
+      animation: popIn .15s var(--ease-spring)
     }
 
     .quote-box-head {
@@ -1745,7 +1747,9 @@
       padding: 8px 10px;
       background: var(--surface-1);
       border: 1px solid var(--line);
-      border-radius: 10px
+      border-radius: 10px;
+      transform-origin: top center;
+      animation: popIn .15s var(--ease-spring)
     }
 
     .schedule-picker-left {
@@ -1864,7 +1868,9 @@
       padding: 5px;
       display: flex;
       flex-direction: column;
-      gap: 2px
+      gap: 2px;
+      transform-origin: top left;
+      animation: popIn .14s ease-out
     }
 
     .mention-ac-item {
@@ -3308,7 +3314,9 @@
       z-index: 3;
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
       word-break: break-word;
-      white-space: pre-wrap
+      white-space: pre-wrap;
+      transform-origin: bottom left;
+      animation: popIn .15s var(--ease-spring)
     }
 
     .cw-banner,
@@ -3382,6 +3390,11 @@
     .cw-content[hidden],
     .muted-post-content[hidden] {
       display: none
+    }
+
+    .cw-content:not([hidden]),
+    .muted-post-content:not([hidden]) {
+      animation: mobileComposeFadeIn .15s ease-out
     }
 
     .muted-chips-list {
@@ -3486,7 +3499,8 @@
       margin: 8px 0;
       font-size: 14px;
       line-height: 1.45;
-      color: var(--ink)
+      color: var(--ink);
+      animation: mobileComposeFadeIn .16s ease-out
     }
 
     .post-translated-badge {
@@ -3677,7 +3691,9 @@
       position: relative;
       display: flex;
       align-items: stretch;
-      min-height: 66px
+      min-height: 66px;
+      transform-origin: top center;
+      animation: popIn .15s var(--ease-spring)
     }
 
     .composer-link-thumb {
@@ -5897,15 +5913,7 @@
 
     /* Mobile: Layout, Header & Barra horizontal no fundo */
     @media (max-width: 767px) {
-      body:not(.view-deck):not(.mobile-compose-open) #singleComposeWrap {
-        display: none;
-      }
-
-      body.mobile-compose-open {
-        overflow: hidden;
-      }
-
-      body.mobile-compose-open #singleComposeWrap {
+      body:not(.view-deck) #singleComposeWrap {
         display: flex;
         position: fixed;
         inset: 0;
@@ -5917,10 +5925,13 @@
         overflow-y: auto;
         overscroll-behavior: contain;
         -webkit-overflow-scrolling: touch;
-        animation: mobileComposeFadeIn 0.18s var(--ease-spring, cubic-bezier(0.22, 1, 0.36, 1));
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 180ms ease-in, visibility 0s linear 180ms;
       }
 
-      body.mobile-compose-open #singleComposeWrap .compose {
+      body:not(.view-deck) #singleComposeWrap .compose {
         width: 100%;
         max-width: 560px;
         margin: 0;
@@ -5928,10 +5939,29 @@
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
-        animation: mobileComposeSlideUp 0.24s var(--ease-spring);
+        transform: translateY(100%);
+        opacity: 0;
+        transition: transform 180ms ease-in, opacity 140ms ease-in;
       }
 
-      body.mobile-compose-open .mobile-compose-head {
+      body.mobile-compose-open {
+        overflow: hidden;
+      }
+
+      body.mobile-compose-open #singleComposeWrap {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transition: opacity 200ms var(--ease-spring, cubic-bezier(0.22, 1, 0.36, 1)), visibility 0s linear 0s;
+      }
+
+      body.mobile-compose-open #singleComposeWrap .compose {
+        transform: translateY(0);
+        opacity: 1;
+        transition: transform 240ms var(--ease-spring), opacity 180ms ease-out;
+      }
+
+      body:not(.view-deck) #singleComposeWrap .mobile-compose-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -6807,11 +6837,24 @@
       transform: scale(1.03);
     }
 
+    @keyframes deckMenuPopIn {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) scale(.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+      }
+    }
+
     .deck-add-col-menu {
       position: absolute;
       top: calc(50% + 30px);
       left: 50%;
       transform: translateX(-50%);
+      transform-origin: top center;
       background: var(--card);
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -6819,6 +6862,7 @@
       padding: 8px;
       min-width: 210px;
       z-index: 50;
+      animation: deckMenuPopIn .15s var(--ease-spring);
     }
 
     .deck-add-col-menu-title {
@@ -8057,13 +8101,41 @@
       -webkit-overflow-scrolling: touch;
     }
 
+    .acts button,
+    .acts .act-download,
+    .acts a.act-btn,
+    .side-nav-btn,
+    .tabs button,
+    .filter-pill,
+    #composeSection .compose-tools button,
+    #postBtn,
+    .schedule-quick-btn,
+    .saved-col-pill,
+    .acts button.act-save .saved-col-chip,
+    .cw-toggle-btn,
+    .muted-toggle-btn {
+      transition: transform 140ms ease-out, color .15s ease, background-color .15s ease, border-color .15s ease;
+    }
+
     .acts button:active,
+    .acts .act-download:active,
     .acts a.act-btn:active,
     .side-nav-btn:active,
     .tabs button:active,
     .header-nav-btn:active,
     .filter-pill:active {
-      transform: scale(0.94);
+      transform: scale(0.96);
+    }
+
+    .tool:active,
+    #composeSection .compose-tools button:active,
+    #postBtn:active,
+    .schedule-quick-btn:active,
+    .saved-col-pill:active,
+    .acts button.act-save .saved-col-chip:active,
+    .cw-toggle-btn:active,
+    .muted-toggle-btn:active {
+      transform: scale(0.97);
     }
 
     @media (prefers-reduced-motion: reduce) {

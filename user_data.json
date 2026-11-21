@@ -5,7 +5,7 @@
   "muted_words": [],
   "mute_mode": "warn",
   "preferences": {
-    "theme": "light",
+    "theme": "dark",
     "lang": "pt",
     "nav_mode": "sidebar",
     "view_mode": "deck",
@@ -29,11 +29,11 @@
     "boost_cluster": true,
     "handle_mappings": [],
     "timeline_anchor": {
-      "key": "https://bsky.app/profile/pedrojdoc.bsky.social/post/3n2stem7vy22t",
-      "time": "2026-11-21T09:53:29.055Z",
-      "updated_at": 1795254810754,
+      "key": "https://bsky.app/profile/noelreports.com/post/3n2taanobfc2o",
+      "time": "2026-11-21T13:43:55.459Z",
+      "updated_at": 1795268654608,
       "device_id": "dev_wte8yvkomwouw5zb"
     }
   },
-  "updated_at": 1795254810758
+  "updated_at": 1795268654866
 }
