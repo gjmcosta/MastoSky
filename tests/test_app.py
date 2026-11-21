@@ -4590,6 +4590,13 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
             "closeDeckThread();",
             "function flushDeckHitTestLayers(",
             "flushDeckHitTestLayers(savedScrollMap);",
+            "if (colThread && !colThread.hidden && !addedThread)",
+            "if (deckColumns.includes(c)) return;",
+            "if (tab === colId)",
+            'if (viewMode === "deck" && !deckColumns.includes(initTab))',
+            "setTab(initTab, true);",
+            "function setTab(newTab, isInit = false)",
+            "if (!isInit && !deckColumns.includes(newTab) && ALL_DECK_COLS.includes(newTab))",
         ]:
             self.assertIn(marker, js)
 
@@ -4760,6 +4767,65 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
             "prev-gif-badge",
         ]:
             self.assertIn(marker, html)
+
+    def test_in_app_post_link_interception_and_thread_resolution(self):
+        b = app.Bsky({"handle": "u.bsky.social", "app_password": "p"})
+        b.jwt = "jwt"
+        b.did = "did:plc:me"
+        b.resolve_handle = mock.MagicMock(return_value="did:plc:irmaolucia")
+        fake_thread = {
+            "thread": {
+                "$type": "app.bsky.feed.defs#threadViewPost",
+                "post": {
+                    "uri": "at://did:plc:irmaolucia/app.bsky.feed.post/3kxyz",
+                    "cid": "cid_x",
+                    "author": {"did": "did:plc:irmaolucia", "handle": "irmaolucia.bsky.social", "displayName": "Irmã Lúcia"},
+                    "record": {"text": "Post original", "createdAt": "2026-11-21T09:00:00Z"},
+                },
+                "replies": [],
+            }
+        }
+        with mock.patch.object(b, "call", return_value=fake_thread) as mock_bcall:
+            res_b = b.thread({"url": "https://bsky.app/profile/irmaolucia.bsky.social/post/3kxyz"})
+        b.resolve_handle.assert_called_once_with("irmaolucia.bsky.social")
+        self.assertEqual(mock_bcall.call_args[1]["params"]["uri"], "at://did:plc:irmaolucia/app.bsky.feed.post/3kxyz")
+        self.assertEqual(res_b["focus"]["name"], "Irmã Lúcia")
+
+        m = app.Masto({"instance": "https://masto.pt", "token": "tok"})
+
+        def fake_masto_call(method, path, data=None, params=None, timeout=30):
+            if path == "/api/v2/search":
+                self.assertEqual(params["q"], "https://mastodon.social/@user/998877")
+                self.assertEqual(params["resolve"], "true")
+                return {"statuses": [{"id": "554433"}]}
+            if path == "/api/v1/statuses/554433":
+                return {
+                    "id": "554433",
+                    "url": "https://mastodon.social/@user/998877",
+                    "content": "<p>Federado</p>",
+                    "created_at": "2026-11-21T09:00:00Z",
+                    "account": {"id": "9", "acct": "user@mastodon.social", "display_name": "User", "avatar": "", "url": ""},
+                    "replies_count": 0,
+                    "reblogs_count": 0,
+                    "favourites_count": 0,
+                    "media_attachments": [],
+                }
+            if path == "/api/v1/statuses/554433/context":
+                return {"ancestors": [], "descendants": []}
+            raise AssertionError(f"Unexpected call: {method} {path}")
+
+        with mock.patch.object(m, "call", side_effect=fake_masto_call):
+            res_m = m.thread({"url": "https://mastodon.social/@user/998877", "id": "998877"})
+        self.assertEqual(res_m["focus"]["ref"]["id"], "554433")
+
+        js = Path("app.js").read_text(encoding="utf-8")
+        for marker in [
+            "const mBskyPost =",
+            "const mMastoPost =",
+            'openThread({ network: "bluesky", url: href, ref: { url: href } }',
+            'openThread({ network: "mastodon", url: href, ref: { url: href, id: mMastoPost[1] } }',
+        ]:
+            self.assertIn(marker, js)
 
 
 if __name__ == "__main__":

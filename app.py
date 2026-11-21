@@ -2246,7 +2246,10 @@ class Bsky:
         if uri and "bsky.app/profile/" in str(uri):
             m = re.search(r"bsky\.app/profile/([^/?#]+)/post/([^/?#]+)", str(uri))
             if m:
-                uri = f"at://{m.group(1)}/app.bsky.feed.post/{m.group(2)}"
+                actor_part = urllib.parse.unquote(m.group(1)).lstrip("@")
+                rkey_part = urllib.parse.unquote(m.group(2))
+                did = actor_part if actor_part.startswith("did:") else (self.resolve_handle(actor_part) or actor_part)
+                uri = f"at://{did}/app.bsky.feed.post/{rkey_part}"
         if not uri:
             raise RuntimeError("Referência de post inválida para Bluesky.")
         ok = "app.bsky.feed.defs#threadViewPost"
@@ -3300,10 +3303,26 @@ class Masto:
 
     def thread(self, ref):
         status_id = None
+        raw_url = None
         if isinstance(ref, (str, int)):
-            status_id = str(ref)
+            val = str(ref)
+            if val.startswith(("http://", "https://")):
+                raw_url = val
+            else:
+                status_id = val
         elif isinstance(ref, dict):
-            status_id = ref.get("id") or ref.get("url")
+            raw_url = ref.get("url")
+            status_id = ref.get("id")
+        if raw_url and (not self.base or not str(raw_url).startswith(self.base)):
+            try:
+                res = self.call("GET", "/api/v2/search", params={"q": raw_url, "type": "statuses", "resolve": "true"})
+                statuses = res.get("statuses") or []
+                if statuses and isinstance(statuses[0], dict) and statuses[0].get("id"):
+                    status_id = str(statuses[0]["id"])
+            except Exception:
+                pass
+        if not status_id:
+            status_id = raw_url
         if status_id and "/" in str(status_id):
             m = re.search(r"/(\d+)(?:[/?#]|$)", str(status_id))
             if m:
