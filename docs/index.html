@@ -207,6 +207,23 @@ ol p{margin:0 0 12px;color:var(--muted)}
 .copy:hover{color:var(--ink);border-color:var(--muted)}
 .url{font:15.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
 .note-sm{font-size:15px;color:var(--muted);margin:10px 0 0}
+.dl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 12px}
+.dl-card{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;
+  border:1px solid var(--line);border-radius:8px;background:var(--panel);text-decoration:none;
+  transition:border-color .15s ease,transform .15s ease}
+.dl-card:hover{border-color:var(--constel);transform:translateY(-1px)}
+.dl-card strong{display:block;font-size:15.5px;font-weight:600;color:var(--ink)}
+.dl-card span{display:block;font-size:13px;color:var(--muted)}
+.dl-badge{flex:none;font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:6px;
+  background:var(--btn-bg);color:var(--btn-fg);white-space:nowrap}
+.dl-card.dl-secondary .dl-badge{background:var(--code);color:var(--ink);border:1px solid var(--line)}
+.adv-details{margin-top:14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:12px 16px}
+.adv-details summary{cursor:pointer;font-weight:600;font-size:15px;color:var(--ink);list-style:none}
+.adv-details summary::-webkit-details-marker{display:none}
+.adv-details summary::before{content:"▸ ";color:var(--constel)}
+.adv-details[open] summary::before{content:"▾ "}
+.adv-details[open] summary{margin-bottom:12px}
+@media (max-width:680px){.dl-grid{grid-template-columns:1fr}}
 
 .status{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:baseline}
 .status h2{margin:0}
@@ -461,22 +478,60 @@ footer a{text-underline-offset:4px}
   </section>
 
   <section id="run">
-    <h2 data-i18n="run_h">Run it</h2>
+    <h2 data-i18n="run_h">Download &amp; Run</h2>
     <ol>
       <li><div>
-        <p data-i18n="s1">Install in one line (or clone and start directly with Python 3):</p>
-        <div class="code"><pre>curl -fsSL https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.sh | bash</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
-        <div class="code"><pre>git clone https://github.com/gjmcosta/MastoSky.git
-cd MastoSky
-python3 app.py --open</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
+        <p data-i18n="s1">Download MastoSky for your system — no terminal or Python required:</p>
+        <div class="dl-grid">
+          <a class="dl-card" href="https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-macOS.zip">
+            <div>
+              <strong>macOS</strong>
+              <span data-i18n="dl_mac_sub">Standalone app (.app) · Apple Silicon &amp; Intel</span>
+            </div>
+            <span class="dl-badge" data-i18n="dl_btn">Download</span>
+          </a>
+          <a class="dl-card" href="https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-Windows-x64.zip">
+            <div>
+              <strong>Windows</strong>
+              <span data-i18n="dl_win_sub">Standalone app (.exe) · Windows 10/11</span>
+            </div>
+            <span class="dl-badge" data-i18n="dl_btn">Download</span>
+          </a>
+          <a class="dl-card dl-secondary" href="https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-Linux-x64.tar.gz">
+            <div>
+              <strong>Linux</strong>
+              <span data-i18n="dl_linux_sub">Standalone binary (.tar.gz) · x64</span>
+            </div>
+            <span class="dl-badge" data-i18n="dl_btn">Download</span>
+          </a>
+          <a class="dl-card dl-secondary" href="https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-portable.zip">
+            <div>
+              <strong data-i18n="dl_port_title">Portable ZIP</strong>
+              <span data-i18n="dl_port_sub">Source + double-click launcher (requires Python 3)</span>
+            </div>
+            <span class="dl-badge" data-i18n="dl_btn">Download</span>
+          </a>
+        </div>
+        <p class="note-sm"><span data-i18n="dl_note">Extract the file and open MastoSky (first launch on macOS/Windows may ask for confirmation since builds are unsigned).</span> <a href="https://github.com/gjmcosta/MastoSky/releases/latest" data-i18n="dl_all_releases">All releases ↗</a></p>
+      </div></li>
+      <li><div>
+        <p><span data-i18n="s3_a">MastoSky opens automatically at </span><span class="url">http://127.0.0.1:8000</span><span data-i18n="s3_b">. Sign in directly with your Bluesky account (password or App Password, with 2FA support) and Mastodon (1-click OAuth).</span></p>
       </div></li>
       <li><div>
         <p data-i18n="s2">Use on iPhone, iPad or Android over local Wi-Fi (prints a QR code and supports PWA installation):</p>
         <div class="code"><pre>python3 app.py --lan</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
-        <p class="note-sm" data-i18n="s2_note">Or deploy always-on with Docker / CasaOS (docker compose up -d) for automatic sync via user_data.json and Tailscale access.</p>
-      </div></li>
-      <li><div>
-        <p><span data-i18n="s3_a">Open </span><span class="url">http://127.0.0.1:8000</span><span data-i18n="s3_b"> and enter a Bluesky App Password (never your main password) and a Mastodon access token.</span></p>
+        <details class="adv-details">
+          <summary data-i18n="adv_summary">Advanced: Install via Terminal, Git or Docker</summary>
+          <p data-i18n="s1_cli">One-line installer (macOS / Linux):</p>
+          <div class="code"><pre>curl -fsSL https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.sh | bash</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
+          <p data-i18n="s1_win_cli">One-line installer (Windows PowerShell):</p>
+          <div class="code"><pre>irm https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.ps1 | iex</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
+          <p data-i18n="s1_git">Or clone and run with Python 3:</p>
+          <div class="code"><pre>git clone https://github.com/gjmcosta/MastoSky.git
+cd MastoSky
+python3 app.py --open</pre><button class="copy" type="button" data-i18n="copy">Copy</button></div>
+          <p class="note-sm" data-i18n="s2_note">Or deploy always-on with Docker / CasaOS (docker compose up -d) for automatic sync via user_data.json and Tailscale access.</p>
+        </details>
       </div></li>
     </ol>
   </section>
@@ -557,12 +612,24 @@ python3 app.py --open</pre><button class="copy" type="button" data-i18n="copy">C
       local_p1: "MastoSky is a self-contained Python server (app.py) and static vanilla HTML/CSS/JS frontend. By default it binds strictly to 127.0.0.1, keeping your Bluesky App Password and Mastodon token on your machine.",
       local_p2: "Optional --lan and Docker modes restrict access to private RFC 1918 / Tailscale networks with per-session CSRF tokens, host/origin validation, SSRF checks on link fetches, and 0600 credential files.",
       facts: ["Python 3 standard library", "No pip, no npm", "220+ unit tests · MIT licence"],
-      run_h: "Run it",
-      s1: "Install in one line (or clone and start directly with Python 3):",
+      run_h: "Download & Run",
+      s1: "Download MastoSky for your system — no terminal or Python required:",
+      dl_mac_sub: "Standalone app (.app) · Apple Silicon & Intel",
+      dl_win_sub: "Standalone app (.exe) · Windows 10/11",
+      dl_linux_sub: "Standalone binary (.tar.gz) · x64",
+      dl_port_title: "Portable ZIP",
+      dl_port_sub: "Source + double-click launcher (requires Python 3)",
+      dl_btn: "Download",
+      dl_note: "Extract the file and open MastoSky (first launch on macOS/Windows may ask for confirmation since builds are unsigned).",
+      dl_all_releases: "All releases ↗",
       s2: "Use on iPhone, iPad or Android over local Wi-Fi (prints a QR code and supports PWA installation):",
       s2_note: "Or deploy always-on with Docker / CasaOS (docker compose up -d) for automatic sync via user_data.json and Tailscale access.",
-      s3_a: "Open ",
-      s3_b: " and enter a Bluesky App Password (never your main password) and a Mastodon access token.",
+      s3_a: "MastoSky opens automatically at ",
+      s3_b: ". Sign in directly with your Bluesky account (password or App Password, with 2FA support) and Mastodon (1-click OAuth).",
+      adv_summary: "Advanced: Install via Terminal, Git or Docker",
+      s1_cli: "One-line installer (macOS / Linux):",
+      s1_win_cli: "One-line installer (Windows PowerShell):",
+      s1_git: "Or clone and run with Python 3:",
       status_h: "Open source.",
       status_p: "Updated regularly with an automated unit test suite and 1-click self-update for Docker setups.",
       status_a: "Open an issue",
@@ -630,12 +697,24 @@ python3 app.py --open</pre><button class="copy" type="button" data-i18n="copy">C
       local_p1: "O MastoSky é um servidor Python autónomo (app.py) com frontend estático em HTML, CSS e JS puros. Por omissão escuta apenas em 127.0.0.1, mantendo a App Password do Bluesky e o token do Mastodon na tua máquina.",
       local_p2: "Os modos opcionais --lan e Docker restringem o acesso a redes privadas RFC 1918 / Tailscale com tokens CSRF por sessão, validação de Host/Origin, proteção SSRF e ficheiros de credenciais 0600.",
       facts: ["Biblioteca standard do Python 3", "Sem pip, sem npm", "220+ testes unitários · Licença MIT"],
-      run_h: "Como correr",
-      s1: "Instala numa linha (ou clona e arranca diretamente com Python 3):",
+      run_h: "Descarregar e Correr",
+      s1: "Descarrega o MastoSky para o teu sistema — sem terminal nem Python necessários:",
+      dl_mac_sub: "App autónoma (.app) · Apple Silicon e Intel",
+      dl_win_sub: "App autónoma (.exe) · Windows 10/11",
+      dl_linux_sub: "Binário autónomo (.tar.gz) · x64",
+      dl_port_title: "ZIP Portátil",
+      dl_port_sub: "Código + atalho de duplo clique (requer Python 3)",
+      dl_btn: "Descarregar",
+      dl_note: "Extrai o ficheiro e abre o MastoSky (na primeira abertura, o macOS/Windows pode pedir confirmação por a app não ter assinatura paga).",
+      dl_all_releases: "Todas as versões ↗",
       s2: "Usa no iPhone, iPad ou Android na rede Wi-Fi local (mostra um QR Code e instala como PWA):",
       s2_note: "Ou corre em permanência com Docker / CasaOS (docker compose up -d) para sincronizar definições e guardados via user_data.json com suporte a Tailscale.",
-      s3_a: "Abre ",
-      s3_b: " no browser e introduz uma App Password do Bluesky (nunca a password principal) e um token de acesso do Mastodon.",
+      s3_a: "O MastoSky abre automaticamente em ",
+      s3_b: ". Entra diretamente com a tua conta Bluesky (palavra-passe normal ou App Password, com suporte 2FA) e Mastodon (1 clique via OAuth).",
+      adv_summary: "Avançado: Instalar via Terminal, Git ou Docker",
+      s1_cli: "Instalador numa linha (macOS / Linux):",
+      s1_win_cli: "Instalador numa linha (Windows PowerShell):",
+      s1_git: "Ou clona e corre com Python 3:",
       status_h: "Código aberto.",
       status_p: "Atualizado regularmente com suite de testes automatizados e atualização em 1 clique nas Definições para instalações Docker.",
       status_a: "Abrir uma issue",

@@ -5326,6 +5326,93 @@
       line-height: 1.35
     }
 
+    .setup-connected-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+      background: color-mix(in srgb, var(--accent) 8%, var(--surface-2))
+    }
+
+    .setup-connected-bar[hidden] {
+      display: none !important
+    }
+
+    .setup-connected-info {
+      min-width: 0;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink);
+      word-break: break-word
+    }
+
+    .setup-disconnect-btn {
+      flex-shrink: 0;
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 40%, var(--line))
+    }
+
+    .setup-disconnect-btn:hover {
+      background: color-mix(in srgb, var(--danger) 12%, transparent);
+      border-color: var(--danger)
+    }
+
+    .setup-auth-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px
+    }
+
+    .setup-2fa-box {
+      padding: 8px 10px;
+      margin: 4px 0 8px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+      background: var(--surface-2)
+    }
+
+    .setup-2fa-box[hidden] {
+      display: none !important
+    }
+
+    .setup-manual-details {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--line)
+    }
+
+    .setup-manual-details summary {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      user-select: none;
+      list-style: none
+    }
+
+    .setup-manual-details summary::-webkit-details-marker {
+      display: none
+    }
+
+    .setup-manual-details summary::before {
+      content: "▸ ";
+      display: inline-block;
+      transition: transform .15s ease
+    }
+
+    .setup-manual-details[open] summary::before {
+      content: "▾ "
+    }
+
+    .setup-manual-details summary:hover {
+      color: var(--ink)
+    }
+
     .setup-actions {
       display: flex;
       justify-content: flex-end;

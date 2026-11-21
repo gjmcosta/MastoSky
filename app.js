@@ -545,11 +545,32 @@
           handle_map_sugs: "Sugestões detetadas via Crosstalk:",
           handle_map_empty: "Ainda não há pares associados.",
           active_session: "Sessão ativa",
-          bsky_pass_label: "Palavra-passe da aplicação (*App Password*):",
-          bsky_help: "Gera em bsky.app > Definições > Privacidade e Segurança > Palavras-passe da aplicação.",
+          bsky_handle_hint: "(ou e-mail)",
+          bsky_pass_label: "Palavra-passe (normal ou App Password):",
+          bsky_2fa_label: "Código de verificação (2FA por e-mail):",
+          bsky_2fa_ph: "ex: 12345-67890",
+          bsky_2fa_hint: "Introduz o código que o Bluesky enviou para o teu e-mail e volta a clicar em Iniciar sessão.",
+          bsky_login_btn: "Iniciar sessão no Bluesky",
+          bsky_logging_in: "A iniciar sessão no Bluesky...",
+          bsky_login_ok: "Sessão iniciada no Bluesky como {handle}!",
+          bsky_auto_app_pw_note: "App Password dedicada gerada automaticamente (a tua password principal não foi guardada).",
+          bsky_err_missing: "Introduz o teu handle/e-mail e palavra-passe do Bluesky.",
+          bsky_help: "Entra com a tua palavra-passe normal (o MastoSky cria uma App Password dedicada automaticamente sem guardar a password principal) ou cola uma App Password criada em bsky.app.",
           masto_inst_label: "Instância:",
+          masto_oauth_btn: "Entrar com o Mastodon ↗",
+          masto_oauth_starting: "A preparar autorização no Mastodon...",
+          masto_oauth_waiting: "A aguardar autorização na janela do Mastodon...",
+          masto_oauth_ok: "Ligado ao Mastodon como {account}!",
+          masto_oauth_help: "Indica o domínio da tua instância (ex: mastodon.social) e clica em «Entrar com o Mastodon» para autorizar em 1 clique.",
+          masto_err_instance: "Indica o domínio da tua instância Mastodon (ex: mastodon.social).",
+          masto_manual_toggle: "Ou introduzir token de acesso manualmente",
           masto_token_label: "Token de acesso:",
           masto_help: "Gera na tua instância em Preferências > Desenvolvimento > Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Indica apenas o domínio da instância (ex: mastodon.social), sem o teu @utilizador.",
+          account_connected_as: "Ligado como {account}",
+          disconnect_btn: "Desligar",
+          disconnect_confirm: "Tens a certeza que queres desligar a conta {net}?",
+          disconnected_ok: "Conta {net} desligada.",
+          restart_server_err: "Este endpoint ainda não está ativo no servidor local. Reinicia o MastoSky (Ctrl+C e volta a correr) e tenta novamente.",
           ai_title: "Acessibilidade & IA",
           ai_provider_label: "Fornecedor de IA:",
           ai_prov_none: "Desativado (Manual)",
@@ -1245,11 +1266,32 @@
           handle_map_sugs: "Suggestions detected via Crosstalk:",
           handle_map_empty: "No linked handles yet.",
           active_session: "Active session",
-          bsky_pass_label: "App Password:",
-          bsky_help: "Generate at bsky.app > Settings > Privacy and Security > App Passwords.",
+          bsky_handle_hint: "(or email)",
+          bsky_pass_label: "Password (regular or App Password):",
+          bsky_2fa_label: "Verification code (email 2FA):",
+          bsky_2fa_ph: "e.g. 12345-67890",
+          bsky_2fa_hint: "Enter the code Bluesky sent to your email and click Sign in again.",
+          bsky_login_btn: "Sign in to Bluesky",
+          bsky_logging_in: "Signing in to Bluesky...",
+          bsky_login_ok: "Signed in to Bluesky as {handle}!",
+          bsky_auto_app_pw_note: "Dedicated App Password generated automatically (your main password was not saved).",
+          bsky_err_missing: "Enter your Bluesky handle/email and password.",
+          bsky_help: "Sign in with your normal password (MastoSky creates a dedicated App Password automatically without storing your main password) or paste an App Password from bsky.app.",
           masto_inst_label: "Instance:",
+          masto_oauth_btn: "Sign in with Mastodon ↗",
+          masto_oauth_starting: "Preparing Mastodon authorization...",
+          masto_oauth_waiting: "Waiting for authorization in the Mastodon window...",
+          masto_oauth_ok: "Connected to Mastodon as {account}!",
+          masto_oauth_help: "Enter your instance domain (e.g. mastodon.social) and click «Sign in with Mastodon» for 1-click authorization.",
+          masto_err_instance: "Enter your Mastodon instance domain (e.g. mastodon.social).",
+          masto_manual_toggle: "Or enter an access token manually",
           masto_token_label: "Access token:",
           masto_help: "Generate in your instance Preferences > Development > New Application. Keep default Redirect URI and check scopes: read:statuses, read:notifications, write:statuses, write:media, write:favourites. Enter only the instance domain (e.g. mastodon.social), without your @handle.",
+          account_connected_as: "Connected as {account}",
+          disconnect_btn: "Disconnect",
+          disconnect_confirm: "Are you sure you want to disconnect your {net} account?",
+          disconnected_ok: "{net} account disconnected.",
+          restart_server_err: "This endpoint is not active on the running server yet. Restart MastoSky (Ctrl+C and run again) and try again.",
           ai_title: "Accessibility & AI",
           ai_provider_label: "AI Provider:",
           ai_prov_none: "Disabled (Manual)",
@@ -13843,6 +13885,461 @@
       if (panelsWrap) panelsWrap.scrollTop = 0;
     }
 
+    function updateSetupAccountsUI(s) {
+      if (!s) return;
+      const bskyCfg = Boolean(s.bluesky?.configured);
+      const mastoCfg = Boolean(s.mastodon?.configured);
+      if ($("cfgBskyActive")) $("cfgBskyActive").hidden = !bskyCfg;
+      if ($("cfgMastoActive")) $("cfgMastoActive").hidden = !mastoCfg;
+
+      if ($("cfgBskyConnectedBar")) {
+        $("cfgBskyConnectedBar").hidden = !bskyCfg;
+        if (bskyCfg && $("cfgBskyConnectedText")) {
+          const h = (s.bluesky?.handle || "").replace(/^@/, "");
+          $("cfgBskyConnectedText").textContent = t("setup.account_connected_as", { account: h ? "@" + h : "Bluesky" });
+        }
+        if ($("cfgBskyAutoPwNote")) {
+          $("cfgBskyAutoPwNote").hidden = !(bskyCfg && s.bluesky?.auto_app_password);
+        }
+      }
+      if ($("cfgBskyPass")) {
+        $("cfgBskyPass").placeholder = bskyCfg ? `•••••••• (${t("setup.active_session")})` : "••••••••";
+      }
+
+      if ($("cfgMastoConnectedBar")) {
+        $("cfgMastoConnectedBar").hidden = !mastoCfg;
+        if (mastoCfg && $("cfgMastoConnectedText")) {
+          const mHandle = s.mastodon?.handle ? "@" + s.mastodon.handle.replace(/^@/, "") : "";
+          const mInst = (s.mastodon?.instance || "").replace(/^https?:\/\//, "");
+          const acctLabel = mHandle ? `${mHandle} (${mInst})` : (mInst || "Mastodon");
+          $("cfgMastoConnectedText").textContent = t("setup.account_connected_as", { account: acctLabel });
+        }
+      }
+      if ($("cfgMastoToken")) {
+        $("cfgMastoToken").placeholder = mastoCfg ? `•••••••• (${t("setup.active_session")})` : "O teu access token";
+      }
+
+      const anyNet = Array.isArray(s.networks) ? s.networks.length > 0 : (bskyCfg || mastoCfg);
+      if (anyNet) {
+        if ($("closeSetup")) $("closeSetup").hidden = false;
+        if ($("cancelSetupBtn")) $("cancelSetupBtn").hidden = false;
+      }
+    }
+
+    async function loginBlueskyDirect(silentSuccess = false) {
+      const handle = $("cfgBskyHandle")?.value.trim() || "";
+      const password = $("cfgBskyPass")?.value.trim() || "";
+      const code = $("cfgBsky2faCode")?.value.trim() || "";
+      const msgEl = $("bskyAuthMsg");
+      const btn = $("btnBskyLogin");
+
+      if (!handle || !password) {
+        if (!silentSuccess && msgEl) {
+          msgEl.className = "msg err";
+          msgEl.textContent = t("setup.bsky_err_missing");
+        }
+        return false;
+      }
+
+      if (btn) btn.disabled = true;
+      if (msgEl) {
+        msgEl.className = "msg";
+        msgEl.textContent = t("setup.bsky_logging_in");
+      }
+
+      try {
+        const res = await api("/api/auth/bluesky/login", {
+          handle,
+          password,
+          auth_factor_token: code
+        });
+        if (res && res.requires_2fa) {
+          if ($("cfgBsky2faWrap")) $("cfgBsky2faWrap").hidden = false;
+          if (msgEl) {
+            msgEl.className = "msg err";
+            msgEl.textContent = res.error || t("setup.bsky_2fa_hint");
+          }
+          setTimeout(() => $("cfgBsky2faCode")?.focus(), 50);
+          return false;
+        }
+        if (res && res.ok) {
+          if ($("cfgBskyPass")) $("cfgBskyPass").value = "";
+          if ($("cfgBsky2faCode")) $("cfgBsky2faCode").value = "";
+          if ($("cfgBsky2faWrap")) $("cfgBsky2faWrap").hidden = true;
+          if (res.handle && $("cfgBskyHandle")) $("cfgBskyHandle").value = res.handle;
+          if (Array.isArray(res.networks)) networks = res.networks;
+          const st = await api("/api/status");
+          if (st) {
+            updateSetupAccountsUI(st);
+            if (Array.isArray(st.networks)) networks = st.networks;
+          }
+          if (!silentSuccess) {
+            if (msgEl) {
+              msgEl.className = "msg";
+              msgEl.textContent = t("setup.bsky_login_ok", {
+                handle: "@" + (res.handle || handle).replace(/^@/, "")
+              });
+            }
+            load();
+            loadNotifs();
+            loadConversations(true);
+            loadProfile(true);
+          } else if (msgEl) {
+            msgEl.textContent = "";
+          }
+          return true;
+        }
+        if (msgEl) {
+          msgEl.className = "msg err";
+          msgEl.textContent = (res && res.error === "not found")
+            ? t("setup.restart_server_err")
+            : ((res && res.error) || t("setup.err_server"));
+        }
+        return false;
+      } catch (err) {
+        if (msgEl) {
+          msgEl.className = "msg err";
+          msgEl.textContent = t("setup.err_save", { err: err.message || t("setup.err_server") });
+        }
+        return false;
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    let _mastoOAuthCleanup = null;
+
+    async function startMastodonOAuth() {
+      const inst = $("cfgMastoInst")?.value.trim() || "";
+      const msgEl = $("mastoAuthMsg");
+      const btn = $("btnMastoOAuth");
+
+      if (!inst) {
+        if (msgEl) {
+          msgEl.className = "msg err";
+          msgEl.textContent = t("setup.masto_err_instance");
+        }
+        $("cfgMastoInst")?.focus();
+        return;
+      }
+
+      if (_mastoOAuthCleanup) {
+        _mastoOAuthCleanup();
+        _mastoOAuthCleanup = null;
+      }
+
+      if (btn) btn.disabled = true;
+      if (msgEl) {
+        msgEl.className = "msg";
+        msgEl.textContent = t("setup.masto_oauth_starting");
+      }
+
+      try {
+        const res = await api("/api/auth/mastodon/start", {
+          instance: inst,
+          client_origin: window.location.origin
+        });
+        if (!res || !res.ok || !res.authorize_url) {
+          if (msgEl) {
+            msgEl.className = "msg err";
+            msgEl.textContent = (res && res.error === "not found")
+              ? t("setup.restart_server_err")
+              : ((res && res.error) || t("setup.err_server"));
+          }
+          if (btn) btn.disabled = false;
+          return;
+        }
+
+        if (msgEl) {
+          msgEl.className = "msg";
+          msgEl.textContent = t("setup.masto_oauth_waiting");
+        }
+
+        const w = 520;
+        const h = 680;
+        const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - w) / 2));
+        const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - h) / 2));
+        const popup = window.open(
+          res.authorize_url,
+          "mastosky_masto_oauth",
+          `width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
+        );
+        if (!popup) {
+          window.location.href = res.authorize_url;
+          return;
+        }
+
+        let finished = false;
+        let pollTimer = null;
+        let bc = null;
+        let onWindowMsg = null;
+        let onStorageMsg = null;
+
+        const cleanup = () => {
+          if (onWindowMsg) window.removeEventListener("message", onWindowMsg);
+          if (onStorageMsg) window.removeEventListener("storage", onStorageMsg);
+          if (bc) {
+            try { bc.close(); } catch (_) { }
+            bc = null;
+          }
+          if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
+          if (btn) btn.disabled = false;
+          _mastoOAuthCleanup = null;
+        };
+
+        const finishOAuth = async (payload) => {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          if (payload && payload.ok) {
+            if ($("cfgMastoToken")) $("cfgMastoToken").value = "";
+            const st = await api("/api/status");
+            if (st) {
+              updateSetupAccountsUI(st);
+              if (Array.isArray(st.networks)) networks = st.networks;
+              if (st.mastodon?.instance && $("cfgMastoInst")) {
+                $("cfgMastoInst").value = st.mastodon.instance;
+              }
+            }
+            const acctLabel = payload.handle
+              ? "@" + String(payload.handle).replace(/^@/, "")
+              : (st?.mastodon?.handle ? "@" + st.mastodon.handle.replace(/^@/, "") : (res.instance || inst));
+            if (msgEl) {
+              msgEl.className = "msg";
+              msgEl.textContent = t("setup.masto_oauth_ok", { account: acctLabel });
+            }
+            load();
+            loadNotifs();
+            loadConversations(true);
+            loadProfile(true);
+          } else {
+            if (msgEl) {
+              msgEl.className = "msg err";
+              msgEl.textContent = (payload && payload.error) || t("setup.err_server");
+            }
+          }
+        };
+
+        onWindowMsg = (e) => {
+          if (e.origin !== window.location.origin) return;
+          if (e.data && e.data.type === "mastosky_oauth_complete") {
+            finishOAuth(e.data);
+          }
+        };
+
+        onStorageMsg = (e) => {
+          if (e.key !== "mastosky_oauth_event" || !e.newValue) return;
+          try {
+            const parsed = JSON.parse(e.newValue);
+            if (parsed && parsed.type === "mastosky_oauth_complete") {
+              finishOAuth(parsed);
+            }
+          } catch (_) { }
+        };
+
+        _mastoOAuthCleanup = cleanup;
+        window.addEventListener("message", onWindowMsg);
+        window.addEventListener("storage", onStorageMsg);
+
+        if (typeof window.BroadcastChannel === "function") {
+          try {
+            bc = new window.BroadcastChannel("mastosky_auth");
+            bc.onmessage = (ev) => {
+              if (ev.data && ev.data.type === "mastosky_oauth_complete") {
+                finishOAuth(ev.data);
+              }
+            };
+          } catch (_) { }
+        }
+
+        pollTimer = setInterval(async () => {
+          if (finished) return;
+          if (popup.closed) {
+            setTimeout(async () => {
+              if (finished) return;
+              try {
+                const st = await api("/api/status");
+                if (st && st.mastodon && st.mastodon.configured) {
+                  finishOAuth({ ok: true, handle: st.mastodon.handle || "" });
+                  return;
+                }
+              } catch (_) { }
+              if (!finished) {
+                finished = true;
+                cleanup();
+                if (msgEl && msgEl.textContent === t("setup.masto_oauth_waiting")) {
+                  msgEl.textContent = "";
+                }
+              }
+            }, 350);
+          }
+        }, 900);
+      } catch (err) {
+        if (msgEl) {
+          msgEl.className = "msg err";
+          msgEl.textContent = t("setup.err_save", { err: err.message || t("setup.err_server") });
+        }
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function disconnectAccount(network) {
+      const label = LABEL[network] || network;
+      if (!(await askConfirm(t("setup.disconnect_confirm", { net: label })))) return;
+      const authMsgEl = network === "bluesky" ? $("bskyAuthMsg") : $("mastoAuthMsg");
+      try {
+        const res = await api("/api/auth/disconnect", { network });
+        if (!res || !res.ok) {
+          const errTxt = (res && res.error === "not found")
+            ? t("setup.restart_server_err")
+            : ((res && res.error) || t("setup.err_server"));
+          if (authMsgEl) {
+            authMsgEl.className = "msg err";
+            authMsgEl.textContent = errTxt;
+          }
+          if ($("setupMsg")) {
+            $("setupMsg").className = "msg err";
+            $("setupMsg").textContent = errTxt;
+          }
+          return;
+        }
+        if (network === "bluesky") {
+          if ($("cfgBskyHandle")) $("cfgBskyHandle").value = "";
+          if ($("cfgBskyPass")) $("cfgBskyPass").value = "";
+          if ($("cfgBsky2faCode")) $("cfgBsky2faCode").value = "";
+          if ($("cfgBsky2faWrap")) $("cfgBsky2faWrap").hidden = true;
+        } else if (network === "mastodon") {
+          if ($("cfgMastoInst")) $("cfgMastoInst").value = "";
+          if ($("cfgMastoToken")) $("cfgMastoToken").value = "";
+        }
+        if (authMsgEl) {
+          authMsgEl.className = "msg";
+          authMsgEl.textContent = t("setup.disconnected_ok", { net: label });
+        }
+        networks = Array.isArray(res.networks) ? res.networks : [];
+        const st = await api("/api/status");
+        if (st) {
+          updateSetupAccountsUI(st);
+          if (Array.isArray(st.networks)) networks = st.networks;
+        }
+
+        if (!networks.length) {
+          items = [];
+          exploreItems = [];
+          notifs = [];
+          conversations = [];
+          profileData = {};
+          profileLoaded = false;
+          profileHubItems = [];
+          profileHubCursors = {};
+          profileItems = [];
+          profileCursors = {};
+          availableLists = [];
+          listsItems = [];
+          listsCursors = {};
+          timelineCursors = {};
+          exploreCursors = {};
+          notifsCursors = {};
+          if (activeConvo) closeConvoThread();
+          if ($("errors")) $("errors").replaceChildren();
+          if ($("eerrors")) $("eerrors").replaceChildren();
+          if ($("nerrors")) $("nerrors").replaceChildren();
+          if ($("perrors")) $("perrors").replaceChildren();
+          if ($("convoErrors")) $("convoErrors").replaceChildren();
+          if ($("listsErrors")) $("listsErrors").replaceChildren();
+          if ($("profileHubFeedSection")) $("profileHubFeedSection").hidden = true;
+          render();
+          renderExplore();
+          renderNotifs();
+          renderConversationList();
+          renderProfileAccountsList({});
+          populateListSelects();
+          renderSelectedListFeed();
+          buildTargets();
+          update();
+          updateBadge();
+          updateMessagesBadge(0);
+          if ($("closeSetup")) $("closeSetup").hidden = true;
+          if ($("cancelSetupBtn")) $("cancelSetupBtn").hidden = true;
+        } else {
+          items = items.filter(it => it.network !== network);
+          exploreItems = exploreItems.filter(it => it.network !== network);
+          if (Array.isArray(notifs)) notifs = notifs.filter(n => n.network !== network);
+          conversations = conversations.filter(c => c.network !== network);
+          profileHubItems = profileHubItems.filter(it => it.network !== network);
+          availableLists = availableLists.filter(l => l.network !== network);
+          listsItems = listsItems.filter(it => it.network !== network);
+          if (profileData && typeof profileData === "object") {
+            delete profileData[network];
+          }
+          delete timelineCursors[network];
+          delete exploreCursors[network];
+          delete notifsCursors[network];
+          delete profileHubCursors[network];
+          delete profileCursors[network];
+          if (activeConvo && activeConvo.network === network) {
+            closeConvoThread();
+          }
+          render();
+          renderExplore();
+          renderNotifs();
+          renderConversationList();
+          renderProfileAccountsList(profileData || {});
+          populateListSelects();
+          renderSelectedListFeed();
+          buildTargets();
+          update();
+          updateBadge();
+          load();
+          loadNotifs();
+          loadConversations(true);
+          loadProfile(true);
+        }
+      } catch (err) {
+        const errMsg = t("setup.err_save", { err: err.message || t("setup.err_server") });
+        if (authMsgEl) {
+          authMsgEl.className = "msg err";
+          authMsgEl.textContent = errMsg;
+        }
+        if ($("setupMsg")) {
+          $("setupMsg").className = "msg err";
+          $("setupMsg").textContent = errMsg;
+        }
+      }
+    }
+
+    if ($("btnBskyLogin")) $("btnBskyLogin").onclick = () => loginBlueskyDirect(false);
+    if ($("btnBskyDisconnect")) $("btnBskyDisconnect").onclick = () => disconnectAccount("bluesky");
+    if ($("btnMastoOAuth")) $("btnMastoOAuth").onclick = startMastodonOAuth;
+    if ($("btnMastoDisconnect")) $("btnMastoDisconnect").onclick = () => disconnectAccount("mastodon");
+    if ($("cfgBskyPass")) {
+      $("cfgBskyPass").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          loginBlueskyDirect(false);
+        }
+      });
+    }
+    if ($("cfgBsky2faCode")) {
+      $("cfgBsky2faCode").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          loginBlueskyDirect(false);
+        }
+      });
+    }
+    if ($("cfgMastoInst")) {
+      $("cfgMastoInst").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !($("cfgMastoToken")?.value.trim())) {
+          e.preventDefault();
+          startMastodonOAuth();
+        }
+      });
+    }
+
     async function openSetup(mandatory = false) {
       $("setupOverlay").hidden = false;
       $("setupOverlay").scrollTop = 0;
@@ -13853,6 +14350,12 @@
       if ($("cancelSetupBtn")) $("cancelSetupBtn").hidden = mandatory;
       $("setupMsg").textContent = "";
       $("setupMsg").className = "msg";
+      if ($("bskyAuthMsg")) { $("bskyAuthMsg").textContent = ""; $("bskyAuthMsg").className = "msg"; }
+      if ($("mastoAuthMsg")) { $("mastoAuthMsg").textContent = ""; $("mastoAuthMsg").className = "msg"; }
+      if ($("cfgBskyPass")) $("cfgBskyPass").value = "";
+      if ($("cfgBsky2faCode")) $("cfgBsky2faCode").value = "";
+      if ($("cfgBsky2faWrap")) $("cfgBsky2faWrap").hidden = true;
+      if ($("cfgMastoToken")) $("cfgMastoToken").value = "";
       if ($("cfgLangSelect")) $("cfgLangSelect").value = currentLang;
       if ($("cfgThemeSelect")) $("cfgThemeSelect").value = currentTheme;
       if ($("cfgNavModeSelect")) $("cfgNavModeSelect").value = navMode;
@@ -13886,8 +14389,7 @@
         const s = await api("/api/status");
         if (s.bluesky && s.bluesky.handle) $("cfgBskyHandle").value = s.bluesky.handle;
         if (s.mastodon && s.mastodon.instance) $("cfgMastoInst").value = s.mastodon.instance;
-        if ($("cfgBskyActive")) $("cfgBskyActive").hidden = !s.bluesky?.configured;
-        if ($("cfgMastoActive")) $("cfgMastoActive").hidden = !s.mastodon?.configured;
+        updateSetupAccountsUI(s);
         if (s.ai) {
           aiConfig = Object.assign({}, aiConfig, s.ai);
           if ($("cfgAiProvider")) $("cfgAiProvider").value = s.ai.provider || "none";
@@ -14017,11 +14519,26 @@
         return;
       }
 
+      $("saveSetupBtn").disabled = true;
+      $("setupMsg").className = "msg";
+      $("setupMsg").textContent = t("setup.saving_msg");
+
+      let didBskyDirectLogin = false;
+      if (bskyHandle && bskyPass) {
+        const bskyOk = await loginBlueskyDirect(true);
+        if (!bskyOk) {
+          $("saveSetupBtn").disabled = false;
+          $("setupMsg").textContent = "";
+          return;
+        }
+        didBskyDirectLogin = true;
+      }
+
       const payload = {};
-      if (bskyHandle || bskyPass) {
+      if (!didBskyDirectLogin && (bskyHandle || bskyPass || (networks && networks.includes("bluesky")))) {
         payload.bluesky = { handle: bskyHandle, app_password: bskyPass };
       }
-      if (mastoInst || mastoToken) {
+      if (mastoInst || mastoToken || (networks && networks.includes("mastodon"))) {
         payload.mastodon = { instance: mastoInst, token: mastoToken };
       }
 
@@ -14040,13 +14557,12 @@
         };
       }
 
-      $("saveSetupBtn").disabled = true;
-      $("setupMsg").className = "msg";
-      $("setupMsg").textContent = t("setup.saving_msg");
-
       try {
         const res = await api("/api/setup", payload);
         if (res.ok) {
+          if (Array.isArray(res.networks)) {
+            networks = res.networks;
+          }
           if ($("cfgLangSelect") && $("cfgLangSelect").value !== currentLang) {
             setLang($("cfgLangSelect").value);
           }

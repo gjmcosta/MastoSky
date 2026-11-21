@@ -4921,6 +4921,234 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         ]:
             self.assertIn(marker, js)
 
+    def test_direct_login_bluesky_and_mastodon_oauth(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg_path = Path(tmpdir) / "config.json"
+
+            def fake_write_config(cfg_obj, path=None):
+                p = Path(path or cfg_path)
+                p.write_text(json.dumps(cfg_obj, indent=2), encoding="utf-8")
+
+            def post_req(path, body):
+                raw = json.dumps(body).encode("utf-8")
+                h = object.__new__(app.H)
+                h.path = path
+                h.headers = {
+                    "Host": f"127.0.0.1:{app.PORT}",
+                    "X-CSRF-Token": app.SESSION_TOKEN,
+                    "Content-Length": str(len(raw)),
+                    "Content-Type": "application/json",
+                }
+                h.rfile = io.BytesIO(raw)
+                h.wfile = io.BytesIO()
+                h.sent = []
+                h.send_response = lambda code: h.sent.append(("code", code))
+                h.send_header = lambda k, v: h.sent.append((k, v))
+                h.end_headers = lambda: None
+                h.do_POST()
+                code = [v for k, v in h.sent if k == "code"][0]
+                return code, json.loads(h.wfile.getvalue().decode("utf-8"))
+
+            def get_req(path, origin=None):
+                h = object.__new__(app.H)
+                h.path = path
+                h.headers = {"Host": f"127.0.0.1:{app.PORT}"}
+                if origin:
+                    h.headers["Origin"] = origin
+                h.wfile = io.BytesIO()
+                h.sent = []
+                h.send_response = lambda code: h.sent.append(("code", code))
+                h.send_header = lambda k, v: h.sent.append((k, v))
+                h.end_headers = lambda: None
+                h.do_GET()
+                code = [v for k, v in h.sent if k == "code"][0]
+                return code, h.wfile.getvalue().decode("utf-8")
+
+            with mock.patch.object(app, "CFG_PATH", cfg_path), \
+                 mock.patch.object(app, "CFG", {"port": app.PORT}), \
+                 mock.patch.object(app, "CLIENTS", {}), \
+                 mock.patch.object(app, "write_config", side_effect=fake_write_config):
+
+                # 1. Bluesky 2FA exigido
+                err_2fa = '{"error":"AuthFactorTokenRequired","message":"A sign in code has been sent to your email address"}'
+                with mock.patch("app.http", side_effect=app.ApiError(f"401: {err_2fa}", status=401, body=err_2fa)):
+                    c_2fa, r_2fa = post_req("/api/auth/bluesky/login", {
+                        "handle": "@alice.bsky.social",
+                        "password": "main-secret-password",
+                    })
+                self.assertEqual(c_2fa, 200)
+                self.assertFalse(r_2fa["ok"])
+                self.assertTrue(r_2fa["requires_2fa"])
+
+                # 2. Bluesky login direto com 2FA + geração automática de App Password
+                def fake_bsky_login_http(method, url, data=None, token=None, headers=None, timeout=30):
+                    if url.endswith("/xrpc/com.atproto.server.createSession"):
+                        self.assertEqual(data["identifier"], "alice.bsky.social")
+                        self.assertEqual(data["password"], "main-secret-password")
+                        self.assertEqual(data["authFactorToken"], "12345-67890")
+                        return {
+                            "accessJwt": "jwt_main_1",
+                            "refreshJwt": "ref_main_1",
+                            "did": "did:plc:alice123",
+                            "handle": "alice.bsky.social",
+                            "didDoc": {
+                                "service": [{
+                                    "id": "#atproto_pds",
+                                    "type": "AtprotoPersonalDataServer",
+                                    "serviceEndpoint": "https://enoki.us-east.host.bsky.network",
+                                }]
+                            },
+                        }
+                    if url == "https://enoki.us-east.host.bsky.network/xrpc/com.atproto.server.createAppPassword":
+                        self.assertEqual(token, "jwt_main_1")
+                        self.assertTrue(data.get("privileged"))
+                        return {"name": data["name"], "password": "auto-gen-app-pw"}
+                    raise AssertionError(f"URL inesperada: {url}")
+
+                with mock.patch("app.http", side_effect=fake_bsky_login_http):
+                    c_ok, r_ok = post_req("/api/auth/bluesky/login", {
+                        "handle": "@alice.bsky.social",
+                        "password": "main-secret-password",
+                        "auth_factor_token": "12345-67890",
+                    })
+                self.assertEqual(c_ok, 200)
+                self.assertTrue(r_ok["ok"])
+                self.assertTrue(r_ok["auto_app_password"])
+                self.assertEqual(r_ok["handle"], "alice.bsky.social")
+                self.assertEqual(app.CFG["bluesky"]["app_password"], "auto-gen-app-pw")
+                self.assertNotEqual(app.CFG["bluesky"]["app_password"], "main-secret-password")
+                self.assertEqual(app.CFG["bluesky"]["pds"], "https://enoki.us-east.host.bsky.network")
+                self.assertIn("bluesky", app.CLIENTS)
+                self.assertEqual(app.CLIENTS["bluesky"].jwt, "jwt_main_1")
+                self.assertEqual(app.CLIENTS["bluesky"].pds, "https://enoki.us-east.host.bsky.network")
+
+                # 3. Fallback quando createAppPassword falha (utilizador já entrou com App Password)
+                def fake_bsky_app_pw_http(method, url, data=None, token=None, headers=None, timeout=30):
+                    if url.endswith("/xrpc/com.atproto.server.createSession"):
+                        return {
+                            "accessJwt": "jwt_main_2",
+                            "refreshJwt": "ref_main_2",
+                            "did": "did:plc:alice123",
+                            "handle": "alice.bsky.social",
+                        }
+                    if url.endswith("/xrpc/com.atproto.server.createAppPassword"):
+                        raise app.ApiError("400: App passwords cannot create other app passwords", status=400)
+                    raise AssertionError(f"URL inesperada: {url}")
+
+                with mock.patch("app.http", side_effect=fake_bsky_app_pw_http):
+                    c_fb, r_fb = post_req("/api/auth/bluesky/login", {
+                        "handle": "alice.bsky.social",
+                        "password": "abcd-efgh-ijkl-mnop",
+                    })
+                self.assertEqual(c_fb, 200)
+                self.assertTrue(r_fb["ok"])
+                self.assertFalse(r_fb["auto_app_password"])
+                self.assertEqual(app.CFG["bluesky"]["app_password"], "abcd-efgh-ijkl-mnop")
+
+                # 4. Mastodon OAuth: /api/auth/mastodon/start + /api/auth/mastodon/callback
+                def fake_masto_oauth_http(method, url, data=None, token=None, headers=None, timeout=30):
+                    if url == "https://mastodon.social/api/v1/apps":
+                        self.assertEqual(data["client_name"], "MastoSky")
+                        self.assertIn("/api/auth/mastodon/callback", data["redirect_uris"])
+                        return {"client_id": "m_cid", "client_secret": "m_sec"}
+                    if url == "https://mastodon.social/oauth/token":
+                        self.assertEqual(data["grant_type"], "authorization_code")
+                        self.assertEqual(data["code"], "oauth_code_123")
+                        return {"access_token": "masto_access_tok_999"}
+                    if url == "https://mastodon.social/api/v1/accounts/verify_credentials":
+                        self.assertEqual(token, "masto_access_tok_999")
+                        return {"id": "77", "acct": "alice"}
+                    raise AssertionError(f"URL inesperada: {url}")
+
+                with mock.patch("app.http", side_effect=fake_masto_oauth_http), \
+                     mock.patch("app._validate_remote_http_url"):
+                    c_start, r_start = post_req("/api/auth/mastodon/start", {
+                        "instance": "mastodon.social",
+                        "client_origin": f"http://127.0.0.1:{app.PORT}",
+                    })
+                    self.assertEqual(c_start, 200)
+                    self.assertTrue(r_start["ok"])
+                    self.assertEqual(r_start["instance"], "https://mastodon.social")
+                    self.assertIn("https://mastodon.social/oauth/authorize?", r_start["authorize_url"])
+                    state = r_start["state"]
+
+                    # Callback deve ser aceite mesmo se o browser enviar Origin externo após redirect
+                    c_cb, body_cb = get_req(
+                        f"/api/auth/mastodon/callback?code=oauth_code_123&state={app.urllib.parse.quote(state)}",
+                        origin="https://mastodon.social",
+                    )
+                self.assertEqual(c_cb, 200)
+                self.assertIn("mastosky_oauth_complete", body_cb)
+                self.assertIn("alice", body_cb)
+                self.assertEqual(app.CFG["mastodon"]["token"], "masto_access_tok_999")
+                self.assertEqual(app.CFG["mastodon"]["handle"], "alice")
+                self.assertIn("mastodon", app.CLIENTS)
+
+                # Estado inválido/reutilizado devolve 400
+                c_bad_cb, _ = get_req("/api/auth/mastodon/callback?code=x&state=invalido")
+                self.assertEqual(c_bad_cb, 400)
+
+                # 5. /api/status expõe auto_app_password e handle do Mastodon
+                c_st, body_st = get_req("/api/status")
+                self.assertEqual(c_st, 200)
+                st_data = json.loads(body_st)
+                self.assertFalse(st_data["bluesky"]["auto_app_password"])
+                self.assertEqual(st_data["mastodon"]["handle"], "alice")
+
+                # 6. /api/auth/disconnect remove a rede escolhida
+                c_disc, r_disc = post_req("/api/auth/disconnect", {"network": "mastodon"})
+                self.assertEqual(c_disc, 200)
+                self.assertTrue(r_disc["ok"])
+                self.assertNotIn("mastodon", app.CFG)
+                self.assertNotIn("mastodon", app.CLIENTS)
+                self.assertIn("bluesky", app.CLIENTS)
+
+        html = _read_frontend()
+        for marker in [
+            'id="btnBskyLogin"',
+            'id="btnMastoOAuth"',
+            'id="cfgBsky2faWrap"',
+            'id="cfgBskyConnectedBar"',
+            'id="cfgMastoConnectedBar"',
+            'id="btnBskyDisconnect"',
+            'id="btnMastoDisconnect"',
+            "function updateSetupAccountsUI(",
+            "async function loginBlueskyDirect(",
+            "async function startMastodonOAuth(",
+            "async function disconnectAccount(",
+            "/api/auth/bluesky/login",
+            "/api/auth/mastodon/start",
+            "/api/auth/disconnect",
+        ]:
+            self.assertIn(marker, html)
+
+    def test_no_terminal_release_and_docs_setup(self):
+        root = Path(__file__).resolve().parent.parent
+        release_yml = (root / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+        for marker in [
+            "macos-latest",
+            "windows-latest",
+            "ubuntu-latest",
+            "MastoSky-macOS.zip",
+            "MastoSky-Windows-x64.zip",
+            "MastoSky-Linux-x64.tar.gz",
+            "MastoSky-portable.zip",
+            "pyinstaller",
+        ]:
+            self.assertIn(marker, release_yml)
+
+        for doc_rel in ("docs/index.html", "README.md", "README.pt.md"):
+            doc_txt = (root / doc_rel).read_text(encoding="utf-8")
+            self.assertIn("releases/latest/download/MastoSky-macOS.zip", doc_txt)
+            self.assertIn("releases/latest/download/MastoSky-Windows-x64.zip", doc_txt)
+            self.assertIn("releases/latest/download/MastoSky-Linux-x64.tar.gz", doc_txt)
+            self.assertIn("releases/latest/download/MastoSky-portable.zip", doc_txt)
+
+        app_py = (root / "app.py").read_text(encoding="utf-8")
+        self.assertIn("_MEIPASS", app_py)
+        self.assertIn("EADDRINUSE", app_py)
+
 
 if __name__ == "__main__":
     unittest.main()

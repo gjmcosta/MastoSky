@@ -47,7 +47,21 @@ Project page: **[gjmcosta.github.io/MastoSky](https://gjmcosta.github.io/MastoSk
 
 ## Quickstart
 
-### One-line installer
+### Download & Run (No Terminal Required)
+
+Download the ready-to-run package for your system from [GitHub Releases](https://github.com/gjmcosta/MastoSky/releases/latest) — **no terminal or Python installation required**:
+
+- **macOS:** [MastoSky-macOS.zip](https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-macOS.zip) — unzip and open `MastoSky.app`
+- **Windows:** [MastoSky-Windows-x64.zip](https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-Windows-x64.zip) — unzip and open `MastoSky.exe`
+- **Linux:** [MastoSky-Linux-x64.tar.gz](https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-Linux-x64.tar.gz) — extract and run `./MastoSky`
+- **Portable ZIP (requires Python 3):** [MastoSky-portable.zip](https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-portable.zip) — unzip and double-click `MastoSky.command` (macOS) or `MastoSky.bat` (Windows)
+
+MastoSky automatically opens `http://127.0.0.1:8000` in your browser. *(On macOS/Windows, the first launch of an unsigned open-source app may ask for one-time confirmation in Gatekeeper / SmartScreen.)*
+
+<details>
+<summary><b>Advanced: Terminal, Git, Local Network (--lan) &amp; Docker</b></summary>
+
+#### One-line terminal installer
 
 **macOS / Linux:**
 ```bash
@@ -59,7 +73,7 @@ curl -fsSL https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.sh |
 irm https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.ps1 | iex
 ```
 
-### Clone and run manually
+#### Clone and run manually
 
 Requires Python 3.3+.
 
@@ -69,9 +83,9 @@ cd MastoSky
 python3 app.py --open
 ```
 
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000) to enter your credentials. For automatic background startup (`launchd` on macOS or `systemd --user` on Linux), see [docs/README.md](docs/README.md).
+For automatic background startup (`launchd` on macOS or `systemd --user` on Linux), see [docs/README.md](docs/README.md).
 
-### Mobile & iPad Usage (Local Network & PWA)
+#### Mobile & iPad Usage (Local Network & PWA)
 
 To open MastoSky from an iPhone, iPad, or Android device on the same Wi-Fi network:
 
@@ -83,7 +97,7 @@ python3 app.py --lan
 - **iPhone & iPad (Safari):** Share → *Add to Home Screen* to run full-screen as a standalone PWA with pull-to-refresh and iOS Share Sheet draft support.
 - **Android (Chrome):** Menu (`⋮`) → *Install app* or *Add to Home screen*.
 
-### Docker, CasaOS & Tailscale
+#### Docker, CasaOS & Tailscale
 
 MastoSky includes a dependency-free `Dockerfile` (`python:3.12-alpine`) and `docker-compose.yml` with CasaOS metadata:
 
@@ -94,21 +108,20 @@ docker compose up -d
 - Stores `config.json`, `user_data.json` (syncing saved posts, collections, drafts, muted words, deck columns, and reading anchor across devices), and `scheduled_posts.json` in `/data` (`MASTOSKY_DATA_DIR`).
 - Supports Tailscale CGNAT (`100.64.0.0/10`) and `.ts.net` MagicDNS hosts out of the box (optional `MASTOSKY_TAILSCALE_HOST` / `MASTOSKY_ALLOWED_HOSTS`), plus 1-click persistent self-updates in Settings.
 
+</details>
+
 ---
 
-## Credentials Setup
+## Account Login
 
-### Bluesky
-1. Open [bsky.app](https://bsky.app) → **Settings** → **Privacy and Security** → **App Passwords**.
-2. Create an app password (e.g. `MastoSky`). Enable **Direct Messages** access if you want Bluesky DMs inside MastoSky.
-3. Enter your handle (e.g. `user.bsky.social`) and the generated 16-character password.
+### Bluesky (Direct Sign-In)
+- Enter your handle or email and your Bluesky password directly in MastoSky (supports email **2FA**).
+- MastoSky automatically generates a dedicated **App Password** via `com.atproto.server.createAppPassword` and stores only that App Password locally — your main password is never saved.
+- You can also paste an App Password manually from [bsky.app](https://bsky.app) → **Settings** → **Privacy and Security** → **App Passwords**.
 
-### Mastodon
-1. On your Mastodon instance, go to **Preferences** → **Development** → **New Application**.
-2. Name it `MastoSky` and keep the default **Redirect URI** (`urn:ietf:wg:oauth:2.0:oob`).
-3. Select the required scopes: `read:statuses`, `read:notifications`, `write:statuses`, `write:media`, `write:favourites` (plus `read:conversations` if you want Mastodon DMs).
-4. Submit, open the application, and copy **Your access token** (not the *Client key* or *Client secret*).
-5. In MastoSky, enter your instance domain (e.g. `mastodon.social`) and paste the access token.
+### Mastodon (1-Click OAuth)
+- Enter your instance domain (e.g. `mastodon.social`) and click **Sign in with Mastodon** to authorize in one click via OAuth 2.0.
+- Manual access tokens remain available under *"Or enter an access token manually"*.
 
 ---
 

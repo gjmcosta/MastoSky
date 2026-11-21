@@ -7,9 +7,12 @@ from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-DIR = Path(__file__).parent
+_FROZEN = getattr(sys, "frozen", False)
+DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).parent)) if _FROZEN else Path(__file__).parent
 _ENV_DATA_DIR = os.environ.get("MASTOSKY_DATA_DIR", "").strip()
-DATA_DIR = Path(_ENV_DATA_DIR).expanduser() if _ENV_DATA_DIR else DIR
+DATA_DIR = Path(_ENV_DATA_DIR).expanduser() if _ENV_DATA_DIR else ((Path.home() / ".mastosky") if _FROZEN else DIR)
+if _FROZEN:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 CFG_PATH = DATA_DIR / "config.json"
 USER_DATA_PATH = DATA_DIR / "user_data.json"
 _USER_DATA_LOCK = threading.Lock()
@@ -2038,9 +2041,12 @@ class Bsky:
     name = "bluesky"
 
     def __init__(self, c):
-        self.c, self.jwt, self.refresh_jwt, self.did = c, None, None, None
+        self.c = c
+        self.jwt = c.get("access_jwt") or None
+        self.refresh_jwt = c.get("refresh_jwt") or None
+        self.did = c.get("did") or None
         self.host = c.get("service", "https://bsky.social")
-        self.pds = None
+        self.pds = c.get("pds") or None
         self.lock = threading.RLock()  # protege login/refresh em pedidos concorrentes
         self._handle_cache = {}
 
@@ -2077,7 +2083,10 @@ class Bsky:
     def _ensure(self):
         with self.lock:
             if not self.jwt:
-                self.login()
+                if self.refresh_jwt:
+                    self._renew(None)
+                else:
+                    self.login()
 
     def _renew(self, failed_jwt):
         """Renova a sessão: primeiro refreshSession; só se falhar volta a createSession."""
@@ -3818,14 +3827,240 @@ class Masto:
 
 def init_clients(cfg):
     clients = {}
-    if cfg.get("bluesky", {}).get("handle") and cfg.get("bluesky", {}).get("app_password"):
-        clients["bluesky"] = Bsky(cfg["bluesky"])
+    bsky_cfg = cfg.get("bluesky") or {}
+    if bsky_cfg.get("handle") and (bsky_cfg.get("app_password") or bsky_cfg.get("refresh_jwt") or bsky_cfg.get("access_jwt")):
+        clients["bluesky"] = Bsky(bsky_cfg)
     if cfg.get("mastodon", {}).get("token") and cfg.get("mastodon", {}).get("instance"):
         clients["mastodon"] = Masto(cfg["mastodon"])
     return clients
 
 
 CLIENTS = init_clients(CFG)
+
+_MASTO_OAUTH_STATES = {}
+_MASTO_OAUTH_LOCK = threading.Lock()
+MASTO_OAUTH_SCOPES = "read write follow"
+
+
+def authenticate_bluesky_account(identifier, password, auth_factor_token=None, service=None):
+    """Autentica diretamente no Bluesky via createSession e gera uma App Password dedicada automaticamente."""
+    identifier = (identifier or "").strip().lstrip("@")
+    password = (password or "").strip()
+    auth_factor_token = (auth_factor_token or "").strip()
+    raw_service = (service or "").strip()
+    if raw_service:
+        if not raw_service.startswith(("http://", "https://")):
+            raw_service = "https://" + raw_service
+        host, _ = _validate_remote_http_url(raw_service)
+        host = host.rstrip("/")
+    else:
+        host = "https://bsky.social"
+
+    if not identifier or not password:
+        raise ValueError("Introduz o teu handle/e-mail e a palavra-passe do Bluesky.")
+
+    payload = {"identifier": identifier, "password": password}
+    if auth_factor_token:
+        payload["authFactorToken"] = auth_factor_token
+
+    try:
+        r = http("POST", f"{host}/xrpc/com.atproto.server.createSession", data=payload)
+    except ApiError as e:
+        err_body = getattr(e, "body", None) or ""
+        err_combined = f"{err_body}\n{e}"
+        if "AuthFactorTokenRequired" in err_combined:
+            return {
+                "ok": False,
+                "requires_2fa": True,
+                "error": "A tua conta Bluesky tem verificação em 2 passos (2FA) por e-mail ativa. Introduz o código enviado para o teu e-mail.",
+            }
+        msg = ""
+        for src in (err_body, str(e).split(": ", 1)[1] if ": " in str(e) else ""):
+            if not src:
+                continue
+            try:
+                parsed_e = json.loads(src)
+                if isinstance(parsed_e, dict):
+                    msg = str(parsed_e.get("message") or parsed_e.get("error") or "").strip()
+                    if msg:
+                        break
+            except Exception:
+                pass
+        if not msg:
+            msg = "Credenciais do Bluesky inválidas. Verifica o teu handle/e-mail e palavra-passe."
+        return {"ok": False, "requires_2fa": False, "error": msg}
+
+    access_jwt = r["accessJwt"]
+    refresh_jwt = r.get("refreshJwt") or ""
+    did = r["did"]
+    canonical_handle = (r.get("handle") or identifier).strip().lstrip("@")
+    pds_endpoint = None
+    for s in (r.get("didDoc", {}).get("service") or []):
+        if isinstance(s, dict) and (s.get("type") == "AtprotoPersonalDataServer" or s.get("id") == "#atproto_pds"):
+            pds_endpoint = safe_url(s.get("serviceEndpoint"))
+            if pds_endpoint:
+                break
+    pds_base = (pds_endpoint or host).rstrip("/")
+
+    stored_password = password
+    auto_app_password = False
+    try:
+        app_pw_res = http(
+            "POST",
+            f"{pds_base}/xrpc/com.atproto.server.createAppPassword",
+            data={"name": f"MastoSky-{secrets.token_hex(2)}", "privileged": True},
+            token=access_jwt,
+        )
+        if isinstance(app_pw_res, dict) and app_pw_res.get("password"):
+            stored_password = str(app_pw_res["password"]).strip()
+            auto_app_password = True
+    except Exception:
+        pass
+
+    cfg_entry = {
+        "handle": canonical_handle,
+        "app_password": stored_password,
+        "did": did,
+        "pds": pds_base,
+        "access_jwt": access_jwt,
+        "refresh_jwt": refresh_jwt,
+        "auto_app_password": auto_app_password,
+    }
+    if raw_service:
+        cfg_entry["service"] = host
+    return {"ok": True, "config": cfg_entry}
+
+
+def start_mastodon_oauth(instance_raw, redirect_base):
+    """Regista dinamicamente a aplicação na instância Mastodon e gera o URL de autorização OAuth 2.0."""
+    inst = sanitize_masto_instance(instance_raw)
+    if not inst:
+        raise ValueError("Indica o domínio da tua instância Mastodon (ex: mastodon.social).")
+    _validate_remote_http_url(inst)
+    redirect_uri = f"{redirect_base.rstrip('/')}/api/auth/mastodon/callback"
+    app_res = http(
+        "POST",
+        f"{inst}/api/v1/apps",
+        data={
+            "client_name": "MastoSky",
+            "redirect_uris": redirect_uri,
+            "scopes": MASTO_OAUTH_SCOPES,
+            "website": "https://github.com/gjmcosta/MastoSky",
+        },
+    )
+    client_id = (app_res.get("client_id") or "").strip() if isinstance(app_res, dict) else ""
+    client_secret = (app_res.get("client_secret") or "").strip() if isinstance(app_res, dict) else ""
+    if not client_id or not client_secret:
+        raise ApiError("A instância Mastodon não devolveu credenciais OAuth (client_id/client_secret).")
+
+    state = secrets.token_urlsafe(24)
+    now_ts = time.time()
+    with _MASTO_OAUTH_LOCK:
+        expired_keys = [k for k, v in _MASTO_OAUTH_STATES.items() if now_ts - v.get("created_at", 0) > 900]
+        for k in expired_keys:
+            _MASTO_OAUTH_STATES.pop(k, None)
+        _MASTO_OAUTH_STATES[state] = {
+            "instance": inst,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "scopes": MASTO_OAUTH_SCOPES,
+            "created_at": now_ts,
+        }
+
+    authorize_url = f"{inst}/oauth/authorize?" + urllib.parse.urlencode({
+        "client_id": client_id,
+        "scope": MASTO_OAUTH_SCOPES,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "state": state,
+    })
+    return {"ok": True, "authorize_url": authorize_url, "state": state, "instance": inst}
+
+
+def complete_mastodon_oauth(state, code):
+    """Troca o authorization code pelo access token e guarda a conta Mastodon no config.json."""
+    global CFG, CLIENTS
+    state = (state or "").strip()
+    code = (code or "").strip()
+    if not state or not code:
+        raise ValueError("Parâmetros OAuth inválidos (state/code em falta).")
+    with _MASTO_OAUTH_LOCK:
+        info = _MASTO_OAUTH_STATES.pop(state, None)
+    if not info or (time.time() - info.get("created_at", 0) > 900):
+        raise ValueError("Sessão de autorização expirada ou inválida. Tenta novamente a partir do MastoSky.")
+
+    tok_res = http(
+        "POST",
+        f"{info['instance']}/oauth/token",
+        data={
+            "client_id": info["client_id"],
+            "client_secret": info["client_secret"],
+            "redirect_uri": info["redirect_uri"],
+            "grant_type": "authorization_code",
+            "code": code,
+            "scope": info["scopes"],
+        },
+    )
+    access_token = (tok_res.get("access_token") or "").strip() if isinstance(tok_res, dict) else ""
+    if not access_token:
+        raise ApiError("A instância Mastodon não devolveu um token de acesso.")
+
+    acct = ""
+    try:
+        acc = http("GET", f"{info['instance']}/api/v1/accounts/verify_credentials", token=access_token, timeout=10)
+        if isinstance(acc, dict):
+            acct = str(acc.get("acct") or acc.get("username") or "").strip()
+    except Exception:
+        pass
+
+    masto_cfg = {"instance": info["instance"], "token": access_token}
+    if acct:
+        masto_cfg["handle"] = acct
+
+    new_cfg = dict(CFG)
+    new_cfg["port"] = PORT
+    new_cfg["mastodon"] = masto_cfg
+    write_config(new_cfg)
+    CFG = new_cfg
+    CLIENTS = init_clients(CFG)
+    return masto_cfg
+
+
+def _render_oauth_callback_html(ok, message, payload):
+    """Gera uma página HTML segura para concluir o callback OAuth no browser e notificar o MastoSky."""
+    title = "MastoSky — Mastodon"
+    heading = "Mastodon ligado com sucesso!" if ok else "Falha ao ligar ao Mastodon"
+    badge_color = "#22c55e" if ok else "#ef4444"
+    safe_msg = html.escape(str(message or ""))
+    payload_json = json.dumps(payload).replace("</", "<\\/")
+    return (
+        "<!doctype html><html lang=\"pt\"><head><meta charset=\"utf-8\">"
+        f"<title>{title}</title>"
+        "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+        "<style>"
+        "body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,-apple-system,sans-serif;"
+        "background:#0B1020;color:#EEF0FF;padding:24px;box-sizing:border-box}"
+        "@media (prefers-color-scheme:light){body{background:#EEF0FF;color:#0B1020}.card{background:#fff;border-color:#C8CEF0}}"
+        ".card{max-width:420px;width:100%;padding:24px;border-radius:14px;background:#121936;border:1px solid #2A3366;text-align:center}"
+        f".dot{{width:12px;height:12px;border-radius:50%;background:{badge_color};display:inline-block;margin-bottom:10px}}"
+        "h1{margin:0 0 8px;font-size:18px;font-weight:700}"
+        "p{margin:0 0 18px;font-size:14px;opacity:.85;line-height:1.45}"
+        ".btn{display:inline-block;padding:10px 18px;border-radius:8px;background:#6558F5;color:#fff;text-decoration:none;font-weight:600;font-size:14px}"
+        "</style></head><body>"
+        f"<div class=\"card\"><span class=\"dot\"></span><h1>{html.escape(heading)}</h1>"
+        f"<p>{safe_msg}</p>"
+        "<a class=\"btn\" href=\"/\">Voltar ao MastoSky</a></div>"
+        "<script>"
+        "(function(){"
+        f"var p={payload_json};"
+        "try{if(window.opener&&!window.opener.closed){window.opener.postMessage(p,window.location.origin);}}catch(_){}"
+        "try{if(typeof window.BroadcastChannel==='function'){var bc=new window.BroadcastChannel('mastosky_auth');bc.postMessage(p);bc.close();}}catch(_){}"
+        "try{localStorage.setItem('mastosky_oauth_event',JSON.stringify(p));}catch(_){}"
+        "if(p&&p.ok){setTimeout(function(){try{window.close();}catch(_){}},400);}"
+        "})();"
+        "</script></body></html>"
+    ).encode("utf-8")
 
 
 # 'unsafe-inline' necessário porque a UI é um único ficheiro com <script>/<style> inline.
@@ -4792,10 +5027,12 @@ class H(BaseHTTPRequestHandler):
         # Protege contra outros sites a falarem com o servidor local.
         host = self.headers.get("Host", "")
         origin = self.headers.get("Origin")
+        req_path = (getattr(self, "path", "") or "").split("?", 1)[0]
+        is_oauth_callback = req_path == "/api/auth/mastodon/callback"
 
         if not LAN_MODE:
             ok = (f"127.0.0.1:{PORT}", f"localhost:{PORT}")
-            return host in ok and (origin is None or origin in [f"http://{h}" for h in ok])
+            return host in ok and (is_oauth_callback or origin is None or origin in [f"http://{h}" for h in ok])
 
         if not host:
             return False
@@ -4808,7 +5045,7 @@ class H(BaseHTTPRequestHandler):
         if not is_private_or_local_host(host):
             return False
 
-        if origin is not None:
+        if origin is not None and not is_oauth_callback:
             try:
                 parsed_origin = urllib.parse.urlparse(origin)
                 if parsed_origin.scheme not in ("http", "https"):
@@ -4910,7 +5147,7 @@ class H(BaseHTTPRequestHandler):
                 if (self.headers.get("If-None-Match") or "").strip() == etag:
                     self.send_response(304)
                     self.send_header("ETag", etag)
-                    self.send_header("Cache-Control", "no-cache")
+                    self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
                     self.send_header("Content-Length", "0")
                     self.end_headers()
                     return
@@ -4926,7 +5163,7 @@ class H(BaseHTTPRequestHandler):
                         _STATIC_ASSET_CACHE[path] = {"mtime_ns": mtime_ns, "bytes": raw_b, "gz": gz_b}
                 return self.send(
                     200, raw_b, ctype, precompressed_gz=gz_b,
-                    extra_headers={"ETag": etag, "Cache-Control": "no-cache"}
+                    extra_headers={"ETag": etag, "Cache-Control": "no-cache, no-store, must-revalidate"}
                 )
         if path in ("/manifest.json", "/manifest.webmanifest"):
             mpath = DIR / "manifest.json"
@@ -4956,7 +5193,7 @@ class H(BaseHTTPRequestHandler):
                 '    return;\n'
                 '  }\n'
                 '  if (url.pathname === "/" || url.pathname === "/index.html" || url.pathname === "/app.css" || url.pathname === "/app.js" || NETWORK_FIRST_APIS.includes(url.pathname)) {\n'
-                '    e.respondWith(fetch(e.request).then((res) => {\n'
+                '    e.respondWith(fetch(e.request, { cache: "no-store" }).then((res) => {\n'
                 '      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)); }\n'
                 '      return res;\n'
                 '    }).catch(() => caches.match(e.request)));\n'
@@ -5118,6 +5355,43 @@ class H(BaseHTTPRequestHandler):
             if p.stat().st_size > 15 * 1024 * 1024:
                 return self.send(400, {"error": "Ficheiro demasiado grande (máx 15MB)."})
             return self.send(200, p.read_bytes(), valid_exts[ext])
+        if path == "/api/auth/mastodon/callback":
+            qs = urllib.parse.parse_qs(parsed.query)
+            err_oauth = (qs.get("error_description", [""])[0] or qs.get("error", [""])[0] or "").strip()
+            if err_oauth:
+                payload = {
+                    "type": "mastosky_oauth_complete",
+                    "network": "mastodon",
+                    "ok": False,
+                    "error": err_oauth,
+                    "ts": int(time.time() * 1000),
+                }
+                return self.send(400, _render_oauth_callback_html(False, err_oauth, payload), "text/html")
+            state = qs.get("state", [""])[0]
+            code = qs.get("code", [""])[0]
+            try:
+                masto_cfg = complete_mastodon_oauth(state, code)
+                handle_txt = ("@" + masto_cfg["handle"].lstrip("@")) if masto_cfg.get("handle") else masto_cfg["instance"]
+                msg_ok = f"Sessão iniciada como {handle_txt}. Podes fechar esta janela."
+                payload = {
+                    "type": "mastosky_oauth_complete",
+                    "network": "mastodon",
+                    "ok": True,
+                    "instance": masto_cfg["instance"],
+                    "handle": masto_cfg.get("handle", ""),
+                    "ts": int(time.time() * 1000),
+                }
+                return self.send(200, _render_oauth_callback_html(True, msg_ok, payload), "text/html")
+            except Exception as e:
+                err_msg = str(e)
+                payload = {
+                    "type": "mastosky_oauth_complete",
+                    "network": "mastodon",
+                    "ok": False,
+                    "error": err_msg,
+                    "ts": int(time.time() * 1000),
+                }
+                return self.send(400, _render_oauth_callback_html(False, err_msg, payload), "text/html")
         if path == "/api/status":
             ai_cfg = CFG.get("ai", {})
             ai_data = {
@@ -5139,11 +5413,13 @@ class H(BaseHTTPRequestHandler):
                 "networks": list(CLIENTS),
                 "bluesky": {
                     "configured": "bluesky" in CLIENTS,
-                    "handle": CFG.get("bluesky", {}).get("handle", "")
+                    "handle": CFG.get("bluesky", {}).get("handle", ""),
+                    "auto_app_password": bool(CFG.get("bluesky", {}).get("auto_app_password")),
                 },
                 "mastodon": {
                     "configured": "mastodon" in CLIENTS,
-                    "instance": CFG.get("mastodon", {}).get("instance", "")
+                    "instance": CFG.get("mastodon", {}).get("instance", ""),
+                    "handle": CFG.get("mastodon", {}).get("handle", ""),
                 },
                 "ai": ai_data
             })
@@ -5508,6 +5784,68 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, {"ok": True, "summary": summary})
             except Exception as e:
                 return self.send(200, {"ok": False, "error": str(e)})
+        if self.path == "/api/auth/bluesky/login":
+            try:
+                res = authenticate_bluesky_account(
+                    d.get("handle"),
+                    d.get("password"),
+                    auth_factor_token=d.get("auth_factor_token"),
+                    service=d.get("service"),
+                )
+            except ValueError as ve:
+                return self.send(400, {"ok": False, "error": str(ve)})
+            except Exception as e:
+                return self.send(400, {"ok": False, "error": str(e)})
+            if not res.get("ok"):
+                return self.send(200 if res.get("requires_2fa") else 400, res)
+            new_cfg = dict(CFG)
+            new_cfg["port"] = PORT
+            new_cfg["bluesky"] = res["config"]
+            try:
+                write_config(new_cfg)
+                CFG = new_cfg
+                CLIENTS = init_clients(CFG)
+                return self.send(200, {
+                    "ok": True,
+                    "handle": res["config"]["handle"],
+                    "did": res["config"]["did"],
+                    "auto_app_password": res["config"]["auto_app_password"],
+                    "networks": list(CLIENTS),
+                })
+            except Exception as e:
+                return self.send(500, {"ok": False, "error": f"Não foi possível guardar config.json: {e}"})
+        if self.path == "/api/auth/mastodon/start":
+            client_origin = (d.get("client_origin") or "").strip()
+            redirect_base = ""
+            if client_origin:
+                try:
+                    po = urllib.parse.urlparse(client_origin)
+                    if po.scheme in ("http", "https") and po.netloc and is_private_or_local_host(po.netloc):
+                        if LAN_MODE or (po.hostname in ("127.0.0.1", "localhost") and (po.port or PORT) == PORT):
+                            redirect_base = f"{po.scheme}://{po.netloc}"
+                except Exception:
+                    redirect_base = ""
+            if not redirect_base:
+                req_host = (self.headers.get("Host") or f"127.0.0.1:{PORT}").strip()
+                redirect_base = f"http://{req_host}"
+            try:
+                res = start_mastodon_oauth(d.get("instance"), redirect_base)
+                return self.send(200, res)
+            except Exception as e:
+                return self.send(400, {"ok": False, "error": str(e)})
+        if self.path == "/api/auth/disconnect":
+            net = (d.get("network") or "").strip().lower()
+            if net not in ("bluesky", "mastodon"):
+                return self.send(400, {"ok": False, "error": "Rede inválida."})
+            new_cfg = dict(CFG)
+            new_cfg.pop(net, None)
+            try:
+                write_config(new_cfg)
+                CFG = new_cfg
+                CLIENTS = init_clients(CFG)
+                return self.send(200, {"ok": True, "networks": list(CLIENTS)})
+            except Exception as e:
+                return self.send(500, {"ok": False, "error": f"Não foi possível guardar config.json: {e}"})
         if self.path == "/api/setup":
             new_cfg = dict(CFG)
             new_cfg["port"] = PORT
@@ -5720,8 +6058,17 @@ def main():
         if LISTEN_HOST in ("0.0.0.0", "::"):
             LAN_MODE = True
 
-    server = ThreadingHTTPServer((LISTEN_HOST, PORT), H)
     local_url = f"http://127.0.0.1:{PORT}"
+    try:
+        server = ThreadingHTTPServer((LISTEN_HOST, PORT), H)
+    except OSError as e:
+        import errno
+        if e.errno in (getattr(errno, "EADDRINUSE", 48), 98, 10048):
+            print(f"MastoSky já está a correr em {local_url}")
+            if args.open or _FROZEN:
+                webbrowser.open(local_url)
+            return
+        raise
 
     if LAN_MODE:
         local_ip = get_local_ip()
@@ -5751,7 +6098,7 @@ def main():
         print(f"MastoSky a correr em {local_url}  (Ctrl+C para parar)")
         print("💡 Dica: Para acederes no telemóvel / iPad via Wi-Fi, usa: python3 app.py --lan\n")
 
-    if args.open:
+    if args.open or _FROZEN:
         webbrowser.open(local_url)
 
     start_scheduler_thread()

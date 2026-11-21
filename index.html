@@ -1599,14 +1599,39 @@
                       <use href="#i-brand-bsky" />
                     </svg> Bluesky</span><span id="cfgBskyActive" class="star-badge" title="Sessão ativa"
                     data-i18n-title="setup.active_session" hidden></span></div>
-                <label>Handle:
-                  <input type="text" id="cfgBskyHandle" placeholder="ex: o-teu-nome.bsky.social" autocomplete="off">
+                <div id="cfgBskyConnectedBar" class="setup-connected-bar" hidden>
+                  <div class="setup-connected-info">
+                    <span id="cfgBskyConnectedText"></span>
+                    <small id="cfgBskyAutoPwNote" class="setup-help" style="margin-top:2px" hidden
+                      data-i18n="setup.bsky_auto_app_pw_note">App Password dedicada gerada automaticamente (a tua
+                      password principal não foi guardada).</small>
+                  </div>
+                  <button type="button" class="ghost-sm setup-disconnect-btn" id="btnBskyDisconnect"
+                    data-i18n="setup.disconnect_btn">Desligar</button>
+                </div>
+                <label>Handle <span style="font-weight:400" data-i18n="setup.bsky_handle_hint">(ou e-mail)</span>:
+                  <input type="text" id="cfgBskyHandle" placeholder="ex: o-teu-nome.bsky.social"
+                    autocomplete="username">
                 </label>
-                <label><span data-i18n="setup.bsky_pass_label">Palavra-passe da aplicação (*App Password*):</span>
-                  <input type="password" id="cfgBskyPass" placeholder="xxxx-xxxx-xxxx-xxxx" autocomplete="off">
+                <label><span data-i18n="setup.bsky_pass_label">Palavra-passe (normal ou App Password):</span>
+                  <input type="password" id="cfgBskyPass" placeholder="••••••••" autocomplete="current-password">
                 </label>
-                <small class="setup-help" data-i18n="setup.bsky_help">Gera em bsky.app &gt; Definições &gt; Privacidade e
-                  Segurança &gt; Palavras-passe da aplicação.</small>
+                <div id="cfgBsky2faWrap" class="setup-2fa-box" hidden>
+                  <label><span data-i18n="setup.bsky_2fa_label">Código de verificação (2FA por e-mail):</span>
+                    <input type="text" id="cfgBsky2faCode" placeholder="ex: 12345-67890"
+                      data-i18n-ph="setup.bsky_2fa_ph" autocomplete="one-time-code">
+                  </label>
+                  <small class="setup-help" data-i18n="setup.bsky_2fa_hint">Introduz o código que o Bluesky enviou para o
+                    teu e-mail e volta a clicar em Iniciar sessão.</small>
+                </div>
+                <div class="setup-auth-row">
+                  <button type="button" class="send-sm" id="btnBskyLogin" data-i18n="setup.bsky_login_btn">Iniciar
+                    sessão no Bluesky</button>
+                </div>
+                <div id="bskyAuthMsg" class="msg" role="status" style="margin-top:6px"></div>
+                <small class="setup-help" data-i18n="setup.bsky_help">Entra com a tua palavra-passe normal (o MastoSky
+                  cria uma App Password dedicada automaticamente sem guardar a password principal) ou cola uma App
+                  Password criada em bsky.app.</small>
               </div>
 
               <div class="setup-section">
@@ -1614,16 +1639,35 @@
                       <use href="#i-brand-masto" />
                     </svg> Mastodon</span><span id="cfgMastoActive" class="star-badge" title="Sessão ativa"
                     data-i18n-title="setup.active_session" hidden></span></div>
+                <div id="cfgMastoConnectedBar" class="setup-connected-bar" hidden>
+                  <div class="setup-connected-info">
+                    <span id="cfgMastoConnectedText"></span>
+                  </div>
+                  <button type="button" class="ghost-sm setup-disconnect-btn" id="btnMastoDisconnect"
+                    data-i18n="setup.disconnect_btn">Desligar</button>
+                </div>
                 <label><span data-i18n="setup.masto_inst_label">Instância:</span>
                   <input type="text" id="cfgMastoInst" placeholder="ex: mastodon.social" autocomplete="off">
                 </label>
-                <label><span data-i18n="setup.masto_token_label">Token de acesso:</span>
-                  <input type="password" id="cfgMastoToken" placeholder="O teu access token" autocomplete="off">
-                </label>
-                <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt;
-                  Desenvolvimento &gt; Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas: read:statuses,
-                  read:notifications, write:statuses, write:media, write:favourites. No campo Instância indica apenas o
-                  domínio (ex: mastodon.social).</small>
+                <div class="setup-auth-row">
+                  <button type="button" class="send-sm" id="btnMastoOAuth" data-i18n="setup.masto_oauth_btn">Entrar com
+                    o Mastodon ↗</button>
+                </div>
+                <small class="setup-help" data-i18n="setup.masto_oauth_help">Indica o domínio da tua instância (ex:
+                  mastodon.social) e clica em «Entrar com o Mastodon» para autorizar em 1 clique.</small>
+                <div id="mastoAuthMsg" class="msg" role="status" style="margin-top:6px"></div>
+                <details class="setup-manual-details" id="mastoManualDetails">
+                  <summary data-i18n="setup.masto_manual_toggle">Ou introduzir token de acesso manualmente</summary>
+                  <div style="margin-top:8px">
+                    <label><span data-i18n="setup.masto_token_label">Token de acesso:</span>
+                      <input type="password" id="cfgMastoToken" placeholder="O teu access token" autocomplete="off">
+                    </label>
+                    <small class="setup-help" data-i18n="setup.masto_help">Gera na tua instância em Preferências &gt;
+                      Desenvolvimento &gt; Nova aplicação. Mantém o Redirect URI pré-definido e marca apenas:
+                      read:statuses, read:notifications, write:statuses, write:media, write:favourites. No campo Instância
+                      indica apenas o domínio (ex: mastodon.social).</small>
+                  </div>
+                </details>
               </div>
 
               <div class="setup-section" id="handleMapSection">

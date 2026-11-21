@@ -47,7 +47,21 @@ Página do projeto: **[gjmcosta.github.io/MastoSky](https://gjmcosta.github.io/M
 
 ## Instalação e Execução
 
-### Instalador em comando único
+### Descarregar e Usar (Sem Terminal)
+
+Descarrega a versão pronta a usar para o teu sistema em [GitHub Releases](https://github.com/gjmcosta/MastoSky/releases/latest) — **não precisa de terminal nem de Python instalado**:
+
+- **macOS:** [MastoSky-macOS.zip](https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-macOS.zip) — extrai e abre `MastoSky.app`
+- **Windows:** [MastoSky-Windows-x64.zip](https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-Windows-x64.zip) — extrai e abre `MastoSky.exe`
+- **Linux:** [MastoSky-Linux-x64.tar.gz](https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-Linux-x64.tar.gz) — extrai e executa `./MastoSky`
+- **ZIP Portátil (requer Python 3):** [MastoSky-portable.zip](https://github.com/gjmcosta/MastoSky/releases/latest/download/MastoSky-portable.zip) — extrai e dá duplo clique em `MastoSky.command` (macOS) ou `MastoSky.bat` (Windows)
+
+O MastoSky abre automaticamente `http://127.0.0.1:8000` no teu browser. *(Por ser uma app open-source sem assinatura paga, na primeira abertura o macOS/Windows pode pedir confirmação no Gatekeeper / SmartScreen.)*
+
+<details>
+<summary><b>Avançado: Terminal, Git, Rede Local (--lan) e Docker</b></summary>
+
+#### Instalador em comando único
 
 **macOS / Linux:**
 ```bash
@@ -59,7 +73,7 @@ curl -fsSL https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.sh |
 irm https://raw.githubusercontent.com/gjmcosta/MastoSky/main/install.ps1 | iex
 ```
 
-### Instalação manual via Git
+#### Instalação manual via Git
 
 Requer apenas Python 3.3+.
 
@@ -69,9 +83,9 @@ cd MastoSky
 python3 app.py --open
 ```
 
-Abre [http://127.0.0.1:8000](http://127.0.0.1:8000) para introduzir as credenciais. Para arrancar automaticamente em segundo plano (`launchd` no macOS ou `systemd --user` no Linux), consulta [docs/README.md](docs/README.md).
+Para arrancar automaticamente em segundo plano (`launchd` no macOS ou `systemd --user` no Linux), consulta [docs/README.md](docs/README.md).
 
-### Telemóvel e iPad (Rede Local & PWA)
+#### Telemóvel e iPad (Rede Local & PWA)
 
 Para acederes a partir do iPhone, iPad ou Android na mesma rede Wi-Fi:
 
@@ -83,7 +97,7 @@ python3 app.py --lan
 - **iPhone e iPad (Safari):** *Partilhar* → *Adicionar ao Ecrã Principal* para correr em ecrã inteiro como PWA, com *pull-to-refresh* e receção de links partilhados do iOS.
 - **Android (Chrome):** Menu (`⋮`) → *Instalar aplicação* ou *Adicionar ao ecrã principal*.
 
-### Docker, CasaOS e Tailscale
+#### Docker, CasaOS e Tailscale
 
 Inclui `Dockerfile` sem dependências (`python:3.12-alpine`) e `docker-compose.yml` pronto para **CasaOS**:
 
@@ -94,21 +108,20 @@ docker compose up -d
 - Guarda `config.json`, `user_data.json` (sincronização automática de guardados, coleções, rascunhos, palavras silenciadas, colunas do Deck e posição de leitura entre dispositivos) e `scheduled_posts.json` em `/data` (`MASTOSKY_DATA_DIR`).
 - Suporta endereços Tailscale CGNAT (`100.64.0.0/10`) e domínios `.ts.net` (MagicDNS), com atualização persistente em 1 clique nas Definições.
 
+</details>
+
 ---
 
-## Configuração de Credenciais
+## Iniciar Sessão nas Contas
 
-### Bluesky
-1. Abre o [bsky.app](https://bsky.app) → **Definições** → **Privacidade e Segurança** → **Palavras-passe da aplicação**.
-2. Cria uma palavra-passe específica (ex.: `MastoSky`). Ativa a permissão de **Mensagens Diretas** se quiseres usar o chat do Bluesky no MastoSky.
-3. Introduz o teu handle (ex.: `utilizador.bsky.social`) e a palavra-passe gerada de 16 caracteres.
+### Bluesky (Login Direto)
+- Introduz o teu handle ou e-mail e a tua palavra-passe do Bluesky diretamente no MastoSky (com suporte a **2FA** por e-mail).
+- O MastoSky cria automaticamente uma **App Password** dedicada via `com.atproto.server.createAppPassword` e guarda apenas essa App Password localmente — a tua palavra-passe principal nunca é guardada.
+- Se preferires, podes continuar a colar manualmente uma App Password gerada em [bsky.app](https://bsky.app) → **Definições** → **Privacidade e Segurança** → **Palavras-passe da aplicação**.
 
-### Mastodon
-1. Na tua instância Mastodon, vai a **Preferências** → **Desenvolvimento** → **Nova aplicação**.
-2. Dá o nome `MastoSky` e mantém o **Redirect URI** pré-definido (`urn:ietf:wg:oauth:2.0:oob`).
-3. Seleciona as permissões necessárias: `read:statuses`, `read:notifications`, `write:statuses`, `write:media`, `write:favourites` (e `read:conversations` caso pretendas usar mensagens diretas).
-4. Clica em **Guardar**, abre a aplicação e copia o **Teu token de acesso** (*Your access token* — não copies a *Client key* nem o *Client secret*).
-5. No MastoSky, introduz o domínio da tua instância (ex.: `mastodon.social`) e cola o token de acesso.
+### Mastodon (OAuth em 1 Clique)
+- Indica o domínio da tua instância (ex.: `mastodon.social`) e clica em **Entrar com o Mastodon** para autorizar em 1 clique via OAuth 2.0.
+- A introdução manual de token continua disponível na opção recolhida *"Ou introduzir token de acesso manualmente"*.
 
 ---
 
