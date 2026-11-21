@@ -4588,6 +4588,8 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
             'if ($("deckAddColCard")) $("deckAddColCard").hidden = true;',
             'if ($("colThread") && !$("colThread").hidden)',
             "closeDeckThread();",
+            "function flushDeckHitTestLayers(",
+            "flushDeckHitTestLayers(savedScrollMap);",
         ]:
             self.assertIn(marker, js)
 

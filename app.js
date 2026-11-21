@@ -1652,28 +1652,82 @@
       thread: { titleKey: "header.col_thread", defTitle: "Conversa", icon: "#i-thread" }
     };
 
+    function flushDeckHitTestLayers(savedScrollMap) {
+      const container = $("deckContainer");
+      if (!container) return;
+      const bodies = Array.from(container.querySelectorAll(".deck-col:not([hidden]) .deck-col-body"));
+      const scrolls = bodies.map(b => (savedScrollMap && savedScrollMap.has(b)) ? savedScrollMap.get(b) : b.scrollTop);
+      bodies.forEach(b => { b.style.overflowY = "hidden"; });
+      void container.offsetWidth;
+      bodies.forEach((b, idx) => {
+        b.style.overflowY = "";
+        b.scrollTop = scrolls[idx];
+      });
+    }
+
     function applyDeckColumnVisibility() {
       if (viewMode !== "deck") return;
+      const container = $("deckContainer");
+      const addCard = $("deckAddColCard");
+      const colThread = $("colThread");
+      const prevActive = document.activeElement;
+      const savedScrollMap = new Map();
+      if (container) {
+        container.querySelectorAll(".deck-col-body").forEach(b => savedScrollMap.set(b, b.scrollTop));
+      }
+
+      const threadPrevCol = (colThread && !colThread.hidden && colThread.previousElementSibling?.classList.contains("deck-col"))
+        ? colThread.previousElementSibling
+        : null;
+
       const allCols = ["compose", "timeline", "explore", "search", "saved", "notifs", "messages", "lists", "profile"];
       allCols.forEach(c => {
         const el = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
         if (!el) return;
+        el.style.order = "";
         const idx = deckColumns.indexOf(c);
         const isVis = idx !== -1;
         el.hidden = !isVis;
         if (isVis) {
-          el.style.order = idx;
           const bL = el.querySelector(".deck-move-left");
           const bR = el.querySelector(".deck-move-right");
           if (bL) bL.disabled = idx === 0;
           if (bR) bR.disabled = idx === deckColumns.length - 1;
         }
       });
-      const addCard = $("deckAddColCard");
+
+      if (container) {
+        const expected = [];
+        deckColumns.forEach(c => {
+          const colEl = $("col" + c.charAt(0).toUpperCase() + c.slice(1));
+          if (!colEl) return;
+          expected.push(colEl);
+          if (threadPrevCol === colEl && colThread) {
+            expected.push(colThread);
+          }
+        });
+        if (addCard) expected.push(addCard);
+
+        const currentDeckChildren = Array.from(container.children).filter(ch => expected.includes(ch));
+        const needsReorder = currentDeckChildren.length !== expected.length
+          || expected.some((ch, i) => currentDeckChildren[i] !== ch);
+
+        if (needsReorder) {
+          expected.forEach(ch => container.appendChild(ch));
+          if (prevActive && prevActive.isConnected && document.activeElement !== prevActive && typeof prevActive.focus === "function") {
+            try { prevActive.focus({ preventScroll: true }); } catch (_) { }
+          }
+        }
+      }
+
       if (addCard) {
-        addCard.style.order = 9999;
+        addCard.style.order = "";
         addCard.hidden = false;
       }
+      if (colThread) {
+        colThread.style.order = "";
+      }
+      flushDeckHitTestLayers(savedScrollMap);
     }
 
     function persistDeckColumns() {
@@ -7437,10 +7491,13 @@
           const capCol = colId === "compose" ? "Compose" : (colId.charAt(0).toUpperCase() + colId.slice(1));
           sourceCol = $("col" + capCol) || $("colTimeline");
         }
-        if (sourceCol && sourceCol.parentElement) {
+        if (sourceCol && sourceCol.parentElement && sourceCol.nextElementSibling !== colThread) {
+          const savedScrollMap = new Map();
+          $("deckContainer")?.querySelectorAll(".deck-col-body").forEach(b => savedScrollMap.set(b, b.scrollTop));
           sourceCol.after(colThread);
-          colThread.style.order = sourceCol.style.order || "0";
+          savedScrollMap.forEach((st, b) => { b.scrollTop = st; });
         }
+        colThread.style.order = "";
 
         // Histórico de navegação dentro da coluna de conversa
         if (!keep) {
@@ -7458,6 +7515,7 @@
         colThread.hidden = false;
         activeDeckCol = "thread";
         updateActiveDeckColUI();
+        flushDeckHitTestLayers();
 
         if (!keep) {
           threadContent.replaceChildren(el("div", "empty", t("feed.loading_thread")));
@@ -7595,6 +7653,7 @@
       const colThread = $("colThread");
       if (colThread) {
         colThread.hidden = true;
+        colThread.style.order = "";
         const content = $("deckThreadContent");
         if (content) content.replaceChildren();
       }
@@ -7605,6 +7664,7 @@
         activeDeckCol = (typeof tab !== "undefined" && tab) ? tab : "timeline";
       }
       updateActiveDeckColUI();
+      flushDeckHitTestLayers();
     }
 
     function closeColumnThread(colId) {

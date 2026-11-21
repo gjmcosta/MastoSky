@@ -3163,10 +3163,12 @@
     }
 
     .head {
+      position: relative;
       display: flex;
       gap: 10px;
       align-items: center;
-      margin-bottom: 6px
+      margin-bottom: 6px;
+      max-width: 100%
     }
 
     .head img,
@@ -3203,7 +3205,9 @@
     .when {
       color: var(--muted);
       font-size: 13px;
-      text-decoration: none
+      text-decoration: none;
+      flex-shrink: 0;
+      white-space: nowrap
     }
 
     .body {
@@ -6573,10 +6577,10 @@
       padding-bottom: 6px;
       align-items: stretch;
       scroll-snap-type: x proximity;
-      -webkit-overflow-scrolling: touch;
     }
 
     .deck-col {
+      position: relative;
       flex: 0 0 380px;
       width: 380px;
       max-width: 440px;
@@ -6856,11 +6860,11 @@
     }
 
     .deck-col-body {
+      position: relative;
       flex: 1 1 auto;
       overflow-y: auto;
       overflow-x: hidden;
       overscroll-behavior: contain;
-      -webkit-overflow-scrolling: touch;
       padding: 12px;
       scrollbar-width: thin;
     }
