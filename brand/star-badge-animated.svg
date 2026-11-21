@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img">
+  <title>Estrela dourada animada: notificação por ler ou identidade</title>
+  <style>
+    .ms-star-badge {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation:
+        ms-badge-ignite 0.55s cubic-bezier(0.16, 1, 0.3, 1) both,
+        ms-badge-breathe 3.6s ease-in-out 0.75s infinite;
+    }
+
+    @keyframes ms-badge-ignite {
+      0% { opacity: 0; transform: scale(0.25); }
+      65% { opacity: 1; transform: scale(1.14); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes ms-badge-breathe {
+      0%, 70%, 100% { opacity: 1; transform: scale(1); }
+      85% { opacity: 0.92; transform: scale(1.12); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ms-star-badge {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+  <path class="ms-star-badge" d="M12 1 L14.97 9.03 L23 12 L14.97 14.97 L12 23 L9.03 14.97 L1 12 L9.03 9.03 Z" fill="#FFD66B"/>
+</svg>

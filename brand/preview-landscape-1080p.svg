@@ -1,0 +1,212 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img">
+  <title>MastoSky — Full HD Preview (Landscape 16:9)</title>
+  <desc>Full HD 1920x1080 editorial night-sky frame with the animated MastoSky constellation lockup.</desc>
+  <defs>
+    <radialGradient id="ms-cosmos-indigo" cx="28%" cy="22%" r="65%">
+      <stop offset="0%" stop-color="#5B4BDB" stop-opacity="0.18"/>
+      <stop offset="55%" stop-color="#5B4BDB" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#0B1020" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ms-cosmos-sky" cx="78%" cy="76%" r="60%">
+      <stop offset="0%" stop-color="#4DB2FF" stop-opacity="0.12"/>
+      <stop offset="50%" stop-color="#4DB2FF" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#0B1020" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ms-vignette" cx="50%" cy="50%" r="72%">
+      <stop offset="0%" stop-color="#050710" stop-opacity="0"/>
+      <stop offset="65%" stop-color="#050710" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#050710" stop-opacity="0.54"/>
+    </radialGradient>
+  </defs>
+  <style>
+    .ms-bg-a { animation: ms-twinkle 4.4s ease-in-out 0.0s infinite alternate; }
+    .ms-bg-b { animation: ms-twinkle 5.3s ease-in-out 1.1s infinite alternate; }
+    .ms-bg-c { animation: ms-twinkle 6.2s ease-in-out 2.2s infinite alternate; }
+
+    .ms-star {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: ms-star-pop 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .ms-s1 { animation-delay: 0.00s; }
+    .ms-s2 { animation-delay: 0.12s; }
+    .ms-s3 { animation-delay: 0.24s; }
+    .ms-s4 { animation-delay: 0.36s; }
+
+    .ms-line, .ms-wl {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: ms-draw-line cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .ms-l1 { animation-duration: 0.78s; animation-delay: 0.22s; }
+    .ms-l2 { animation-duration: 0.78s; animation-delay: 0.46s; }
+    .ms-l3 { animation-duration: 0.38s; animation-delay: 0.68s; }
+    .ms-l4 { animation-duration: 0.38s; animation-delay: 0.78s; }
+    .ms-l5 { animation-duration: 0.38s; animation-delay: 0.88s; }
+    .ms-l6 { animation-duration: 0.45s; animation-delay: 0.96s; }
+    .ms-l7 { animation-duration: 0.52s; animation-delay: 1.02s; }
+    .ms-l8 { animation-duration: 0.52s; animation-delay: 1.12s; }
+
+    .ms-wl { animation-duration: 0.55s; }
+    .ms-w1 { animation-delay: 0.85s; }
+    .ms-w2 { animation-delay: 0.93s; }
+    .ms-w3 { animation-delay: 1.01s; }
+    .ms-w4 { animation-delay: 1.09s; }
+    .ms-w5 { animation-delay: 1.17s; }
+    .ms-w6 { animation-delay: 1.29s; }
+    .ms-w7 { animation-delay: 1.37s; }
+    .ms-w8 { animation-delay: 1.45s; }
+
+    .ms-tagline {
+      animation: ms-tagline-rise 0.75s cubic-bezier(0.16, 1, 0.3, 1) 1.85s both;
+    }
+
+    .ms-eye {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: ms-eye-ignite 0.60s cubic-bezier(0.16, 1, 0.3, 1) 2.15s both;
+    }
+
+    @keyframes ms-twinkle {
+      0% { opacity: 0.18; }
+      100% { opacity: 0.62; }
+    }
+    @keyframes ms-star-pop {
+      0% { opacity: 0; transform: scale(0.35); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes ms-draw-line {
+      0% { stroke-dashoffset: 1; opacity: 0; }
+      4% { opacity: 1; }
+      100% { stroke-dashoffset: 0; opacity: 1; }
+    }
+    @keyframes ms-tagline-rise {
+      0% { opacity: 0; transform: translateY(6px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes ms-eye-ignite {
+      0% { opacity: 0; transform: scale(0); }
+      65% { opacity: 1; transform: scale(1.18); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ms-bg-a, .ms-bg-b, .ms-bg-c {
+        animation: none !important;
+        opacity: 0.40 !important;
+      }
+      .ms-star, .ms-line, .ms-wl, .ms-tagline, .ms-eye {
+        animation: none !important;
+        opacity: 1 !important;
+        stroke-dashoffset: 0 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+
+  <rect id="background" width="1920" height="1080" fill="#0B1020"/>
+  <rect width="1920" height="1080" fill="url(#ms-cosmos-indigo)"/>
+  <rect width="1920" height="1080" fill="url(#ms-cosmos-sky)"/>
+
+  <g id="background-stars" fill="#FFFFFF">
+    <circle class="ms-bg-a" cx="140" cy="112" r="2.0"/>
+    <circle class="ms-bg-b" cx="285" cy="215" r="1.4"/>
+    <circle class="ms-bg-c" cx="410" cy="96" r="1.2"/>
+    <circle class="ms-bg-a" cx="560" cy="184" r="2.2"/>
+    <circle class="ms-bg-b" cx="725" cy="92" r="1.4"/>
+    <circle class="ms-bg-c" cx="910" cy="148" r="1.8"/>
+    <circle class="ms-bg-a" cx="1115" cy="108" r="1.2"/>
+    <circle class="ms-bg-b" cx="1290" cy="196" r="2.1"/>
+    <circle class="ms-bg-c" cx="1485" cy="122" r="1.5"/>
+    <circle class="ms-bg-a" cx="1660" cy="188" r="2.2"/>
+    <circle class="ms-bg-b" cx="1810" cy="116" r="1.4"/>
+    <circle class="ms-bg-c" cx="184" cy="390" r="1.6"/>
+    <circle class="ms-bg-a" cx="348" cy="318" r="1.1"/>
+    <circle class="ms-bg-b" cx="465" cy="442" r="1.8"/>
+    <circle class="ms-bg-c" cx="1510" cy="340" r="1.3"/>
+    <circle class="ms-bg-a" cx="1690" cy="422" r="2.0"/>
+    <circle class="ms-bg-b" cx="1825" cy="310" r="1.5"/>
+    <circle class="ms-bg-c" cx="125" cy="635" r="1.5"/>
+    <circle class="ms-bg-a" cx="295" cy="575" r="2.1"/>
+    <circle class="ms-bg-b" cx="420" cy="690" r="1.2"/>
+    <circle class="ms-bg-c" cx="1470" cy="610" r="1.8"/>
+    <circle class="ms-bg-a" cx="1620" cy="705" r="1.3"/>
+    <circle class="ms-bg-b" cx="1790" cy="625" r="2.2"/>
+    <circle class="ms-bg-c" cx="165" cy="875" r="2.0"/>
+    <circle class="ms-bg-a" cx="365" cy="955" r="1.4"/>
+    <circle class="ms-bg-b" cx="545" cy="860" r="1.6"/>
+    <circle class="ms-bg-c" cx="715" cy="968" r="2.2"/>
+    <circle class="ms-bg-a" cx="895" cy="885" r="1.2"/>
+    <circle class="ms-bg-b" cx="1075" cy="940" r="1.8"/>
+    <circle class="ms-bg-c" cx="1265" cy="870" r="1.4"/>
+    <circle class="ms-bg-a" cx="1440" cy="975" r="2.1"/>
+    <circle class="ms-bg-b" cx="1635" cy="895" r="1.2"/>
+    <circle class="ms-bg-c" cx="1785" cy="948" r="1.6"/>
+    <circle class="ms-bg-a" cx="845" cy="240" r="1.4"/>
+    <circle class="ms-bg-b" cx="1080" cy="268" r="1.2"/>
+    <circle class="ms-bg-c" cx="1370" cy="285" r="1.6"/>
+    <circle class="ms-bg-a" cx="620" cy="790" r="1.3"/>
+    <circle class="ms-bg-b" cx="980" cy="810" r="1.5"/>
+    <circle class="ms-bg-c" cx="1310" cy="785" r="1.2"/>
+  </g>
+
+  <rect width="1920" height="1080" fill="url(#ms-vignette)"/>
+
+  <g id="lockup" transform="translate(628.75 425) scale(1.25)">
+    <g id="symbol">
+      <g id="symbol-lines" fill="none" stroke="#8F96FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path class="ms-line ms-l1" pathLength="1" d="M40 40 L62 24 L104 20 L138 34 L148 62 L146 106"/>
+        <path class="ms-line ms-l2" pathLength="1" d="M148 62 L124 76 L98 76 L78 76 L58 68 L42 56 L40 40"/>
+        <path class="ms-line ms-l3" pathLength="1" d="M124 76 L124 106"/>
+        <path class="ms-line ms-l4" pathLength="1" d="M98 76 L98 106"/>
+        <path class="ms-line ms-l5" pathLength="1" d="M78 76 L78 106"/>
+        <path class="ms-line ms-l6" pathLength="1" d="M42 56 L34 80 L40 104"/>
+        <path class="ms-line ms-l7" pathLength="1" d="M42 56 L20 72 L8 56 L10 38"/>
+        <path class="ms-line ms-l8" pathLength="1" d="M84 36 L98 56 L80 58 Z"/>
+      </g>
+      <g id="symbol-stars" fill="#FFFFFF">
+        <circle class="ms-star ms-s1" cx="62" cy="24" r="5"/>
+        <circle class="ms-star ms-s1" cx="104" cy="20" r="5"/>
+        <circle class="ms-star ms-s1" cx="10" cy="38" r="5"/>
+        <circle class="ms-star ms-s2" cx="40" cy="40" r="3.6"/>
+        <circle class="ms-star ms-s2" cx="138" cy="34" r="3.6"/>
+        <circle class="ms-star ms-s2" cx="148" cy="62" r="3.6"/>
+        <circle class="ms-star ms-s2" cx="42" cy="56" r="3.6"/>
+        <circle class="ms-star ms-s2" cx="58" cy="68" r="3.6"/>
+        <circle class="ms-star ms-s3" cx="124" cy="76" r="3.6"/>
+        <circle class="ms-star ms-s3" cx="98" cy="76" r="3.6"/>
+        <circle class="ms-star ms-s3" cx="78" cy="76" r="3.6"/>
+        <circle class="ms-star ms-s3" cx="84" cy="36" r="3.6"/>
+        <circle class="ms-star ms-s3" cx="98" cy="56" r="3.6"/>
+        <circle class="ms-star ms-s3" cx="80" cy="58" r="3.6"/>
+        <circle class="ms-star ms-s4" cx="146" cy="106" r="3.6"/>
+        <circle class="ms-star ms-s4" cx="124" cy="106" r="3.6"/>
+        <circle class="ms-star ms-s4" cx="98" cy="106" r="3.6"/>
+        <circle class="ms-star ms-s4" cx="78" cy="106" r="3.6"/>
+        <circle class="ms-star ms-s4" cx="34" cy="80" r="3.6"/>
+        <circle class="ms-star ms-s4" cx="40" cy="104" r="3.6"/>
+        <circle class="ms-star ms-s4" cx="20" cy="72" r="3.6"/>
+        <circle class="ms-star ms-s4" cx="8" cy="56" r="3.6"/>
+      </g>
+      <path id="symbol-eye" class="ms-eye" d="M56 37 L58.43 43.57 L65 46 L58.43 48.43 L56 55 L53.57 48.43 L47 46 L53.57 43.57 Z" fill="#FFD66B"/>
+    </g>
+    <g transform="translate(190 18) scale(1.5)">
+      <g id="wordmark">
+        <g id="wordmark-masto" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#FFFFFF">
+          <g transform="translate(0 0)"><path class="ms-wl ms-w1" pathLength="1" d="M0 40 V8 L14 28 L28 8 V40"/></g>
+          <g transform="translate(37 0)"><circle class="ms-wl ms-w2" pathLength="1" cx="10" cy="30" r="10"/><path class="ms-wl ms-w2" pathLength="1" d="M20 20 V40"/></g>
+          <g transform="translate(66 0)"><path class="ms-wl ms-w3" pathLength="1" d="M14 22.5 C11 19 1 19 1 25 C1 30 13 29 13 35 C13 41 3 41 0 37.5"/></g>
+          <g transform="translate(89 0)"><path class="ms-wl ms-w4" pathLength="1" d="M6 10 V34 Q6 40 12 40 M0 20 H13"/></g>
+          <g transform="translate(111 0)"><circle class="ms-wl ms-w5" pathLength="1" cx="10" cy="30" r="10"/></g>
+        </g>
+        <g id="wordmark-sky" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="#4DB2FF">
+          <g transform="translate(143 0)"><path class="ms-wl ms-w6" pathLength="1" d="M21 14 C18 8 1 8 1 16 C1 24 21 22 21 32 C21 41 3 41 0 34"/></g>
+          <g transform="translate(173 0)"><path class="ms-wl ms-w7" pathLength="1" d="M0 8 V40 M16 20 L0 32 M6 28 L17 40"/></g>
+          <g transform="translate(199 0)"><path class="ms-wl ms-w8" pathLength="1" d="M0 20 L9 39 M18 20 L5 48"/></g>
+        </g>
+      </g>
+    </g>
+  </g>
+
+  <text id="tagline" class="ms-tagline" x="960" y="655" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="400" letter-spacing="0.01em" fill="#A9B0D6">One sky for Mastodon and Bluesky</text>
+</svg>

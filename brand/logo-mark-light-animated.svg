@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" role="img">
+  <title>MastoSky — símbolo animado (fundo claro)</title>
+  <style>
+    .ms-star {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: ms-star-pop 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .ms-s1 { animation-delay: 0.00s; }
+    .ms-s2 { animation-delay: 0.12s; }
+    .ms-s3 { animation-delay: 0.24s; }
+    .ms-s4 { animation-delay: 0.36s; }
+
+    .ms-line {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: ms-draw-line cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .ms-l1 { animation-duration: 0.78s; animation-delay: 0.22s; }
+    .ms-l2 { animation-duration: 0.78s; animation-delay: 0.46s; }
+    .ms-l3 { animation-duration: 0.38s; animation-delay: 0.68s; }
+    .ms-l4 { animation-duration: 0.38s; animation-delay: 0.78s; }
+    .ms-l5 { animation-duration: 0.38s; animation-delay: 0.88s; }
+    .ms-l6 { animation-duration: 0.45s; animation-delay: 0.96s; }
+    .ms-l7 { animation-duration: 0.52s; animation-delay: 1.02s; }
+    .ms-l8 { animation-duration: 0.52s; animation-delay: 1.12s; }
+
+    .ms-eye {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: ms-eye-ignite 0.63s cubic-bezier(0.16, 1, 0.3, 1) 1.62s both;
+    }
+
+    @keyframes ms-star-pop {
+      0% { opacity: 0; transform: scale(0.35); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes ms-draw-line {
+      0% { stroke-dashoffset: 1; opacity: 0; }
+      4% { opacity: 1; }
+      100% { stroke-dashoffset: 0; opacity: 1; }
+    }
+    @keyframes ms-eye-ignite {
+      0% { opacity: 0; transform: scale(0); }
+      65% { opacity: 1; transform: scale(1.18); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .ms-star, .ms-line, .ms-eye {
+        animation: none !important;
+        opacity: 1 !important;
+        stroke-dashoffset: 0 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+  <g id="symbol">
+    <g id="symbol-lines" fill="none" stroke="#5B4BDB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path class="ms-line ms-l1" pathLength="1" d="M40 40 L62 24 L104 20 L138 34 L148 62 L146 106"/>
+      <path class="ms-line ms-l2" pathLength="1" d="M148 62 L124 76 L98 76 L78 76 L58 68 L42 56 L40 40"/>
+      <path class="ms-line ms-l3" pathLength="1" d="M124 76 L124 106"/>
+      <path class="ms-line ms-l4" pathLength="1" d="M98 76 L98 106"/>
+      <path class="ms-line ms-l5" pathLength="1" d="M78 76 L78 106"/>
+      <path class="ms-line ms-l6" pathLength="1" d="M42 56 L34 80 L40 104"/>
+      <path class="ms-line ms-l7" pathLength="1" d="M42 56 L20 72 L8 56 L10 38"/>
+      <path class="ms-line ms-l8" pathLength="1" d="M84 36 L98 56 L80 58 Z"/>
+    </g>
+    <g id="symbol-stars" fill="#5B4BDB">
+      <circle class="ms-star ms-s1" cx="62" cy="24" r="5"/>
+      <circle class="ms-star ms-s1" cx="104" cy="20" r="5"/>
+      <circle class="ms-star ms-s1" cx="10" cy="38" r="5"/>
+      <circle class="ms-star ms-s2" cx="40" cy="40" r="3.6"/>
+      <circle class="ms-star ms-s2" cx="138" cy="34" r="3.6"/>
+      <circle class="ms-star ms-s2" cx="148" cy="62" r="3.6"/>
+      <circle class="ms-star ms-s2" cx="42" cy="56" r="3.6"/>
+      <circle class="ms-star ms-s2" cx="58" cy="68" r="3.6"/>
+      <circle class="ms-star ms-s3" cx="124" cy="76" r="3.6"/>
+      <circle class="ms-star ms-s3" cx="98" cy="76" r="3.6"/>
+      <circle class="ms-star ms-s3" cx="78" cy="76" r="3.6"/>
+      <circle class="ms-star ms-s3" cx="84" cy="36" r="3.6"/>
+      <circle class="ms-star ms-s3" cx="98" cy="56" r="3.6"/>
+      <circle class="ms-star ms-s3" cx="80" cy="58" r="3.6"/>
+      <circle class="ms-star ms-s4" cx="146" cy="106" r="3.6"/>
+      <circle class="ms-star ms-s4" cx="124" cy="106" r="3.6"/>
+      <circle class="ms-star ms-s4" cx="98" cy="106" r="3.6"/>
+      <circle class="ms-star ms-s4" cx="78" cy="106" r="3.6"/>
+      <circle class="ms-star ms-s4" cx="34" cy="80" r="3.6"/>
+      <circle class="ms-star ms-s4" cx="40" cy="104" r="3.6"/>
+      <circle class="ms-star ms-s4" cx="20" cy="72" r="3.6"/>
+      <circle class="ms-star ms-s4" cx="8" cy="56" r="3.6"/>
+    </g>
+    <path id="symbol-eye" class="ms-eye" d="M56 37 L58.43 43.57 L65 46 L58.43 48.43 L56 55 L53.57 48.43 L47 46 L53.57 43.57 Z" fill="#F0B400"/>
+  </g>
+</svg>

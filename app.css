@@ -125,6 +125,32 @@
       flex: none;
     }
 
+    .star-badge-pulse {
+      transform-origin: center;
+      animation:
+        ms-star-badge-ignite 0.55s cubic-bezier(0.16, 1, 0.3, 1) both,
+        ms-star-badge-breathe 3.6s ease-in-out 0.75s infinite;
+    }
+
+    @keyframes ms-star-badge-ignite {
+      0% { opacity: 0; transform: scale(0.25); }
+      65% { opacity: 1; transform: scale(1.14); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes ms-star-badge-breathe {
+      0%, 70%, 100% { opacity: 1; transform: scale(1); }
+      85% { opacity: 0.92; transform: scale(1.12); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .star-badge-pulse {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+
     * {
       box-sizing: border-box
     }
