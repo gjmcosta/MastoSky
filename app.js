@@ -4780,7 +4780,8 @@
           return {
             atTop: false,
             key: p.dataset.notifKey || p.dataset.postKey || null,
-            offset: topRel
+            offset: topRel,
+            fallbackScroll: scrollTop
           };
         }
       }
@@ -4793,13 +4794,16 @@
       const isWin = sc === window;
 
       if (anchor.atTop) {
-        if (isWin) window.scrollTo({ top: 0 });
+        if (isWin) window.scrollTo(0, 0);
         else sc.scrollTop = 0;
         return;
       }
 
       if (anchor.key) {
-        const target = feedEl.querySelector(`[data-notif-key="${anchor.key}"], [data-post-key="${anchor.key}"]`);
+        const safeKey = (typeof CSS !== "undefined" && CSS.escape)
+          ? CSS.escape(anchor.key)
+          : String(anchor.key).replace(/"/g, '\\"');
+        const target = feedEl.querySelector(`[data-notif-key="${safeKey}"], [data-post-key="${safeKey}"]`);
         if (target) {
           const containerTop = isWin ? 0 : sc.getBoundingClientRect().top;
           const headerOffset = isWin ? 110 : 0;
@@ -4807,10 +4811,11 @@
           const delta = currentTop - anchor.offset;
           if (Math.abs(delta) > 1) {
             const currentScroll = isWin ? window.scrollY : sc.scrollTop;
+            const nextScroll = Math.max(0, currentScroll + delta);
             if (isWin) {
-              window.scrollTo({ top: currentScroll + delta });
+              window.scrollTo(0, nextScroll);
             } else {
-              sc.scrollTop = currentScroll + delta;
+              sc.scrollTop = nextScroll;
             }
           }
           return;
@@ -4818,8 +4823,8 @@
       }
 
       if (typeof anchor.fallbackScroll === "number") {
-        if (isWin) window.scrollTo({ top: anchor.fallbackScroll });
-        else sc.scrollTop = anchor.fallbackScroll;
+        if (isWin) window.scrollTo(0, Math.max(0, anchor.fallbackScroll));
+        else sc.scrollTop = Math.max(0, anchor.fallbackScroll);
       }
     }
 
@@ -7434,9 +7439,37 @@
       });
     }
 
+    function getSingleTabPanel(tabName) {
+      const map = {
+        timeline: "pTimeline",
+        explore: "pExplore",
+        search: "pSearch",
+        saved: "pSaved",
+        notifs: "pNotifs",
+        messages: "pMessages",
+        lists: "pLists",
+        profile: "pProfile"
+      };
+      return map[tabName] ? $(map[tabName]) : null;
+    }
+
+    function selectTabOrScrollTop(targetTab) {
+      if (viewMode === "single" && tab === targetTab) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      setTab(targetTab);
+    }
+
     function setTab(newTab, isInit = false) {
-      if (viewMode === "single" && typeof tab !== "undefined" && tab) {
-        tabScrolls[tab] = window.scrollY;
+      if (!isInit && viewMode === "single" && typeof tab !== "undefined" && tab) {
+        const prevPanel = getSingleTabPanel(tab);
+        if (!prevPanel || !prevPanel.hidden) {
+          tabScrolls[tab] = {
+            scrollY: window.scrollY,
+            anchor: prevPanel ? captureScrollAnchor(tab, prevPanel) : null
+          };
+        }
       }
       tab = newTab;
       if (viewMode === "deck") {
@@ -7502,16 +7535,30 @@
       if (newTab === "search" && (viewMode !== "deck" || deckColumns.includes("search"))) {
         setTimeout(() => {
           const inp = $("searchInput");
-          if (inp) inp.focus();
+          if (inp) {
+            try { inp.focus({ preventScroll: true }); } catch (_) { inp.focus(); }
+          }
         }, 50);
       }
       renderNotifs(); updateBadge();
       history.replaceState(null, "", "#" + newTab);
-      if (viewMode === "single" && tabScrolls[newTab] !== undefined) {
-        window.scrollTo({ top: tabScrolls[newTab], behavior: "instant" });
+      if (!isInit && viewMode === "single") {
+        const saved = tabScrolls[newTab];
+        const targetPanel = getSingleTabPanel(newTab);
+        if (saved && typeof saved === "object") {
+          if (saved.anchor && targetPanel && !saved.anchor.atTop && saved.anchor.key) {
+            restoreScrollAnchor(newTab, targetPanel, saved.anchor);
+          } else {
+            window.scrollTo(0, Math.max(0, saved.scrollY || 0));
+          }
+        } else if (typeof saved === "number") {
+          window.scrollTo(0, Math.max(0, saved));
+        } else {
+          window.scrollTo(0, 0);
+        }
       }
     }
-    document.querySelectorAll(".tab").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+    document.querySelectorAll(".tab").forEach(b => b.onclick = () => selectTabOrScrollTop(b.dataset.tab));
     document.querySelectorAll("#notifFilterPills .filter-pill").forEach(p => {
       p.onclick = () => setNotifFilter(p.dataset.notifFilter);
     });
@@ -15156,10 +15203,7 @@
     }
 
     document.querySelectorAll(".side-nav-btn[data-tab]").forEach(b => {
-      b.onclick = () => {
-        setTab(b.dataset.tab);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      };
+      b.onclick = () => selectTabOrScrollTop(b.dataset.tab);
     });
     function isMobileSingleCol() {
       return viewMode !== "deck" && window.innerWidth < 768;
