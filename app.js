@@ -12049,37 +12049,33 @@
 
     function drawRoundedImage(ctx, img, x, y, w, h, r = 16, fit = "cover") {
       if (!img) return;
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(x, y, w, h, r);
-      ctx.clip();
-
       const nw = img.naturalWidth || img.width || 1;
       const nh = img.naturalHeight || img.height || 1;
       const imgRatio = nw / nh;
       const targetRatio = w / h;
 
+      let frameX = x, frameY = y, frameW = w, frameH = h;
       if (fit === "contain") {
-        // Fundo elegante de contraste para imagens que não preenchem a totalidade da caixa
-        const bgGrad = ctx.createLinearGradient(x, y, x, y + h);
-        bgGrad.addColorStop(0, "rgba(8, 12, 26, 0.75)");
-        bgGrad.addColorStop(1, "rgba(4, 7, 16, 0.92)");
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(x, y, w, h);
-
-        let dw, dh, dx, dy;
         if (imgRatio > targetRatio) {
-          dw = w;
-          dh = dw / imgRatio;
-          dx = x;
-          dy = y + (h - dh) / 2;
+          frameW = w;
+          frameH = frameW / imgRatio;
+          frameX = x;
+          frameY = y + (h - frameH) / 2;
         } else {
-          dh = h;
-          dw = dh * imgRatio;
-          dx = x + (w - dw) / 2;
-          dy = y;
+          frameH = h;
+          frameW = frameH * imgRatio;
+          frameX = x + (w - frameW) / 2;
+          frameY = y;
         }
-        ctx.drawImage(img, 0, 0, nw, nh, dx, dy, dw, dh);
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(frameX, frameY, frameW, frameH, r);
+      ctx.clip();
+
+      if (fit === "contain") {
+        ctx.drawImage(img, 0, 0, nw, nh, frameX, frameY, frameW, frameH);
       } else {
         let sx, sy, sw, sh;
         if (imgRatio > targetRatio) {
@@ -12093,14 +12089,14 @@
           sx = 0;
           sy = (nh - sh) / 2;
         }
-        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+        ctx.drawImage(img, sx, sy, sw, sh, frameX, frameY, frameW, frameH);
       }
       ctx.restore();
 
       // Borda subtil
       ctx.save();
       ctx.beginPath();
-      ctx.roundRect(x, y, w, h, r);
+      ctx.roundRect(frameX, frameY, frameW, frameH, r);
       ctx.strokeStyle = "rgba(255,255,255,0.14)";
       ctx.lineWidth = 1.5;
       ctx.stroke();
@@ -12341,6 +12337,19 @@
       );
     }
 
+    function truncateCanvasText(ctx, text, maxW) {
+      const s = String(text || "");
+      if (!s || maxW <= 0) return "";
+      if (ctx.measureText(s).width <= maxW) return s;
+      let lo = 0, hi = s.length;
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (ctx.measureText(s.slice(0, mid) + "…").width <= maxW) lo = mid;
+        else hi = mid - 1;
+      }
+      return lo > 0 ? s.slice(0, lo).trimEnd() + "…" : "…";
+    }
+
     function measureQuotedCard(ctx, quote, w, qImgs = null) {
       const pad = 20;
       const innerW = w - pad * 2;
@@ -12404,17 +12413,27 @@
         ctx.fill();
       }
 
-      // Nome e handle do autor citado
+      // Nome e handle do autor citado (truncados antes da seta ↗)
       const qTextLeft = qAvX + qAvR * 2 + 10;
+      const qArrowSpace = 32;
+      const qHeaderMaxW = Math.max(80, (x + w - pad - qArrowSpace) - qTextLeft);
+      const qRawName = quote.name || quote.handle || "Autor";
       ctx.fillStyle = "#EEF0FF";
       ctx.font = "bold 20px " + FONT_SANS;
-      ctx.fillText(quote.name || quote.handle || "Autor", qTextLeft, qAvY + 21);
+      const qNameMaxW = quote.handle ? Math.min(qHeaderMaxW, Math.max(120, qHeaderMaxW * 0.58)) : qHeaderMaxW;
+      const qDispName = truncateCanvasText(ctx, qRawName, qNameMaxW);
+      ctx.fillText(qDispName, qTextLeft, qAvY + 21);
 
-      const nameW = ctx.measureText(quote.name || quote.handle || "Autor").width;
-      ctx.fillStyle = "#8E96C8";
-      ctx.font = "16px " + FONT_SANS;
+      const nameW = ctx.measureText(qDispName).width;
       if (quote.handle) {
-        ctx.fillText(quote.handle + (quote.time ? " · " + ago(quote.time) : ""), qTextLeft + nameW + 8, qAvY + 21);
+        const handleLeft = qTextLeft + nameW + 8;
+        const handleMaxW = (x + w - pad - qArrowSpace) - handleLeft;
+        if (handleMaxW > 30) {
+          ctx.fillStyle = "#8E96C8";
+          ctx.font = "16px " + FONT_SANS;
+          const handleStr = quote.handle + (quote.time ? " · " + ago(quote.time) : "");
+          ctx.fillText(truncateCanvasText(ctx, handleStr, handleMaxW), handleLeft, qAvY + 21);
+        }
       }
 
       // Indicador de link / citação
@@ -12582,16 +12601,12 @@
         [1050, 930, 2.5, "rgba(255,255,255,0.8)"],
         [1035, 1070, 1.8, "rgba(77,178,255,0.7)"],
         [1052, 1210, 2.2, "rgba(255,214,107,0.65)"],
-        [90, H - 20, 2.4, "rgba(77,178,255,0.75)"],
-        [240, H - 12, 1.8, "rgba(255,255,255,0.65)"],
-        [410, H - 24, 2.6, "rgba(255,214,107,0.8)"],
-        [580, H - 14, 1.5, "rgba(195,175,255,0.6)"],
-        [750, H - 22, 2.5, "rgba(77,178,255,0.75)"],
-        [910, H - 14, 3.0, "rgba(255,214,107,0.85)"],
-        [1020, H - 22, 1.6, "rgba(255,255,255,0.7)"]
+        [28, H - 28, 2.4, "rgba(77,178,255,0.75)"],
+        [1046, H - 26, 2.2, "rgba(255,214,107,0.75)"]
       ];
       for (const [sx, sy, sr, sc] of starCoords) {
         if (sy > H - 5) continue;
+        if (sy >= H - 56 && sx >= cardX - 10 && sx <= cardX + cardW + 10) continue;
         ctx.beginPath();
         ctx.arc(sx, sy, sr, 0, Math.PI * 2);
         ctx.fillStyle = sc;
@@ -12673,18 +12688,20 @@
       ctx.textAlign = "start";
       ctx.textBaseline = "alphabetic";
 
-      // Nome e handle
+      // Nome e handle (truncados antes do distintivo da rede)
+      const badgeNetX = cardX + cardW - 142;
       const textLeft = avX + avR * 2 + 18;
+      const headerMaxW = Math.max(120, badgeNetX - 18 - textLeft);
       ctx.fillStyle = "#EEF0FF";
       ctx.font = "bold 28px " + FONT_SANS;
-      ctx.fillText(it.name || it.handle, textLeft, avY + 30);
+      ctx.fillText(truncateCanvasText(ctx, it.name || it.handle, headerMaxW), textLeft, avY + 30);
 
       ctx.fillStyle = "#9AA0D6";
       ctx.font = "18px " + FONT_SANS;
-      ctx.fillText(it.handle + " · " + LABEL[it.network] + (it.time ? " · " + ago(it.time) : ""), textLeft, avY + 60);
+      const subHeaderStr = it.handle + " · " + LABEL[it.network] + (it.time ? " · " + ago(it.time) : "");
+      ctx.fillText(truncateCanvasText(ctx, subHeaderStr, headerMaxW), textLeft, avY + 60);
 
       // Distintivo da rede de origem
-      const badgeNetX = cardX + cardW - 142;
       const badgeNetY = avY + 12;
       ctx.fillStyle = it.network === "bluesky" ? "rgba(10,120,214,0.3)" : "rgba(91,75,219,0.3)";
       ctx.beginPath();
@@ -12731,12 +12748,72 @@
         curY += mediaH + 18;
       }
 
-      // 11. Rodapé de métricas no cartão
+      // 11. Rodapé de métricas no cartão (ícones vetoriais uniformes, sem emojis de sistema)
       const metricsY = cardY + actualCardH - 30;
-      ctx.fillStyle = "#7D85B2";
+      const metricsColor = "#7D85B2";
+      ctx.save();
+      ctx.strokeStyle = metricsColor;
+      ctx.fillStyle = metricsColor;
+      ctx.lineWidth = 1.75;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       ctx.font = "18px " + FONT_SANS;
-      const metricsStr = `↩ ${Number(it.replies || 0)}   ↻ ${Number(it.boosts || 0)}   ♡ ${Number(it.likes || 0)}`;
-      ctx.fillText(metricsStr, cardX + pad, metricsY);
+      ctx.textBaseline = "middle";
+      const iconCenterY = metricsY - 6;
+      let mx = cardX + pad;
+
+      const drawMetric = (drawIconFn, val) => {
+        drawIconFn(mx + 8, iconCenterY);
+        mx += 22;
+        const txt = String(Number(val || 0));
+        ctx.fillText(txt, mx, iconCenterY + 1);
+        mx += ctx.measureText(txt).width + 26;
+      };
+
+      // Responder
+      drawMetric((cx, cy) => {
+        ctx.beginPath();
+        ctx.moveTo(cx - 2, cy - 6);
+        ctx.lineTo(cx - 6, cy - 2);
+        ctx.lineTo(cx - 2, cy + 2);
+        ctx.moveTo(cx - 6, cy - 2);
+        ctx.lineTo(cx + 2, cy - 2);
+        ctx.quadraticCurveTo(cx + 7, cy - 2, cx + 7, cy + 5);
+        ctx.stroke();
+      }, it.replies);
+
+      // Partilhar / Repost
+      drawMetric((cx, cy) => {
+        ctx.beginPath();
+        ctx.moveTo(cx - 6, cy - 1);
+        ctx.lineTo(cx - 6, cy - 3);
+        ctx.quadraticCurveTo(cx - 6, cy - 5, cx - 3, cy - 5);
+        ctx.lineTo(cx + 5, cy - 5);
+        ctx.moveTo(cx + 2, cy - 8);
+        ctx.lineTo(cx + 5, cy - 5);
+        ctx.lineTo(cx + 2, cy - 2);
+        ctx.moveTo(cx + 6, cy + 1);
+        ctx.lineTo(cx + 6, cy + 3);
+        ctx.quadraticCurveTo(cx + 6, cy + 5, cx + 3, cy + 5);
+        ctx.lineTo(cx - 5, cy + 5);
+        ctx.moveTo(cx - 2, cy + 2);
+        ctx.lineTo(cx - 5, cy + 5);
+        ctx.lineTo(cx - 2, cy + 8);
+        ctx.stroke();
+      }, it.boosts);
+
+      // Gosto
+      drawMetric((cx, cy) => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 6);
+        ctx.bezierCurveTo(cx - 8, cy + 1, cx - 8, cy - 6, cx - 3.5, cy - 6);
+        ctx.bezierCurveTo(cx - 1, cy - 6, cx, cy - 3.5, cx, cy - 3.5);
+        ctx.bezierCurveTo(cx, cy - 3.5, cx + 1, cy - 6, cx + 3.5, cy - 6);
+        ctx.bezierCurveTo(cx + 8, cy - 6, cx + 8, cy + 1, cx, cy + 6);
+        ctx.stroke();
+      }, it.likes);
+
+      ctx.restore();
 
       // 12. Rodapé com destaque à marca MastoSky
       const footY = H - 22;
@@ -12839,6 +12916,44 @@
       };
     });
 
+    function buildCrossPostAltText(it) {
+      if (!it) return "";
+      const isEn = typeof currentLang !== "undefined" && currentLang === "en";
+      const author = (it.name && it.handle && it.name !== it.handle)
+        ? `${it.name} (${it.handle})`
+        : (it.name || it.handle || "");
+      const header = isEn
+        ? `Cross-post from ${author} on ${LABEL[it.network]}`
+        : `Publicação cruzada de ${author} no ${LABEL[it.network]}`;
+      const parts = [header];
+
+      const mainTxt = extractCleanCardText(it, Boolean(it.quote));
+      if (mainTxt) parts.push(mainTxt);
+
+      if (it.quote) {
+        const qAuthor = it.quote.name || it.quote.handle || "";
+        const qTxt = extractCleanCardText(it.quote, true);
+        const qPrefix = isEn ? `Quoting ${qAuthor}:` : `A citar ${qAuthor}:`;
+        parts.push(qTxt ? `${qPrefix} ${qTxt}` : qPrefix);
+      }
+
+      const mediaAlts = getValidCardMedia(it)
+        .map(m => {
+          if (m.type === "external") {
+            const label = m.title || (m.url || "").replace(/^https?:\/\//, "").split("/")[0];
+            return label ? `[${isEn ? "Link" : "Ligação"}: ${label}]` : "";
+          }
+          const a = (m.alt || "").trim();
+          return a ? `[${isEn ? "Image" : "Imagem"}: ${a}]` : "";
+        })
+        .filter(Boolean);
+      if (mediaAlts.length) parts.push(mediaAlts.join(" "));
+
+      let alt = parts.join("\n\n").trim();
+      if (alt.length > 1400) alt = alt.slice(0, 1397).trimEnd() + "...";
+      return alt;
+    }
+
     async function executeCrossPost(onlyDest = false) {
       if (!crossPostTarget) return;
       const it = crossPostTarget;
@@ -12919,7 +13034,7 @@
           targets: [otherNet],
           images: [{
             data: dataUrl,
-            alt: t("cross_post.modal_title") + " - " + LABEL[it.network] + " - " + (it.name || it.handle)
+            alt: buildCrossPostAltText(it)
           }]
         });
 
