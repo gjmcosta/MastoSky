@@ -165,7 +165,7 @@
           gif_cat_popcorn: "🍿 Pipocas"
         },
         update: {
-          section_title: "🔄 Versão e Atualizações",
+          section_title: "Versão e Atualizações",
           checking: "A verificar atualizações...",
           available_title: "Nova versão disponível: v{ver}. Clica para atualizar.",
           available_badge: "Nova versão",
@@ -539,7 +539,7 @@
           crosstalk_desc: "Funde num único cartão os posts publicados em simultâneo no Mastodon e Bluesky, dando prioridade ao Mastodon.",
           warn_missing_alt_label: "Avisar antes de publicar imagens sem descrição ALT",
           boost_cluster_label: "Agrupar sequências de republicações na Timeline (estilo Phanpy)",
-          handle_map_title: "🔗 Mapeamento de @menções entre Redes",
+          handle_map_title: "Mapeamento de @menções entre Redes",
           handle_map_desc: "Associa handles equivalentes (ex: @pessoa.bsky.social ↔ @pessoa@mastodon.social) para adaptar automaticamente as menções ao publicar em simultâneo.",
           handle_map_add: "+ Associar",
           handle_map_sugs: "Sugestões detetadas via Crosstalk:",
@@ -886,7 +886,7 @@
           gif_cat_popcorn: "🍿 Popcorn"
         },
         update: {
-          section_title: "🔄 Version & Updates",
+          section_title: "Version & Updates",
           checking: "Checking for updates...",
           available_title: "New version available: v{ver}. Click to update.",
           available_badge: "New version",
@@ -1260,7 +1260,7 @@
           crosstalk_desc: "Merges simultaneous Mastodon and Bluesky posts into a single card, prioritizing Mastodon by default.",
           warn_missing_alt_label: "Warn before publishing images without ALT text",
           boost_cluster_label: "Group consecutive boosts in Timeline (Phanpy style)",
-          handle_map_title: "🔗 Cross-Network @mention Mapping",
+          handle_map_title: "Cross-Network @mention Mapping",
           handle_map_desc: "Link equivalent handles (e.g. @user.bsky.social ↔ @user@mastodon.social) to adapt mentions automatically when cross-posting.",
           handle_map_add: "+ Link",
           handle_map_sugs: "Suggestions detected via Crosstalk:",

@@ -5204,7 +5204,20 @@
       margin-bottom: 8px;
       display: flex;
       align-items: center;
-      gap: 6px
+      gap: 7px
+    }
+
+    .setup-sec-title .ico {
+      width: 16px;
+      height: 16px;
+      color: var(--accent);
+      flex-shrink: 0
+    }
+
+    .setup-secondary-btn .ico {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0
     }
 
     .setup-section label:not(.setup-check-item) {
