@@ -353,6 +353,23 @@
       <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" fill="none" stroke="currentColor" stroke-width="1.75" />
       <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" fill="none" stroke="currentColor" stroke-width="1.75" />
     </symbol>
+    <symbol id="i-compass" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.75" />
+      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="none" stroke="currentColor"
+        stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="none" stroke="currentColor"
+        stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+    <symbol id="i-list" viewBox="0 0 24 24">
+      <line x1="8" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+      <line x1="8" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+      <line x1="8" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+      <circle cx="4" cy="6" r="1" fill="currentColor" />
+      <circle cx="4" cy="12" r="1" fill="currentColor" />
+      <circle cx="4" cy="18" r="1" fill="currentColor" />
+    </symbol>
     <symbol id="i-gif" viewBox="0 0 24 24">
       <rect x="2.5" y="4.5" width="19" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="1.75"
         stroke-linecap="round" stroke-linejoin="round" />
@@ -419,6 +436,12 @@
         </svg>
         <span class="side-nav-badge" id="sideMessagesBadge" hidden><span class="star-badge star-badge-pulse"
             aria-hidden="true"></span><span id="sideMessagesBadgeCount"></span></span>
+      </button>
+      <button type="button" class="side-nav-btn" data-tab="lists" title="Feeds &amp; Listas" data-i18n-title="header.col_lists"
+        aria-label="Feeds e Listas">
+        <svg class="ico">
+          <use href="#i-list" />
+        </svg>
       </button>
       <button type="button" class="side-nav-btn" data-tab="profile" title="Perfil" data-i18n-title="tabs.profile"
         aria-label="Perfil">
@@ -572,6 +595,18 @@
                 id="messagesBadgeCount"></span></span>
           </span>
           <span class="tab-label" data-i18n="tabs.messages">Mensagens</span>
+        </button>
+        <button class="tab" role="tab" data-tab="lists" title="Feeds &amp; Listas" data-i18n-title="header.col_lists">
+          <svg class="tab-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="8" y1="6" x2="21" y2="6" />
+            <line x1="8" y1="12" x2="21" y2="12" />
+            <line x1="8" y1="18" x2="21" y2="18" />
+            <circle cx="4" cy="6" r="1" fill="currentColor" stroke="none" />
+            <circle cx="4" cy="12" r="1" fill="currentColor" stroke="none" />
+            <circle cx="4" cy="18" r="1" fill="currentColor" stroke="none" />
+          </svg>
+          <span class="tab-label" data-i18n="header.col_lists">Listas</span>
         </button>
         <button class="tab" role="tab" data-tab="profile" title="Perfil" data-i18n-title="tabs.profile">
           <svg class="tab-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
@@ -840,6 +875,7 @@
         </div>
         <div class="deck-col-body" id="colComposeBody">
           <div id="deckComposeWrap"></div>
+          <div id="deckComposeActivity" class="deck-compose-activity" hidden></div>
         </div>
       </div>
 
@@ -1917,10 +1953,30 @@
                         title="Ouvir som de partilha">
                         <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_boost">Partilha</span>
                       </button>
+                      <button type="button" class="notif-sound-btn" onclick="testSpatialSound('quote')"
+                        title="Ouvir som de citação">
+                        <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_quote">Citação</span>
+                      </button>
                       <button type="button" class="notif-sound-btn" onclick="testSpatialSound('follow')"
                         title="Ouvir som de seguidor">
                         <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_follow">Seguidor</span>
                       </button>
+                      <button type="button" class="notif-sound-btn" onclick="testSpatialSound('dm')"
+                        title="Ouvir som de mensagem direta">
+                        <span class="sound-play-ico">▶</span> <span data-i18n="notifs.test_dm">Mensagem</span>
+                      </button>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;margin:10px 0 0 24px;flex-wrap:wrap">
+                      <label for="cfgNotifSoundPack" style="font-size:12px;color:var(--muted);white-space:nowrap"
+                        data-i18n="notifs.pack_label">Perfil de som:</label>
+                      <select id="cfgNotifSoundPack"
+                        style="padding:5px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:12px">
+                        <option value="orchid" data-i18n="notifs.pack_orchid">Orchid (Sintetizador Analógico)</option>
+                        <option value="crystal" data-i18n="notifs.pack_crystal">Cristal (Sinos Cósmicos)</option>
+                        <option value="marimba" data-i18n="notifs.pack_marimba">Marimba (Percussão Suave)</option>
+                        <option value="rhodes" data-i18n="notifs.pack_rhodes">Rhodes (Piano Elétrico)</option>
+                        <option value="minimal" data-i18n="notifs.pack_minimal">Minimal (Ultra-discreto)</option>
+                      </select>
                     </div>
                     <div style="display:flex;align-items:center;gap:10px;margin:10px 0 0 24px">
                       <label for="cfgNotifVolume" style="font-size:12px;color:var(--muted);white-space:nowrap"
@@ -2350,7 +2406,7 @@
         <div class="shortcuts-grid">
           <div class="shortcuts-section">
             <div class="shortcuts-section-title">
-              <span>🧭</span> <span data-i18n="shortcuts.sec_nav">Navegação</span>
+              <svg class="ico"><use href="#i-compass" /></svg> <span data-i18n="shortcuts.sec_nav">Navegação</span>
             </div>
             <div class="shortcut-row">
               <span data-i18n="shortcuts.next_post">Post seguinte</span>
@@ -2376,7 +2432,7 @@
 
           <div class="shortcuts-section">
             <div class="shortcuts-section-title">
-              <span>⚡</span> <span data-i18n="shortcuts.sec_actions">Ações no Post</span>
+              <svg class="ico"><use href="#i-zap" /></svg> <span data-i18n="shortcuts.sec_actions">Ações no Post</span>
             </div>
             <div class="shortcut-row">
               <span data-i18n="shortcuts.like">Gosto / Curtir</span>
@@ -2398,7 +2454,7 @@
 
           <div class="shortcuts-section" style="grid-column: 1 / -1">
             <div class="shortcuts-section-title">
-              <span>⚙️</span> <span data-i18n="shortcuts.sec_general">Geral & Compositor</span>
+              <svg class="ico"><use href="#i-settings" /></svg> <span data-i18n="shortcuts.sec_general">Geral & Compositor</span>
             </div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0 18px">
               <div class="shortcut-row">

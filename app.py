@@ -573,7 +573,7 @@ PORT = CFG.get("port", 8000)
 LISTEN_HOST = "127.0.0.1"
 LAN_MODE = False
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 

@@ -440,6 +440,14 @@
           test_like: "Gosto",
           test_boost: "Partilha",
           test_follow: "Seguidor",
+          test_quote: "Citação",
+          test_dm: "Mensagem",
+          pack_label: "Perfil de som:",
+          pack_orchid: "Orchid (Sintetizador Analógico)",
+          pack_crystal: "Cristal (Sinos Cósmicos)",
+          pack_marimba: "Marimba (Percussão Suave)",
+          pack_rhodes: "Rhodes (Piano Elétrico)",
+          pack_minimal: "Minimal (Ultra-discreto)",
           types_title: "Alertar para:",
           type_replies: "Respostas & Menções",
           type_likes: "Gostos",
@@ -1161,6 +1169,14 @@
           test_like: "Like",
           test_boost: "Repost",
           test_follow: "Follow",
+          test_quote: "Quote",
+          test_dm: "Message",
+          pack_label: "Sound profile:",
+          pack_orchid: "Orchid (Analog Synth)",
+          pack_crystal: "Crystal (Cosmic Chimes)",
+          pack_marimba: "Marimba (Soft Wood)",
+          pack_rhodes: "Rhodes (Electric Piano)",
+          pack_minimal: "Minimal (Ultra-subtle)",
           types_title: "Alert for:",
           type_replies: "Replies & Mentions",
           type_likes: "Likes",
@@ -5844,10 +5860,25 @@
       const saved = Number(localStorage.getItem("mastosky_notif_volume"));
       return Number.isFinite(saved) && saved >= 0.1 && saved <= 1 ? saved : 0.75;
     })();
+    const NOTIF_SOUND_PACKS = ["orchid", "crystal", "marimba", "rhodes", "minimal"];
+    let notifSoundPack = (() => {
+      const saved = localStorage.getItem("mastosky_notif_pack");
+      return NOTIF_SOUND_PACKS.includes(saved) ? saved : "orchid";
+    })();
     let _lastNotifSoundAt = 0;
+
+    function normalizeSoundEventKind(kind) {
+      if (kind === "reply" || kind === "mention") return "reply";
+      if (kind === "like" || kind === "like_repost" || kind === "favourite") return "like";
+      if (kind === "quote") return "quote";
+      if (kind === "boost" || kind === "boost_repost" || kind === "reblog") return "boost";
+      if (kind === "follow" || kind === "follow_request") return "follow";
+      return "dm";
+    }
 
     function playOrchidChord(ctx, notes, opts = {}) {
       const now = ctx.currentTime;
+      const pack = opts.pack || notifSoundPack || "orchid";
       const strumSec = (opts.strumMs || 32) / 1000;
       const attack = opts.attack || 0.022;
       const hold = opts.hold || 0.22;
@@ -5865,26 +5896,44 @@
       master.connect(comp);
       comp.connect(ctx.destination);
 
-      // Ambiência Orchid: duplo delay suave com filtro passa-baixo no feedback
-      const wet = ctx.createGain();
-      wet.gain.setValueAtTime(opts.wet || 0.24, now);
-      const d1 = ctx.createDelay(1.0);
-      const d2 = ctx.createDelay(1.0);
-      d1.delayTime.setValueAtTime(0.115, now);
-      d2.delayTime.setValueAtTime(0.185, now);
-      const fbFilter = ctx.createBiquadFilter();
-      fbFilter.type = "lowpass";
-      fbFilter.frequency.setValueAtTime(1550, now);
-      const fbGain = ctx.createGain();
-      fbGain.gain.setValueAtTime(0.28, now);
+      // Tremolo suave opcional para Rhodes
+      let tremLfo = null;
+      if (pack === "rhodes") {
+        const tremGain = ctx.createGain();
+        tremGain.gain.setValueAtTime(0.14, now);
+        tremLfo = ctx.createOscillator();
+        tremLfo.type = "sine";
+        tremLfo.frequency.setValueAtTime(5.2, now);
+        tremLfo.connect(tremGain);
+        tremGain.connect(master.gain);
+        tremLfo.start(now);
+        tremLfo.stop(now + notes.length * strumSec + attack + hold + release + 0.1);
+      }
 
-      wet.connect(d1);
-      d1.connect(d2);
-      d2.connect(fbFilter);
-      fbFilter.connect(fbGain);
-      fbGain.connect(d1);
-      d1.connect(master);
-      d2.connect(master);
+      // Ambiência por delay (desativada em Minimal quando wet = 0)
+      const wetLevel = typeof opts.wet === "number" ? opts.wet : 0.24;
+      let wet = null;
+      if (wetLevel > 0) {
+        wet = ctx.createGain();
+        wet.gain.setValueAtTime(wetLevel, now);
+        const d1 = ctx.createDelay(1.0);
+        const d2 = ctx.createDelay(1.0);
+        d1.delayTime.setValueAtTime(pack === "crystal" ? 0.14 : 0.115, now);
+        d2.delayTime.setValueAtTime(pack === "crystal" ? 0.23 : 0.185, now);
+        const fbFilter = ctx.createBiquadFilter();
+        fbFilter.type = "lowpass";
+        fbFilter.frequency.setValueAtTime(pack === "crystal" ? 2600 : 1550, now);
+        const fbGain = ctx.createGain();
+        fbGain.gain.setValueAtTime(pack === "marimba" ? 0.15 : 0.28, now);
+
+        wet.connect(d1);
+        d1.connect(d2);
+        d2.connect(fbFilter);
+        fbFilter.connect(fbGain);
+        fbGain.connect(d1);
+        d1.connect(master);
+        d2.connect(master);
+      }
 
       notes.forEach((freq, idx) => {
         const t0 = now + idx * strumSec;
@@ -5892,7 +5941,7 @@
 
         const filter = ctx.createBiquadFilter();
         filter.type = "lowpass";
-        filter.Q.setValueAtTime(1.4, t0);
+        filter.Q.setValueAtTime(pack === "crystal" ? 0.8 : 1.4, t0);
         filter.frequency.setValueAtTime(Math.max(260, cutoffEnd * 0.8), t0);
         filter.frequency.exponentialRampToValueAtTime(cutoffPeak, t0 + attack + 0.03);
         filter.frequency.exponentialRampToValueAtTime(cutoffEnd, tEnd);
@@ -5900,35 +5949,62 @@
         const vGain = ctx.createGain();
         vGain.gain.setValueAtTime(0.0001, t0);
         vGain.gain.linearRampToValueAtTime(voiceGainScale, t0 + attack);
-        vGain.gain.setValueAtTime(voiceGainScale * 0.85, t0 + attack + hold);
+        vGain.gain.setValueAtTime(voiceGainScale * (pack === "marimba" || pack === "crystal" ? 0.65 : 0.85), t0 + attack + hold);
         vGain.gain.exponentialRampToValueAtTime(0.0001, tEnd);
 
-        // Camada dupla analógica (triangle quente + sawtooth suave detunada)
-        const oscTri = ctx.createOscillator();
-        const oscSaw = ctx.createOscillator();
-        const sawGain = ctx.createGain();
+        const oscMain = ctx.createOscillator();
+        const oscSub = ctx.createOscillator();
+        const subGain = ctx.createGain();
         const detuneDir = idx % 2 === 0 ? 1 : -1;
 
-        oscTri.type = "triangle";
-        oscTri.frequency.setValueAtTime(freq, t0);
-        oscTri.detune.setValueAtTime(detuneDir * 3.5, t0);
+        if (pack === "crystal") {
+          oscMain.type = "sine";
+          oscMain.frequency.setValueAtTime(freq, t0);
+          oscSub.type = "sine";
+          oscSub.frequency.setValueAtTime(freq * 2, t0);
+          oscSub.detune.setValueAtTime(detuneDir * 4, t0);
+          subGain.gain.setValueAtTime(0.22, t0);
+        } else if (pack === "marimba") {
+          oscMain.type = "sine";
+          oscMain.frequency.setValueAtTime(freq * 1.06, t0);
+          oscMain.frequency.exponentialRampToValueAtTime(freq, t0 + 0.014);
+          oscSub.type = "triangle";
+          oscSub.frequency.setValueAtTime(freq, t0);
+          subGain.gain.setValueAtTime(0.26, t0);
+        } else if (pack === "rhodes") {
+          oscMain.type = "sine";
+          oscMain.frequency.setValueAtTime(freq, t0);
+          oscSub.type = "triangle";
+          oscSub.frequency.setValueAtTime(freq * 2, t0);
+          subGain.gain.setValueAtTime(0.16, t0);
+        } else if (pack === "minimal") {
+          oscMain.type = "sine";
+          oscMain.frequency.setValueAtTime(freq, t0);
+          oscSub.type = "sine";
+          oscSub.frequency.setValueAtTime(freq, t0);
+          subGain.gain.setValueAtTime(0, t0);
+        } else {
+          // orchid: camada dupla analógica (triangle quente + sawtooth suave detunada)
+          oscMain.type = "triangle";
+          oscMain.frequency.setValueAtTime(freq, t0);
+          oscMain.detune.setValueAtTime(detuneDir * 3.5, t0);
+          oscSub.type = "sawtooth";
+          oscSub.frequency.setValueAtTime(freq, t0);
+          oscSub.detune.setValueAtTime(-detuneDir * 7.5, t0);
+          subGain.gain.setValueAtTime(0.30, t0);
+        }
 
-        oscSaw.type = "sawtooth";
-        oscSaw.frequency.setValueAtTime(freq, t0);
-        oscSaw.detune.setValueAtTime(-detuneDir * 7.5, t0);
-        sawGain.gain.setValueAtTime(0.30, t0);
-
-        oscTri.connect(filter);
-        oscSaw.connect(sawGain);
-        sawGain.connect(filter);
+        oscMain.connect(filter);
+        oscSub.connect(subGain);
+        subGain.connect(filter);
         filter.connect(vGain);
         vGain.connect(master);
-        vGain.connect(wet);
+        if (wet) vGain.connect(wet);
 
-        oscTri.start(t0);
-        oscSaw.start(t0);
-        oscTri.stop(tEnd + 0.05);
-        oscSaw.stop(tEnd + 0.05);
+        oscMain.start(t0);
+        oscSub.start(t0);
+        oscMain.stop(tEnd + 0.05);
+        oscSub.stop(tEnd + 0.05);
       });
     }
 
@@ -5940,32 +6016,59 @@
         if (!ctx) return;
         _lastNotifSoundAt = nowMs;
 
-        if (kind === "reply" || kind === "mention") {
-          // Orchid Fmaj9 luminoso (strum ascendente)
-          playOrchidChord(ctx, [349.23, 440.00, 523.25, 659.25, 783.99], {
-            strumMs: 36, attack: 0.02, hold: 0.22, release: 0.62, cutoffPeak: 2400, cutoffEnd: 580, gain: 0.13, wet: 0.26
-          });
-        } else if (kind === "like" || kind === "like_repost" || kind === "favourite") {
-          // Orchid Dm7 curto e aveludado
-          playOrchidChord(ctx, [293.66, 349.23, 440.00, 523.25], {
-            strumMs: 22, attack: 0.018, hold: 0.12, release: 0.36, cutoffPeak: 1650, cutoffEnd: 420, gain: 0.11, wet: 0.18
-          });
-        } else if (kind === "boost" || kind === "boost_repost" || kind === "reblog" || kind === "quote") {
-          // Orchid Cmaj7 expansivo
-          playOrchidChord(ctx, [261.63, 329.63, 392.00, 493.88, 659.25], {
-            strumMs: 30, attack: 0.025, hold: 0.24, release: 0.68, cutoffPeak: 2150, cutoffEnd: 500, gain: 0.12, wet: 0.30
-          });
-        } else if (kind === "follow" || kind === "follow_request") {
-          // Orchid Am9 dedilhado acolhedor
-          playOrchidChord(ctx, [220.00, 329.63, 392.00, 493.88, 523.25], {
-            strumMs: 42, attack: 0.026, hold: 0.24, release: 0.65, cutoffPeak: 1950, cutoffEnd: 460, gain: 0.12, wet: 0.26
-          });
-        } else {
-          // Orchid Gmaj7 suave (DMs / outros)
-          playOrchidChord(ctx, [392.00, 493.88, 587.33, 739.99], {
-            strumMs: 26, attack: 0.018, hold: 0.18, release: 0.50, cutoffPeak: 2100, cutoffEnd: 480, gain: 0.12, wet: 0.22
-          });
+        const ev = normalizeSoundEventKind(kind);
+        const pack = notifSoundPack || "orchid";
+
+        // Contornos distintos por evento para evitar redundância entre notificações
+        const patterns = {
+          reply:  { notes: [349.23, 523.25, 659.25, 783.99], strumMs: 38, attack: 0.020, hold: 0.20, release: 0.58, cutoffPeak: 2600, cutoffEnd: 580, gain: 0.13, wet: 0.25 },
+          like:   { notes: [440.00, 523.25],                 strumMs: 12, attack: 0.014, hold: 0.06, release: 0.24, cutoffPeak: 1550, cutoffEnd: 400, gain: 0.11, wet: 0.14 },
+          boost:  { notes: [261.63, 392.00, 523.25, 783.99], strumMs: 22, attack: 0.022, hold: 0.18, release: 0.54, cutoffPeak: 2200, cutoffEnd: 500, gain: 0.12, wet: 0.28 },
+          quote:  { notes: [466.16, 392.00, 587.33, 698.46], strumMs: 44, attack: 0.018, hold: 0.16, release: 0.48, cutoffPeak: 2150, cutoffEnd: 480, gain: 0.12, wet: 0.24 },
+          follow: { notes: [220.00, 329.63, 440.00, 554.37], strumMs: 55, attack: 0.026, hold: 0.22, release: 0.68, cutoffPeak: 1900, cutoffEnd: 450, gain: 0.12, wet: 0.26 },
+          dm:     { notes: [329.63, 493.88, 739.99],         strumMs: 65, attack: 0.020, hold: 0.20, release: 0.60, cutoffPeak: 1750, cutoffEnd: 460, gain: 0.12, wet: 0.34 }
+        };
+        const base = patterns[ev] || patterns.dm;
+        let opts = { ...base, pack };
+
+        if (pack === "crystal") {
+          opts.notes = base.notes.map(f => f * 1.5);
+          opts.attack = 0.006;
+          opts.hold = Math.max(0.03, base.hold * 0.35);
+          opts.release = Math.min(0.85, base.release * 1.25);
+          opts.cutoffPeak = 4200;
+          opts.cutoffEnd = 900;
+          opts.wet = Math.min(0.36, base.wet + 0.08);
+          opts.gain = base.gain * 0.9;
+        } else if (pack === "marimba") {
+          opts.attack = 0.004;
+          opts.hold = 0.02;
+          opts.release = Math.max(0.14, base.release * 0.42);
+          opts.strumMs = Math.max(18, base.strumMs * 1.15);
+          opts.cutoffPeak = 2400;
+          opts.cutoffEnd = 520;
+          opts.wet = 0.08;
+          opts.gain = base.gain * 1.1;
+        } else if (pack === "rhodes") {
+          opts.attack = 0.012;
+          opts.hold = base.hold * 0.9;
+          opts.release = base.release * 1.05;
+          opts.cutoffPeak = 1450;
+          opts.cutoffEnd = 380;
+          opts.wet = Math.max(0.14, base.wet * 0.85);
+        } else if (pack === "minimal") {
+          opts.notes = ev === "like" ? [base.notes[1]] : [base.notes[0], base.notes[base.notes.length - 1]];
+          opts.strumMs = ev === "dm" ? 75 : 45;
+          opts.attack = 0.004;
+          opts.hold = 0.01;
+          opts.release = ev === "like" ? 0.09 : 0.14;
+          opts.cutoffPeak = 3000;
+          opts.cutoffEnd = 800;
+          opts.wet = 0;
+          opts.gain = 0.10;
         }
+
+        playOrchidChord(ctx, opts.notes, opts);
       } catch (err) {
         console.warn("Spatial audio error:", err);
       }
@@ -7100,6 +7203,8 @@
       if ($("deckMessagesBadgeCount")) $("deckMessagesBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
     }
 
+    let _prevDmUnread = null;
+
     async function loadConversations(silent = false) {
       try {
         const res = await api("/api/conversations");
@@ -7115,7 +7220,12 @@
           return;
         }
         conversations = res.conversations || [];
-        updateMessagesBadge(res.total_unread || 0);
+        const newUnread = res.total_unread || 0;
+        if (silent && typeof _prevDmUnread === "number" && newUnread > _prevDmUnread && notifSoundEnabled) {
+          playSpatialSound("dm");
+        }
+        _prevDmUnread = newUnread;
+        updateMessagesBadge(newUnread);
 
         const errBox = $("convoErrors");
         if (errBox) {
@@ -7519,6 +7629,10 @@
           if (typeof threadHistory !== "undefined") threadHistory[c.toLowerCase()] = [];
         });
         if (newTab === "saved") renderSavedFeed();
+        if (newTab === "lists") {
+          if (!availableLists.length) loadAvailableLists().then(() => loadSelectedListFeed());
+          else if (!listsItems.length) loadSelectedListFeed();
+        }
         if (newTab === "messages") {
           if (!conversations.length) loadConversations();
           else renderConversationList();
@@ -10524,6 +10638,7 @@
         nav_mode: navMode,
         deck_columns: Array.isArray(deckColumns) ? [...deckColumns] : [],
         notif_sound: Boolean(notifSoundEnabled),
+        notif_sound_pack: notifSoundPack,
         notif_types: (notifTypesEnabled && typeof notifTypesEnabled === "object") ? { ...notifTypesEnabled } : {},
         crosstalk_dedup: Boolean(crosstalkDedupEnabled),
         warn_missing_alt: Boolean(warnMissingAlt),
@@ -10690,10 +10805,16 @@
               syncDeckColsCheckboxes();
             }
           }
+          if (typeof p.notif_sound_pack === "string" && NOTIF_SOUND_PACKS.includes(p.notif_sound_pack) && p.notif_sound_pack !== notifSoundPack) {
+            notifSoundPack = p.notif_sound_pack;
+            localStorage.setItem("mastosky_notif_pack", notifSoundPack);
+            if ($("cfgNotifSoundPack")) $("cfgNotifSoundPack").value = notifSoundPack;
+          }
           if (typeof p.notif_sound === "boolean" && p.notif_sound !== notifSoundEnabled) {
             notifSoundEnabled = p.notif_sound;
             localStorage.setItem("mastosky_notif_sound", notifSoundEnabled ? "true" : "false");
             if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+      if ($("cfgNotifSoundPack")) $("cfgNotifSoundPack").value = notifSoundPack;
       if ($("cfgNotifVolume")) {
         const pct = Math.round(notifSoundVolume * 100);
         $("cfgNotifVolume").value = String(pct);
@@ -11095,16 +11216,54 @@
       }
     }
 
+    function renderDeckComposeActivity() {
+      const box = $("deckComposeActivity");
+      if (!box) return;
+      const drafts = getSavedDrafts();
+      if (!drafts.length) {
+        box.hidden = true;
+        box.replaceChildren();
+        return;
+      }
+      box.hidden = false;
+      box.replaceChildren();
+
+      const head = el("div", "deck-compose-activity-head");
+      const title = el("span", null, t("drafts.modal_title"));
+      const count = el("span", null, String(drafts.length));
+      head.append(title, count);
+      box.append(head);
+
+      drafts.slice(0, 3).forEach(d => {
+        const btn = el("button", "deck-compose-activity-item");
+        btn.type = "button";
+        const ico = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        ico.setAttribute("class", "ico");
+        const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+        use.setAttribute("href", "#i-draft");
+        ico.append(use);
+
+        const preview = (d.text || (d.thread && d.thread[0] && d.thread[0].text) || "").trim() || t("drafts.media_only");
+        const txt = el("span", "deck-compose-activity-txt", preview);
+        const meta = el("span", "deck-compose-activity-meta", d.updatedAt ? ago(new Date(d.updatedAt).toISOString()) : "");
+        btn.append(ico, txt, meta);
+        btn.onclick = () => loadDraftFromLibrary(d.id);
+        box.append(btn);
+      });
+    }
+
     function updateDraftsBadge() {
       const drafts = getSavedDrafts();
       const badge = $("draftsBadge");
-      if (!badge) return;
-      if (drafts.length > 0) {
-        badge.textContent = drafts.length > 99 ? "99+" : drafts.length;
-        badge.hidden = false;
-      } else {
-        badge.hidden = true;
+      if (badge) {
+        if (drafts.length > 0) {
+          badge.textContent = drafts.length > 99 ? "99+" : drafts.length;
+          badge.hidden = false;
+        } else {
+          badge.hidden = true;
+        }
       }
+      renderDeckComposeActivity();
     }
 
     function saveCurrentComposerToDrafts() {
@@ -11527,6 +11686,7 @@
               notifSoundEnabled = p.notif_sound;
               localStorage.setItem("mastosky_notif_sound", String(notifSoundEnabled));
               if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+      if ($("cfgNotifSoundPack")) $("cfgNotifSoundPack").value = notifSoundPack;
       if ($("cfgNotifVolume")) {
         const pct = Math.round(notifSoundVolume * 100);
         $("cfgNotifVolume").value = String(pct);
@@ -12915,6 +13075,44 @@
         if (crossPostTarget) renderCrossCanvas(crossPostTarget, crossPostTheme);
       };
     });
+
+    function buildCrossPostAltText(it) {
+      if (!it) return "";
+      const isEn = typeof currentLang !== "undefined" && currentLang === "en";
+      const author = (it.name && it.handle && it.name !== it.handle)
+        ? `${it.name} (${it.handle})`
+        : (it.name || it.handle || "");
+      const header = isEn
+        ? `Cross-post from ${author} on ${LABEL[it.network]}`
+        : `Publicação cruzada de ${author} no ${LABEL[it.network]}`;
+      const parts = [header];
+
+      const mainTxt = extractCleanCardText(it, Boolean(it.quote));
+      if (mainTxt) parts.push(mainTxt);
+
+      if (it.quote) {
+        const qAuthor = it.quote.name || it.quote.handle || "";
+        const qTxt = extractCleanCardText(it.quote, true);
+        const qPrefix = isEn ? `Quoting ${qAuthor}:` : `A citar ${qAuthor}:`;
+        parts.push(qTxt ? `${qPrefix} ${qTxt}` : qPrefix);
+      }
+
+      const mediaAlts = getValidCardMedia(it)
+        .map(m => {
+          if (m.type === "external") {
+            const label = m.title || (m.url || "").replace(/^https?:\/\//, "").split("/")[0];
+            return label ? `[${isEn ? "Link" : "Ligação"}: ${label}]` : "";
+          }
+          const a = (m.alt || "").trim();
+          return a ? `[${isEn ? "Image" : "Imagem"}: ${a}]` : "";
+        })
+        .filter(Boolean);
+      if (mediaAlts.length) parts.push(mediaAlts.join(" "));
+
+      let alt = parts.join("\n\n").trim();
+      if (alt.length > 1400) alt = alt.slice(0, 1397).trimEnd() + "...";
+      return alt;
+    }
 
     function buildCrossPostAltText(it) {
       if (!it) return "";
@@ -14535,6 +14733,7 @@
       if (typeof renderHandleMappingsUI === "function") renderHandleMappingsUI();
       renderMutedWordsChips();
       if ($("cfgNotifSound")) $("cfgNotifSound").checked = notifSoundEnabled;
+      if ($("cfgNotifSoundPack")) $("cfgNotifSoundPack").value = notifSoundPack;
       if ($("cfgNotifVolume")) {
         const pct = Math.round(notifSoundVolume * 100);
         $("cfgNotifVolume").value = String(pct);
@@ -15236,6 +15435,16 @@
         if (notifSoundEnabled) {
           testSpatialSound("reply");
         }
+      };
+    }
+
+    if ($("cfgNotifSoundPack")) {
+      $("cfgNotifSoundPack").onchange = () => {
+        const val = $("cfgNotifSoundPack").value;
+        notifSoundPack = NOTIF_SOUND_PACKS.includes(val) ? val : "orchid";
+        localStorage.setItem("mastosky_notif_pack", notifSoundPack);
+        syncPrefsToServer();
+        testSpatialSound("reply");
       };
     }
 
