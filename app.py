@@ -582,7 +582,7 @@ PORT = CFG.get("port", 8000)
 LISTEN_HOST = "127.0.0.1"
 LAN_MODE = False
 SESSION_TOKEN = secrets.token_hex(32)  # Token criptográfico de sessão para proteção CSRF
-VERSION = "1.5.0"
+VERSION = "1.6.0"
 UPDATE_CACHE = {"checked_at": 0, "data": None}
 
 
@@ -644,7 +644,7 @@ def check_github_update(force=False):
     try:
         d = _github_api_get("https://api.github.com/repos/gjmcosta/MastoSky/releases/latest")
         if isinstance(d, dict):
-            tag = (d.get("tag_name") or "").lstrip("v")
+            tag = (d.get("tag_name") or "").lstrip("vV. ")
             has_update = bool(tag and parse_semver(tag) > parse_semver(VERSION))
             release_res = {
                 "current": VERSION,
@@ -666,7 +666,7 @@ def check_github_update(force=False):
         tags = _github_api_get("https://api.github.com/repos/gjmcosta/MastoSky/tags?per_page=1")
         if isinstance(tags, list) and tags:
             raw_tag = str(tags[0].get("name") or "")
-            tag = raw_tag.lstrip("v")
+            tag = raw_tag.lstrip("vV. ")
             if tag and parse_semver(tag) > parse_semver(VERSION):
                 res = {
                     "current": VERSION,

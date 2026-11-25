@@ -1,7 +1,7 @@
 # 🚀 MastoSky — Relatório de Progresso e Estado do Projeto (PROGRESS.md)
 
 > **Data de atualização:** 25 de Novembro de 2026  
-> **Versão:** v1.4.0  
+> **Versão:** v1.6.0  
 > **Repositório:** `gjmcosta/MastoSky` (Branch: `main`)  
 > **Testes Automatizados:** 225 testes aprovados (`python3 -m unittest discover -s tests -v`)
 
@@ -340,7 +340,7 @@ O **MastoSky** é um cliente web local-first unificado para **Bluesky** e **Mast
   - **Logo Motion Design (`brand/`):** Sistema de movimento editorial em SVG + CSS nativos com coreografia de 3 actos e suporte a `prefers-reduced-motion` (`logo-mark-*-animated.svg`, `logo-lockup-*-animated.svg`, `star-badge-animated.svg`, `social-card-*-animated.svg`, `preview-landscape-1080p.svg`, `preview-portrait-1080p.svg`, `motion.css` e `MOTION.md`), integrado no cabeçalho da app, nos badges de não lidas e na landing page (`docs/index.html`).
   - **Refinamento Anti-UI Slop (`BRAND.md`):** Remoção do fundo decorativo `.cosmos-bg`, simplificação dos contentores `.post`/`.compose`/`.quote-box`, limpeza de cápsulas/sombras/glassmorphism nas barras de navegação, devolução de `.star-badge` à barra lateral e substituição de emojis residuais na interface e na landing page por ícones vectoriais monolinha.
   - **Atualizações & GitHub Releases:** Criação do workflow `.github/workflows/release.yml` para publicação automática de GitHub Releases em tags `v*` e adição de fallback para `/tags?per_page=1` em `check_github_update()`.
-- **Auditoria de Segurança, Performance PC/Mobile, Acessibilidade & Funcionalidades Avançadas (v1.4.0 — 25 Nov 2026):**
+- **Auditoria de Segurança, Performance PC/Mobile, Acessibilidade & Funcionalidades Avançadas (v1.6.0 — 25 Nov 2026):**
   - **Refinamentos Mobile & Modo Deck:** Botão de compor mobile distinguido da aba ativa (`.side-nav-compose` circular com contorno e área de toque `44×44px`), estado inicial na Pesquisa com histórico de pesquisas recentes, ícones distintos no compositor (`#i-list` vs `#i-calendar-clock`) e contraste melhorado em `.send:disabled`, Hub de Perfil sem cartões aninhados e com domínio Mastodon completo, cabeçalhos do Deck simplificados, popover `+ Coluna` ancorado ao cabeçalho, badges inline nas Notificações alinhados à altura da Timeline e substituição do emoji em `#exploreSourceBar` por `#i-sparkles`.
   - **Segurança Backend (`app.py`, `Dockerfile`):** Remoção do fallback TLS sem verificação em `http()`, sanitização HTML (`clean()`) em DMs Mastodon, bloqueio de `image/svg+xml` em `proxy_fetch_image()`, correção de `render_custom_emojis()` fora de tags HTML, endurecimento SSRF (fail-closed em DNS, multicast/reserved IPs e validação de URLs em `/api/setup`), parsing IPv6 em `allowed()`, cabeçalhos de segurança em respostas `304`, escrita atómica em `write_config()`, locks em `_LINK_PREVIEW_CACHE`, remoção de métodos duplicados em `Masto`, `daemon_threads = True` e utilizador não-root `mastosky` no `Dockerfile`.
   - **Performance PC & Mobile (`app.js`, `index.html`, `/sw.js`):** Limpeza de instâncias `Hls.js` e timers via `cleanupFeedMedia()`, inicialização preguiçosa de HLS com `IntersectionObserver`, carregamento seletivo de colunas ativas no Deck, locks *in-flight* e teto de memória (400 itens no topo), `<script src="/vendor/hls.min.js" defer>`, cache condicional `ETag` no `/sw.js` e *pull-to-refresh* com `requestAnimationFrame`.
