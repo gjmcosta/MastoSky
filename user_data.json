@@ -29,12 +29,12 @@
     "boost_cluster": true,
     "handle_mappings": [],
     "timeline_anchor": {
-      "key": "https://bsky.app/profile/tomashpereira.bsky.social/post/3n35wqkzirk22",
-      "time": "2026-11-25T19:56:49.858Z",
-      "updated_at": 1795636617753,
+      "key": "https://bsky.app/profile/seriouslybored.bsky.social/post/3n35xe2ecms2t",
+      "time": "2026-11-25T20:04:04.058Z",
+      "updated_at": 1795637054195,
       "device_id": "dev_wte8yvkomwouw5zb"
     },
     "notif_sound_pack": "orchid"
   },
-  "updated_at": 1795636617782
+  "updated_at": 1795637054200
 }

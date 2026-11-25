@@ -32,7 +32,7 @@
           profile: "Perfil"
         },
         lists: {
-          explore_trending: "✨ Em Alta (Explorar)",
+          explore_trending: "Em Alta (Explorar)",
           select_ph: "Escolher Feed ou Lista...",
           empty_none: "Nenhum Feed Bluesky ou Lista Mastodon encontrado.",
           loading: "A carregar feed...",
@@ -761,7 +761,7 @@
           profile: "Profile"
         },
         lists: {
-          explore_trending: "✨ Trending (Explore)",
+          explore_trending: "Trending (Explore)",
           select_ph: "Choose Feed or List...",
           empty_none: "No Bluesky Feeds or Mastodon Lists found.",
           loading: "Loading feed...",
@@ -1928,14 +1928,13 @@
 
     function scrollToAddCol(e) {
       if (e) e.stopPropagation();
-      const card = $("deckAddColCard");
       const menu = $("deckAddColMenu");
-      if (card) {
-        card.scrollIntoView({ behavior: "smooth", inline: "end", block: "nearest" });
-      }
-      if (menu) {
+      if (!menu) return;
+      if (menu.hidden) {
         renderAddColMenu();
         menu.hidden = false;
+      } else {
+        menu.hidden = true;
       }
     }
 
@@ -11227,13 +11226,19 @@
       const box = $("deckComposeActivity");
       if (!box) return;
       const drafts = getSavedDrafts();
-      if (!drafts.length) {
-        box.hidden = true;
-        box.replaceChildren();
-        return;
-      }
       box.hidden = false;
       box.replaceChildren();
+
+      if (!drafts.length) {
+        const hint = el("div", "deck-compose-activity-hint");
+        const isMac = /Mac|iPhone|iPad/.test(navigator.platform || "");
+        const mod = isMac ? "⌘" : "Ctrl";
+        hint.textContent = currentLang === "en"
+          ? `${mod}+Enter to post · ? for keyboard shortcuts`
+          : `${mod}+Enter para publicar · ? para atalhos de teclado`;
+        box.append(hint);
+        return;
+      }
 
       const head = el("div", "deck-compose-activity-head");
       const title = el("span", null, t("drafts.modal_title"));
