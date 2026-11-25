@@ -771,7 +771,7 @@
               <button type="button" class="tool" id="scheduledBtn" title="Publicações agendadas"
                 data-i18n-title="scheduled.btn_title" aria-label="Publicações agendadas">
                 <svg class="ico">
-                  <use href="#i-calendar-clock" />
+                  <use href="#i-list" />
                 </svg>
                 <span id="scheduledBadge" class="drafts-badge" hidden>0</span>
               </button>
@@ -1133,7 +1133,9 @@
                 <span class="search-sec-title">💬 <span data-i18n="search.sec_posts">Publicações</span></span>
                 <span class="search-sec-count" id="sPostsCount"></span>
               </div>
-              <div id="sfeed"></div>
+              <div id="sfeed">
+                <div class="empty" data-i18n="search.empty_start">Escreve algo acima para pesquisar em simultâneo no Bluesky e Mastodon.</div>
+              </div>
             </div>
           </div>
           <div id="threadSearch" hidden></div>

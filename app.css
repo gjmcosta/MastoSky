@@ -1471,7 +1471,7 @@
     }
 
     .send:disabled {
-      opacity: .35;
+      opacity: .55;
       cursor: default
     }
 
@@ -6505,11 +6505,13 @@
         order: 3;
       }
 
-      /* Botão de novo post em destaque no meio da barra mobile */
+      /* Botão de novo post distinto do estado ativo das abas */
       .side-nav-btn.side-nav-compose {
         order: 4;
-        background: var(--accent-solid) !important;
-        color: #fff !important;
+        background: color-mix(in srgb, var(--accent) 16%, var(--surface-2)) !important;
+        color: var(--accent) !important;
+        border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+        border-radius: 999px;
       }
 
       .side-nav-btn[data-tab="saved"] {
@@ -7189,6 +7191,14 @@
       border-radius: 12px;
       padding: 12px;
       margin-bottom: 12px
+    }
+
+    #panelHubView .panel-section {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      margin-bottom: 18px;
     }
 
     .panel-sec-title {

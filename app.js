@@ -6850,7 +6850,14 @@
         star.title = t("profile.your_account");
         nameRow.append(name, star, netBadge(net));
 
-        const handle = el("div", "profile-acc-handle", p.handle);
+        let displayHandle = p.handle || "";
+        if (net === "mastodon" && displayHandle && displayHandle.indexOf("@", 1) === -1 && p.url) {
+          try {
+            const host = new URL(p.url).hostname;
+            if (host) displayHandle = `${displayHandle}@${host}`;
+          } catch (_) {}
+        }
+        const handle = el("div", "profile-acc-handle", displayHandle);
         const stats = el("div", "profile-acc-stats");
         stats.textContent = `${p.followers != null ? p.followers : 0} ${t("profile.followers_stat")} · ${p.following != null ? p.following : 0} ${t("profile.following_stat")}`;
 
