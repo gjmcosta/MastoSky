@@ -5149,6 +5149,53 @@ console.log(JSON.stringify({ mastoRes, bskyRes, cnt }));
         self.assertIn("_MEIPASS", app_py)
         self.assertIn("EADDRINUSE", app_py)
 
+    def test_phase1_to_4_security_perf_ux_and_features(self):
+        import ipaddress
+        import socket
+
+        # 1. Proxy rejeita image/svg+xml para evitar scripts na origem da app
+        svg_resp = mock.MagicMock()
+        svg_resp.headers.get_content_type.return_value = "image/svg+xml"
+        svg_resp.read.return_value = b"<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>"
+        svg_resp.__enter__.return_value = svg_resp
+        svg_resp.__exit__.return_value = False
+        with mock.patch("app._validate_remote_http_url", return_value=("https://example.com/evil.svg", mock.Mock())), \
+             mock.patch("app._urlopen_remote", return_value=svg_resp):
+            with self.assertRaises(ValueError):
+                app.proxy_fetch_image("https://example.com/evil.svg")
+
+        # 2. render_custom_emojis substitui apenas nós de texto e preserva atributos href
+        rendered = app.render_custom_emojis(
+            '<a href="https://example.com/:party:/:cat:">:cat:</a>',
+            [{"shortcode": "cat", "url": "https://example.com/cat.png"}],
+        )
+        self.assertIn('href="https://example.com/:party:/:cat:"', rendered)
+        self.assertIn('<img class="emoji" src="https://example.com/cat.png"', rendered)
+
+        # 3. SSRF bloqueia IPs multicast/reserved e falha fechado em erro DNS
+        with self.assertRaises(ValueError):
+            app._check_ip_public(ipaddress.ip_address("224.0.0.1"))
+        with mock.patch("app.socket.getaddrinfo", side_effect=socket.gaierror("fail")):
+            with self.assertRaises(ValueError):
+                app._validate_remote_http_url("https://nonexistent.invalid/test")
+
+        # 4. Marcadores de performance, acessibilidade e funcionalidades Fase 4 no frontend
+        html = _read_frontend()
+        for marker in [
+            "cleanupFeedMedia",
+            "normalizeMutedUserHandle",
+            "toggleMuteUser",
+            "setNotifNet",
+            'id="notifNetPills"',
+            "getRecentSearches",
+            "renderSearchEmptyState",
+            "setUserProfileModalTab",
+            'id="userProfileModalTabs"',
+            "renderFeedErrorBanner",
+            "restoreModalFocus",
+        ]:
+            self.assertIn(marker, html)
+
 
 if __name__ == "__main__":
     unittest.main()

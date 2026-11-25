@@ -2717,16 +2717,105 @@
       border-color: var(--accent)
     }
 
-    .search-net-bar .filter-pill[data-net="bluesky"].active {
+    .search-net-bar .filter-pill[data-net="mastodon"].active,
+    .notif-net-bar .filter-pill[data-notif-net="mastodon"].active {
+      background: color-mix(in srgb, #6364FF 15%, var(--card));
+      color: #6364FF;
+      border-color: #6364FF
+    }
+
+    .search-net-bar .filter-pill[data-net="bluesky"].active,
+    .notif-net-bar .filter-pill[data-notif-net="bluesky"].active {
       background: color-mix(in srgb, #0085FF 15%, var(--card));
       color: #0085FF;
       border-color: #0085FF
     }
 
-    .search-net-bar .filter-pill[data-net="mastodon"].active {
-      background: color-mix(in srgb, #6364FF 15%, var(--card));
-      color: #6364FF;
-      border-color: #6364FF
+    .notif-net-bar {
+      margin-bottom: 10px;
+    }
+
+    .notif-net-bar .filter-pill {
+      gap: 5px;
+    }
+
+    .search-recent-box {
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--surface-2) 55%, transparent);
+    }
+
+    .search-recent-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    .search-recent-clear {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+
+    .search-recent-clear:hover {
+      color: var(--ink);
+    }
+
+    .search-recent-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .search-recent-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 3px 8px 3px 10px;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .search-recent-chip-btn {
+      background: transparent;
+      border: none;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .search-recent-chip-btn:hover {
+      color: var(--accent);
+    }
+
+    .search-recent-chip-rm {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+
+    .search-recent-chip-rm:hover {
+      color: var(--danger);
     }
 
     #savedFilterPills .filter-pill[data-saved-net="bluesky"].active {
@@ -6491,6 +6580,7 @@
       }
 
       .side-nav-btn {
+        position: relative;
         width: 36px;
         height: 36px;
         flex: 0 0 36px;
@@ -6499,6 +6589,12 @@
         display: grid;
         place-items: center;
         padding: 0;
+      }
+
+      .side-nav-btn::after {
+        content: "";
+        position: absolute;
+        inset: -4px;
       }
 
       .side-nav-btn svg {

@@ -184,6 +184,7 @@
           type_posts: "Publicações",
           type_actors: "Utilizadores",
           type_hashtags: "Hashtags",
+          type_media: "Média",
           net_all: "Ambas",
           sec_users: "Utilizadores",
           sec_hashtags: "Hashtags",
@@ -396,6 +397,8 @@
           open_orig: "Abrir original ↗",
           loading: "A extrair artigo limpo...",
           read_time: "~{min} min de leitura",
+          font_dec: "Diminuir letra",
+          font_inc: "Aumentar letra",
           empty: "Não foi possível extrair texto completo deste artigo. Podes abrir a página original acima."
         },
         notifs: {
@@ -913,6 +916,7 @@
           type_posts: "Posts",
           type_actors: "Users",
           type_hashtags: "Hashtags",
+          type_media: "Media",
           net_all: "Both",
           sec_users: "Users",
           sec_hashtags: "Hashtags",
@@ -1125,6 +1129,8 @@
           open_orig: "Open original ↗",
           loading: "Extracting clean article...",
           read_time: "~{min} min read",
+          font_dec: "Decrease font size",
+          font_inc: "Increase font size",
           empty: "Could not extract full article text. You can open the original page above."
         },
         notifs: {
@@ -2042,15 +2048,15 @@
         if ($("pMessages")) $("pMessages").hidden = false;
         if ($("pLists")) $("pLists").hidden = false;
         if ($("pProfile")) $("pProfile").hidden = false;
-        if (!exploreItems.length) loadExplore();
+        if (deckColumns.includes("explore") && !exploreItems.length) loadExplore();
         if (deckColumns.includes("lists") && !listsItems.length) {
           if (!availableLists.length) loadAvailableLists().then(() => loadSelectedListFeed());
           else loadSelectedListFeed();
         }
-        renderSavedFeed();
-        if (!notifs) loadNotifs();
-        if (!conversations.length) loadConversations(true);
-        if (!profileLoaded) loadProfile();
+        if (deckColumns.includes("saved")) renderSavedFeed();
+        if (deckColumns.includes("notifs") && !notifs) loadNotifs();
+        if (deckColumns.includes("messages") && !conversations.length) loadConversations(true);
+        if (deckColumns.includes("profile") && !profileLoaded) loadProfile();
         applyDeckColumnVisibility();
       } else {
         ALL_DECK_COLS.forEach(c => {
@@ -2263,8 +2269,44 @@
       return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
 
+    function normalizeMutedUserHandle(raw) {
+      const s = String(raw || "").trim().toLowerCase().replace(/^@+/, "");
+      return s ? ("@" + s) : "";
+    }
+
+    function isUserMuted(handle) {
+      const norm = normalizeMutedUserHandle(handle);
+      if (!norm) return false;
+      const bare = norm.slice(1);
+      return mutedWords.includes(norm) || mutedWords.includes(bare);
+    }
+
+    function toggleMuteUser(handle) {
+      const norm = normalizeMutedUserHandle(handle);
+      if (!norm) return false;
+      if (isUserMuted(norm)) {
+        const bare = norm.slice(1);
+        mutedWords = mutedWords.filter(w => w !== norm && w !== bare);
+        persistMutedSettings();
+        renderMutedWordsChips();
+        refreshMutedFeeds();
+        return false;
+      }
+      addMutedWord(norm);
+      return true;
+    }
+
     function getMutedMatch(it) {
       if (!it || it.is_own || !mutedWords.length) return null;
+      const authorHandles = [
+        it.handle, it.author_handle,
+        it.quote && it.quote.handle, it.quote && it.quote.author_handle,
+        it.target_post && it.target_post.handle, it.target_post && it.target_post.author_handle
+      ].map(normalizeMutedUserHandle).filter(Boolean);
+      for (const kw of mutedWords) {
+        if (!kw || !kw.startsWith("@")) continue;
+        if (authorHandles.includes(kw)) return kw;
+      }
       const parts = [it.cw || "", it.text || ""];
       if (it.quote) {
         parts.push(it.quote.cw || "", it.quote.text || "");
@@ -2498,6 +2540,26 @@
       return s;
     }
 
+    function cleanupFeedMedia(container) {
+      if (!container) return;
+      container.querySelectorAll("video").forEach(v => {
+        if (v._hls) {
+          try { v._hls.destroy(); } catch (_) { }
+          v._hls = null;
+        }
+        if (v._hlsObserver) {
+          try { v._hlsObserver.disconnect(); } catch (_) { }
+          v._hlsObserver = null;
+        }
+      });
+      container.querySelectorAll(".post.notif").forEach(n => {
+        if (n._hoverTimer) {
+          clearTimeout(n._hoverTimer);
+          n._hoverTimer = null;
+        }
+      });
+    }
+
     function attachVideo(v, src) {
       if (!src) return;
       const isHls = src.includes(".m3u8") || src.includes("playlist");
@@ -2505,10 +2567,26 @@
         if (v.canPlayType('application/vnd.apple.mpegurl')) {
           v.src = src;
         } else if (window.Hls && Hls.isSupported()) {
-          const hls = new Hls({ enableWorker: true });
-          hls.loadSource(src);
-          hls.attachMedia(v);
-          v._hls = hls;
+          const initHls = () => {
+            if (v._hls || !v.isConnected) return;
+            const hls = new Hls({ enableWorker: true });
+            hls.loadSource(src);
+            hls.attachMedia(v);
+            v._hls = hls;
+          };
+          if ("IntersectionObserver" in window) {
+            const obs = new IntersectionObserver((entries) => {
+              if (entries.some(en => en.isIntersecting)) {
+                obs.disconnect();
+                v._hlsObserver = null;
+                initHls();
+              }
+            }, { rootMargin: "200px" });
+            obs.observe(v);
+            v._hlsObserver = obs;
+          } else {
+            initHls();
+          }
         } else {
           v.src = src;
         }
@@ -2821,9 +2899,29 @@
       clearKeyboardFocusedPost();
     }
 
+    let _lastModalTriggerEl = null;
+
+    function rememberModalFocus() {
+      const ae = document.activeElement;
+      if (ae && ae !== document.body && typeof ae.focus === "function") {
+        _lastModalTriggerEl = ae;
+      }
+    }
+
+    function restoreModalFocus() {
+      if (!isAnyModalOpen()) {
+        document.body.style.overflow = "";
+        if (_lastModalTriggerEl && _lastModalTriggerEl.isConnected && typeof _lastModalTriggerEl.focus === "function") {
+          try { _lastModalTriggerEl.focus(); } catch (_) { }
+        }
+        _lastModalTriggerEl = null;
+      }
+    }
+
     function openShortcutsModal() {
       const overlay = $("shortcutsOverlay");
       if (!overlay) return;
+      rememberModalFocus();
       overlay.hidden = false;
       document.body.style.overflow = "hidden";
     }
@@ -2832,7 +2930,7 @@
       const overlay = $("shortcutsOverlay");
       if (!overlay) return;
       overlay.hidden = true;
-      document.body.style.overflow = "";
+      restoreModalFocus();
     }
 
     let lanInfoCache = null;
@@ -2864,6 +2962,7 @@
     async function openMobileModal() {
       const overlay = $("mobileModalOverlay");
       if (!overlay) return;
+      rememberModalFocus();
       overlay.hidden = false;
       document.body.style.overflow = "hidden";
 
@@ -2893,7 +2992,7 @@
       const overlay = $("mobileModalOverlay");
       if (!overlay) return;
       overlay.hidden = true;
-      document.body.style.overflow = "";
+      restoreModalFocus();
     }
 
     function isAnyModalOpen() {
@@ -2912,7 +3011,8 @@
         "shortcutsOverlay",
         "imageLightbox",
         "newConvoModalOverlay",
-        "gifPickerOverlay"
+        "gifPickerOverlay",
+        "editPostOverlay"
       ];
       return modalIds.some(id => {
         const el = $(id);
@@ -2997,6 +3097,27 @@
     }, true);
 
     window.addEventListener("keydown", (e) => {
+      // 0. Focus trap dentro de modais abertos
+      if (e.key === "Tab" && isAnyModalOpen()) {
+        const openModals = Array.from(document.querySelectorAll(".setup-overlay:not([hidden]), #imageLightbox:not([hidden])"));
+        const topModal = openModals[openModals.length - 1];
+        if (topModal) {
+          const focusables = Array.from(topModal.querySelectorAll('button:not([disabled]):not([hidden]), [href], input:not([disabled]):not([hidden]), select:not([disabled]):not([hidden]), textarea:not([disabled]):not([hidden]), [tabindex]:not([tabindex="-1"])'))
+            .filter(el => el.offsetParent !== null);
+          if (focusables.length) {
+            const first = focusables[0];
+            const last = focusables[focusables.length - 1];
+            if (e.shiftKey && (document.activeElement === first || !topModal.contains(document.activeElement))) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && (document.activeElement === last || !topModal.contains(document.activeElement))) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      }
+
       // 1. Atalho universal de submissão (Cmd+Enter / Ctrl+Enter) dentro de campos de composição
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         if (document.activeElement === $("text")) {
@@ -3070,6 +3191,14 @@
         }
         if ($("gifPickerOverlay") && !$("gifPickerOverlay").hidden) {
           closeGifPicker();
+          return;
+        }
+        if ($("editPostOverlay") && !$("editPostOverlay").hidden) {
+          closeEditPostModal();
+          return;
+        }
+        if ($("cropModalOverlay") && !$("cropModalOverlay").hidden) {
+          $("closeCropModal")?.click();
           return;
         }
         if (activeBoostMenu) {
@@ -4994,6 +5123,7 @@
       _deferredTimelineRender = false;
       syncTimelineFilterUI();
       const feed = $("feed");
+      cleanupFeedMedia(feed);
       const frag = document.createDocumentFragment();
       const filtered = getFilteredTimelineItems();
       const visible = timelineFilterNet === "all" ? groupCrossPosts(filtered) : filtered;
@@ -5065,6 +5195,7 @@
     function openCatchUpModal() {
       const overlay = $("catchUpOverlay");
       if (!overlay) return;
+      rememberModalFocus();
       const aiBox = $("catchUpAiBox");
       if (aiBox) { aiBox.hidden = true; aiBox.textContent = ""; }
       overlay.hidden = false;
@@ -5076,7 +5207,7 @@
       const overlay = $("catchUpOverlay");
       if (!overlay) return;
       overlay.hidden = true;
-      document.body.style.overflow = "";
+      restoreModalFocus();
     }
 
     async function generateCatchUpAiSummary() {
@@ -5147,7 +5278,7 @@
     function closeReaderModal() {
       const overlay = $("readerOverlay");
       if (overlay) overlay.hidden = true;
-      document.body.style.overflow = "";
+      restoreModalFocus();
     }
 
     function renderReaderArticleData(data, fallbackCard = null) {
@@ -5210,6 +5341,7 @@
       const overlay = $("readerOverlay");
       const safeU = su(url);
       if (!overlay || !safeU) return;
+      rememberModalFocus();
       applyReaderFontSize();
 
       if ($("readerOpenOrigLink")) $("readerOpenOrigLink").href = safeU;
@@ -5293,7 +5425,30 @@
       return Array.from(feedEl.querySelectorAll("video")).some(v => !v.paused && !v.ended && !v.loop);
     }
 
+    function renderFeedErrorBanner(msg, onRetry) {
+      const b = el("div", "banner");
+      b.style.display = "flex";
+      b.style.alignItems = "center";
+      b.style.justifyContent = "space-between";
+      b.style.gap = "8px";
+      b.append(el("span", null, msg));
+      if (typeof onRetry === "function") {
+        const retryBtn = el("button", "ghost-sm", t("cross.retry"));
+        retryBtn.type = "button";
+        retryBtn.onclick = () => onRetry();
+        b.append(retryBtn);
+      }
+      return b;
+    }
+
+    let _timelineLoading = false;
     async function load() {
+      if (_timelineLoading) return;
+      _timelineLoading = true;
+      const feedInit = $("feed");
+      if (feedInit && !items.length && !feedInit.children.length) {
+        feedInit.replaceChildren(el("div", "empty", t("search.searching")));
+      }
       try {
         const d = await api("/api/timeline");
         if (!d || d.error) throw new Error(d?.error || t("feed.error_server"));
@@ -5322,6 +5477,9 @@
         const anchor = captureScrollAnchor("timeline", feedEl);
 
         items = dedupSort(items, newItems);
+        if (anchor && anchor.atTop && items.length > 400) {
+          items = items.slice(0, 400);
+        }
         const shouldDefer = videoPlaying || (hadItems && anchor && !anchor.atTop);
         if (shouldDefer) {
           _deferredTimelineRender = true;
@@ -5352,7 +5510,9 @@
       } catch (e) {
         console.error("load() error:", e);
         const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
-        $("errors").replaceChildren(el("div", "banner", msg));
+        $("errors").replaceChildren(renderFeedErrorBanner(msg, load));
+      } finally {
+        _timelineLoading = false;
       }
     }
 
@@ -5537,7 +5697,14 @@
       renderExplore();
     }
 
+    let _exploreLoading = false;
     async function loadExplore() {
+      if (_exploreLoading) return;
+      _exploreLoading = true;
+      const efeedInit = $("efeed");
+      if (efeedInit && !exploreItems.length && !efeedInit.children.length) {
+        efeedInit.replaceChildren(el("div", "empty", t("search.searching")));
+      }
       try {
         const parsed = parseListKey(exploreSourceKey);
         const url = parsed
@@ -5562,6 +5729,9 @@
         const anchor = captureScrollAnchor("explore", feedEl);
 
         exploreItems = dedupSort(exploreItems, newItems, false);
+        if (anchor && anchor.atTop && exploreItems.length > 400) {
+          exploreItems = exploreItems.slice(0, 400);
+        }
         renderExplore();
 
         restoreScrollAnchor("explore", feedEl, anchor);
@@ -5579,12 +5749,15 @@
       } catch (e) {
         console.error("loadExplore() error:", e);
         const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
-        $("eerrors").replaceChildren(el("div", "banner", msg));
+        $("eerrors").replaceChildren(renderFeedErrorBanner(msg, loadExplore));
+      } finally {
+        _exploreLoading = false;
       }
     }
 
     function renderExplore() {
       const feed = $("efeed");
+      cleanupFeedMedia(feed);
       feed.replaceChildren();
       const filtered = muteMode === "hide" ? exploreItems.filter(it => !getMutedMatch(it)) : exploreItems;
       const visible = groupCrossPosts(filtered);
@@ -5598,6 +5771,69 @@
     let currentSearchNet = "all";
     let searchResultsData = null;
 
+    function getRecentSearches() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("mastosky_recent_searches") || "[]");
+        return Array.isArray(raw) ? raw.map(s => String(s || "").trim()).filter(Boolean).slice(0, 8) : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function saveRecentSearch(q) {
+      const cleanQ = String(q || "").trim();
+      if (!cleanQ) return;
+      const lower = cleanQ.toLowerCase();
+      const next = [cleanQ, ...getRecentSearches().filter(item => item.toLowerCase() !== lower)].slice(0, 8);
+      try { localStorage.setItem("mastosky_recent_searches", JSON.stringify(next)); } catch (_) { }
+    }
+
+    function removeRecentSearch(q) {
+      const lower = String(q || "").trim().toLowerCase();
+      const next = getRecentSearches().filter(item => item.toLowerCase() !== lower);
+      try { localStorage.setItem("mastosky_recent_searches", JSON.stringify(next)); } catch (_) { }
+      if (!currentSearchQuery) renderSearchEmptyState();
+    }
+
+    function clearRecentSearches() {
+      try { localStorage.removeItem("mastosky_recent_searches"); } catch (_) { }
+      if (!currentSearchQuery) renderSearchEmptyState();
+    }
+
+    function renderSearchEmptyState() {
+      const feed = $("sfeed");
+      if (!feed) return;
+      feed.replaceChildren(el("div", "empty", t("search.empty_start")));
+      const recent = getRecentSearches();
+      if (!recent.length) return;
+      const box = el("div", "search-recent-box");
+      const head = el("div", "search-recent-head");
+      const title = el("span", null, currentLang === "en" ? "Recent searches" : "Pesquisas recentes");
+      const clearBtn = el("button", "search-recent-clear", currentLang === "en" ? "Clear" : "Limpar");
+      clearBtn.type = "button";
+      clearBtn.onclick = clearRecentSearches;
+      head.append(title, clearBtn);
+
+      const chips = el("div", "search-recent-chips");
+      for (const q of recent) {
+        const chip = el("span", "search-recent-chip");
+        const qBtn = el("button", "search-recent-chip-btn", q);
+        qBtn.type = "button";
+        qBtn.onclick = () => doSearch(q);
+        const rmBtn = el("button", "search-recent-chip-rm", "×");
+        rmBtn.type = "button";
+        rmBtn.setAttribute("aria-label", currentLang === "en" ? `Remove ${q}` : `Remover ${q}`);
+        rmBtn.onclick = (e) => {
+          e.stopPropagation();
+          removeRecentSearch(q);
+        };
+        chip.append(qBtn, rmBtn);
+        chips.append(chip);
+      }
+      box.append(head, chips);
+      feed.append(box);
+    }
+
     async function doSearch(queryOverride = null) {
       const inp = $("searchInput");
       const query = (queryOverride !== null ? queryOverride : (inp ? inp.value : "")).trim();
@@ -5608,7 +5844,9 @@
       }
 
       if (!query) {
-        $("sfeed").innerHTML = '<div class="empty">' + t("search.empty_start") + '</div>';
+        currentSearchQuery = "";
+        searchResultsData = null;
+        renderSearchEmptyState();
         $("sActorsSection").hidden = true;
         $("sHashtagsSection").hidden = true;
         $("sPostsHead").hidden = true;
@@ -5617,6 +5855,7 @@
       }
 
       currentSearchQuery = query;
+      saveRecentSearch(query);
 
       if (query.startsWith("@") && currentSearchType === "all") {
         setSearchType("actors");
@@ -5814,6 +6053,7 @@
     if (!seenBefore) { seenBefore = new Date().toISOString(); localStorage.setItem("notifSeen", seenBefore); }
 
     let currentNotifFilter = localStorage.getItem("mastosky_notif_filter") || "all";
+    let currentNotifNet = localStorage.getItem("mastosky_notif_net") || "all";
     let notifSoundEnabled = localStorage.getItem("mastosky_notif_sound") === "true";
     let notifDesktopEnabled = localStorage.getItem("mastosky_notif_desktop") === "true";
     let notifTypesEnabled = (() => {
@@ -6318,6 +6558,16 @@
       renderNotifs();
     }
 
+    function setNotifNet(net) {
+      currentNotifNet = net || "all";
+      localStorage.setItem("mastosky_notif_net", currentNotifNet);
+      document.querySelectorAll("#notifNetPills .filter-pill").forEach(p => {
+        p.classList.toggle("active", p.dataset.notifNet === currentNotifNet);
+      });
+      renderNotifs();
+      updateBadge();
+    }
+
     async function loadMoreNotifs() {
       const q = new URLSearchParams();
       if (notifsCursors.bluesky) q.set("cursor_bluesky", notifsCursors.bluesky);
@@ -6390,7 +6640,7 @@
       } catch (e) {
         console.error("loadNotifs() error:", e);
         const msg = (e && e.message && e.message !== "Failed to fetch") ? e.message : t("feed.error_server");
-        $("nerrors").replaceChildren(el("div", "banner", msg));
+        $("nerrors").replaceChildren(renderFeedErrorBanner(msg, loadNotifs));
       } finally {
         _notifsLoading = false;
       }
@@ -6404,8 +6654,12 @@
       document.querySelectorAll("#notifFilterPills .filter-pill").forEach(p => {
         p.classList.toggle("active", p.dataset.notifFilter === currentNotifFilter);
       });
+      document.querySelectorAll("#notifNetPills .filter-pill").forEach(p => {
+        p.classList.toggle("active", p.dataset.notifNet === currentNotifNet);
+      });
 
       const filtered = (notifs || []).filter(n => {
+        if (currentNotifNet !== "all" && n.network !== currentNotifNet) return false;
         if (muteMode === "hide" && getMutedMatch(n)) return false;
         if (currentNotifFilter === "replies") return n.kind === "reply" || n.kind === "mention";
         if (currentNotifFilter === "likes") return n.kind === "like" || n.kind === "like_repost";
@@ -6420,11 +6674,13 @@
         else if (currentNotifFilter === "likes") emptyMsg = t("notifs.empty_likes");
         else if (currentNotifFilter === "boosts") emptyMsg = t("notifs.empty_boosts");
         else if (currentNotifFilter === "follows") emptyMsg = t("notifs.empty_follows");
+        cleanupFeedMedia(box);
         box.replaceChildren(el("div", "empty", emptyMsg));
         updateBadge();
         return;
       }
 
+      cleanupFeedMedia(box);
       initNotifObserver();
       const frag = document.createDocumentFragment();
 
@@ -6688,11 +6944,13 @@
       if ($("deckBadgeCount")) $("deckBadgeCount").textContent = unreadCount > 99 ? "99+" : unreadCount;
       if ($("markAllNotifsReadHeadBtn")) $("markAllNotifsReadHeadBtn").style.display = unreadCount ? "inline-flex" : "none";
 
-      // Contagens por categoria
-      const unreadReplies = allNotifs.filter(n => !isNotifRead(n) && (n.kind === "reply" || n.kind === "mention")).length;
-      const unreadLikes = allNotifs.filter(n => !isNotifRead(n) && (n.kind === "like" || n.kind === "like_repost")).length;
-      const unreadBoosts = allNotifs.filter(n => !isNotifRead(n) && (n.kind === "boost" || n.kind === "boost_repost" || n.kind === "reblog" || n.kind === "quote")).length;
-      const unreadFollows = allNotifs.filter(n => !isNotifRead(n) && (n.kind === "follow" || n.kind === "follow_request")).length;
+      // Contagens por categoria (respeitando filtro de rede das notificações)
+      const netNotifs = currentNotifNet === "all" ? allNotifs : allNotifs.filter(n => n.network === currentNotifNet);
+      const unreadNetAll = netNotifs.filter(n => !isNotifRead(n)).length;
+      const unreadReplies = netNotifs.filter(n => !isNotifRead(n) && (n.kind === "reply" || n.kind === "mention")).length;
+      const unreadLikes = netNotifs.filter(n => !isNotifRead(n) && (n.kind === "like" || n.kind === "like_repost")).length;
+      const unreadBoosts = netNotifs.filter(n => !isNotifRead(n) && (n.kind === "boost" || n.kind === "boost_repost" || n.kind === "reblog" || n.kind === "quote")).length;
+      const unreadFollows = netNotifs.filter(n => !isNotifRead(n) && (n.kind === "follow" || n.kind === "follow_request")).length;
 
       const updatePillBadge = (elId, count) => {
         const el = $(elId);
@@ -6701,7 +6959,7 @@
         el.textContent = count > 99 ? "99+" : String(count);
       };
 
-      updatePillBadge("notifBadgeAll", unreadCount);
+      updatePillBadge("notifBadgeAll", unreadNetAll);
       updatePillBadge("notifBadgeReplies", unreadReplies);
       updatePillBadge("notifBadgeLikes", unreadLikes);
       updatePillBadge("notifBadgeBoosts", unreadBoosts);
@@ -6990,6 +7248,25 @@
           openNewConvoModal(p.handle || p.raw_handle || p.id || p.did, p.network);
         };
         actionsRight.append(msgBtn);
+
+        const targetMuteHandle = p.handle || p.raw_handle;
+        if (targetMuteHandle) {
+          const updateMuteLabel = (btn) => {
+            const muted = isUserMuted(targetMuteHandle);
+            btn.textContent = muted
+              ? (currentLang === "en" ? "🔇 Muted" : "🔇 Silenciado")
+              : (currentLang === "en" ? "🔇 Mute" : "🔇 Silenciar");
+          };
+          const muteBtn = el("button", "btn-profile-ext");
+          muteBtn.type = "button";
+          updateMuteLabel(muteBtn);
+          muteBtn.onclick = (e) => {
+            e.stopPropagation();
+            toggleMuteUser(targetMuteHandle);
+            updateMuteLabel(muteBtn);
+          };
+          actionsRight.append(muteBtn);
+        }
         nameRow.append(actionsRight);
       }
 
@@ -7060,8 +7337,51 @@
 
     let userProfileModalCursor = null;
     let userProfileModalItems = [];
+    let userProfileModalTab = "posts";
     let activeModalActor = null;
     let activeModalNet = null;
+
+    function setUserProfileModalTab(tabName) {
+      userProfileModalTab = tabName || "posts";
+      document.querySelectorAll("#userProfileModalTabs .filter-pill").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.profTab === userProfileModalTab);
+      });
+      const feedWrap = $("userProfileModalFeed");
+      if (feedWrap && (userProfileModalItems.length || userProfileModalCursor !== null)) {
+        renderUserProfileModalFeed(feedWrap);
+      }
+    }
+
+    function renderUserProfileModalFeed(feedWrap) {
+      if (!feedWrap) return;
+      cleanupFeedMedia(feedWrap);
+      feedWrap.replaceChildren();
+      const filtered = userProfileModalItems.filter(it => {
+        if (userProfileModalTab === "replies") return Boolean(it.reply_to);
+        if (userProfileModalTab === "media") {
+          return Array.isArray(it.media) && it.media.some(m => m && (m.type === "image" || m.type === "video" || m.type === "gifv"));
+        }
+        return !it.reply_to;
+      });
+      if (!filtered.length) {
+        feedWrap.append(el("div", "empty", t("feed.empty_user_profile")));
+      } else {
+        for (const it of filtered) feedWrap.append(postCard(it));
+      }
+      if (userProfileModalCursor) {
+        const wrap = el("div", "more-wrap");
+        wrap.style.textAlign = "center";
+        wrap.style.padding = "20px 0";
+        const btn = el("button", "ghost", t("profile.load_more_posts"));
+        btn.onclick = async () => {
+          btn.disabled = true;
+          btn.textContent = t("actions.loading");
+          await loadModalAuthorFeed(feedWrap, true);
+        };
+        wrap.append(btn);
+        feedWrap.append(wrap);
+      }
+    }
 
     async function openUserProfile(network, actor) {
       if (!network || !actor) return;
@@ -7070,6 +7390,10 @@
       activeModalActor = actor;
       userProfileModalCursor = null;
       userProfileModalItems = [];
+      userProfileModalTab = "posts";
+      document.querySelectorAll("#userProfileModalTabs .filter-pill").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.profTab === "posts");
+      });
 
       const overlay = $("userProfileOverlay");
       const titleEl = $("userProfileModalTitle");
@@ -7078,6 +7402,7 @@
       const modalBody = $("userProfileModalBody");
 
       if (!overlay) return;
+      rememberModalFocus();
       overlay.hidden = false;
       document.body.style.overflow = "hidden";
 
@@ -7124,30 +7449,9 @@
         const items = d.items || [];
         if (!isMore) {
           userProfileModalItems = [];
-          feedWrap.replaceChildren();
-        } else {
-          const moreBtn = feedWrap.querySelector(".more-wrap");
-          if (moreBtn) moreBtn.remove();
         }
         for (const it of items) userProfileModalItems.push(it);
-        if (!userProfileModalItems.length) {
-          feedWrap.append(el("div", "empty", t("feed.empty_user_profile")));
-        } else {
-          for (const it of items) feedWrap.append(postCard(it));
-          if (userProfileModalCursor) {
-            const wrap = el("div", "more-wrap");
-            wrap.style.textAlign = "center";
-            wrap.style.padding = "20px 0";
-            const btn = el("button", "ghost", t("profile.load_more_posts"));
-            btn.onclick = async () => {
-              btn.disabled = true;
-              btn.textContent = t("actions.loading");
-              await loadModalAuthorFeed(feedWrap, true);
-            };
-            wrap.append(btn);
-            feedWrap.append(wrap);
-          }
-        }
+        renderUserProfileModalFeed(feedWrap);
       } catch (err) {
         feedWrap.append(el("div", "banner", t("feed.error_loading_posts", { err: err.message })));
       }
@@ -7157,8 +7461,8 @@
       const overlay = $("userProfileOverlay");
       if (overlay) {
         overlay.hidden = true;
-        document.body.style.overflow = "";
       }
+      restoreModalFocus();
       activeModalActor = null;
       activeModalNet = null;
       userProfileModalCursor = null;
@@ -7211,7 +7515,10 @@
 
     let _prevDmUnread = null;
 
+    let _convosLoading = false;
     async function loadConversations(silent = false) {
+      if (_convosLoading) return;
+      _convosLoading = true;
       try {
         const res = await api("/api/conversations");
         if (!res) return;
@@ -7253,6 +7560,8 @@
             errBox.append(el("div", "banner", t("messages.err_load") + " " + err.message));
           }
         }
+      } finally {
+        _convosLoading = false;
       }
     }
 
@@ -11423,6 +11732,7 @@
     function openDraftsModal() {
       const overlay = $("draftsOverlay");
       if (!overlay) return;
+      rememberModalFocus();
       const msg = $("draftsMsg");
       if (msg) msg.textContent = "";
       renderDraftsList();
@@ -11434,7 +11744,7 @@
       const overlay = $("draftsOverlay");
       if (!overlay) return;
       overlay.hidden = true;
-      document.body.style.overflow = "";
+      restoreModalFocus();
     }
 
     function renderDraftsList() {
@@ -12000,8 +12310,11 @@
         ? opts.translateText
         : [it && it.text, it && it.quote && it.quote.text].filter(Boolean).join("\n\n—\n")).trim();
       const canOwn = Boolean(opts.allowOwnActions && it && it.is_own);
+      const authorHandle = (!it?.is_own && (it?.handle || it?.author_handle))
+        ? normalizeMutedUserHandle(it.handle || it.author_handle)
+        : "";
 
-      if (!shareUrl && !vidDlHref && !trText && !canOwn) return null;
+      if (!shareUrl && !vidDlHref && !trText && !canOwn && !authorHandle) return null;
 
       let translatedBox = null;
       let isTranslating = false;
@@ -12089,6 +12402,23 @@
               }
             };
             list.push(bTr);
+          }
+
+          if (authorHandle) {
+            if (list.length) list.push(el("div", "boost-divider"));
+            const bMute = el("button", "act-btn act-mute-user");
+            bMute.innerHTML = '<svg class="ico" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><use href="#i-volume-off"/></svg> <span></span>';
+            const muted = isUserMuted(authorHandle);
+            bMute.querySelector("span").textContent = muted
+              ? (currentLang === "en" ? `Unmute ${authorHandle}` : `Deixar de silenciar ${authorHandle}`)
+              : (currentLang === "en" ? `Mute ${authorHandle}` : `Silenciar ${authorHandle}`);
+            bMute.onclick = (ev) => {
+              ev.stopPropagation();
+              notifyAction();
+              toggleMuteUser(authorHandle);
+              closeBoostMenu();
+            };
+            list.push(bMute);
           }
 
           if (canOwn) {
@@ -13811,6 +14141,7 @@
     function openScheduledModal() {
       const overlay = $("scheduledOverlay");
       if (!overlay) return;
+      rememberModalFocus();
       const msg = $("scheduledMsg");
       if (msg) msg.textContent = "";
       overlay.hidden = false;
@@ -13823,7 +14154,7 @@
       const overlay = $("scheduledOverlay");
       if (!overlay) return;
       overlay.hidden = true;
-      document.body.style.overflow = "";
+      restoreModalFocus();
     }
 
     function loadScheduledIntoComposer(it) {
@@ -14129,6 +14460,7 @@
       const ov = $("editPostOverlay");
       if (ov) ov.hidden = true;
       editPostState = null;
+      restoreModalFocus();
     }
 
     async function openEditPostModal(it, postEl) {
@@ -14137,6 +14469,7 @@
       const cw = $("editPostCwInput");
       const msg = $("editPostMsg");
       if (!ov || !ta) return;
+      rememberModalFocus();
       editPostState = { item: it, postEl, media_ids: [] };
       if (msg) { msg.className = "msg"; msg.textContent = t("actions.loading"); }
       if (cw) cw.value = it.cw || "";
@@ -14145,6 +14478,7 @@
       ta.value = (tmp.textContent || "").trim();
       updateEditPostCount();
       ov.hidden = false;
+      document.body.style.overflow = "hidden";
       ta.focus();
       try {
         const sid = it.ref && it.ref.id ? it.ref.id : "";
@@ -14713,7 +15047,9 @@
     }
 
     async function openSetup(mandatory = false) {
+      rememberModalFocus();
       $("setupOverlay").hidden = false;
+      document.body.style.overflow = "hidden";
       $("setupOverlay").scrollTop = 0;
       const dlg = $("setupOverlay").querySelector(".setup-box");
       if (dlg) dlg.scrollTop = 0;
@@ -14799,6 +15135,7 @@
 
     function closeSetup() {
       $("setupOverlay").hidden = true;
+      restoreModalFocus();
     }
 
     $("settingsBtn").onclick = () => openSetup(false);
@@ -15776,6 +16113,7 @@
         active = true;
       }, { passive: true });
 
+      let _pullRaf = 0;
       document.addEventListener("touchmove", (e) => {
         if (!active || e.touches.length !== 1) return;
         const dx = e.touches[0].clientX - startX;
@@ -15784,19 +16122,25 @@
         if (!atTop || dy < 0 || Math.abs(dx) > Math.abs(dy) * 0.9) {
           active = false;
           triggered = false;
+          if (_pullRaf) { cancelAnimationFrame(_pullRaf); _pullRaf = 0; }
           hideIndicator();
           return;
         }
         if (dy < 14) return;
         const pull = Math.min(95, (dy - 14) * 0.55);
         triggered = pull >= 45;
-        ind.hidden = false;
-        ind.classList.add("visible");
-        ind.classList.toggle("ready", triggered);
-        ind.textContent = triggered
-          ? (currentLang === "en" ? "↑ Release to refresh" : "↑ Larga para atualizar")
-          : (currentLang === "en" ? "↓ Pull to refresh" : "↓ Puxa para atualizar");
-        ind.style.transform = `translate(-50%, ${Math.round(pull - 10)}px)`;
+        if (_pullRaf) return;
+        _pullRaf = requestAnimationFrame(() => {
+          _pullRaf = 0;
+          if (!active) return;
+          ind.hidden = false;
+          ind.classList.add("visible");
+          ind.classList.toggle("ready", triggered);
+          ind.textContent = triggered
+            ? (currentLang === "en" ? "↑ Release to refresh" : "↑ Larga para atualizar")
+            : (currentLang === "en" ? "↓ Pull to refresh" : "↓ Puxa para atualizar");
+          ind.style.transform = `translate(-50%, ${Math.round(pull - 10)}px)`;
+        });
       }, { passive: true });
 
       const onEnd = () => {
@@ -15851,6 +16195,7 @@
     initServerSync();
     initTouchPullToRefresh();
     initListsFeature();
+    renderSearchEmptyState();
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       navigator.serviceWorker.register("/sw.js").catch(() => { });
     }

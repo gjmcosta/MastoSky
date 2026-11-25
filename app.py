@@ -35,12 +35,21 @@ def secure_config_perms(path=None):
 
 
 def write_config(cfg, path=None):
-    """Grava o config com permissões 0600 desde a criação (sem janela em que fique legível por outros)."""
+    """Grava o config de forma atómica com permissões 0600 desde a criação."""
     path = Path(path or CFG_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w") as f:
-        f.write(json.dumps(cfg, indent=2))
+    tmp_path = Path(f"{path}.tmp.{threading.get_ident()}")
+    fd = os.open(str(tmp_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(json.dumps(cfg, indent=2))
+        os.replace(tmp_path, path)
+    except Exception:
+        try:
+            tmp_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
     try:
         os.chmod(path, 0o600)
     except OSError:
@@ -874,20 +883,6 @@ def http(method, url, data=None, token=None, headers=None, timeout=30):
                 msg += f" (limite de pedidos; tenta de novo{f' dentro de {ra} s' if ra is not None else ' mais tarde'})"
             raise ApiError(msg, status=e.code, retry_after=ra, body=raw_err)
         except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError) as e:
-            if isinstance(e, urllib.error.URLError) and "certificate verify failed" in str(e).lower() and attempt == 0:
-                try:
-                    unverified_ctx = ssl._create_unverified_context()
-                    retry_req, retry_body = _make_req()
-                    with urllib.request.urlopen(retry_req, retry_body, timeout=timeout, context=unverified_ctx) as r:
-                        raw = r.read()
-                        if not raw:
-                            return {}
-                        try:
-                            return json.loads(raw)
-                        except (json.JSONDecodeError, ValueError) as err:
-                            raise ApiError(f"Resposta inválida do servidor ({host}): {err}")
-                except Exception:
-                    pass
             reason = getattr(e, "reason", e)
             raise ApiError(f"Sem ligação a {host}: {reason}")
 
@@ -1129,6 +1124,7 @@ class Clean(HTMLParser):
 def clean(h, strip_quote_inline=False):
     c = Clean(strip_quote_inline=strip_quote_inline)
     c.feed(h or "")
+    c.close()
     return "".join(c.o)
 
 
@@ -1180,14 +1176,24 @@ def safe_media_list(items):
 
 
 _LINK_PREVIEW_CACHE = {}
+_REMOTE_CACHE_LOCK = threading.Lock()
+
+
+def _is_non_public_ip(ip_obj):
+    return (
+        ip_obj.is_private
+        or ip_obj.is_loopback
+        or ip_obj.is_link_local
+        or ip_obj.is_multicast
+        or ip_obj.is_reserved
+        or ip_obj in _TAILSCALE_NET
+    )
 
 
 def _check_ip_public(ip_obj):
-    """Rejeita endereços IP privados, loopback, link-local ou Tailscale."""
+    """Rejeita endereços IP privados, loopback, link-local, multicast, reservados ou Tailscale."""
     mapped = getattr(ip_obj, "ipv4_mapped", None)
-    if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj in _TAILSCALE_NET or (
-        mapped is not None and (mapped.is_private or mapped.is_loopback or mapped.is_link_local or mapped in _TAILSCALE_NET)
-    ):
+    if _is_non_public_ip(ip_obj) or (mapped is not None and _is_non_public_ip(mapped)):
         raise ValueError("Acesso a endereços de rede privada não permitido.")
 
 
@@ -1212,7 +1218,7 @@ def _validate_remote_http_url(url_str):
         try:
             infos = socket.getaddrinfo(host, None)
         except socket.gaierror:
-            infos = []
+            raise ValueError("Não foi possível resolver o domínio remoto.")
         for info in infos:
             addr = info[4][0].split("%", 1)[0]
             try:
@@ -1278,9 +1284,10 @@ def fetch_link_preview(url_str):
     """Obtém título, descrição, domínio e imagem de pré-visualização de uma ligação externa."""
     u, p = _validate_remote_http_url(url_str)
     now = time.time()
-    cached = _LINK_PREVIEW_CACHE.get(u)
-    if cached and (now - cached["ts"] < 1800):
-        return cached["data"]
+    with _REMOTE_CACHE_LOCK:
+        cached = _LINK_PREVIEW_CACHE.get(u)
+        if cached and (now - cached["ts"] < 1800):
+            return cached["data"]
 
     headers = {
         "User-Agent": "Mozilla/5.0 (compatible; MastoSky/1.0; +https://github.com/gjmcosta/MastoSky)",
@@ -1341,9 +1348,10 @@ def fetch_link_preview(url_str):
         "description": desc,
         "image": img_url,
     }
-    if len(_LINK_PREVIEW_CACHE) > 200:
-        _LINK_PREVIEW_CACHE.clear()
-    _LINK_PREVIEW_CACHE[u] = {"ts": now, "data": out}
+    with _REMOTE_CACHE_LOCK:
+        if len(_LINK_PREVIEW_CACHE) > 200:
+            _LINK_PREVIEW_CACHE.pop(next(iter(_LINK_PREVIEW_CACHE)), None)
+        _LINK_PREVIEW_CACHE[u] = {"ts": now, "data": out}
     return out
 
 
@@ -1615,7 +1623,7 @@ def proxy_fetch_image(url_str):
             ctype = "image/webp"
         elif len(data) >= 16 and b"ftypavif" in data[:16]:
             ctype = "image/avif"
-        elif not ctype or not (ctype.startswith("image/") or ctype == "application/octet-stream"):
+        elif "svg" in (ctype or "").lower() or not ctype or not (ctype.startswith("image/") or ctype == "application/octet-stream"):
             raise ValueError("O conteúdo remoto não é uma imagem válida.")
 
         return data, ctype if (ctype and ctype.startswith("image/")) else "image/jpeg"
@@ -1941,6 +1949,7 @@ def parse_bsky_quote(rec):
 def render_custom_emojis(raw_html, emojis):
     if not raw_html or not emojis or not isinstance(emojis, list):
         return raw_html
+    replacements = []
     for em in emojis:
         if not isinstance(em, dict):
             continue
@@ -1952,8 +1961,18 @@ def render_custom_emojis(raw_html, emojis):
             continue
         escaped_code = html.escape(code)
         img = f'<img class="emoji" src="{html.escape(u, True)}" alt=":{escaped_code}:" title=":{escaped_code}:">'
-        raw_html = re.sub(rf":{re.escape(code)}:", img, raw_html)
-    return raw_html
+        replacements.append((re.compile(rf":{re.escape(code)}:"), img))
+    if not replacements:
+        return raw_html
+    parts = re.split(r"(<[^>]+>)", raw_html)
+    for idx in range(0, len(parts), 2):
+        seg = parts[idx]
+        if ":" not in seg:
+            continue
+        for pat, img in replacements:
+            seg = pat.sub(lambda _m, r=img: r, seg)
+        parts[idx] = seg
+    return "".join(parts)
 
 
 def strip_re_prefix(html_str):
@@ -3218,8 +3237,8 @@ class Masto:
         sts = self.call("GET", path, params=p)
         parents = {x["id"]: x for x in (st.get("reblog") or st for st in sts)}
         need = list({x["in_reply_to_id"] for x in parents.values() if x.get("in_reply_to_id")} - set(parents))
-        with ThreadPoolExecutor(max_workers=6) as ex:
-            for sid, par in zip(need, ex.map(self.parent, need)):
+        if need:
+            for sid, par in zip(need, _API_EXECUTOR.map(self.parent, need)):
                 if par:
                     parents[sid] = par
         next_cursor = str(sts[-1]["id"]) if sts else None
@@ -3272,39 +3291,6 @@ class Masto:
         if name_html:
             out["name_html"] = name_html
         return out
-
-    @staticmethod
-    def _normalize_poll(poll_obj):
-        if not isinstance(poll_obj, dict) or not poll_obj.get("id"):
-            return None
-        opts = []
-        for opt in (poll_obj.get("options") or []):
-            if isinstance(opt, dict):
-                opts.append({
-                    "title": str(opt.get("title") or ""),
-                    "votes_count": int(opt.get("votes_count") or 0) if opt.get("votes_count") is not None else 0,
-                })
-        own_votes = [int(v) for v in (poll_obj.get("own_votes") or []) if isinstance(v, int)]
-        return {
-            "id": str(poll_obj["id"]),
-            "expires_at": poll_obj.get("expires_at"),
-            "expired": bool(poll_obj.get("expired")),
-            "multiple": bool(poll_obj.get("multiple")),
-            "votes_count": int(poll_obj.get("votes_count") or 0),
-            "voters_count": poll_obj.get("voters_count"),
-            "voted": bool(poll_obj.get("voted")),
-            "own_votes": own_votes,
-            "options": opts,
-        }
-
-    def vote_poll(self, poll_id, choices):
-        if not poll_id or not re.fullmatch(r"[A-Za-z0-9_-]+", str(poll_id)):
-            raise ValueError("ID de sondagem inválido.")
-        if not isinstance(choices, list) or not choices or not all(isinstance(c, int) and c >= 0 for c in choices):
-            raise ValueError("Opções de voto inválidas.")
-        safe_id = urllib.parse.quote(str(poll_id), safe="")
-        res = self.call("POST", f"/api/v1/polls/{safe_id}/votes", data={"choices": choices})
-        return self._normalize_poll(res)
 
     def profile(self):
         acc = self.call("GET", "/api/v1/accounts/verify_credentials")
@@ -3749,7 +3735,7 @@ class Masto:
                 "sender_avatar": safe_url(acc.get("avatar")),
                 "is_own": is_own,
                 "text": text,
-                "html": st.get("content", ""),
+                "html": clean(st.get("content", "")),
                 "time": st.get("created_at", "")
             })
         messages.sort(key=lambda x: parse_time(x.get("time")))
@@ -3797,7 +3783,7 @@ class Masto:
             "sender_avatar": safe_url(acc.get("avatar")),
             "is_own": True,
             "text": plain(st.get("content", "")),
-            "html": st.get("content", ""),
+            "html": clean(st.get("content", "")),
             "time": st.get("created_at") or now_iso()
         }
 
@@ -5037,12 +5023,27 @@ class H(BaseHTTPRequestHandler):
         if not host:
             return False
 
-        host_parts = host.rsplit(":", 1)
-        if len(host_parts) == 2 and host_parts[1].isdigit():
-            if int(host_parts[1]) != PORT:
+        host_only = host
+        if host.startswith("["):
+            end_br = host.find("]")
+            if end_br == -1:
                 return False
+            host_only = host[1:end_br]
+            rest = host[end_br + 1:]
+            if rest.startswith(":"):
+                port_part = rest[1:]
+                if not port_part.isdigit() or int(port_part) != PORT:
+                    return False
+            elif rest:
+                return False
+        elif ":" in host:
+            host_parts = host.rsplit(":", 1)
+            if host_parts[1].isdigit():
+                if int(host_parts[1]) != PORT:
+                    return False
+                host_only = host_parts[0]
 
-        if not is_private_or_local_host(host):
+        if not is_private_or_local_host(host_only):
             return False
 
         if origin is not None and not is_oauth_callback:
@@ -5148,6 +5149,10 @@ class H(BaseHTTPRequestHandler):
                     self.send_response(304)
                     self.send_header("ETag", etag)
                     self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+                    self.send_header("X-Content-Type-Options", "nosniff")
+                    self.send_header("Referrer-Policy", "no-referrer")
+                    self.send_header("X-Frame-Options", "DENY")
+                    self.send_header("Content-Security-Policy", CSP)
                     self.send_header("Content-Length", "0")
                     self.end_headers()
                     return
@@ -5192,7 +5197,14 @@ class H(BaseHTTPRequestHandler):
                 '    })));\n'
                 '    return;\n'
                 '  }\n'
-                '  if (url.pathname === "/" || url.pathname === "/index.html" || url.pathname === "/app.css" || url.pathname === "/app.js" || NETWORK_FIRST_APIS.includes(url.pathname)) {\n'
+                '  if (url.pathname === "/app.css" || url.pathname === "/app.js") {\n'
+                '    e.respondWith(fetch(e.request).then((res) => {\n'
+                '      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)); }\n'
+                '      return res;\n'
+                '    }).catch(() => caches.match(e.request)));\n'
+                '    return;\n'
+                '  }\n'
+                '  if (url.pathname === "/" || url.pathname === "/index.html" || NETWORK_FIRST_APIS.includes(url.pathname)) {\n'
                 '    e.respondWith(fetch(e.request, { cache: "no-store" }).then((res) => {\n'
                 '      if (res && res.ok) { const copy = res.clone(); caches.open(CACHE_NAME).then((c) => c.put(e.request, copy)); }\n'
                 '      return res;\n'
@@ -5856,7 +5868,10 @@ class H(BaseHTTPRequestHandler):
                 if h and p:
                     new_cfg["bluesky"] = {"handle": h, "app_password": p}
                     if b.get("service"):
-                        new_cfg["bluesky"]["service"] = b["service"].strip()
+                        svc = safe_url(b["service"])
+                        if not svc:
+                            return self.send(400, {"error": "URL de serviço Bluesky inválido."})
+                        new_cfg["bluesky"]["service"] = svc
                 elif not h and not p and "bluesky" in new_cfg:
                     new_cfg.pop("bluesky", None)
 
@@ -5875,15 +5890,19 @@ class H(BaseHTTPRequestHandler):
                     prev_ai = new_cfg.get("ai", {}) if isinstance(new_cfg.get("ai"), dict) else {}
                     g_key = str(ai.get("gemini_key") or "").strip() or str(prev_ai.get("gemini_key") or "").strip()
                     o_key = str(ai.get("openai_key") or "").strip() or str(prev_ai.get("openai_key") or "").strip()
+                    ollama_url = safe_url(ai.get("ollama_url") or "http://localhost:11434")
+                    openai_url = safe_url(ai.get("openai_url") or "https://api.openai.com/v1")
+                    if not ollama_url or not openai_url:
+                        return self.send(400, {"error": "URL do fornecedor de IA inválido."})
                     new_cfg["ai"] = {
                         "provider": str(ai.get("provider") or "none").strip(),
                         "lang": str(ai.get("lang") or "pt-pt").strip(),
                         "auto": bool(ai.get("auto", False)),
                         "gemini_key": g_key,
                         "gemini_model": str(ai.get("gemini_model") or "gemini-3.5-flash-lite").strip(),
-                        "ollama_url": str(ai.get("ollama_url") or "http://localhost:11434").strip(),
+                        "ollama_url": ollama_url,
                         "ollama_model": str(ai.get("ollama_model") or "llama3.2-vision").strip(),
-                        "openai_url": str(ai.get("openai_url") or "https://api.openai.com/v1").strip(),
+                        "openai_url": openai_url,
                         "openai_key": o_key,
                         "openai_model": str(ai.get("openai_model") or "gpt-4o-mini").strip(),
                     }
@@ -6061,6 +6080,7 @@ def main():
     local_url = f"http://127.0.0.1:{PORT}"
     try:
         server = ThreadingHTTPServer((LISTEN_HOST, PORT), H)
+        server.daemon_threads = True
     except OSError as e:
         import errno
         if e.errno in (getattr(errno, "EADDRINUSE", 48), 98, 10048):

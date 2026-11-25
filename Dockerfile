@@ -9,7 +9,9 @@ COPY app.py index.html app.css app.js manifest.json ./
 COPY brand/ ./brand/
 COPY vendor/ ./vendor/
 
-RUN mkdir -p /data
+RUN adduser -D -u 1000 mastosky && mkdir -p /data && chown -R mastosky:mastosky /app /data
+
+USER mastosky
 
 VOLUME ["/data"]
 

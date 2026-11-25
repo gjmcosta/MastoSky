@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="csrf-token" content="">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -23,7 +23,7 @@
       } catch (e) { }
     })();
   </script>
-  <script src="/vendor/hls.min.js"></script>
+  <script src="/vendor/hls.min.js" defer></script>
   <link rel="stylesheet" href="/app.css">
 </head>
 
@@ -958,7 +958,7 @@
                 <svg class="ico" style="width:14px;height:14px">
                   <use href="#i-bookmark" />
                 </svg>
-                <span id="resumeReadingLabel">Retomar onde ficaste</span>
+                <span id="resumeReadingLabel" data-i18n="feed.resume_reading">Retomar onde ficaste</span>
               </button>
               <button type="button" class="resume-reading-close" id="resumeReadingDismiss" title="Fechar"
                 aria-label="Fechar">✕</button>
@@ -1291,6 +1291,18 @@
                 </button>
               </div>
             </div>
+            <div class="search-net-bar notif-net-bar" id="notifNetPills">
+              <button type="button" class="filter-pill active" data-notif-net="all" onclick="setNotifNet('all')"
+                data-i18n="search.net_all">Ambas</button>
+              <button type="button" class="filter-pill" data-notif-net="bluesky" onclick="setNotifNet('bluesky')"><svg
+                  class="ico net-ico-bsky" style="width:12px;height:12px">
+                  <use href="#i-brand-bsky" />
+                </svg> <span>Bluesky</span></button>
+              <button type="button" class="filter-pill" data-notif-net="mastodon" onclick="setNotifNet('mastodon')"><svg
+                  class="ico net-ico-masto" style="width:12px;height:12px">
+                  <use href="#i-brand-masto" />
+                </svg> <span>Mastodon</span></button>
+            </div>
             <div class="notif-summary-banner" id="notifSummaryBanner" hidden>
               <div class="notif-summary-left">
                 <span class="notif-summary-dot"></span>
@@ -1552,11 +1564,12 @@
       </div>
     </div>
 
-    <div id="newConvoModalOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true">
+    <div id="newConvoModalOverlay" class="setup-overlay" hidden role="dialog" aria-modal="true"
+      aria-labelledby="newConvoModalTitle">
       <div class="setup-box" style="max-width:440px">
         <div class="setup-head"
           style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between">
-          <h2 style="font-size:16px;margin:0" data-i18n="messages.start_chat">Iniciar conversa</h2>
+          <h2 id="newConvoModalTitle" style="font-size:16px;margin:0" data-i18n="messages.start_chat">Iniciar conversa</h2>
           <button type="button" class="setup-close-btn" id="closeNewConvoBtn" onclick="closeNewConvoModal()"
             title="Fechar (Esc)" data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
         </div>
@@ -2138,10 +2151,10 @@
       </div>
     </div>
 
-    <div id="crossPostOverlay" class="setup-overlay" hidden>
+    <div id="crossPostOverlay" class="setup-overlay" role="dialog" aria-modal="true" aria-labelledby="crossPostTitle" hidden>
       <div class="setup-box cross-post-box">
         <div class="setup-header">
-          <h2 data-i18n="cross_post.modal_title">Publicação Cruzada</h2>
+          <h2 id="crossPostTitle" data-i18n="cross_post.modal_title">Publicação Cruzada</h2>
           <button type="button" class="setup-close-btn" id="closeCrossPost" title="Fechar (Esc)"
             data-i18n-title="mobile.close" aria-label="Fechar">✕</button>
         </div>
@@ -2297,8 +2310,8 @@
         <div class="reader-toolbar">
           <div id="readerMeta" class="reader-meta"></div>
           <div class="reader-tools">
-            <button type="button" class="ghost-sm" id="readerFontDecBtn" title="Diminuir letra">A-</button>
-            <button type="button" class="ghost-sm" id="readerFontIncBtn" title="Aumentar letra">A+</button>
+            <button type="button" class="ghost-sm" id="readerFontDecBtn" title="Diminuir letra" data-i18n-title="reader.font_dec">A-</button>
+            <button type="button" class="ghost-sm" id="readerFontIncBtn" title="Aumentar letra" data-i18n-title="reader.font_inc">A+</button>
             <a id="readerOpenOrigLink" class="send-sm" href="#" target="_blank" rel="noopener noreferrer"
               style="text-decoration:none" data-i18n="reader.open_orig">Abrir original ↗</a>
           </div>
@@ -2356,6 +2369,14 @@
         </div>
         <div id="userProfileModalBody" class="user-profile-modal-body">
           <div id="userProfileModalCard"></div>
+          <div class="search-type-bar profile-modal-tabs" id="userProfileModalTabs" role="tablist" style="margin:10px 0">
+            <button type="button" class="filter-pill active" data-prof-tab="posts" onclick="setUserProfileModalTab('posts')"
+              data-i18n="search.type_posts">Publicações</button>
+            <button type="button" class="filter-pill" data-prof-tab="replies" onclick="setUserProfileModalTab('replies')"
+              data-i18n="notifs.filter_replies">Respostas</button>
+            <button type="button" class="filter-pill" data-prof-tab="media" onclick="setUserProfileModalTab('media')"
+              data-i18n="search.type_media">Média</button>
+          </div>
           <div id="userProfileModalFeed"></div>
         </div>
       </div>
