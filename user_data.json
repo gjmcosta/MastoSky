@@ -8,14 +8,15 @@
     "theme": "dark",
     "lang": "pt",
     "nav_mode": "sidebar",
-    "view_mode": "single",
+    "view_mode": "deck",
     "deck_columns": [
       "compose",
       "timeline",
       "notifs",
       "explore",
       "profile",
-      "saved"
+      "saved",
+      "messages"
     ],
     "notif_sound": true,
     "notif_types": {
@@ -29,12 +30,12 @@
     "boost_cluster": true,
     "handle_mappings": [],
     "timeline_anchor": {
-      "key": "https://bsky.app/profile/sk-serge.bsky.social/post/3n36af65ipc23",
-      "time": "2026-11-25T22:45:44.162Z",
-      "updated_at": 1795646817642,
+      "key": "https://masto.pt/@jornalmapa/117679546767437720",
+      "time": "2026-11-25T22:56:21.094Z",
+      "updated_at": 1795647454340,
       "device_id": "dev_wte8yvkomwouw5zb"
     },
     "notif_sound_pack": "orchid"
   },
-  "updated_at": 1795646817898
+  "updated_at": 1795647454595
 }
